@@ -9,6 +9,8 @@
 #include "memory.h"
 #include "syscall.h"
 #include "microrv32_uart.h"
+#include "microrv32_led.h"
+#include "microrv32_gpio.h"
 #include "util/options.h"
 #include "platform/common/options.h"
 
@@ -32,9 +34,13 @@ public:
 	addr_t sys_start_addr = 0x02010000;
 	addr_t sys_end_addr = 0x020103ff;
 	addr_t mem_start_addr = 0x80000000;
-	addr_t mem_end_addr = 0x81000000;
+	addr_t mem_end_addr = 0x80ffffff;
+	addr_t led_start_addr = 0x81000000;
+	addr_t led_end_addr = 0x810000ff;
 	addr_t uart_start_addr = 0x82000000;
-	addr_t uart_end_addr = 0x82000100;
+	addr_t uart_end_addr = 0x820000ff;
+	addr_t gpio_a_start_addr = 0x83000000;
+	addr_t gpio_a_end_addr = 0x830000ff;
 	
 	addr_t mem_size = mem_end_addr - mem_start_addr;
 
@@ -68,12 +74,14 @@ int sc_main(int argc, char **argv) {
 	ISS core(0, opt.use_E_base_isa);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 4> bus("SimpleBus");
+	SimpleBus<2, 6> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 	MicroRV32UART uart("MicroRV32UART");
+	MicroRV32LED led("MicroRV32LED");
+	MicroRV32GPIO gpio_a("MicroRV32GPIO");
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
@@ -106,6 +114,8 @@ int sc_main(int argc, char **argv) {
 	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 	bus.ports[2] = new PortMapping(opt.uart_start_addr, opt.uart_end_addr);
 	bus.ports[3] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+	bus.ports[4] = new PortMapping(opt.led_start_addr, opt.led_end_addr);
+	bus.ports[5] = new PortMapping(opt.gpio_a_start_addr, opt.gpio_a_end_addr);
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
@@ -115,6 +125,8 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[1].bind(clint.tsock);
 	bus.isocks[2].bind(uart.tsock);
 	bus.isocks[3].bind(sys.tsock);
+	bus.isocks[4].bind(led.tsock);
+	bus.isocks[5].bind(gpio_a.tsock);
 
 	// connect interrupt signals/communication
 	clint.target_harts[0] = &core;
