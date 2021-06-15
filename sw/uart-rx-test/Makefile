@@ -1,5 +1,5 @@
 all : main.c uart.c bootstrap.S
-	riscv32-unknown-elf-gcc bootstrap.S main.c uart.c -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax -T link.ld
+	riscv32-unknown-elf-gcc bootstrap.S main.c uart.c util.c -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax -T link.ld
 	
 sim: all
 	riscv-vp --intercept-syscalls main

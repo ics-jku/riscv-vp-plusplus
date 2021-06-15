@@ -1,5 +1,7 @@
 #pragma once
 
+#include <queue>
+
 #include <cstdlib>
 #include <cstring>
 
@@ -13,8 +15,8 @@ struct MicroRV32UART : public sc_core::sc_module {
 	sc_core::sc_event run_event;
 	char buf = 0;
 
-	// untested
-	Vector<char, 16> rxFifo;
+	//std::vector<char> rxFifo;
+	std::queue<char> rxFIFO;
 	bool empty, almostEmpty;
 
 	SC_HAS_PROCESS(MicroRV32UART);
@@ -43,9 +45,10 @@ struct MicroRV32UART : public sc_core::sc_module {
 		        *((uint32_t*)ptr) = 1;
 			// untested
 		    } else if (addr == 8) {
-				*((uint32_t*)ptr) = rxFifo->pop();
+				*((uint32_t*)ptr) = rxFIFO.front();
+				rxFIFO.pop();
 			} else if(addr == 12) {
-				*((uint32_t*)ptr) = rxFifo->occupancy();
+				*((uint32_t*)ptr) = rxFIFO.size();
 			}
 		}
 
@@ -58,7 +61,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 			run_event.notify(sc_core::sc_time(200, sc_core::SC_MS));
 			sc_core::wait(run_event);  // 40 times per second by default
 			char newRXChar = rand() + 48;
-			rxFifo.push(newRXChar);
+			rxFIFO.push(newRXChar);
 		}
 	}
 
