@@ -48,11 +48,14 @@ public:
 
 	OptionValue<unsigned long> entry_point;
 
+	std::string uart_rx_fd_path;
+
 	BasicOptions(void) {
         	// clang-format off
 		add_options()
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
-			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)");
+			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
+			("uart-rx-fd", po::value<std::string>(&uart_rx_fd_path), "path of file to be used as UART RX stream");
         	// clang-format on
 	}
 
@@ -79,7 +82,7 @@ int sc_main(int argc, char **argv) {
 	SyscallHandler sys("SyscallHandler");
 	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
-	MicroRV32UART uart("MicroRV32UART");
+	MicroRV32UART uart("MicroRV32UART", opt.uart_rx_fd_path);
 	MicroRV32LED led("MicroRV32LED");
 	MicroRV32GPIO gpio_a("MicroRV32GPIO");
 
