@@ -63,6 +63,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 				*((uint32_t*)ptr) = size;
 			} else if(addr == 16) {
 				// almost empty
+				*((uint32_t*)ptr) = size == 1;
 			} else if(addr == 20) {
 				// empty
 				*((uint32_t*)ptr) = size == 0;
@@ -89,10 +90,8 @@ struct MicroRV32UART : public sc_core::sc_module {
 			event_loop([&](){
 				char c;
 				while (uart_stream.get(c)){
-					std::cout << c;
 					rxFIFO.push(c);
 				}
-				std::cout << std::endl;
 			});
 			uart_stream.close();
 		} else {
