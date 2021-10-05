@@ -24,6 +24,8 @@ Options::Options(void) {
 	pos.add("input-file", 1);
 }
 
+Options::~Options(){};
+
 void Options::parse(int argc, char **argv) {
 	try {
 		auto parser = po::command_line_parser(argc, argv);
@@ -48,4 +50,16 @@ void Options::parse(int argc, char **argv) {
 			<< std::endl;
 		exit(1);
 	}
+}
+
+std::ostream& operator<<(std::ostream& os, const Options& o) {
+	os << std::dec;
+	os << "intercept_syscalls: " << o.intercept_syscalls << std::endl;
+	os << "use_debug_runner: " << o.use_debug_runner << std::endl;
+	os << "debug_port: " << o.debug_port << std::endl;
+	os << "trace_mode: " << o.trace_mode << std::endl;
+	os << "tlm_global_quantum: " << o.tlm_global_quantum << std::endl;
+	os << "use_instr_dmi: " << o.use_instr_dmi << std::endl;
+	os << "use_data_dmi: " << o.use_data_dmi << std::endl;
+	return os;
 }

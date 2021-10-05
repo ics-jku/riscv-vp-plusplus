@@ -100,6 +100,14 @@ public:
 	}
 };
 
+std::ostream& operator<<(std::ostream& os, const BasicOptions& o) {
+	os << std::hex;
+	os << "mem_start_addr:\t" << +o.mem_start_addr << std::endl;
+	os << "mem_end_addr:\t"   << +o.mem_end_addr   << std::endl;
+	os << static_cast <const Options&>( o );
+	return os;
+}
+
 int sc_main(int argc, char **argv) {
 	BasicOptions opt;
 	opt.parse(argc, argv);
@@ -144,8 +152,14 @@ int sc_main(int argc, char **argv) {
 	uint64_t entry_point = loader.get_entrypoint();
 	if (opt.entry_point.available)
 		entry_point = opt.entry_point.value;
-
-	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
+	try {
+		loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
+	} catch(ELFLoader::load_executable_exception& e) {
+		std::cerr << e.what() << std::endl;
+		std::cerr << "Memory map: " << std::endl;
+		std::cerr << opt << std::endl;
+		return -1;
+	}
 	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv32_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);

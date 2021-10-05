@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/iostreams/device/mapped_file.hpp>
-
+#include <exception>
 #include <cstdint>
 #include <vector>
 
@@ -19,6 +19,12 @@ struct GenericElfLoader {
 	const char *filename;
 	boost::iostreams::mapped_file_source elf;
 	const Elf_Ehdr *hdr;
+
+	struct load_executable_exception : public std::exception {
+		const char * what () const throw () {
+			return "Tried loading invalid elf layout";
+		}
+	};
 
 	GenericElfLoader(const char *filename) : filename(filename), elf(filename) {
 		assert(elf.is_open() && "file not open");
@@ -50,17 +56,42 @@ struct GenericElfLoader {
 		return sections;
 	}
 
+	std::ostream& print_phdr(std::ostream& os, const Elf_Phdr& h, unsigned tabs = 0)
+	{
+		std::string tab(tabs, '\t');
+		os << tab << "p_type "  << h.p_type   << std::endl;
+		os << tab << "p_offset "<< h.p_offset << std::endl;
+		os << tab << "p_vaddr " << h.p_vaddr  << std::endl;
+		os << tab << "p_paddr " << h.p_paddr  << std::endl;
+		os << tab << "p_filesz "<< h.p_filesz << std::endl;
+		os << tab << "p_memsz " << h.p_memsz  << std::endl;
+		os << tab << "p_flags " << h.p_flags  << std::endl;
+		os << tab << "p_align " << h.p_align  << std::endl;
+	    return os;
+	}
+
 	void load_executable_image(load_if &load_if, addr_t size, addr_t offset, bool use_vaddr = true) {
 		for (auto p : get_load_sections()) {
 			auto addr = p->p_paddr;
 			if (use_vaddr)
 				addr = p->p_vaddr;
 
-			assert ((addr >= offset) &&
-					"Offset overlaps into section");
+			if (addr < offset) {
+				std::cerr << "[elf_loader] ";
+				std::cerr << "Offset overlaps into section:" << std::endl;
+				std::cerr << "\t0x" << std::hex << +addr << " < " << +offset << std::endl;
+				print_phdr(std::cerr, *p, 2);
+				throw load_executable_exception();
+			}
 
-			assert ((addr + p->p_memsz < offset + size) &&
-					"Section does not fit in target memory");
+			if (addr + p->p_memsz >= offset + size) {
+				std::cerr << "[elf_loader] ";
+				std::cerr << "Section does not fit in target memory" << std::endl;
+				std::cerr << "\t0x" << std::hex << +addr << " + size 0x" << +p->p_memsz;
+				std::cerr << " would overflow offset 0x" << +offset << " + size 0x" << +size << std::endl;
+				print_phdr(std::cerr, *p, 2);
+				throw load_executable_exception();
+			}
 
 			auto idx = addr - offset;
 			const char *src = elf.data() + p->p_offset;
