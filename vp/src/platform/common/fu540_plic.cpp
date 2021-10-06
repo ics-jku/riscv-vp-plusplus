@@ -10,8 +10,8 @@
 #include "util/tlm_map.h"
 #include "fu540_plic.h"
 
-#define GET_IDX(IRQ) ((IRQ) / 32)
-#define GET_OFF(IRQ) (1 << ((IRQ) % 32))
+inline uint32_t GET_IDX(uint32_t& irq) { return irq / 32; }
+inline uint32_t GET_OFF(uint32_t& irq) { return 1 << irq % 32; }
 
 /**
  * TODO: Ensure that irq 0 is hardwired to zero

@@ -11,7 +11,7 @@ struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
 public:
 	static constexpr int      NUMIRQ   = 53;
 	static constexpr uint32_t MAX_THR  = 7;
-	static const uint32_t MAX_PRIO = 7;
+	static constexpr uint32_t MAX_PRIO = 7;
 
 	static constexpr uint32_t ENABLE_BASE = 0x2000;
 	static constexpr uint32_t ENABLE_PER_HART = 0x80;
