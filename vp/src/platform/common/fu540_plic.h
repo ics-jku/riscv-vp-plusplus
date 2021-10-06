@@ -1,13 +1,7 @@
-#ifndef RISCV_ISA_FU540_PLIC_H
-#define RISCV_ISA_FU540_PLIC_H
+#pragma once
 
 #include <stdint.h>
-
-enum {
-	FU540_PLIC_NUMIRQ   = 53,
-	FU540_PLIC_MAX_THR  = 7,
-	FU540_PLIC_MAX_PRIO = 7,
-};
+#include <map>
 
 /**
  * This class implements a Platform-Level Interrupt Controller (PLIC) as
@@ -15,6 +9,16 @@ enum {
  */
 struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
 public:
+	static constexpr int      NUMIRQ   = 53;
+	static constexpr uint32_t MAX_THR  = 7;
+	static const uint32_t MAX_PRIO = 7;
+
+	static constexpr uint32_t ENABLE_BASE = 0x2000;
+	static constexpr uint32_t ENABLE_PER_HART = 0x80;
+	static constexpr uint32_t CONTEXT_BASE = 0x200000;
+	static constexpr uint32_t CONTEXT_PER_HART = 0x1000;
+	static constexpr uint32_t HART_REG_SIZE = 2 * sizeof(uint32_t);
+
 	tlm_utils::simple_target_socket<FU540_PLIC> tsock;
 	std::vector<external_interrupt_target *> target_harts{};
 
@@ -47,7 +51,7 @@ private:
 	hartmap hart_context;
 
 	/* See Section 10.3 */
-	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * FU540_PLIC_NUMIRQ};
+	RegisterRange regs_interrupt_priorities{0x4, sizeof(uint32_t) * NUMIRQ};
 	ArrayView<uint32_t> interrupt_priorities{regs_interrupt_priorities};
 
 	/* See Section 10.4 */
@@ -68,5 +72,3 @@ private:
 	bool is_pending(unsigned int);
 	bool is_claim_access(uint64_t addr);
 };
-
-#endif

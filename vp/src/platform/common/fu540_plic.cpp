@@ -18,16 +18,6 @@
  * TODO: FE310 raises external interrupt during interrupt completion
  */
 
-enum {
-	ENABLE_BASE = 0x2000,
-	ENABLE_PER_HART = 0x80,
-
-	CONTEXT_BASE = 0x200000,
-	CONTEXT_PER_HART = 0x1000,
-
-	HART_REG_SIZE = 2 * sizeof(uint32_t),
-};
-
 static void assert_addr(size_t start, size_t end, RegisterRange *range) {
 	assert(range->start == start && range->end + 1 == end + sizeof(uint32_t));
 }
@@ -103,7 +93,7 @@ void FU540_PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &de
 };
 
 void FU540_PLIC::gateway_trigger_interrupt(uint32_t irq) {
-	if (irq == 0 || irq > FU540_PLIC_NUMIRQ)
+	if (irq == 0 || irq > NUMIRQ)
 		throw std::invalid_argument("IRQ value is invalid");
 
 	pending_interrupts[GET_IDX(irq)] |= GET_OFF(irq);
@@ -162,16 +152,16 @@ void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, Pr
 			break;
 		}
 
-		*thr = std::min(*thr, (uint32_t)FU540_PLIC_MAX_THR);
+		*thr = std::min(*thr, uint32_t(MAX_THR));
 	}
 }
 
 void FU540_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
 	size_t idx = t.addr / sizeof(uint32_t);
-	assert(idx <= FU540_PLIC_NUMIRQ);
+	assert(idx <= NUMIRQ);
 
 	auto &elem = interrupt_priorities[idx];
-	elem = std::min(elem, (uint32_t)FU540_PLIC_MAX_PRIO);
+	elem = std::min(elem, uint32_t(MAX_PRIO));
 }
 
 void FU540_PLIC::run(void) {
@@ -194,7 +184,7 @@ unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl,
 	HartConfig *conf = enabled_irqs[hart];
 	unsigned int selirq = 0, maxpri = 0;
 
-	for (unsigned irq = 1; irq <= FU540_PLIC_NUMIRQ; irq++) {
+	for (unsigned irq = 1; irq <= NUMIRQ; irq++) {
 		if (!conf->is_enabled(irq, lvl) || !is_pending(irq))
 			continue;
 
@@ -241,12 +231,12 @@ uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
 }
 
 void FU540_PLIC::clear_pending(unsigned int irq) {
-	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
+	assert(irq > 0 && irq <= NUMIRQ);
 	pending_interrupts[GET_IDX(irq)] &= ~(GET_OFF(irq));
 }
 
 bool FU540_PLIC::is_pending(unsigned int irq) {
-	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
+	assert(irq > 0 && irq <= NUMIRQ);
 	return pending_interrupts[GET_IDX(irq)] & GET_OFF(irq);
 }
 
@@ -256,7 +246,7 @@ bool FU540_PLIC::is_claim_access(uint64_t addr) {
 }
 
 bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel level) {
-	assert(irq > 0 && irq <= FU540_PLIC_NUMIRQ);
+	assert(irq > 0 && irq <= NUMIRQ);
 
 	unsigned int idx = GET_IDX(irq);
 	unsigned int off = GET_OFF(irq);
