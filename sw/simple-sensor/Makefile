@@ -1,5 +1,5 @@
 all : main.c irq.c irq.h bootstrap.S
-	riscv64-unknown-elf-gcc main.c irq.c bootstrap.S -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
+	riscv32-unknown-elf-gcc main.c irq.c bootstrap.S -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
 	
 sim: all
 	riscv-vp main
