@@ -95,9 +95,9 @@ struct SimpleSensor : public sc_core::sc_module {
 			// fill with random data
 			for (auto &n : data_frame) {
 				if (filter == 1) {
-					n = rand() % 10 + 40;
+					n = rand() % 10 + 48;
 				} else if (filter == 2) {
-					n = 10 % 26 + 65;
+					n = rand() % 26 + 65;
 				} else {
 					// fallback for all other filter values
 					n = rand() % 92 + 32;  // random printable char
