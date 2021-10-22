@@ -159,6 +159,8 @@ int sc_main(int argc, char **argv) {
 	bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
+	loader.load_executable_image(dram, dram.size, opt.dram_start_addr, false);
+
 	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv32_align_address(opt.dram_end_addr));
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
