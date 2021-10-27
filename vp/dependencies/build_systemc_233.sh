@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 NPROCS=$(grep -c ^processor /proc/cpuinfo)
 
