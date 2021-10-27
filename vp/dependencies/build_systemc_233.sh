@@ -1,8 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/sh
+set -e
 
 NPROCS=$(grep -c ^processor /proc/cpuinfo)
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "${0%/*}"
+
+DIR="$(pwd)"
 PREFIX=$DIR/systemc-dist
 
 version=2.3.3
