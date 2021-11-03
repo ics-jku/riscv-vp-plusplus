@@ -23,6 +23,7 @@ ecall
 #define LOAD     lw
 #define REGBYTES 4
 
+.align 4
 level_0_interrupt_handler:
 // store execution context on the stack (register content)
 addi    sp, sp, -REGBYTES * 32
