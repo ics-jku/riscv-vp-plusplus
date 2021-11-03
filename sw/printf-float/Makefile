@@ -1,5 +1,5 @@
 all : main.c entry.S
-	riscv64-unknown-elf-gcc main.c entry.S -o main -march=rv32imafd -mabi=ilp32d -Wl,-e_reset_vector
+	riscv32-unknown-elf-gcc main.c entry.S -o main -march=rv32imafd -mabi=ilp32d -Wl,-e_reset_vector
 	
 sim: all
 	riscv-vp main
