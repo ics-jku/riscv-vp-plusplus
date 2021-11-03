@@ -30,9 +30,15 @@ build-vp:
     paths:
       - vp/build/bin
     expire_in: 24h
+  only:
+    - master
+    - merge_requests
 
 test-vp:
   stage: test
   script:
     - cd vp/build
     - ctest -V
+  only:
+    - master
+    - merge_requests
