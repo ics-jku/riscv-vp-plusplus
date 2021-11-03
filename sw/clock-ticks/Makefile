@@ -1,5 +1,5 @@
 all : main.c irq.c irq.h bootstrap.S
-	riscv32-unknown-elf-gcc main.c irq.c bootstrap.S -g3 -o main -march=rv32ima -mabi=ilp32 -nostartfiles -Wl,--no-relax
+	riscv32-unknown-elf-gcc main.c irq.c bootstrap.S -g3 -o main -march=rv32imac -mabi=ilp32 -nostartfiles -Wl,--no-relax
 	
 sim: all
 	riscv-vp --intercept-syscalls main

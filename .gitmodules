@@ -3,4 +3,4 @@
 	url = https://github.com/orangeduck/mpc
 [submodule "tests/integration"]
 	path = vp/tests
-	url = git@gitlab.informatik.uni-bremen.de:riscv/vp-integration-tests.git
+	url = https://github.com/agra-uni-bremen/vp-integration-tests.git

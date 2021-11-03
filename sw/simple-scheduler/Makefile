@@ -1,5 +1,5 @@
 all : main.c
-	riscv32-unknown-elf-gcc main.c cor.S -o main -march=rv32ima -mabi=ilp32
+	riscv32-unknown-elf-gcc main.c cor.S -o main -march=rv32imac -mabi=ilp32
 	
 sim: all
 	riscv-vp --intercept-syscalls main
