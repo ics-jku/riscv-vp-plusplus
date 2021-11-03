@@ -1,10 +1,12 @@
 .globl _start
+.globl init
 .globl main
 .globl level_1_interrupt_handler
 
 .equ PLIC_ENABLED_IRQ_ADDR, 0x40002000
 
 _start:
+jal init
 la t0, level_0_interrupt_handler
 csrw mtvec, t0
 li t1, 0x888
@@ -29,6 +31,7 @@ ecall
 #define LOAD     lw
 #define REGBYTES 4
 
+.align 4
 level_0_interrupt_handler:
 // store execution context on the stack (register content)
 addi    sp, sp, -REGBYTES * 32
