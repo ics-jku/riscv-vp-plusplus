@@ -1,0 +1,38 @@
+image: alpine:edge
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+cache:
+  key: $CI_COMMIT_REF_SLUG
+  paths:
+    - vp/build
+
+default:
+  before_script:
+    - apk update && apk add --no-cache -X "https://dl-cdn.alpinelinux.org/alpine/edge/testing" build-base git boost-dev cmake git gdb-multiarch newlib-riscv-none-elf valgrind
+    - mkdir -p /tmp/toolchain
+    - ln -s $(command -v riscv-none-elf-gcc) /tmp/toolchain/riscv32-unknown-elf-gcc
+    - ln -s $(command -v riscv-none-elf-g++) /tmp/toolchain/riscv32-unknown-elf-g++
+    - ln -s $(command -v riscv-none-elf-as) /tmp/toolchain/riscv32-unknown-elf-as
+    - ln -s $(command -v riscv-none-elf-ld) /tmp/toolchain/riscv32-unknown-elf-ld
+    - ln -s $(command -v riscv-none-elf-gcc) /tmp/toolchain/riscv64-unknown-elf-gcc
+    - ln -s $(command -v riscv-none-elf-g++) /tmp/toolchain/riscv64-unknown-elf-g++
+    - ln -s $(command -v riscv-none-elf-as) /tmp/toolchain/riscv64-unknown-elf-as
+    - ln -s $(command -v riscv-none-elf-ld) /tmp/toolchain/riscv64-unknown-elf-ld
+    - export PATH="$PATH:/tmp/toolchain"
+
+build-vp:
+  stage: build
+  script:
+    - make
+  artifacts:
+    paths:
+      - vp/build/bin
+    expire_in: 24h
+
+test-vp:
+  stage: test
+  script:
+    - cd vp/build
+    - ctest -V
