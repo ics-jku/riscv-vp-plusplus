@@ -7,39 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "types.h"
+
 unsigned long *led_peripheral = (unsigned long *)0x81000000;
-
-typedef enum {
-	IDLE,
-	LISTENING,
-	HEADER_START,
-	PAYLOAD_START,
-	CHECKSUM_START,
-	PROCESSING
-} wifi_bridge_fsm_state;
-
-typedef union {
-  struct __attribute__((packed)){
-    unsigned char packet_identifier : 4;
-	unsigned char versioning : 2;
-    unsigned char __padding__ : 2;
-  } meta_bitfield;
-  unsigned char meta;
-} header_meta_t;
-
-typedef struct __attribute__((packed)){
-	unsigned char WE : 1;
-	unsigned char addr : 5;
-	unsigned char v : 8;
-	unsigned char __padding__ : 2;
-} rw_packet_t;
-
-typedef struct __attribute__((packed)){
-	unsigned char led_manual_mode : 1;
-	unsigned char program_addr : 5;
-	unsigned char leds : 8;
-	unsigned char __padding__ : 2;
-} program_leds_packet_t;
 
 #define PAYLOAD_SIZE 2
 #define CHECKSUM_SIZE 1
@@ -72,10 +42,9 @@ program_leds_packet_t program_leds_packet;
 
 void knight_rider(){
 	unsigned int state = 0;
-
 	bool reverse = false;
-
 	unsigned char index = 0;
+
 	for(size_t i=0; i<16; i++){
 		if (reverse){
 			index--;
@@ -167,6 +136,7 @@ wifi_bridge_fsm_state fsm(wifi_bridge_fsm_state s, char c){
 			break;
 		case PAYLOAD_START:
 			{
+				putChr('P');
 				payload_buffer[payload_bytes_read] = c;
 				if (versioning == 1 && ++payload_bytes_read == PAYLOAD_SIZE){
 					memcpy(payload_buffer, &magic_prefixed_packet.payload, payload_bytes_read);
@@ -176,6 +146,7 @@ wifi_bridge_fsm_state fsm(wifi_bridge_fsm_state s, char c){
 			break;
 		case CHECKSUM_START:
 			{
+				putChr('C');
 				checksum_buffer[checksum_bytes_read] = c;
 				if (versioning == 1 && ++checksum_bytes_read == CHECKSUM_SIZE){
 					memcpy(checksum_buffer, &magic_prefixed_packet.checksum, checksum_bytes_read);

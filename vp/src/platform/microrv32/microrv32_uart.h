@@ -26,16 +26,18 @@ struct MicroRV32UART : public sc_core::sc_module {
 	char buf = 0;
 
 	std::queue<char> rxFIFO;
+	std::queue<char> txFIFO;
 	bool empty, almostEmpty;
 
-	std::string uart_rx_fd_path_;
+	std::fstream uart_stream;
 
 	SC_HAS_PROCESS(MicroRV32UART);
 
-	MicroRV32UART(sc_core::sc_module_name, const std::string uart_rx_fd_path) {
+	MicroRV32UART(sc_core::sc_module_name, const std::string uart_rx_fd_path) : uart_stream(uart_rx_fd_path, std::fstream::in | std::fstream::out) {
 		tsock.register_b_transport(this, &MicroRV32UART::transport);
-		uart_rx_fd_path_ = uart_rx_fd_path;
-		SC_THREAD(run);
+
+		SC_THREAD(run_rx);
+		SC_THREAD(run_tx);
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -47,8 +49,10 @@ struct MicroRV32UART : public sc_core::sc_module {
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 		    if (addr == 0) {
 		        buf = *ptr;
+				txFIFO.push(*ptr);
 		    } else if (addr == 4) {
 		        std::cout << buf;
+				// unused
 		    }
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
 			const size_t size = rxFIFO.size();
@@ -81,11 +85,9 @@ struct MicroRV32UART : public sc_core::sc_module {
 		}
 	}
 
-	void run() {
-		std::ifstream uart_stream;
-	    uart_stream.open(uart_rx_fd_path_, std::ifstream::in);
+	void run_rx() {
 		if (uart_stream.is_open()){
-			std::cout << "[info] Reading from UART file stream under path=" << uart_rx_fd_path_ << std::endl;
+			std::cout << "[info] Reading from UART file stream"  << std::endl;
 			// read from uart
 			event_loop([&](){
 				char c;
@@ -95,13 +97,30 @@ struct MicroRV32UART : public sc_core::sc_module {
 			});
 			uart_stream.close();
 		} else {
-			std::cerr << "[error] Failed to open UART file stream under path=" << uart_rx_fd_path_ << std::endl;
+			std::cerr << "[error] Failed to open UART file stream" << std::endl;
 			std::cout << "[info] Manually pushing random chars into RX buffer" << std::endl;
 
 			event_loop([&](){
 				char new_rx_char = rand() + 48;
 				rxFIFO.push(new_rx_char);
 			});
+		}
+	}
+
+	void run_tx(){
+		if (uart_stream.is_open()){
+			event_loop([&](){
+				char c = txFIFO.front();
+				txFIFO.pop();
+
+				while(!txFIFO.empty()){
+					char c = txFIFO.front();
+					txFIFO.pop();
+					uart_stream.put(c);
+				}
+			});
+		} else {
+			// TODO implement
 		}
 	}
 };
