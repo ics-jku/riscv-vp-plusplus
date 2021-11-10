@@ -1,6 +1,16 @@
 NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
-vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c vp/dependencies/systemc-dist vp/dependencies/softfloat-dist vp/build/Makefile
+# We are duplicating the CMake logic here, we should get rid of the
+# Makefile alltogether and simply build the entire thing inlcuding
+# vp/dependencies from CMake.
+USE_SYSTEM_SYSTEMC ?= OFF
+ifeq ($(USE_SYSTEM_SYSTEMC),ON)
+	SYSTEMC_DEPENDENCY =
+else
+	SYSTEMC_DEPENDENCY = vp/dependencies/systemc-dist
+endif
+
+vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile
 	make install -C vp/build -j$(NPROCS)
 
 vp/dependencies/systemc-dist:
@@ -16,7 +26,7 @@ all: vps vp-display vp-breadboard
 
 vp/build/Makefile:
 	mkdir -p vp/build
-	cd vp/build && cmake ..
+	cd vp/build && cmake -DUSE_SYSTEM_SYSTEMC=$(USE_SYSTEM_SYSTEMC) ..
 
 vp-eclipse:
 	mkdir -p vp-eclipse
