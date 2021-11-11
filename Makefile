@@ -1,6 +1,16 @@
 NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
-vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c vp/dependencies/systemc-dist vp/dependencies/softfloat-dist vp/build/Makefile
+# We are duplicating the CMake logic here, we should get rid of the
+# Makefile alltogether and simply build the entire thing inlcuding
+# vp/dependencies from CMake.
+USE_SYSTEM_SYSTEMC ?= OFF
+ifeq ($(USE_SYSTEM_SYSTEMC),ON)
+	SYSTEMC_DEPENDENCY =
+else
+	SYSTEMC_DEPENDENCY = vp/dependencies/systemc-dist
+endif
+
+vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile
 	make install -C vp/build -j$(NPROCS)
 
 vp/dependencies/systemc-dist:
@@ -15,22 +25,22 @@ vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 all: vps vp-display vp-breadboard
 
 vp/build/Makefile:
-	mkdir vp/build || true
-	cd vp/build && cmake ..
+	mkdir -p vp/build
+	cd vp/build && cmake -DUSE_SYSTEM_SYSTEMC=$(USE_SYSTEM_SYSTEMC) ..
 
 vp-eclipse:
-	mkdir vp-eclipse || true
+	mkdir -p vp-eclipse
 	cd vp-eclipse && cmake ../vp/ -G "Eclipse CDT4 - Unix Makefiles"
 
 env/basic/vp-display/build/Makefile:
-	mkdir env/basic/vp-display/build || true
+	mkdir -p env/basic/vp-display/build
 	cd env/basic/vp-display/build && cmake ..
 
 vp-display: env/basic/vp-display/build/Makefile
 	make -C  env/basic/vp-display/build -j$(NPROCS)
 
 env/hifive/vp-breadboard/build/Makefile:
-	mkdir env/hifive/vp-breadboard/build || true
+	mkdir -p env/hifive/vp-breadboard/build
 	cd env/hifive/vp-breadboard/build && cmake ..
 
 vp-breadboard: env/hifive/vp-breadboard/build/Makefile
