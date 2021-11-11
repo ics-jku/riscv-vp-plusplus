@@ -15,22 +15,22 @@ vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 all: vps vp-display vp-breadboard
 
 vp/build/Makefile:
-	mkdir vp/build || true
+	mkdir -p vp/build
 	cd vp/build && cmake ..
 
 vp-eclipse:
-	mkdir vp-eclipse || true
+	mkdir -p vp-eclipse
 	cd vp-eclipse && cmake ../vp/ -G "Eclipse CDT4 - Unix Makefiles"
 
 env/basic/vp-display/build/Makefile:
-	mkdir env/basic/vp-display/build || true
+	mkdir -p env/basic/vp-display/build
 	cd env/basic/vp-display/build && cmake ..
 
 vp-display: env/basic/vp-display/build/Makefile
 	make -C  env/basic/vp-display/build -j$(NPROCS)
 
 env/hifive/vp-breadboard/build/Makefile:
-	mkdir env/hifive/vp-breadboard/build || true
+	mkdir -p env/hifive/vp-breadboard/build
 	cd env/hifive/vp-breadboard/build && cmake ..
 
 vp-breadboard: env/hifive/vp-breadboard/build/Makefile
