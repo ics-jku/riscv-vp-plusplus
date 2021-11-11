@@ -10,7 +10,7 @@ cache:
 
 default:
   before_script:
-    - apk update && apk add --no-cache -X "https://dl-cdn.alpinelinux.org/alpine/edge/testing" build-base git boost-dev cmake git gdb-multiarch newlib-riscv-none-elf valgrind
+    - apk update && apk add --no-cache build-base git boost-dev cmake git gdb-multiarch newlib-riscv-none-elf valgrind
     - mkdir -p /tmp/toolchain
     - ln -s $(command -v riscv-none-elf-gcc) /tmp/toolchain/riscv32-unknown-elf-gcc
     - ln -s $(command -v riscv-none-elf-g++) /tmp/toolchain/riscv32-unknown-elf-g++
