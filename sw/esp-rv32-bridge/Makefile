@@ -1,10 +1,11 @@
-uart_stream = ~/uart-test-stream
+uart_port = /dev/ttyUSB0
+baud_rate = 9600
 
 all : main.c uart.c bootstrap.S
 	riscv32-unknown-elf-gcc bootstrap.S main.c uart.c util.c crc.c -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax -T link.ld
 
 sim: all
-	microrv32-vp --intercept-syscalls --uart-rx-fd $(uart_stream) main
+	microrv32-vp --intercept-syscalls --uart-port $(uart_port) --uart-baud-rate $(baud_rate) main
 	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main

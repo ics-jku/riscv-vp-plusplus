@@ -8,12 +8,15 @@
 #include <systemc>
 
 #include <boost/program_options.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <tlm_utils/simple_target_socket.h>
 
 #include <fstream>
 
 #include <unistd.h>
+
+#include "simple_serial.h"
 
 
 namespace po = boost::program_options;
@@ -29,15 +32,21 @@ struct MicroRV32UART : public sc_core::sc_module {
 	std::queue<char> txFIFO;
 	bool empty, almostEmpty;
 
-	std::fstream uart_stream;
+	SimpleSerial serial;
 
 	SC_HAS_PROCESS(MicroRV32UART);
 
-	MicroRV32UART(sc_core::sc_module_name, const std::string uart_rx_fd_path) : uart_stream(uart_rx_fd_path, std::fstream::in | std::fstream::out) {
+	bool serial_opened;
+
+	MicroRV32UART(sc_core::sc_module_name, const std::string port, const unsigned int baud_rate) try: serial(port, baud_rate) {
 		tsock.register_b_transport(this, &MicroRV32UART::transport);
 
 		SC_THREAD(run_rx);
 		SC_THREAD(run_tx);
+	} catch(boost::system::system_error e){
+		boost::system::error_code ec = e.code();
+		std::cerr << ec.value() << std::endl;;
+		std::cerr << ec.category().name() << std::endl;
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -86,16 +95,15 @@ struct MicroRV32UART : public sc_core::sc_module {
 	}
 
 	void run_rx() {
-		if (uart_stream.is_open()){
+		if (serial.is_open()){
 			std::cout << "[info] Reading from UART file stream"  << std::endl;
 			// read from uart
 			event_loop([&](){
 				char c;
-				while (uart_stream.get(c)){
+				while (c = serial.read()){
 					rxFIFO.push(c);
 				}
 			});
-			uart_stream.close();
 		} else {
 			std::cerr << "[error] Failed to open UART file stream" << std::endl;
 			std::cout << "[info] Manually pushing random chars into RX buffer" << std::endl;
@@ -108,7 +116,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 	}
 
 	void run_tx(){
-		if (uart_stream.is_open()){
+		if (serial.is_open()){
 			event_loop([&](){
 				char c = txFIFO.front();
 				txFIFO.pop();
@@ -116,7 +124,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 				while(!txFIFO.empty()){
 					char c = txFIFO.front();
 					txFIFO.pop();
-					uart_stream.put(c);
+					serial.write(c);
 				}
 			});
 		} else {
