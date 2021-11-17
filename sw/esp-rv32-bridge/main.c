@@ -174,6 +174,11 @@ wifi_bridge_fsm_state fsm(wifi_bridge_fsm_state s, char c){
 	return state;
 }
 
+void delay(uint32_t cnt){
+        for(uint32_t i = 0; i < cnt; i++);
+        return;
+}
+
 int main(int argc, char **argv) {
 	wifi_bridge_fsm_state state = IDLE;
 	while(1){
@@ -183,6 +188,7 @@ int main(int argc, char **argv) {
 			putChr(c);
 			state = fsm(state, c);
 		} 
+                delay(1000);
 	}
 	return 0;
 }

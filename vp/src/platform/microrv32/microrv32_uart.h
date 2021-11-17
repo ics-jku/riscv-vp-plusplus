@@ -1,31 +1,26 @@
 #pragma once
 
-#include <queue>
-
-#include <cstdlib>
-#include <cstring>
-
-#include <systemc>
+#include <tlm_utils/simple_target_socket.h>
+#include <unistd.h>
 
 #include <boost/program_options.hpp>
 #include <boost/system/error_code.hpp>
-
-#include <tlm_utils/simple_target_socket.h>
-
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
-
-#include <unistd.h>
+#include <queue>
+#include <systemc>
 
 #include "simple_serial.h"
 
-
 namespace po = boost::program_options;
-
 
 struct MicroRV32UART : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<MicroRV32UART> tsock;
 
-	sc_core::sc_event run_event;
+	sc_core::sc_event run_event_rx;
+	sc_core::sc_event run_event_tx;
+
 	char buf = 0;
 
 	std::queue<char> rxFIFO;
@@ -38,14 +33,17 @@ struct MicroRV32UART : public sc_core::sc_module {
 
 	bool serial_opened;
 
-	MicroRV32UART(sc_core::sc_module_name, const std::string port, const unsigned int baud_rate) try: serial(port, baud_rate) {
+	MicroRV32UART(sc_core::sc_module_name, const std::string port, const unsigned int baud_rate) try
+	    : serial(port, baud_rate) {
 		tsock.register_b_transport(this, &MicroRV32UART::transport);
-
+		printf("Test UART \n");
+		std::cout << "UART @ " << port << std::endl;
 		SC_THREAD(run_rx);
 		SC_THREAD(run_tx);
-	} catch(boost::system::system_error e){
+	} catch (boost::system::system_error e) {
 		boost::system::error_code ec = e.code();
-		std::cerr << ec.value() << std::endl;;
+		std::cerr << ec.value() << std::endl;
+		;
 		std::cerr << ec.category().name() << std::endl;
 	}
 
@@ -54,80 +52,94 @@ struct MicroRV32UART : public sc_core::sc_module {
 		auto cmd = trans.get_command();
 		auto len = trans.get_data_length();
 		auto ptr = trans.get_data_ptr();
+		std::cout << "[UART]TLM Transport" << std::endl;
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
-		    if (addr == 0) {
-		        buf = *ptr;
+			if (addr == 0) {
+				buf = *ptr;
 				txFIFO.push(*ptr);
-		    } else if (addr == 4) {
-		        std::cout << buf;
+			} else if (addr == 4) {
+				// std::cout << buf;
 				// unused
-		    }
+			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
 			const size_t size = rxFIFO.size();
-		    if (addr == 0) {
-		        // ignore
-		    } else if (addr == 4) {
-		        *((uint32_t*)ptr) = 1;
-		    } else if (addr == 8) {
-				*((uint32_t*)ptr) = rxFIFO.front();
+			if (addr == 0) {
+				// ignore
+			} else if (addr == 4) {
+				*((uint32_t *)ptr) = 1;
+			} else if (addr == 8) {
+				*((uint32_t *)ptr) = rxFIFO.front();
 				rxFIFO.pop();
-			} else if(addr == 12) {
-				*((uint32_t*)ptr) = size;
-			} else if(addr == 16) {
+			} else if (addr == 12) {
+				*((uint32_t *)ptr) = size;
+			} else if (addr == 16) {
 				// almost empty
-				*((uint32_t*)ptr) = size == 1;
-			} else if(addr == 20) {
+				*((uint32_t *)ptr) = size == 1;
+			} else if (addr == 20) {
 				// empty
-				*((uint32_t*)ptr) = size == 0;
+				*((uint32_t *)ptr) = size == 0;
 			}
 		}
 
 		(void)delay;  // zero delay
 	}
 
-	void event_loop(std::function<void(void)> f){
-		while (true) {
-			run_event.notify(sc_core::sc_time(200, sc_core::SC_NS));
-			sc_core::wait(run_event);  // 40 times per second by default
-			f();
-		}
-	}
+	//~ void event_loop(std::function<void(void)> f){
+	//~ while (true) {
+	//~ run_event.notify(sc_core::sc_time(200, sc_core::SC_NS));
+	//~ sc_core::wait(run_event);  // 40 times per second by default
+	//~ f();
+	//~ }
+	//~ }
 
 	void run_rx() {
-		if (serial.is_open()){
-			std::cout << "[info] Reading from UART file stream"  << std::endl;
-			// read from uart
-			event_loop([&](){
+		std::cout << "[UART-TLM] run_rx called" << std::endl;
+		if (serial.is_open()) {
+			while (true) {
+				run_event_rx.notify(sc_core::sc_time(50, sc_core::SC_US));
+				sc_core::wait(run_event_rx);  // 40 times per second by default
+				std::cout << "[UART-TLM] Reading from UART file stream" << std::endl;
+				// read from uart
 				char c;
-				while (c = serial.read()){
+				while (c = serial.read()) {
+					std::cout << "[UART] rx_run(): c =" << c << std::endl;
 					rxFIFO.push(c);
+					run_event_tx.notify(sc_core::sc_time(50, sc_core::SC_US));
+					sc_core::wait(run_event_tx);  // 40 times per second by default
 				}
-			});
+			}
 		} else {
-			std::cerr << "[error] Failed to open UART file stream" << std::endl;
-			std::cout << "[info] Manually pushing random chars into RX buffer" << std::endl;
-
-			event_loop([&](){
+			std::cerr << "[UART-TLM] Failed to open UART file stream" << std::endl;
+			std::cout << "[UART-TLM] Manually pushing random chars into RX buffer" << std::endl;
+			while (true) {
+				run_event_rx.notify(sc_core::sc_time(50, sc_core::SC_US));
+				sc_core::wait(run_event_rx);  // 40 times per second by default
+				std::cout << "[UART-TLM] Reading random chars from UART" << std::endl;
+				// put rng chars into rxfifo
 				char new_rx_char = rand() + 48;
 				rxFIFO.push(new_rx_char);
-			});
+			}
 		}
 	}
 
-	void run_tx(){
-		if (serial.is_open()){
-			event_loop([&](){
-				char c = txFIFO.front();
-				txFIFO.pop();
-
-				while(!txFIFO.empty()){
+	void run_tx() {
+		std::cout << "[UART-TLM] run_rx called" << std::endl;
+		if (serial.is_open()) {
+			while (true) {
+				run_event_tx.notify(sc_core::sc_time(50, sc_core::SC_US));
+				sc_core::wait(run_event_tx);  // 40 times per second by default
+				while (!txFIFO.empty()) {
 					char c = txFIFO.front();
 					txFIFO.pop();
 					serial.write(c);
+					std::cout << "[UART-TLM] run_tx wrote c=" << c << std::endl;
+					run_event_tx.notify(sc_core::sc_time(50, sc_core::SC_US));
+					sc_core::wait(run_event_tx);  // 40 times per second by default
 				}
-			});
+			}
 		} else {
+			std::cout << "[UART-TLM] run_tx serial is not open!" << std::endl;
 			// TODO implement
 		}
 	}

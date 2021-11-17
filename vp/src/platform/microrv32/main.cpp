@@ -48,17 +48,17 @@ public:
 
 	OptionValue<unsigned long> entry_point;
 
-	std::string uart_port;
+	std::string uart_port = "/dev/ttyUSB0";
 
 	unsigned int uart_baud_rate;
 
 	BasicOptions(void) {
         	// clang-format off
 		add_options()
-			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
-			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
 			("uart-port", po::value<std::string>(&uart_port), "port of serial UART")
-			("uart-baud-rate", po::value<unsigned int>(&uart_baud_rate), "baud rate of serial UART");
+			("uart-baud-rate", po::value<unsigned int>(&uart_baud_rate), "baud rate of serial UART")
+			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
+			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)");
         	// clang-format on
 	}
 
@@ -76,7 +76,7 @@ int sc_main(int argc, char **argv) {
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
-
+	printf("VP INIT\n");
 	ISS core(0, opt.use_E_base_isa);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
