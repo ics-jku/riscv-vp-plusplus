@@ -39,7 +39,9 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_
 GPIO::~GPIO() {
 	server.quit();
 	if (serverThread) {
-		serverThread->join();
+		if(serverThread->joinable()){
+			serverThread->join();
+		}
 		delete serverThread;
 	}
 }

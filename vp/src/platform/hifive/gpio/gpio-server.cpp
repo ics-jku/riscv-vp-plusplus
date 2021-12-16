@@ -36,13 +36,13 @@ static void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
-GpioServer::GpioServer() : fd(-1), stop(false), fun(nullptr) {}
+GpioServer::GpioServer() : listener_fd(-1), current_connection_fd(-1), port(""), stop(false), fun(nullptr){}
 
 GpioServer::~GpioServer() {
-	if (fd >= 0) {
-		DEBUG("closing gpio-server socket: %d\n", fd);
-		close(fd);
-		fd = -1;
+	if (listener_fd >= 0) {
+		DEBUG("closing gpio-server socket: %d\n", listener_fd);
+		close(listener_fd);
+		listener_fd = -1;
 	}
 
 	if (this->port)
@@ -71,18 +71,18 @@ bool GpioServer::setupConnection(const char *port) {
 
 	// loop through all the results and bind to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) {
-		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if ((listener_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("gpio-server: socket");
 			continue;
 		}
 
-		if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+		if (setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
 			perror("setsockopt");
 			return false;
 		}
 
-		if (::bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(fd);
+		if (::bind(listener_fd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(listener_fd);
 			perror("gpio-server: bind");
 			continue;
 		}
@@ -101,18 +101,15 @@ bool GpioServer::setupConnection(const char *port) {
 }
 
 void GpioServer::quit() {
-	GpioClient client;
-
-	/* The startListening() loop only checks the stop member
-	 * variable after accept() returned. However, accept() is a
-	 * blocking system call and may not return unless a new
-	 * connection is established. For this reason, we set the stop
-	 * variable and afterwards connect() to the server socket to make
-	 * sure the receive loop terminates. */
 	stop = true;
-
-	if (port && !client.setupConnection(NULL, port))
-		std::cerr << "setupConnection failed" << std::endl;
+	// this should force accept command to return
+	if (listener_fd >= 0) {
+		close(listener_fd);
+	}
+	// this should force read command to return
+	if(current_connection_fd >= 0){
+		close(current_connection_fd);
+	}
 }
 
 bool GpioServer::isStopped() {
@@ -124,8 +121,8 @@ void GpioServer::registerOnChange(std::function<void(uint8_t bit, Tristate val)>
 }
 
 void GpioServer::startListening() {
-	if (listen(fd, 1) == -1) {
-		cerr << "fd " << fd << " ";
+	if (listen(listener_fd, 1) == -1) {
+		cerr << "fd " << listener_fd << " ";
 		perror("listen");
 		stop = true;
 		return;
@@ -138,9 +135,9 @@ void GpioServer::startListening() {
 
 	while (!stop)  // this would block a bit
 	{
-		int new_fd = accept(fd, (struct sockaddr *)&their_addr, &sin_size);
-		if (new_fd < 0) {
-			cerr << "gpio-server accept return " << new_fd << endl;
+		current_connection_fd = accept(listener_fd, (struct sockaddr *)&their_addr, &sin_size);
+		if (current_connection_fd < 0) {
+			cerr << "gpio-server accept return " << current_connection_fd << endl;
 			perror("accept");
 			stop = true;
 			return;
@@ -148,7 +145,7 @@ void GpioServer::startListening() {
 
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
 		DEBUG("gpio-server: got connection from %s\n", s);
-		handleConnection(new_fd);
+		handleConnection(current_connection_fd);
 	}
 }
 

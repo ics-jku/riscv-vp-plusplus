@@ -7,13 +7,16 @@
 
 #pragma once
 
-#include <functional>
 #include "gpiocommon.hpp"
 
+#include <functional>
+#include <atomic>
+
 class GpioServer : public GpioCommon {
-	int fd;
+	int listener_fd;
+	int current_connection_fd;
 	const char *port;
-	volatile bool stop;
+	std::atomic<bool> stop;
 	std::function<void(uint8_t bit, Tristate val)> fun;
 	void handleConnection(int conn);
 
