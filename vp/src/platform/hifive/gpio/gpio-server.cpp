@@ -102,14 +102,21 @@ bool GpioServer::setupConnection(const char *port) {
 
 void GpioServer::quit() {
 	stop = true;
-	// this should force accept command to return
-	if (listener_fd >= 0) {
-		close(listener_fd);
-	}
+
 	// this should force read command to return
 	if(current_connection_fd >= 0){
 		close(current_connection_fd);
 	}
+
+	/* The startListening() loop only checks the stop member
+	* variable after accept() returned. However, accept() is a
+	* blocking system call and may not return unless a new
+	* connection is established. For this reason, we set the stop
+	* variable and afterwards connect() to the server socket to make
+	* sure the receive loop terminates. */
+
+	GpioClient client;
+	if (port) client.setupConnection(NULL, port);
 }
 
 bool GpioServer::isStopped() {
