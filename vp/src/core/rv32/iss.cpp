@@ -1447,7 +1447,14 @@ uint64_t ISS::read_register(unsigned idx) {
 }
 
 void ISS::write_register(unsigned idx, uint64_t value) {
-	regs.write(idx, boost::lexical_cast<uint32_t>(value));
+	// Since the value parameter in the function prototype is
+	// a uint64_t, signed integer values (e.g. -1) get promoted
+	// to values within this range. For example, -1 would be
+	// promoted to (2**64)-1. As such, we cannot perform a
+	// Boost lexical or numeric cast to uint32_t here as
+	// these perform bounds checks. Instead, we perform a C
+	// cast without bounds checks.
+	regs.write(idx, (uint32_t)value);
 }
 
 uint64_t ISS::get_progam_counter(void) {
