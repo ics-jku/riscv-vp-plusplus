@@ -181,19 +181,24 @@ struct GenericElfLoader {
         return p->st_value;
     }
 
-	const Elf_Shdr *get_section(const char *section_name) {
+	std::vector<const Elf_Shdr *> get_sections(void) {
 		if (hdr->e_shoff == 0) {
-			throw std::runtime_error("unable to find section address, section table not available: " +
-			                         std::string(section_name));
+			throw std::runtime_error("unable to find section address, section table not available");
 		}
 
-		const char *strings = get_section_string_table();
-
+		std::vector<const Elf_Shdr *> sections;
 		for (unsigned i = 0; i < hdr->e_shnum; ++i) {
 			const Elf_Shdr *s = reinterpret_cast<const Elf_Shdr *>(elf.data() + hdr->e_shoff + hdr->e_shentsize * i);
+			sections.push_back(s);
+		}
 
-			// std::cout << "check section: " << strings + s->sh_name << std::endl;
+		return sections;
+	}
 
+	const Elf_Shdr *get_section(const char *section_name) {
+		const char *strings = get_section_string_table();
+
+		for (auto s : get_sections()) {
 			if (!strcmp(strings + s->sh_name, section_name)) {
 				return s;
 			}
