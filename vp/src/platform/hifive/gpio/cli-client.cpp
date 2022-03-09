@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	while (true) {
+	while (false) { //just update the view
 		if (!gpio.update()) {
 			cerr << "Error updating" << endl;
 			return -1;
@@ -34,8 +34,9 @@ int main(int argc, char* argv[]) {
 		usleep(125000);
 	}
 
+	// example actions
 	for (uint8_t i = 0; i < 64; i++) {
-		if (!gpio.setBit(i, 1)) {
+		if (!gpio.setBit(i, GpioClient::Tristate::HIGH)) {
 			cerr << "Error setting Bit " << i << endl;
 			return -1;
 		}
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	for (uint8_t i = 0; i < 64; i++) {
-		if (!gpio.setBit(i, 0)) {
+		if (!gpio.setBit(i, GpioClient::Tristate::LOW)) {
 			cerr << "Error resetting Bit " << i << endl;
 			return -1;
 		}

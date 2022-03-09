@@ -27,19 +27,15 @@ void signalHandler(int signum) {
 }
 
 void onChangeCallback(GpioServer* gpio, uint8_t bit, GpioCommon::Tristate val) {
-	if (((gpio->state & (1l << bit)) >> bit) == val) {
-		printf("Bit %d still at %d\n", bit, val);
-		return;
-	}
-	if (val == 0) {
+	if (val == GpioCommon::Tristate::LOW) {
 		gpio->state &= ~(1l << bit);
-	} else if (val == 1) {
+	} else if (val == GpioCommon::Tristate::HIGH) {
 		gpio->state |= 1l << bit;
 	} else {
 		printf("Ignoring tristate for now\n");
 		return;
 	}
-	printf("Bit %d changed to %d\n", bit, val);
+	printf("Bit %d changed to %ld\n", bit, (gpio->state & (1l << bit)) >> bit);
 }
 
 int main(int argc, char* argv[]) {
@@ -61,6 +57,7 @@ int main(int argc, char* argv[]) {
 	thread server(bind(&GpioServer::startListening, &gpio));
 
 	while (!stop && !gpio.isStopped()) {
+		// some example actions
 		usleep(100000);
 		if (!(gpio.state & (1 << 11))) {
 			gpio.state <<= 1;

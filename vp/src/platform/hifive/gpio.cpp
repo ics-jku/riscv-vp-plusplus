@@ -90,23 +90,24 @@ void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 }
 
 void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val) {
-	if (((server.state & (1l << bit)) >> bit) == val) {
-		// cout << "[GPIO] Bit " << (unsigned) bit << " still at " << (unsigned)
-		// val << endl;
-		return;
-	}
-	if (val == 0) {
-		server.state &= ~(1l << bit);
-	} else if (val == 1) {
-		server.state |= 1l << bit;
-	} else {
-		cout << "[GPIO] Ignoring tristate for now\n";
-		return;
-	}
-	// cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned)
-	// val << endl;
+	const auto state_prev = server.state;
 
-	asyncEvent.notify();
+	switch(val){
+	case GpioCommon::Tristate::LOW:
+		server.state &= ~(1l << bit);
+		break;
+	case GpioCommon::Tristate::HIGH:
+		server.state |= 1l << bit;
+		break;
+	default:
+		cout << "[GPIO] Ignoring other tristates for now" << endl;
+	}
+
+	if(state_prev != server.state){
+		// cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned)
+		// val << endl;
+		asyncEvent.notify();
+	}
 }
 
 void GPIO::synchronousChange() {

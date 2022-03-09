@@ -45,7 +45,7 @@ GpioClient::~GpioClient() {
 bool GpioClient::update() {
 	Request req;
 	memset(&req, 0, sizeof(Request));
-	req.op = GET_BANK;
+	req.op = Request::Type::GET_BANK;
 	if (write(fd, &req, sizeof(Request)) != sizeof(Request)) {
 		cerr << "Error in write " << fd << endl;
 		return false;
@@ -60,8 +60,8 @@ bool GpioClient::update() {
 bool GpioClient::setBit(uint8_t pos, Tristate val) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
-	req.op = SET_BIT;
-	req.setBit.pos = pos;
+	req.op = Request::Type::SET_BIT;
+	req.setBit.pin = pos;
 	req.setBit.val = val;
 
 	if (write(fd, &req, sizeof(Request)) != sizeof(Request)) {

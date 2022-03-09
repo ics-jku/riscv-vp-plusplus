@@ -33,24 +33,24 @@ void bitPrint(unsigned char* buf, size_t size) {
 
 void GpioCommon::printRequest(Request* req) {
 	switch (req->op) {
-		case GET_BANK:
+		case Request::Type::GET_BANK:
 			cout << "GET BANK";
 			break;
-		case SET_BIT:
+		case Request::Type::SET_BIT:
 			cout << "SET BIT ";
-			cout << to_string(req->setBit.pos) << " to ";
+			cout << to_string(req->setBit.pin) << " to ";
 			switch (req->setBit.val) {
-				case 0:
+				case Tristate::LOW:
 					cout << "LOW";
 					break;
-				case 1:
+				case Tristate::HIGH:
 					cout << "HIGH";
 					break;
-				case 2:
-					cout << "UNSET";
+				case Tristate::PWM:
+					cout << "PWM-Driven (see other)";
 					break;
-				default:
-					cout << "INVALID";
+				case Tristate::UNSET:
+					cout << "unset (FLOATING)";
 			}
 			break;
 		default:

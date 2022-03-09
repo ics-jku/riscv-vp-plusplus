@@ -17,24 +17,30 @@ void bitPrint(unsigned char* buf, size_t size);
 struct GpioCommon {
 	static constexpr unsigned default_port = 1400;
 	typedef uint64_t Reg;
-	typedef uint8_t Tristate;
-
-	enum Operation : uint8_t { GET_BANK = 1, SET_BIT, SET_PWM };
+	enum class Tristate : uint8_t {
+		LOW = 0,
+		HIGH,
+		PWM,
+		UNSET
+	};
 
 	struct Request {
-		Operation op;
+		enum class Type : uint8_t {
+			GET_BANK = 1,
+			SET_BIT,
+			REQ_LOGSTATE,
+			END_LOGSTATE
+		} op;
 		union {
 			struct {
-				uint8_t pos : 6;
+				uint8_t pin : 6;	// max num pins: 64
 				Tristate val : 2;
 			} setBit;
-			/*
+
 			struct
 			{
-			        uint8_t pos;
-			        uint8_t percent;
-			} setPWM;
-			*/
+				uint8_t pin;
+			} reqLog;
 		};
 	};
 

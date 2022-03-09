@@ -163,39 +163,52 @@ void GpioServer::handleConnection(int conn) {
 	while ((bytes = read(conn, &req, sizeof(Request))) == sizeof(Request)) {
 		// hexPrint(reinterpret_cast<char*>(&req), bytes);
 		switch (req.op) {
-			case GET_BANK:
+			case Request::Type::GET_BANK:
 				if (write(conn, &state, sizeof(Reg)) != sizeof(Reg)) {
 					cerr << "could not write answer" << endl;
 					close(conn);
 					return;
 				}
 				break;
-			case SET_BIT: {
+			case Request::Type::SET_BIT: {
 				// printRequest(&req);
-				if (req.setBit.pos > 63) {
-					cerr << "invalid request" << endl;
+				if (req.setBit.pin > 63) {
+					cerr << "invalid request setbit pinnumber" << endl;
 					return;
 				}
-				if (req.setBit.val > 2) {
-					cerr << "invalid request" << endl;
+				if (req.setBit.val != Tristate::LOW && req.setBit.val != Tristate::HIGH) {
+					cerr << "invalid request setbit Tristate" << endl;
 					return;
 				}
 
 				if (fun != nullptr) {
-					fun(req.setBit.pos, req.setBit.val);
+					fun(req.setBit.pin, req.setBit.val);
 				} else {
-					if (req.setBit.val == 0)
-						state &= ~(1l << req.setBit.pos);
-					else if (req.setBit.val == 1)
-						state |= 1l << req.setBit.pos;
-					else if (req.setBit.val == 2)
-						cout << "set bit " << req.setBit.pos << " unset" << endl;
+					switch (req.setBit.val) {
+						case Tristate::LOW:
+							state &= ~(1l << req.setBit.pin);
+							break;
+						case Tristate::HIGH:
+							state |= 1l << req.setBit.pin;
+							break;
+						case Tristate::UNSET:
+							cout << "set bit " << req.setBit.pin << " floating (unset)" << endl;
+							state &= ~(1l << req.setBit.pin);
+							break;
+						default:
+							cerr << "Action on Bit " << req.setBit.pin << " is unsupported" << endl;
+					}
 				}
-
 				break;
 			}
+			case Request::Type::REQ_LOGSTATE:
+				cerr << "Logstate start not yet implemented" << endl;
+				break;
+			case Request::Type::END_LOGSTATE:
+				cerr << "Logstate end not yet implemented" << endl;
+				break;
 			default:
-				cerr << "invalid request" << endl;
+				cerr << "invalid request operation" << endl;
 				return;
 		}
 	}
