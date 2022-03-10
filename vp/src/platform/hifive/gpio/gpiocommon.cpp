@@ -46,8 +46,8 @@ void GpioCommon::printRequest(Request* req) {
 				case Tristate::HIGH:
 					cout << "HIGH";
 					break;
-				case Tristate::PWM:
-					cout << "PWM-Driven (see other)";
+				case Tristate::IOF:
+					cout << "IO-Function driven (see other)";
 					break;
 				case Tristate::UNSET:
 					cout << "unset (FLOATING)";

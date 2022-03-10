@@ -434,13 +434,13 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 			case Qt::Key_0: {
 				uint8_t until = 6;
 				for (uint8_t i = 0; i < 8; i++) {
-					gpio.setBit(i, i < until ? 1 : 0);
+					gpio.setBit(i, i < until ? GpioCommon::Tristate::HIGH : GpioCommon::Tristate::LOW);
 				}
 				break;
 			}
 			case Qt::Key_1: {
 				for (uint8_t i = 0; i < 8; i++) {
-					gpio.setBit(i, 0);
+					gpio.setBit(i, GpioCommon::Tristate::LOW);
 				}
 				break;
 			}
@@ -455,7 +455,7 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 						break;	//this is sorted somewhat
 
 					if (buttons[i]->keybinding == e->key()) {
-						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),0);
+						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), GpioCommon::Tristate::LOW);  // Active low
 						buttons[i]->pressed = true;
 					}
 				}
@@ -472,7 +472,7 @@ void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
 			break;	//this is sorted somewhat
 
 		if (buttons[i]->keybinding == e->key()) {
-			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),1);
+			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),GpioCommon::Tristate::HIGH);
 			buttons[i]->pressed = false;
 		}
 	}
@@ -487,7 +487,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " click!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 0);  // Active low
+				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), GpioCommon::Tristate::LOW);  // Active low
 				buttons[i]->pressed = true;
 			}
 		}
@@ -507,7 +507,7 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 				break;	//this is sorted somewhat
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " release!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), 1);
+				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), GpioCommon::Tristate::HIGH);
 				buttons[i]->pressed = false;
 			}
 		}
