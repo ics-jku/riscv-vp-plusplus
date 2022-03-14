@@ -13,11 +13,14 @@
 #include <atomic>
 
 class GpioServer : public GpioCommon {
+public:
+	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> UpdateFunction;
+private:
 	int listener_fd;
 	int current_connection_fd;
 	const char *port;
 	std::atomic<bool> stop;
-	std::function<void(uint8_t bit, Tristate val)> fun;
+	UpdateFunction fun;
 	void handleConnection(int conn);
 
    public:
@@ -26,6 +29,9 @@ class GpioServer : public GpioCommon {
 	bool setupConnection(const char* port);
 	void quit();
 	bool isStopped();
-	void registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun);
+	void registerOnChange(UpdateFunction fun);
 	void startListening();
+
+	// pin number may be CS? If that works.
+	gpio::SPI_Response pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte);
 };

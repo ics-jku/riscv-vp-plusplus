@@ -24,6 +24,7 @@
 #include "debug.h"
 
 using namespace std;
+using namespace gpio;
 
 // get sockaddr, IPv4 or IPv6:
 static void *get_in_addr(struct sockaddr *sa) {
@@ -50,7 +51,7 @@ bool GpioClient::update() {
 		cerr << "Error in write " << fd << endl;
 		return false;
 	}
-	if (read(fd, &state, sizeof(Reg)) != sizeof(Reg)) {
+	if (read(fd, &state, sizeof(State)) != sizeof(State)) {
 		cerr << "Error in read " << fd << endl;
 		return false;
 	}

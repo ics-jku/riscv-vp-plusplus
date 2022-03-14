@@ -9,58 +9,70 @@
 
 #include <inttypes.h>
 #include <stddef.h>
-
+#include <limits>       // std::numeric_limits
 
 void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
 
-struct GpioCommon {
-	static constexpr unsigned default_port = 1400;
-	static constexpr unsigned max_num_pins = 64;
-
-	typedef uint64_t Reg;
-
+namespace gpio {
 	enum class Tristate : uint8_t {
 		LOW = 0,
 		HIGH,
-		IOF,
-		UNSET
+		UNSET,
+		IOF_SPI,
+		IOF_I2C,	// not yet used
+		IOF_PWM,	// planned to be used
+		IOF_UART,	// not yet used
 	};
+
+	static constexpr unsigned default_port = 1400;
+	static constexpr unsigned max_num_pins = 64;
+
+	typedef uint8_t PinNumber;
+	static_assert(std::numeric_limits<PinNumber>::max() >= max_num_pins);
+
+	typedef uint8_t SPI_Command;
+	typedef uint8_t SPI_Response;
 
 	struct State {
-		//TODO
-		// somehow packed
-		Tristate pins[max_num_pins];
-	};
-
-	struct Response {
-		enum class Type : uint8_t {
-			ICH_WEIS_AUCH_NICHT,
-			DAS_KOMMT_VON_ALLEINEEE
-		};
+		//TODO somehow packed?
+		gpio::Tristate pins[max_num_pins];
 	};
 
 	struct Request {
 		enum class Type : uint8_t {
 			GET_BANK = 1,
 			SET_BIT,
-			REQ_LOGSTATE,
-			END_LOGSTATE
+			REQ_IOF,
+			REQ_LOGSTATE = REQ_IOF,
+			END_IOF,
+			END_LOGSTATE = END_IOF
 		} op;
 		union {
 			struct {
 				uint8_t pin : 6;	// max num pins: 64
-				Tristate val : 2;
+				gpio::Tristate val : 2;
 			} setBit;
 
-			struct
-			{
+			struct {
+				// Todo: Decide how to determine SPI's Chip Select
+				// Perhaps pin shall be one of the hardware CS pins
 				uint8_t pin;
-			} reqLog;
+			} reqIOF;
 		};
 	};
 
-	Reg state;
-	void printRequest(Request* req);
+	struct Req_IOF_Response {
+		unsigned port;
+	};
+};
+
+struct GpioCommon {
+
+	static void printRequest(const gpio::Request& req);
+	static void printState(const gpio::State& state);
+
+	gpio::State state;
+
 	GpioCommon();
 };

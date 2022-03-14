@@ -11,6 +11,7 @@
 #include "gpio-client.hpp"
 
 using namespace std;
+using namespace gpio;
 
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
@@ -25,18 +26,18 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	while (false) { //just update the view
+	while (true) { //just update the view
 		if (!gpio.update()) {
 			cerr << "Error updating" << endl;
 			return -1;
 		}
-		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
+		GpioCommon::printState(gpio.state);
 		usleep(125000);
 	}
 
 	// example actions
 	for (uint8_t i = 0; i < 64; i++) {
-		if (!gpio.setBit(i, GpioClient::Tristate::HIGH)) {
+		if (!gpio.setBit(i, Tristate::HIGH)) {
 			cerr << "Error setting Bit " << i << endl;
 			return -1;
 		}
@@ -44,12 +45,12 @@ int main(int argc, char* argv[]) {
 			cerr << "Error updating" << endl;
 			return -1;
 		}
-		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
+		GpioCommon::printState(gpio.state);
 		usleep(750);
 	}
 
 	for (uint8_t i = 0; i < 64; i++) {
-		if (!gpio.setBit(i, GpioClient::Tristate::LOW)) {
+		if (!gpio.setBit(i, Tristate::LOW)) {
 			cerr << "Error resetting Bit " << i << endl;
 			return -1;
 		}
@@ -57,7 +58,7 @@ int main(int argc, char* argv[]) {
 			cerr << "Error updating" << endl;
 			return -1;
 		}
-		bitPrint(reinterpret_cast<unsigned char*>(&gpio.state), sizeof(GpioCommon::Reg));
+		GpioCommon::printState(gpio.state);
 		usleep(750);
 	}
 }

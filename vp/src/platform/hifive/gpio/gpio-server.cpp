@@ -6,7 +6,7 @@
  */
 
 #include "gpio-server.hpp"
-#include "gpio-client.hpp"
+#include "gpio-client.hpp" // for force quit of listening switch
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -26,6 +26,7 @@
 #include "debug.h"
 
 using namespace std;
+using namespace gpio;
 
 // get sockaddr, IPv4 or IPv6:
 static void *get_in_addr(struct sockaddr *sa) {
@@ -123,12 +124,12 @@ bool GpioServer::isStopped() {
 	return stop;
 }
 
-void GpioServer::registerOnChange(std::function<void(uint8_t bit, Tristate val)> fun) {
+void GpioServer::registerOnChange(UpdateFunction fun) {
 	this->fun = fun;
 }
 
 void GpioServer::startListening() {
-	if (listen(listener_fd, 1) == -1) {
+	if (listen(listener_fd, 1) < 0) {
 		cerr << "fd " << listener_fd << " ";
 		perror("listen");
 		stop = true;
@@ -164,7 +165,7 @@ void GpioServer::handleConnection(int conn) {
 		// hexPrint(reinterpret_cast<char*>(&req), bytes);
 		switch (req.op) {
 			case Request::Type::GET_BANK:
-				if (write(conn, &state, sizeof(Reg)) != sizeof(Reg)) {
+				if (write(conn, &state, sizeof(State)) != sizeof(State)) {
 					cerr << "could not write answer" << endl;
 					close(conn);
 					return;
@@ -172,11 +173,13 @@ void GpioServer::handleConnection(int conn) {
 				break;
 			case Request::Type::SET_BIT: {
 				// printRequest(&req);
-				if (req.setBit.pin > 63) {
+				if (req.setBit.pin >= max_num_pins) {
 					cerr << "invalid request setbit pinnumber" << endl;
 					return;
 				}
-				if (req.setBit.val != Tristate::LOW && req.setBit.val != Tristate::HIGH) {
+				if (req.setBit.val != Tristate::LOW &&
+					req.setBit.val != Tristate::HIGH &&
+					req.setBit.val != Tristate::UNSET) {
 					cerr << "invalid request setbit Tristate" << endl;
 					return;
 				}
@@ -184,27 +187,16 @@ void GpioServer::handleConnection(int conn) {
 				if (fun != nullptr) {
 					fun(req.setBit.pin, req.setBit.val);
 				} else {
-					switch (req.setBit.val) {
-						case Tristate::LOW:
-							state &= ~(1l << req.setBit.pin);
-							break;
-						case Tristate::HIGH:
-							state |= 1l << req.setBit.pin;
-							break;
-						case Tristate::UNSET:
-							cout << "set bit " << req.setBit.pin << " floating (unset)" << endl;
-							state &= ~(1l << req.setBit.pin);
-							break;
-						default:
-							cerr << "Action on Bit " << req.setBit.pin << " is unsupported" << endl;
-					}
-				}
+					state.pins[req.setBit.pin] = req.setBit.val;
+ 				}
 				break;
 			}
-			case Request::Type::REQ_LOGSTATE:
+			case Request::Type::REQ_IOF:
+				// TODO
 				cerr << "Logstate start not yet implemented" << endl;
 				break;
-			case Request::Type::END_LOGSTATE:
+			case Request::Type::END_IOF:
+				// TODO
 				cerr << "Logstate end not yet implemented" << endl;
 				break;
 			default:

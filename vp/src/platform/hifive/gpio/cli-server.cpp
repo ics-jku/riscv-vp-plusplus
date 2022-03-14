@@ -14,6 +14,7 @@
 #include "gpio-server.hpp"
 
 using namespace std;
+using namespace gpio;
 
 bool stop = false;
 
@@ -26,16 +27,9 @@ void signalHandler(int signum) {
 	raise(SIGUSR1);  // this breaks wait in thread
 }
 
-void onChangeCallback(GpioServer* gpio, uint8_t bit, GpioCommon::Tristate val) {
-	if (val == GpioCommon::Tristate::LOW) {
-		gpio->state &= ~(1l << bit);
-	} else if (val == GpioCommon::Tristate::HIGH) {
-		gpio->state |= 1l << bit;
-	} else {
-		printf("Ignoring tristate for now\n");
-		return;
-	}
-	printf("Bit %d changed to %ld\n", bit, (gpio->state & (1l << bit)) >> bit);
+void onChangeCallback(GpioServer* gpio, PinNumber pin, Tristate val) {
+	gpio->state.pins[pin] = val;
+	printf("Bit %d changed to %d\n", pin, gpio->state.pins[pin] == Tristate::HIGH ? 1 : 0);
 }
 
 int main(int argc, char* argv[]) {
@@ -59,12 +53,12 @@ int main(int argc, char* argv[]) {
 	while (!stop && !gpio.isStopped()) {
 		// some example actions
 		usleep(100000);
-		if (!(gpio.state & (1 << 11))) {
-			gpio.state <<= 1;
-			if (!(gpio.state & 0xFF)) {
-				gpio.state = 1;
-			}
-		}
+		// here was a bitshift, implement this for lulz?
+
+		auto pin = reinterpret_cast<uint8_t*>(&gpio.state.pins[11]);
+		*pin++;
+		if(*pin > 6)
+			*pin = 0;
 	}
 	gpio.quit();
 	server.join();

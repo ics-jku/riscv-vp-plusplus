@@ -13,6 +13,7 @@
 #include <iostream>
 
 using namespace std;
+using namespace gpio;
 
 void hexPrint(unsigned char* buf, size_t size) {
 	for (uint16_t i = 0; i < size; i++) {
@@ -31,27 +32,34 @@ void bitPrint(unsigned char* buf, size_t size) {
 	printf("\n");
 }
 
-void GpioCommon::printRequest(Request* req) {
-	switch (req->op) {
+void GpioCommon::printRequest(const Request& req) {
+	switch (req.op) {
 		case Request::Type::GET_BANK:
 			cout << "GET BANK";
 			break;
 		case Request::Type::SET_BIT:
 			cout << "SET BIT ";
-			cout << to_string(req->setBit.pin) << " to ";
-			switch (req->setBit.val) {
+			cout << to_string(req.setBit.pin) << " to ";
+			switch (req.setBit.val) {
 				case Tristate::LOW:
 					cout << "LOW";
 					break;
 				case Tristate::HIGH:
 					cout << "HIGH";
 					break;
-				case Tristate::IOF:
-					cout << "IO-Function driven (see other)";
-					break;
 				case Tristate::UNSET:
 					cout << "unset (FLOATING)";
+					break;
+				default:
+					cout << "IO-Function driven (see other)";
+					break;
 			}
+			break;
+		case Request::Type::REQ_IOF:
+			cout << "Request io-function (or logstate)";
+			break;
+		case Request::Type::END_IOF:
+			cout << "End io-function (or logstate)";
 			break;
 		default:
 			cout << "INVALID";
@@ -59,6 +67,28 @@ void GpioCommon::printRequest(Request* req) {
 	cout << endl;
 };
 
+void GpioCommon::printState(const State& state) {
+	for(PinNumber pin = 0; pin < max_num_pins; pin++) {
+		if(pin > 0 && pin % 8 == 0)
+			cout << " ";
+		switch(state.pins[pin]) {
+		case Tristate::LOW:
+			cout << "0";
+			break;
+		case Tristate::HIGH:
+			cout << "1";
+			break;
+		case Tristate::UNSET:
+			cout << "X";
+			break;
+		default:
+			cout << "*";
+			break;
+		}
+	}
+	cout << endl;
+}
+
 GpioCommon::GpioCommon() {
-	state = 0;
+	memset(&state, 0, sizeof(State));
 }
