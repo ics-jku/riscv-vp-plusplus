@@ -37,6 +37,15 @@ static void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
+template<typename T>
+bool writeStruct(int handle, T* s){
+	return write(handle, s, sizeof(T)) == sizeof(T);
+}
+template<typename T>
+bool readStruct(int handle, T* s){
+	return read(handle, s, sizeof(T)) == sizeof(T);
+}
+
 GpioServer::GpioServer() : listener_fd(-1), current_connection_fd(-1), port(""), stop(false), fun(nullptr){}
 
 GpioServer::~GpioServer() {
@@ -124,7 +133,7 @@ bool GpioServer::isStopped() {
 	return stop;
 }
 
-void GpioServer::registerOnChange(UpdateFunction fun) {
+void GpioServer::registerOnChange(OnChangeCalldback fun) {
 	this->fun = fun;
 }
 
@@ -161,11 +170,11 @@ void GpioServer::handleConnection(int conn) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	int bytes;
-	while ((bytes = read(conn, &req, sizeof(Request))) == sizeof(Request)) {
+	while (readStruct(conn, &req)) {
 		// hexPrint(reinterpret_cast<char*>(&req), bytes);
 		switch (req.op) {
 			case Request::Type::GET_BANK:
-				if (write(conn, &state, sizeof(State)) != sizeof(State)) {
+				if (!writeStruct(conn, &state)) {
 					cerr << "could not write answer" << endl;
 					close(conn);
 					return;
@@ -177,10 +186,13 @@ void GpioServer::handleConnection(int conn) {
 					cerr << "invalid request setbit pinnumber" << endl;
 					return;
 				}
-				if (req.setBit.val != Tristate::LOW &&
-					req.setBit.val != Tristate::HIGH &&
-					req.setBit.val != Tristate::UNSET) {
-					cerr << "invalid request setbit Tristate" << endl;
+				if (isIOF(req.setBit.val)) {
+					cerr << "invalid request setbit Tristate (is IOF)" << endl;
+					return;
+				}
+
+				if (isIOF(state.pins[req.setBit.pin])){
+					cerr << "[gpio-server] Ignoring setPin on IOF" << endl;
 					return;
 				}
 
@@ -192,9 +204,22 @@ void GpioServer::handleConnection(int conn) {
 				break;
 			}
 			case Request::Type::REQ_IOF:
+			{
 				// TODO
-				cerr << "Logstate start not yet implemented" << endl;
+				Req_IOF_Response response{0};
+				if(!isIOF(state.pins[req.reqIOF.pin])){
+					cerr << "IOF request on non-iof pin " << req.reqIOF.pin << endl;
+				}
+				else {
+					cerr << "Logstate start not yet implemented" << endl;
+				}
+				if (writeStruct(conn, &response)) {
+					cerr << "could not write IOF-Req answer" << endl;
+					close(conn);
+					return;
+				}
 				break;
+			}
 			case Request::Type::END_IOF:
 				// TODO
 				cerr << "Logstate end not yet implemented" << endl;

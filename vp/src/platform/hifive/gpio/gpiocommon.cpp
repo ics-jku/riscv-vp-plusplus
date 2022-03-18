@@ -32,6 +32,10 @@ void bitPrint(unsigned char* buf, size_t size) {
 	printf("\n");
 }
 
+bool gpio::isIOF(const Tristate s){
+	return static_cast<uint8_t>(s) > 3;
+}
+
 void GpioCommon::printRequest(const Request& req) {
 	switch (req.op) {
 		case Request::Type::GET_BANK:
@@ -81,8 +85,20 @@ void GpioCommon::printState(const State& state) {
 		case Tristate::UNSET:
 			cout << "X";
 			break;
+		case Tristate::IOF_SPI:
+			cout << "s";
+			break;
+		case Tristate::IOF_I2C:
+			cout << "i";
+			break;
+		case Tristate::IOF_PWM:
+			cout << "p";
+			break;
+		case Tristate::IOF_UART:
+			cout << "u";
+			break;
 		default:
-			cout << "*";
+			cout << "?";
 			break;
 		}
 	}

@@ -35,11 +35,31 @@ static void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
-GpioClient::GpioClient() : fd(-1) {}
+template<typename T>
+bool writeStruct(int handle, T* s){
+	return write(handle, s, sizeof(T)) == sizeof(T);
+}
+
+template<typename T>
+bool readStruct(int handle, T* s){
+	return read(handle, s, sizeof(T)) == sizeof(T);
+}
+
+GpioClient::GpioClient() : fd(-1), currentHost("localhost") {}
 
 GpioClient::~GpioClient() {
 	if (fd >= 0) {
 		close(fd);
+	}
+
+	for (const auto& thread : dataChannelThreads) {
+		close(thread.fd); // closing socket should signal quit
+	}
+
+	for (auto& thread : dataChannelThreads) {
+		if(thread.thread.joinable()) {
+			thread.thread.join();
+		}
 	}
 }
 
@@ -47,11 +67,11 @@ bool GpioClient::update() {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::GET_BANK;
-	if (write(fd, &req, sizeof(Request)) != sizeof(Request)) {
+	if (!writeStruct(fd, &req)) {
 		cerr << "Error in write " << fd << endl;
 		return false;
 	}
-	if (read(fd, &state, sizeof(State)) != sizeof(State)) {
+	if (!readStruct(fd, &state)) {
 		cerr << "Error in read " << fd << endl;
 		return false;
 	}
@@ -65,14 +85,70 @@ bool GpioClient::setBit(uint8_t pos, Tristate val) {
 	req.setBit.pin = pos;
 	req.setBit.val = val;
 
-	if (write(fd, &req, sizeof(Request)) != sizeof(Request)) {
+	if (!writeStruct(fd, &req)) {
 		cerr << "Error in write" << endl;
 		return false;
 	}
 	return true;
 }
 
-bool GpioClient::setupConnection(const char *host, const char *port) {
+bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
+	Request req;
+	memset(&req, 0, sizeof(Request));
+	req.op = Request::Type::REQ_IOF;
+	req.reqIOF.pin = pin;
+
+	if (!writeStruct(fd, &req)) {
+		cerr << "Error in write SPI IOF register request" << endl;
+		return false;
+	}
+
+	Req_IOF_Response resp;
+
+	if (!readStruct(fd, &resp)) {
+		cerr << "Error in read SPI IOF register response" << endl;
+		return false;
+	}
+
+	if(resp.port < 1024) {
+		cerr << "Invalid port " << resp.port << " given from SPI IOF register response" << endl;
+		return false;
+	}
+
+	char port_c[10]; // may or may not be enough, but we are not planning for failure!
+	sprintf(port_c, "%6d", resp.port);
+
+	int dataChannel = connectToHost(currentHost, port_c);
+	if(dataChannel < 0) {
+		cerr << "Could not open offered port " << resp.port << endl;
+		return false;
+	}
+
+	dataChannelThreads.emplace_back(DataChannelDescription{
+		pin, dataChannel, std::thread(std::bind(&GpioClient::handleSPIchannel, this, dataChannel, fun))
+	});
+
+	return true;
+}
+
+void GpioClient::handleSPIchannel(int socket, OnChange_SPI fun) {
+	// open and running connection
+	SPI_Command spi_in;
+	while(readStruct(socket, &spi_in)) {
+		SPI_Response resp = fun(spi_in);
+		if(!writeStruct(socket, &resp)) {
+			cerr << "Error in SPI write answer from fd " << socket << endl;
+			close(socket);
+			return;
+		}
+	}
+	close(socket);
+	cerr << "[gpio client] Error or closed socket" << endl;
+}
+
+int GpioClient::connectToHost(const char *host, const char *port) {
+	int fd = -1;
+
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
@@ -83,7 +159,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 
 	if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		return false;
+		return -1;
 	}
 
 	// loop through all the results and connect to the first we can
@@ -105,7 +181,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 	if (p == NULL) {
 		//fprintf(stderr, "client: failed to connect\n");
 		freeaddrinfo(servinfo);
-		return false;
+		return -1;
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
@@ -113,5 +189,14 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 
 	freeaddrinfo(servinfo);  // all done with this structure
 
+	return fd;
+}
+
+bool GpioClient::setupConnection(const char *host, const char *port) {
+	if((fd = connectToHost(host, port)) < 0) {
+		cerr << "Could not connect to " << host << ":" << port << endl;
+		return false;
+	}
+	currentHost = host;
 	return true;
 }

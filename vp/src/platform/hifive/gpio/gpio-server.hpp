@@ -14,22 +14,24 @@
 
 class GpioServer : public GpioCommon {
 public:
-	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> UpdateFunction;
+	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> OnChangeCalldback;
+
+
 private:
 	int listener_fd;
 	int current_connection_fd;
 	const char *port;
 	std::atomic<bool> stop;
-	UpdateFunction fun;
+	OnChangeCalldback fun;
 	void handleConnection(int conn);
 
-   public:
+public:
 	GpioServer();
 	~GpioServer();
 	bool setupConnection(const char* port);
 	void quit();
 	bool isStopped();
-	void registerOnChange(UpdateFunction fun);
+	void registerOnChange(OnChangeCalldback fun);
 	void startListening();
 
 	// pin number may be CS? If that works.

@@ -19,11 +19,14 @@ namespace gpio {
 		LOW = 0,
 		HIGH,
 		UNSET,
-		IOF_SPI,
+
+		IOF_SPI = 4,
 		IOF_I2C,	// not yet used
 		IOF_PWM,	// planned to be used
 		IOF_UART,	// not yet used
 	};
+
+	bool isIOF(const Tristate s);
 
 	static constexpr unsigned default_port = 1400;
 	static constexpr unsigned max_num_pins = 64;
@@ -63,7 +66,7 @@ namespace gpio {
 	};
 
 	struct Req_IOF_Response {
-		unsigned port;
+		uint16_t port = 0;	// zero is error condition
 	};
 };
 
