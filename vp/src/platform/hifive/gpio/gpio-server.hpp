@@ -11,19 +11,26 @@
 
 #include <functional>
 #include <atomic>
+#include <map>
 
 class GpioServer : public GpioCommon {
 public:
-	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> OnChangeCalldback;
+	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> OnChangeCallback;
 
 
 private:
-	int listener_fd;
+	int listener_socket_fd;
 	int current_connection_fd;
-	const char *port;
+	const char *base_port;
 	std::atomic<bool> stop;
-	OnChangeCalldback fun;
+	OnChangeCallback fun;
 	void handleConnection(int conn);
+
+	std::map<gpio::PinNumber,int> activeChannels;
+
+	static int openSocket(const char* port);
+
+	bool awaitDataChannelConnection(int socket, gpio::PinNumber);
 
 public:
 	GpioServer();
@@ -31,7 +38,7 @@ public:
 	bool setupConnection(const char* port);
 	void quit();
 	bool isStopped();
-	void registerOnChange(OnChangeCalldback fun);
+	void registerOnChange(OnChangeCallback fun);
 	void startListening();
 
 	// pin number may be CS? If that works.

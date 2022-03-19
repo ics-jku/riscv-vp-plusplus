@@ -92,7 +92,7 @@ bool GpioClient::setBit(uint8_t pos, Tristate val) {
 	return true;
 }
 
-bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
+uint16_t GpioClient::requestIOFchannel(PinNumber pin) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::REQ_IOF;
@@ -100,27 +100,38 @@ bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 
 	if (!writeStruct(fd, &req)) {
 		cerr << "Error in write SPI IOF register request" << endl;
-		return false;
+		return 0;
 	}
 
 	Req_IOF_Response resp;
 
 	if (!readStruct(fd, &resp)) {
 		cerr << "Error in read SPI IOF register response" << endl;
-		return false;
+		return 0;
 	}
 
 	if(resp.port < 1024) {
-		cerr << "Invalid port " << resp.port << " given from SPI IOF register response" << endl;
+		cerr << "Invalid port " << resp.port << " given from IOF register response" << endl;
+		return 0;
+	}
+	return resp.port;
+}
+
+bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
+
+	auto port = requestIOFchannel(pin);
+
+	if(port == 0) {
+		cerr << "SPI IOF port request unsuccessful" << endl;
 		return false;
 	}
 
 	char port_c[10]; // may or may not be enough, but we are not planning for failure!
-	sprintf(port_c, "%6d", resp.port);
+	sprintf(port_c, "%6d", port);
 
 	int dataChannel = connectToHost(currentHost, port_c);
 	if(dataChannel < 0) {
-		cerr << "Could not open offered port " << resp.port << endl;
+		cerr << "Could not open offered port " << port_c << endl;
 		return false;
 	}
 

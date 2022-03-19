@@ -28,9 +28,12 @@ private:
 	};
 	std::list<DataChannelDescription> dataChannelThreads;
 
+	// todo: Templateify? (command, response)
 	void handleSPIchannel(int socket, OnChange_SPI fun);
 
-	// @return filedescriptor, -1 else
+	// @return port number, 0 on error
+	uint16_t requestIOFchannel(gpio::PinNumber pin);
+	// @return filedescriptor, < 0 on error
 	static int connectToHost(const char* host, const char* port);
 
 public:
@@ -40,9 +43,13 @@ public:
 	bool update();
 	bool setBit(gpio::PinNumber pos, gpio::Tristate val);
 
-	//TODO: onchange functions not yet stable
+	// Intended to be used by the external peripherals in simulation
+	// TODO: onchange functions not yet stable
+	// TODO: Somehow unify for code deduplication
 	bool registerSPIOnChange(gpio::PinNumber pin, OnChange_SPI fun);
 	bool registerPINOnChange(gpio::PinNumber pin, OnChange_PIN fun);
+	// registerI2C...
+	// registerUART...
 
 	void closeIOFunction(gpio::PinNumber pin);
 };
