@@ -236,7 +236,7 @@ void GpioServer::handleConnection(int conn) {
 				Req_IOF_Response response{0};
 				if(!isIOF(state.pins[req.reqIOF.pin])){
 					// Not a major fault
-					cerr << "[gpio-server] IOF request on non-iof pin " << req.reqIOF.pin << endl;
+					cerr << "[gpio-server] IOF request on non-iof pin " << (int)req.reqIOF.pin << endl;
 					return;
 				}
 
@@ -280,8 +280,21 @@ void GpioServer::handleConnection(int conn) {
 				break;
 			}
 			case Request::Type::END_IOF:
-				// TODO something with closing from activeChannels
-				cerr << "END IOF not yet implemented" << endl;
+				if(!isIOF(state.pins[req.reqIOF.pin])){
+					cerr << "[gpio-server] IOF quit on non-IOF pin " << (int)req.reqIOF.pin << endl;
+					return;
+				}
+
+				{
+				auto channel = active_IOF_channels.find(req.reqIOF.pin);
+				if(channel == active_IOF_channels.end()) {
+					cerr << "[gpio-server] IOF quit on non followed pin " << (int)req.reqIOF.pin << endl;
+					return;
+				}
+
+				close(channel->second);
+				active_IOF_channels.erase(channel);
+				}
 				break;
 			default:
 				cerr << "[gpio-server] invalid request operation" << endl;
@@ -301,7 +314,7 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	int sock = channel->second;
 
 	if(!writeStruct(sock, &byte)) {
-		cerr << "[gpio-server] Could not write SPI command to cs " << pin << endl;
+		cerr << "[gpio-server] Could not write SPI command to cs " << (int)pin << endl;
 		close(sock);
 		active_IOF_channels.erase(channel);
 	}
