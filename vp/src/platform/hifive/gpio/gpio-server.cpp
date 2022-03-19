@@ -77,24 +77,31 @@ int GpioServer::openSocket(const char *port) {
 	}
 
 	// loop through all the results and bind to the first we can
+	bool found = false;
 	for (p = servinfo; p != NULL; p = p->ai_next) {
 		if ((new_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("gpio-server: socket");
+			cerr << "[gpio-server] opening of socket unsuccessful " << strerror(errno) << endl;
 			continue;
 		}
 
 		if (setsockopt(new_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-			perror("setsockopt");
-			return -2;
+			close(new_fd);
+			cerr << "[gpio-server] setsockopt unsuccessful " << strerror(errno) << endl;
+			continue;
 		}
 
 		if (::bind(new_fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(new_fd);
-			perror("gpio-server: bind");
+			cerr << "[gpio-server] could not bind to addr " << p->ai_addr->sa_data << endl;
 			continue;
 		}
 
+		found = true;
 		break;
+	}
+
+	if(!found) {
+		return -1;
 	}
 
 	freeaddrinfo(servinfo);  // all done with this structure
@@ -102,6 +109,12 @@ int GpioServer::openSocket(const char *port) {
 	if (p == NULL) {
 		fprintf(stderr, "gpio-server: failed to bind\n");
 		return -3;
+	}
+
+	if (listen(new_fd, 1) < 0) {
+		cerr << "[gpio-server] Could not start listening on new socket " << new_fd << " ";
+		close(new_fd);
+		return -4;
 	}
 
 	return new_fd;
@@ -148,31 +161,33 @@ void GpioServer::registerOnChange(OnChangeCallback fun) {
 	this->fun = fun;
 }
 
-void GpioServer::startListening() {
-	if (listen(listener_socket_fd, 1) < 0) {
-		cerr << "fd " << listener_socket_fd << " ";
-		perror("listen");
-		stop = true;
-		return;
-	}
-	// printf("gpio-server: accepting connections (%d)\n", fd);
-
+int GpioServer::awaitConnection(int socket) {
 	struct sockaddr_storage their_addr;  // connector's address information
 	socklen_t sin_size = sizeof their_addr;
 	char s[INET6_ADDRSTRLEN];
 
+	int new_connection = accept(socket, (struct sockaddr *)&their_addr, &sin_size);
+	if (new_connection < 0) {
+		cerr << "[gpio-server] accept return " << strerror(errno) << endl;
+		return -1;
+	}
+
+	//inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
+	//DEBUG("gpio-server: got connection from %s\n", s);
+
+	return new_connection;
+}
+
+
+void GpioServer::startAccepting() {
+	// printf("gpio-server: accepting connections (%d)\n", fd);
+
 	while (!stop)  // this would block a bit
 	{
-		current_connection_fd = accept(listener_socket_fd, (struct sockaddr *)&their_addr, &sin_size);
-		if (current_connection_fd < 0) {
-			cerr << "gpio-server accept return " << current_connection_fd << endl;
-			perror("accept");
-			stop = true;
-			return;
+		if((current_connection_fd = awaitConnection(listener_socket_fd)) < 0) {
+			cerr << "[gpio-server] could not accept new connection" << endl;
+			continue;
 		}
-
-		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-		DEBUG("gpio-server: got connection from %s\n", s);
 		handleConnection(current_connection_fd);
 	}
 }
@@ -218,25 +233,54 @@ void GpioServer::handleConnection(int conn) {
 			}
 			case Request::Type::REQ_IOF:
 			{
-				// TODO
 				Req_IOF_Response response{0};
 				if(!isIOF(state.pins[req.reqIOF.pin])){
+					// Not a major fault
 					cerr << "[gpio-server] IOF request on non-iof pin " << req.reqIOF.pin << endl;
+					return;
 				}
-				else {
-					cerr << "IOF start not yet implemented" << endl;
-					// todo: find random Port
+
+				int new_data_socket = openSocket("0");	// zero shall indicate random port
+				if (new_data_socket < 0) {
+					cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
+					// no return, so that response is 0
 				}
-				if (writeStruct(conn, &response)) {
+
+				{
+					struct sockaddr_in sin;
+					socklen_t len = sizeof(sin);
+					if (getsockname(new_data_socket, (struct sockaddr *)&sin, &len) == -1) {
+						cerr << "[gpio-server] Could not get port with sockname" << endl;
+						close(new_data_socket);
+					}
+					response.port = ntohs(sin.sin_port);
+				}
+
+				if (!writeStruct(conn, &response)) {
 					cerr << "[gpio-server] could not write IOF-Req answer" << endl;
+					if (new_data_socket < 0)
+						close(conn);
+					return;
+				}
+
+				// TODO: set socket nonblock with timeout (1s)
+				int data_channel = awaitConnection(new_data_socket);
+
+				close(new_data_socket); // will this close data channel as well?
+
+				if(data_channel < 0) {
+					cerr << "[gpio-server] IOF data channel connection not successful" << endl;
+					// TODO: really close normal connection for reset?
 					close(conn);
 					return;
 				}
-				// TODO: awaitDataChannelConnection
+
+				active_IOF_channels.emplace(req.reqIOF.pin, data_channel);
+
 				break;
 			}
 			case Request::Type::END_IOF:
-				// TODO
+				// TODO something with closing from activeChannels
 				cerr << "END IOF not yet implemented" << endl;
 				break;
 			default:
@@ -247,4 +291,26 @@ void GpioServer::handleConnection(int conn) {
 
 	DEBUG("gpio-client disconnected (%d)\n", bytes);
 	close(conn);
+}
+
+SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
+	auto channel = active_IOF_channels.find(pin);
+	if(channel == active_IOF_channels.end()) {
+		return 0;
+	}
+	int sock = channel->second;
+
+	if(!writeStruct(sock, &byte)) {
+		cerr << "[gpio-server] Could not write SPI command to cs " << pin << endl;
+		close(sock);
+		active_IOF_channels.erase(channel);
+	}
+
+	SPI_Response response;
+	if(!readStruct(sock, &response)) {
+		cerr << "[gpio-server] Could not read SPI response to cs " << (int)pin << endl;
+		close(sock);
+		active_IOF_channels.erase(channel);
+	}
+	return response;
 }

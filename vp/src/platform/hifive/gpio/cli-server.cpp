@@ -48,20 +48,26 @@ int main(int argc, char* argv[]) {
 	signal(SIGINT, signalHandler);
 
 	gpio.registerOnChange(bind(onChangeCallback, &gpio, placeholders::_1, placeholders::_2));
-	thread server(bind(&GpioServer::startListening, &gpio));
+	thread server(bind(&GpioServer::startAccepting, &gpio));
 
 	gpio.state.pins[0] = Tristate::IOF_SPI;
 	gpio.state.pins[1] = Tristate::IOF_PWM;
+
+	SPI_Command sumbyte = 0;
 
 	while (!stop && !gpio.isStopped()) {
 		// some example actions
 		usleep(100000);
 		// here was a bitshift, implement this for lulz?
 
+		gpio.pushSPI(0, sumbyte++);
+
 		auto pin = reinterpret_cast<uint8_t*>(&gpio.state.pins[11]);
 		(*pin)++;
 		if(*pin > 6)
 			*pin = 0;
+
+		gpio.pushSPI(0, sumbyte++);
 	}
 	gpio.quit();
 	server.join();

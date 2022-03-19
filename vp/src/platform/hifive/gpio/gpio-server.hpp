@@ -26,11 +26,12 @@ private:
 	OnChangeCallback fun;
 	void handleConnection(int conn);
 
-	std::map<gpio::PinNumber,int> activeChannels;
+	std::map<gpio::PinNumber,int> active_IOF_channels;
 
 	static int openSocket(const char* port);
 
-	bool awaitDataChannelConnection(int socket, gpio::PinNumber);
+	// listens with timeout
+	static int awaitConnection(int socket);
 
 public:
 	GpioServer();
@@ -39,7 +40,7 @@ public:
 	void quit();
 	bool isStopped();
 	void registerOnChange(OnChangeCallback fun);
-	void startListening();
+	void startAccepting();
 
 	// pin number may be CS? If that works.
 	gpio::SPI_Response pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte);

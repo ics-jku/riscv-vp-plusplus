@@ -65,7 +65,7 @@ int registerForSPI(GpioClient& gpio) {
 	}
 
 	GpioClient::OnChange_SPI spi_update = [](SPI_Command c){
-		cout << "got SPI command " << c << endl; return 0;
+		cout << "got SPI command " << c << endl; return 1;
 	};
 
 
