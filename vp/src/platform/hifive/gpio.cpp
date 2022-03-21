@@ -3,6 +3,38 @@
 using namespace std;
 using namespace gpio;
 
+static Tristate getIOF(PinNumber pin, bool iofsel) {
+	switch(pin) {
+	case 16:	// RX
+	case 17:	// TX
+		return !iofsel ? Tristate::IOF_UART : Tristate::UNSET;
+	case 19:	// PWM1_1
+	case 20:	// PWM1_0
+	case 21:	// PWM1_2
+	case 22:	// PWM1_3
+		return !iofsel ? Tristate::UNSET : Tristate::IOF_PWM;
+	case  0:	// PWM0_0
+	case  1:	// PWM0_1
+		return !iofsel ? Tristate::UNSET : Tristate::IOF_PWM;
+	case  2:	// SPI1 CS0, PWM0_2
+	case  3:	// SPI1 OSI, PWM0_3
+		return !iofsel ? Tristate::IOF_SPI : Tristate::IOF_PWM;
+	case  4:	// SPI1 MISO
+	case  5:	// SPI1 SCK
+		return !iofsel ? Tristate::IOF_SPI : Tristate::UNSET;
+	case  9:	// SPI1 CS2
+		return !iofsel ? Tristate::IOF_SPI : Tristate::UNSET;
+	case 10:	// SPI1 CS3, PWM2_0
+		return !iofsel ? Tristate::IOF_SPI : Tristate::IOF_PWM;
+	case 11:	// PWM2_1
+	case 12:	// PWM2_2
+	case 13:	// PWM2_3
+		return !iofsel ? Tristate::UNSET : Tristate::IOF_PWM;
+	default:
+		return Tristate::UNSET;
+	}
+}
+
 GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_gpio_base) {
 	tsock.register_b_transport(this, &GPIO::transport);
 
@@ -49,13 +81,15 @@ GPIO::~GPIO() {
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.write) {
-		if (r.vptr == &value) {
+		switch (r.addr) {
+		case PIN_VALUE_ADDR:
 			cerr << "[GPIO] write to value register is ignored!" << endl;
 			return;
-		} else if (r.vptr == &pullup_en) {
+		case PULLUP_EN_ADDR:
 			// cout << "[GPIO] pullup changed" << endl;
 			// bitPrint(reinterpret_cast<unsigned char*>(&pullup_en),
 			// sizeof(uint32_t));
+		{
 			const auto newly_pulled_up_bits = (r.nv ^ pullup_en) & r.nv;
 			value |= newly_pulled_up_bits;
 			for(PinNumber i = 0; i < available_pins; i++) {
@@ -63,7 +97,10 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 					server.state.pins[i] = Tristate::HIGH;
 				}
 			}
-		} else if(r.vptr == &output_en) {
+		}
+			break;
+		case OUTPUT_EN_REG_ADDR:
+		{
 			const auto newly_output_disabled_bits = (r.nv ^ output_en) & output_en;
 			value &= ~(newly_output_disabled_bits);
 			for(PinNumber i = 0; i < available_pins; i++) {
@@ -72,31 +109,56 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 				}
 			}
 		}
+			break;
+		default:
+			break;
+		}
 	}
 	r.fn();
 	if (r.write) {
-		if (r.vptr == &port) {
+		switch (r.addr) {
+		case PORT_REG_ADDR:
 			// cout << "[GPIO] new Port value: ";
 			// bitPrint(reinterpret_cast<unsigned char*>(&port),
 
 			// value and server.state might differ, if a bit is changed by
 			// client and the synchronous_change was not fired yet.
+		{
 			const auto valid_output = (port & output_en);
 			value = (value & ~output_en) | valid_output;
 
 			for(PinNumber i = 0; i < available_pins; i++) {
-				if((1l << i) & output_en) {
+				if((1l << i) & output_en & ~iof_en) {
 					server.state.pins[i] = valid_output & (1l << i) ? Tristate::HIGH : Tristate::LOW;
 				}
 			}
-		} else if (r.vptr == &fall_intr_en) {
+		}
+			break;
+		case IOF_EN_REG_ADDR:
+		case IOF_SEL_REG_ADDR:
+			for (PinNumber i = 0; i < available_pins; i++) {
+				if((1l << i) & iof_en) {
+					{
+					const auto iof = getIOF(i, iof_sel & (1l << i));
+					//cout << "IOF for pin " << (int)i << " is " << (int) iof << endl;
+					if(iof == Tristate::UNSET)
+						cerr << "[GPIO] Set invalid iof to pin " << (int)i << endl;
+					else
+						server.state.pins[i] = iof;
+					}
+				}
+			}
+			break;
+		case FALL_INTR_EN:
 			// cout << "[GPIO] set fall_intr_en to ";
-			// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_en),
-			// sizeof(uint32_t));
-		} else if (r.vptr == &fall_intr_pending) {
+			// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_en), sizeof(uint32_t));
+			break;
+		case FALL_INTR_PEND:
 			// cout << "[GPIO] set fall_intr_pending to ";
-			// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending),
-			// sizeof(uint32_t));
+			// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending),sizeof(uint32_t));
+			break;
+		default:
+			break;
 		}
 	}
 }

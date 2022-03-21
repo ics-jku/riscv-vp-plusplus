@@ -68,11 +68,11 @@ bool GpioClient::update() {
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::GET_BANK;
 	if (!writeStruct(fd, &req)) {
-		cerr << "[gpio-client] Error in update request" << fd << endl;
+		cerr << "[gpio-client] Error in update request: " << strerror(errno) << endl;
 		return false;
 	}
 	if (!readStruct(fd, &state)) {
-		cerr << "[gpio-client] Error in update read " << fd << endl;
+		cerr << "[gpio-client] Error in update read: " << strerror(errno) << endl;
 		return false;
 	}
 	return true;
