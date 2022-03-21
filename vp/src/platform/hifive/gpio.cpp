@@ -48,13 +48,29 @@ GPIO::~GPIO() {
 }
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r) {
-	uint32_t reg_bak = 0;
 	if (r.write) {
 		if (r.vptr == &value) {
 			cerr << "[GPIO] write to value register is ignored!" << endl;
 			return;
 		} else if (r.vptr == &pullup_en) {
-			reg_bak = pullup_en;
+			// cout << "[GPIO] pullup changed" << endl;
+			// bitPrint(reinterpret_cast<unsigned char*>(&pullup_en),
+			// sizeof(uint32_t));
+			const auto newly_pulled_up_bits = (r.nv ^ pullup_en) & r.nv;
+			value |= newly_pulled_up_bits;
+			for(PinNumber i = 0; i < available_pins; i++) {
+				if((1l << i) & newly_pulled_up_bits) {
+					server.state.pins[i] = Tristate::HIGH;
+				}
+			}
+		} else if(r.vptr == &output_en) {
+			const auto newly_output_disabled_bits = (r.nv ^ output_en) & output_en;
+			value &= ~(newly_output_disabled_bits);
+			for(PinNumber i = 0; i < available_pins; i++) {
+				if((1l << i) & newly_output_disabled_bits) {
+					server.state.pins[i] = Tristate::UNSET;
+				}
+			}
 		}
 	}
 	r.fn();
@@ -62,18 +78,17 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 		if (r.vptr == &port) {
 			// cout << "[GPIO] new Port value: ";
 			// bitPrint(reinterpret_cast<unsigned char*>(&port),
-			// sizeof(uint32_t));
 
 			// value and server.state might differ, if a bit is changed by
-			// client and the interrupt was not fired yet.
-			value = (value & ~output_en) | (port & output_en);
-			server.state = (server.state & ~output_en) | (port & output_en);
-		} else if (r.vptr == &pullup_en) {
-			// cout << "[GPIO] pullup changed" << endl;
-			// bitPrint(reinterpret_cast<unsigned char*>(&pullup_en),
-			// sizeof(uint32_t));
-			value |= reg_bak ^ pullup_en;
-			server.state |= reg_bak ^ pullup_en;
+			// client and the synchronous_change was not fired yet.
+			const auto valid_output = (port & output_en);
+			value = (value & ~output_en) | valid_output;
+
+			for(PinNumber i = 0; i < available_pins; i++) {
+				if((1l << i) & output_en) {
+					server.state.pins[i] = valid_output & (1l << i) ? Tristate::HIGH : Tristate::LOW;
+				}
+			}
 		} else if (r.vptr == &fall_intr_en) {
 			// cout << "[GPIO] set fall_intr_en to ";
 			// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_en),
@@ -114,59 +129,55 @@ void GPIO::synchronousChange() {
 
 	gpio::State serverSnapshot = server.state;
 
-	// bitPrint(reinterpret_cast<unsigned char*>(&diff), 4);
-	// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), 4);
-
-	if (diff == 0) {
-		// cout << "server and value do not differ." << endl;
-		return;
-	}
-	// cout << "server and value differ." << endl;
-
 	// This is seriously more complicated just handling the last updated bit
 	// from asyncChange. But because we have to wait until the update phase, and
 	// until then there may fire multiple bits!
 
 	for (PinNumber i = 0; i < available_pins; i++) {
-		if (diff & (1l << i)) {
-			// cout << "bit " << (unsigned) i << " changed ";
-			if (serverSnapshot & (1l << i)) {
-				// cout << "to 1 ";
-				if (rise_intr_en & (1l << i)) {
+		const auto bitmask = 1l << i;
+		if (input_en & bitmask) {
+			// cout << "bit " << (unsigned) i << " is input enabled ";
+			if (!(value & bitmask) && serverSnapshot.pins[i] == Tristate::HIGH) {
+				// cout << " changed to 1 ";
+				if (rise_intr_en & bitmask) {
 					// cout << "and interrupt is enabled ";
 					// interrupt pending is inverted
-					if (~rise_intr_pending & (1l << i)) {
+					if (~rise_intr_pending & bitmask) {
 						// cout << "but not yet consumed" << endl;
 					} else {
 						// cout << "and is being fired at " << int_gpio_base + i
 						// << endl;
-						rise_intr_pending &= ~(1l << i);
+						rise_intr_pending &= ~bitmask;
 						plic->gateway_trigger_interrupt(int_gpio_base + i);
 					}
 				} else {
 					// cout << "but no interrupt is registered." << endl;
 				}
+				// transfer to value register
+				value |= bitmask;
+			} else if ((value & bitmask) && serverSnapshot.pins[i] == Tristate::LOW){
+				// cout << " changed to 0 ";
+				if (fall_intr_en & bitmask) {
+					// cout << "and interrupt is enabled ";
+					// interrupt pending is inverted
+					if (~fall_intr_pending & bitmask) {
+						// cout << "but not yet consumed" << endl;
+					} else {
+						// cout << "and is being fired at " << int_gpio_base + i
+						// << endl;
+						fall_intr_pending &= ~bitmask;
+						plic->gateway_trigger_interrupt(int_gpio_base + i);
+					}
+				} else {
+					// cout << "but no interrupt is registered." << endl;
+				}
+				// transfer to value register
+				value &= ~bitmask;
 			} else {
-				// cout << "to 0 ";
-				if (fall_intr_en & (1l << i)) {
-					// cout << "and interrupt is enabled ";
-					// interrupt pending is inverted
-					if (~fall_intr_pending & (1l << i)) {
-						// cout << "but not yet consumed" << endl;
-					} else {
-						// cout << "and is being fired at " << int_gpio_base + i
-						// << endl;
-						fall_intr_pending &= ~(1l << i);
-						plic->gateway_trigger_interrupt(int_gpio_base + i);
-					}
-				} else {
-					// cout << "but no interrupt is registered." << endl;
-				}
+				cerr << "[GPIO] This branch should not yet be reachable" << endl;
+				// TODO: If Tristate::Unset, determine if pullup or pulldown is set and decide port value state
 			}
 		}
 	}
-	value = (serverSnapshot & input_en) | (port & output_en);
-	if (serverSnapshot != server.state) {
-		synchronousChange();
-	}
+	// TODO: Should routine recheck if something was changed in the meantime?
 }

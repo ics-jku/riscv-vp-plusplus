@@ -16,9 +16,9 @@ void bitPrint(unsigned char* buf, size_t size);
 
 namespace gpio {
 	enum class Tristate : uint8_t {
-		LOW = 0,
+		UNSET = 0,
+		LOW,
 		HIGH,
-		UNSET,
 
 		IOF_SPI = 4,
 		IOF_I2C,	// not yet used
@@ -39,7 +39,12 @@ namespace gpio {
 
 	struct State {
 		//TODO somehow packed?
-		gpio::Tristate pins[max_num_pins];
+		union {
+			gpio::Tristate pins[max_num_pins];
+			uint64_t port[(sizeof(gpio::Tristate) * sizeof(pins) + 1) / sizeof(uint64_t)];
+		};
+		static_assert(sizeof(gpio::Tristate) * sizeof(pins) != sizeof(port) * sizeof(uint64_t),
+				"Warning: Convenience-function port is causing State to be bigger than necessary");
 	};
 
 	struct Request {
@@ -54,7 +59,7 @@ namespace gpio {
 		union {
 			struct {
 				uint8_t pin : 6;	// max num pins: 64
-				gpio::Tristate val : 2;
+				gpio::Tristate val : 2;	// needs only to hold first three items
 			} setBit;
 
 			struct {
