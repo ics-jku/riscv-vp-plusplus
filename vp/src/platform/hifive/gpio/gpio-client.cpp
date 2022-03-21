@@ -68,11 +68,11 @@ bool GpioClient::update() {
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::GET_BANK;
 	if (!writeStruct(fd, &req)) {
-		cerr << "Error in write " << fd << endl;
+		cerr << "[gpio-client] Error in update request" << fd << endl;
 		return false;
 	}
 	if (!readStruct(fd, &state)) {
-		cerr << "Error in read " << fd << endl;
+		cerr << "[gpio-client] Error in update read " << fd << endl;
 		return false;
 	}
 	return true;
@@ -86,7 +86,7 @@ bool GpioClient::setBit(uint8_t pos, Tristate val) {
 	req.setBit.val = val;
 
 	if (!writeStruct(fd, &req)) {
-		cerr << "Error in write" << endl;
+		cerr << "[gpio-client] Error in setBit" << endl;
 		return false;
 	}
 	return true;
@@ -99,19 +99,19 @@ uint16_t GpioClient::requestIOFchannel(PinNumber pin) {
 	req.reqIOF.pin = pin;
 
 	if (!writeStruct(fd, &req)) {
-		cerr << "Error in write SPI IOF register request" << endl;
+		cerr << "[gpio-client] Error in write SPI IOF register request" << endl;
 		return 0;
 	}
 
 	Req_IOF_Response resp;
 
 	if (!readStruct(fd, &resp)) {
-		cerr << "Error in read SPI IOF register response" << endl;
+		cerr << "[gpio-client] Error in read SPI IOF register response" << endl;
 		return 0;
 	}
 
 	if(resp.port < 1024) {
-		cerr << "Invalid port " << resp.port << " given from IOF register response" << endl;
+		cerr << "[gpio-client] Invalid port " << resp.port << " given from IOF register response" << endl;
 		return 0;
 	}
 	return resp.port;
@@ -133,7 +133,7 @@ bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 
 	int dataChannel = connectToHost(currentHost, port_c);
 	if(dataChannel < 0) {
-		cerr << "Could not open offered port " << port_c << endl;
+		cerr << "[gpio-client] Could not connect to offered port " << currentHost << ":" << port_c << endl;
 		return false;
 	}
 
@@ -156,7 +156,7 @@ void GpioClient::handleSPIchannel(int socket, OnChange_SPI fun) {
 		}
 	}
 	close(socket);
-	cerr << "[gpio client] Error or closed socket" << endl;
+	cerr << "[gpio-client] Error or closed socket" << endl;
 }
 
 int GpioClient::connectToHost(const char *host, const char *port) {
@@ -178,7 +178,7 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 	// loop through all the results and connect to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) {
 		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("client: socket");
+			cerr << "[gpio-client] opening of socket unsuccessful " << strerror(errno) << endl;
 			continue;
 		}
 
@@ -198,7 +198,7 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-	DEBUG("client: connecting to %s\n", s);
+	DEBUG("[gpio-client] connecting to %s\n", s);
 
 	freeaddrinfo(servinfo);  // all done with this structure
 
@@ -207,7 +207,7 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 
 bool GpioClient::setupConnection(const char *host, const char *port) {
 	if((fd = connectToHost(host, port)) < 0) {
-		cerr << "Could not connect to " << host << ":" << port << endl;
+		cerr << "[gpio-client] Could not connect to " << host << ":" << port << endl;
 		return false;
 	}
 	currentHost = host;
