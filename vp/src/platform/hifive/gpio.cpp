@@ -1,6 +1,7 @@
 #include "gpio.h"
 
 using namespace std;
+using namespace gpio;
 
 GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_gpio_base) {
 	tsock.register_b_transport(this, &GPIO::transport);
@@ -89,21 +90,19 @@ void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
 
-void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val) {
-	const auto state_prev = server.state;
+void GPIO::asyncOnchange(PinNumber bit, Tristate val) {
+	const auto state_prev = server.state.pins[bit];
 
 	switch(val){
-	case GpioCommon::Tristate::LOW:
-		server.state &= ~(1l << bit);
-		break;
-	case GpioCommon::Tristate::HIGH:
-		server.state |= 1l << bit;
+	case Tristate::LOW:
+	case Tristate::HIGH:
+		server.state.pins[bit] = val;
 		break;
 	default:
 		cout << "[GPIO] Ignoring other tristates for now" << endl;
 	}
 
-	if(state_prev != server.state){
+	if(state_prev != server.state.pins[bit]){
 		// cout << "[GPIO] Bit " << (unsigned) bit << " changed to " << (unsigned)
 		// val << endl;
 		asyncEvent.notify();
@@ -113,8 +112,7 @@ void GPIO::asyncOnchange(uint8_t bit, GpioCommon::Tristate val) {
 void GPIO::synchronousChange() {
 	// cout << "[GPIO] might have changed!" << endl;
 
-	GpioCommon::Reg serverSnapshot = server.state;
-	uint32_t diff = (serverSnapshot ^ value) & input_en;
+	gpio::State serverSnapshot = server.state;
 
 	// bitPrint(reinterpret_cast<unsigned char*>(&diff), 4);
 	// bitPrint(reinterpret_cast<unsigned char*>(&fall_intr_pending), 4);
@@ -129,7 +127,7 @@ void GPIO::synchronousChange() {
 	// from asyncChange. But because we have to wait until the update phase, and
 	// until then there may fire multiple bits!
 
-	for (uint8_t i = 0; i < 32; i++) {
+	for (PinNumber i = 0; i < available_pins; i++) {
 		if (diff & (1l << i)) {
 			// cout << "bit " << (unsigned) i << " changed ";
 			if (serverSnapshot & (1l << i)) {

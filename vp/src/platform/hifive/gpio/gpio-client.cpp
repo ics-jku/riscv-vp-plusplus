@@ -129,6 +129,8 @@ bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 	char port_c[10]; // may or may not be enough, but we are not planning for failure!
 	sprintf(port_c, "%6d", port);
 
+	//cout << "Got offered port " << port_c << " for pin " << (int) pin << endl;
+
 	int dataChannel = connectToHost(currentHost, port_c);
 	if(dataChannel < 0) {
 		cerr << "Could not open offered port " << port_c << endl;

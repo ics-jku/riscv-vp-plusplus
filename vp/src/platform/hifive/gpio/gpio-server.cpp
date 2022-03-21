@@ -164,7 +164,7 @@ void GpioServer::registerOnChange(OnChangeCallback fun) {
 int GpioServer::awaitConnection(int socket) {
 	struct sockaddr_storage their_addr;  // connector's address information
 	socklen_t sin_size = sizeof their_addr;
-	char s[INET6_ADDRSTRLEN];
+	// char s[INET6_ADDRSTRLEN];
 
 	int new_connection = accept(socket, (struct sockaddr *)&their_addr, &sin_size);
 	if (new_connection < 0) {
@@ -263,10 +263,10 @@ void GpioServer::handleConnection(int conn) {
 					return;
 				}
 
-				// TODO: set socket nonblock with timeout (1s)
+				// TODO: set socket nonblock with timeout (~1s)
 				int data_channel = awaitConnection(new_data_socket);
 
-				close(new_data_socket); // will this close data channel as well?
+				close(new_data_socket);	// accepting just the first connection
 
 				if(data_channel < 0) {
 					cerr << "[gpio-server] IOF data channel connection not successful" << endl;
@@ -319,7 +319,7 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 		active_IOF_channels.erase(channel);
 	}
 
-	SPI_Response response;
+	SPI_Response response = 0;
 	if(!readStruct(sock, &response)) {
 		cerr << "[gpio-server] Could not read SPI response to cs " << (int)pin << endl;
 		close(sock);

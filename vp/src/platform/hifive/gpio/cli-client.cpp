@@ -64,10 +64,9 @@ int registerForSPI(GpioClient& gpio) {
 		return -1;
 	}
 
-	GpioClient::OnChange_SPI spi_update = [](SPI_Command c){
-		cout << "got SPI command " << c << endl; return 1;
+	GpioClient::OnChange_SPI spi_update_fun = [](SPI_Command c){
+		cout << "got SPI command " << (int)c << endl; return c%4;
 	};
-
 
 	PinNumber spi_pin;
 	//looking for the first available SPI pin
@@ -77,7 +76,7 @@ int registerForSPI(GpioClient& gpio) {
 	}
 	// yeah, there may be a bug if not found... but this is a test.
 
-	if(!gpio.registerSPIOnChange(spi_pin, spi_update)){
+	if(!gpio.registerSPIOnChange(spi_pin, spi_update_fun)){
 		cerr << "Could not register SPI onchange" << endl;
 		return -1;
 	}

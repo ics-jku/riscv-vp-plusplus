@@ -54,6 +54,7 @@ struct GPIO : public sc_core::sc_module {
 	vp::map::LocalRouter router = {"GPIO"};
 	interrupt_gateway *plic = nullptr;
 
+	static constexpr gpio::PinNumber available_pins = 32;
 	const unsigned int_gpio_base;
 	GpioServer server;
 	std::thread *serverThread;
@@ -67,6 +68,6 @@ struct GPIO : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 
-	void asyncOnchange(uint8_t bit, gpio::Tristate val);
+	void asyncOnchange(gpio::PinNumber bit, gpio::Tristate val);
 	void synchronousChange();
 };
