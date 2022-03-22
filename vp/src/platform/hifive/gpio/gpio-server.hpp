@@ -30,7 +30,6 @@ private:
 
 	static int openSocket(const char* port);
 
-	// listens with timeout
 	static int awaitConnection(int socket);
 
 public:

@@ -125,8 +125,8 @@ int sc_main(int argc, char **argv) {
 		spi1.connect(0, gpio0.getSPIwriteFunction(0));
 	}
 	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
-	//spi1.connect(2, std::bind(&SS1106::write, &oled, std::placeholders::_1));
-	spi1.connect(2, gpio0.getSPIwriteFunction(2));
+	spi1.connect(2, std::bind(&SS1106::write, &oled, std::placeholders::_1));
+	//spi1.connect(2, gpio0.getSPIwriteFunction(2));
 	spi1.connect(3, gpio0.getSPIwriteFunction(3));
 	SPI spi2("SPI2");
 	UART uart0("UART0", 3);
