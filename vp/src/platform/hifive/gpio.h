@@ -4,6 +4,7 @@
 #include "core/common/irq_if.h"
 #include "gpio/gpio-server.hpp"
 #include "util/tlm_map.h"
+#include "spi.h"
 
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
@@ -70,4 +71,6 @@ struct GPIO : public sc_core::sc_module {
 
 	void asyncOnchange(gpio::PinNumber bit, gpio::Tristate val);
 	void synchronousChange();
+
+	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
 };

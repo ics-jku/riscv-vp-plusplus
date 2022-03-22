@@ -29,6 +29,7 @@ using namespace std;
 using namespace gpio;
 
 // get sockaddr, IPv4 or IPv6:
+/*
 static void *get_in_addr(struct sockaddr *sa) {
 	if (sa->sa_family == AF_INET) {
 		return &(((struct sockaddr_in *)sa)->sin_addr);
@@ -36,6 +37,7 @@ static void *get_in_addr(struct sockaddr *sa) {
 
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
+*/
 
 template<typename T>
 bool writeStruct(int handle, T* s){
@@ -311,6 +313,10 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	if(channel == active_IOF_channels.end()) {
 		return 0;
 	}
+	/*
+	 * TODO: If registered on SPI data pins (miso, mosi, clk) and not on CS,
+	 * It should receive all SPI data, not just the CS activated ones
+	 */
 	int sock = channel->second;
 
 	if(!writeStruct(sock, &byte)) {

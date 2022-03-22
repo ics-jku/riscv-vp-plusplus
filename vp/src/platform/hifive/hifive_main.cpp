@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <functional>
 
 // Interrupt numbers	(see platform.h)
 #define INT_RESERVED 0
@@ -119,10 +120,14 @@ int sc_main(int argc, char **argv) {
 	std::unique_ptr<CAN> can = nullptr;
 	if (opt.enable_can) {
 		can = std::make_unique<CAN>();
-		spi1.connect(0, *can);
+		//spi1.connect(0, std::bind(&CAN::write, &can, std::placeholders::_1));	// unique ptr ist schwer mit reference
+	} else {
+		spi1.connect(0, gpio0.getSPIwriteFunction(0));
 	}
-	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		//pin 16 is offset 10
-	spi1.connect(2, oled);
+	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
+	//spi1.connect(2, std::bind(&SS1106::write, &oled, std::placeholders::_1));
+	spi1.connect(2, gpio0.getSPIwriteFunction(2));
+	spi1.connect(3, gpio0.getSPIwriteFunction(3));
 	SPI spi2("SPI2");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
@@ -143,20 +148,20 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_data_dmi)
 		iss_mem_if.dmi_ranges.emplace_back(dram_dmi);
 
-	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
-	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr);
-	bus.ports[2] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-	bus.ports[3] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
-	bus.ports[4] = new PortMapping(opt.aon_start_addr, opt.aon_end_addr);
-	bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
-	bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr);
-	bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
-	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
-	bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
-	bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr);
-	bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
-	bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[ 0] = new PortMapping(opt.flash_start_addr,  opt.flash_end_addr);
+	bus.ports[ 1] = new PortMapping(opt.dram_start_addr,   opt.dram_end_addr);
+	bus.ports[ 2] = new PortMapping(opt.plic_start_addr,   opt.plic_end_addr);
+	bus.ports[ 3] = new PortMapping(opt.clint_start_addr,  opt.clint_end_addr);
+	bus.ports[ 4] = new PortMapping(opt.aon_start_addr,    opt.aon_end_addr);
+	bus.ports[ 5] = new PortMapping(opt.prci_start_addr,   opt.prci_end_addr);
+	bus.ports[ 6] = new PortMapping(opt.spi0_start_addr,   opt.spi0_end_addr);
+	bus.ports[ 7] = new PortMapping(opt.uart0_start_addr,  opt.uart0_end_addr);
+	bus.ports[ 8] = new PortMapping(opt.maskROM_start_addr,opt.maskROM_end_addr);
+	bus.ports[ 9] = new PortMapping(opt.gpio0_start_addr,  opt.gpio0_end_addr);
+	bus.ports[10] = new PortMapping(opt.sys_start_addr,    opt.sys_end_addr);
+	bus.ports[11] = new PortMapping(opt.spi1_start_addr,   opt.spi1_end_addr);
+	bus.ports[12] = new PortMapping(opt.spi2_start_addr,   opt.spi2_end_addr);
+	bus.ports[13] = new PortMapping(opt.uart1_start_addr,  opt.uart1_end_addr);
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(dram, dram.size, opt.dram_start_addr, false);

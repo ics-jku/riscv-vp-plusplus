@@ -9,7 +9,7 @@
 #include <functional>
 #include <thread>
 
-class CAN : public SpiInterface {
+class CAN  {
 	enum class State {
 		init,
 		readRegister,
@@ -76,11 +76,11 @@ class CAN : public SpiInterface {
 
 	volatile bool stop;
 
-   public:
+public:
 	CAN();
 	~CAN();
 
-	uint8_t write(uint8_t byte) override;
+	uint8_t write(uint8_t byte);
 
 	const char* registerName(uint8_t id);
 	const char* regValueName(uint8_t id);

@@ -35,6 +35,23 @@ static Tristate getIOF(PinNumber pin, bool iofsel) {
 	}
 }
 
+static PinNumber getPinOffsFromSPIcs(PinNumber cs) {
+	switch (cs) {
+	case 0:
+		return 2;
+	case 1:
+		assert(false && "[GPIO] On Fe310, CS 1 is not routable");
+		return max_num_pins;
+	case 2:
+		return 9;
+	case 3:
+		return 10;
+	default:
+		assert(false && "[GPIO] Invalid CS pin given");
+		return max_num_pins;
+	}
+}
+
 GPIO::GPIO(sc_core::sc_module_name, unsigned int_gpio_base) : int_gpio_base(int_gpio_base) {
 	tsock.register_b_transport(this, &GPIO::transport);
 
@@ -243,3 +260,9 @@ void GPIO::synchronousChange() {
 	}
 	// TODO: Should routine recheck if something was changed in the meantime?
 }
+
+SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
+	const auto pin = getPinOffsFromSPIcs(cs);
+	return bind(&GpioServer::pushSPI, &server, pin, placeholders::_1);
+}
+

@@ -14,7 +14,7 @@
 #include <map>
 #include <functional>
 
-class SS1106 : public SpiInterface  {
+class SS1106 {
 
 	static const std::map<ss1106::Operator, uint8_t> opcode;
 
@@ -45,5 +45,5 @@ public:
 	SS1106(std::function<bool()> getDCPin);
 	~SS1106();
 
-	uint8_t write(uint8_t byte) override;
+	uint8_t write(uint8_t byte);
 };

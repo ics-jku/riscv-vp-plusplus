@@ -64,21 +64,21 @@ int registerForSPI(GpioClient& gpio) {
 		return -1;
 	}
 
-	GpioClient::OnChange_SPI spi_update_fun = [](SPI_Command c){
-		cout << "got SPI command " << (int)c << endl; return c%4;
-	};
-
 	PinNumber spi_pin;
-	//looking for the first available SPI pin
+	//looking for all available SPI pins
 	for(spi_pin = 0; spi_pin < max_num_pins; spi_pin++){
-		if(gpio.state.pins[spi_pin] == Tristate::IOF_SPI)
-			break;
-	}
-	// yeah, there may be a bug if not found... but this is a test.
-
-	if(!gpio.registerSPIOnChange(spi_pin, spi_update_fun)){
-		cerr << "Could not register SPI onchange" << endl;
-		return -1;
+		if(gpio.state.pins[spi_pin] == Tristate::IOF_SPI) {
+			if(gpio.registerSPIOnChange(spi_pin,
+					[spi_pin](SPI_Command c){
+						cout << "Pin " << (int)spi_pin << " got SPI command " << (int)c << endl; return c%4;
+					}
+				)){
+				cout << "Registered SPI on Pin " << (int)spi_pin << endl;
+			} else {
+				cerr << "Could not register SPI onchange" << endl;
+				return -1;
+			}
+		}
 	}
 
 	while(gpio.update()){
@@ -96,10 +96,11 @@ int main(int argc, char* argv[]) {
 
 	GpioClient gpio;
 
-	if (!gpio.setupConnection(argv[1], argv[2])) {
-		cout << "cant setup connection" << endl;
-		return -1;
+	while(!gpio.setupConnection(argv[1], argv[2])) {
+		cout << "connecting..." << endl;
+		usleep(1000000);
 	}
+	cout << "connected." << endl;
 
 	int test = 0;
 	if (argc > 3)

@@ -11,11 +11,7 @@
 #include <map>
 #include <queue>
 
-class SpiInterface {
-   public:
-	virtual ~SpiInterface(){};
-	virtual uint8_t write(uint8_t byte) = 0;
-};
+typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
 
 typedef uint32_t Pin;
 
@@ -23,9 +19,9 @@ struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
 	//single queue for all targets
-	static constexpr uint_fast8_t queue_size   = 16;
+	static constexpr uint_fast8_t queue_size = 16;
 	std::queue<uint8_t> rxqueue;
-	std::map<Pin, SpiInterface *> targets;
+	std::map<Pin, SpiWriteFunction> targets;
 
 	// memory mapped configuration registers
 	uint32_t sckdiv = 0;
@@ -116,12 +112,12 @@ struct SPI : public sc_core::sc_module {
 
 		if (r.write) {
 			if (r.vptr == &csid) {
-				std::cout << "Chip select " << csid << std::endl;
+				// std::cout << "Chip select " << csid << std::endl;
 			} else if (r.vptr == &txdata) {
 				// std::cout << std::hex << txdata << " ";
 				auto target = targets.find(csid);
 				if (target != targets.end()) {
-					rxqueue.push(target->second->write(txdata));
+					rxqueue.push(target->second(txdata));
 
 					//TODO: Model RX-Watermark IP
 					if(rxqueue.size() > queue_size)
@@ -142,13 +138,13 @@ struct SPI : public sc_core::sc_module {
 		router.transport(trans, delay);
 	}
 
-	void connect(Pin cs, SpiInterface &interface) {
+	void connect(Pin cs, SpiWriteFunction interface) {
 		if(cs == 1 || cs > 3)
 		{
 			std::cerr << "SPI: Unsupported chip select " << cs  << std::endl;
 			return;
 		}
-		targets.insert(std::pair<const Pin, SpiInterface *>(cs, &interface));
+		targets.insert(std::pair<const Pin, SpiWriteFunction>(cs, interface));
 	}
 };
 

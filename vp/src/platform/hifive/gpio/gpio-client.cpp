@@ -68,11 +68,11 @@ bool GpioClient::update() {
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::GET_BANK;
 	if (!writeStruct(fd, &req)) {
-		cerr << "[gpio-client] Error in update request: " << strerror(errno) << endl;
+		cerr << "[gpio-client] Error or closed socket in update request: " << strerror(errno) << endl;
 		return false;
 	}
 	if (!readStruct(fd, &state)) {
-		cerr << "[gpio-client] Error in update read: " << strerror(errno) << endl;
+		cerr << "[gpio-client] Error or closed socket in update read: " << strerror(errno) << endl;
 		return false;
 	}
 	return true;
@@ -122,7 +122,7 @@ bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 	auto port = requestIOFchannel(pin);
 
 	if(port == 0) {
-		cerr << "SPI IOF port request unsuccessful" << endl;
+		cerr << "[gpio-client] [SPI channel] IOF port request unsuccessful" << endl;
 		return false;
 	}
 
@@ -133,7 +133,7 @@ bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 
 	int dataChannel = connectToHost(currentHost, port_c);
 	if(dataChannel < 0) {
-		cerr << "[gpio-client] Could not connect to offered port " << currentHost << ":" << port_c << endl;
+		cerr << "[gpio-client] [SPI channel] Could not connect to offered port " << currentHost << ":" << port_c << endl;
 		return false;
 	}
 
@@ -150,13 +150,13 @@ void GpioClient::handleSPIchannel(int socket, OnChange_SPI fun) {
 	while(readStruct(socket, &spi_in)) {
 		SPI_Response resp = fun(spi_in);
 		if(!writeStruct(socket, &resp)) {
-			cerr << "Error in SPI write answer from fd " << socket << endl;
+			cerr << "[gpio-client] [SPI channel] Error in SPI write answer from fd " << socket << endl;
 			close(socket);
 			return;
 		}
 	}
 	close(socket);
-	cerr << "[gpio-client] Error or closed socket" << endl;
+	cerr << "[gpio-client] [SPI channel] Error or closed socket" << endl;
 }
 
 int GpioClient::connectToHost(const char *host, const char *port) {
