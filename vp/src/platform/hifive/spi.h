@@ -112,9 +112,9 @@ struct SPI : public sc_core::sc_module {
 
 		if (r.write) {
 			if (r.vptr == &csid) {
-				// std::cout << "Chip select " << csid << std::endl;
+				std::cout << "Chip select " << csid << std::endl;
 			} else if (r.vptr == &txdata) {
-				// std::cout << std::hex << txdata << " ";
+				//std::cout << std::hex << txdata << " ";
 				auto target = targets.find(csid);
 				if (target != targets.end()) {
 					rxqueue.push(target->second(txdata));

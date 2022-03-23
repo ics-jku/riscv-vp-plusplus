@@ -1,5 +1,5 @@
 #pragma once
-#include <QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <cassert>
 
 #include <gpio/gpio-client.hpp>
@@ -73,7 +73,7 @@ class VPBreadboard : public QWidget {
 	unsigned moving_button = 0;
 	bool inited = false;
 
-	uint64_t translateGpioToExtPin(GpioCommon::Reg reg);
+	uint64_t translateGpioToExtPin(gpio::State reg);
 	uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
 	uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
 	uint8_t translatePinToGpioOffs(uint8_t pin);

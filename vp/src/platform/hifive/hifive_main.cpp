@@ -75,22 +75,24 @@ public:
 	addr_t spi2_end_addr = 0x10034FFF;
 	addr_t gpio0_start_addr = 0x10012000;
 	addr_t gpio0_end_addr = 0x10012FFF;
-	addr_t flash_size = 1024 * 1024 * 512;  // 512 MB flash
+	addr_t flash_size = 1024 * 1024 * 512;	// 512 MB flash
 	addr_t flash_start_addr = 0x20000000;
 	addr_t flash_end_addr = flash_start_addr + flash_size - 1;
-	addr_t dram_size = 1024 * 16;  // 16 KB dram
+	addr_t dram_size = 1024 * 16;			// 16 KB dram
 	addr_t dram_start_addr = 0x80000000;
 	addr_t dram_end_addr = dram_start_addr + dram_size - 1;
 
 	bool enable_can = false;
+	bool enable_oled = true;
 	std::string tun_device = "tun0";
 
 	HifiveOptions(void) {
-        	// clang-format off
+		// clang-format off
 		add_options()
-			("enable-can", po::bool_switch(&enable_can), "enable support for CAN peripheral")
+			("enable-inline-can",  po::bool_switch(&enable_can), "enable support for CAN SPI module")
+			("enable-inline-oled", po::bool_switch(&enable_oled)->default_value(true), "enable support for OLED SPI module")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
-        	// clang-format on
+		// clang-format on
 	}
 };
 
@@ -117,16 +119,25 @@ int sc_main(int argc, char **argv) {
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	SPI spi0("SPI0");
 	SPI spi1("SPI1");
-	std::unique_ptr<CAN> can = nullptr;
+	std::shared_ptr<CAN> can = nullptr;
 	if (opt.enable_can) {
-		can = std::make_unique<CAN>();
-		//spi1.connect(0, std::bind(&CAN::write, &can, std::placeholders::_1));	// unique ptr ist schwer mit reference
+		std::cout << "using internal CAN controller on SPI CS 0" << std::endl;
+		can = std::make_shared<CAN>();
+		spi1.connect(0, std::bind(&CAN::write, can, std::placeholders::_1));
 	} else {
+		// pass through to gpio server
 		spi1.connect(0, gpio0.getSPIwriteFunction(0));
 	}
-	SS1106 oled([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
-	spi1.connect(2, std::bind(&SS1106::write, &oled, std::placeholders::_1));
-	//spi1.connect(2, gpio0.getSPIwriteFunction(2));
+	std::shared_ptr<SS1106> oled = nullptr;
+	if(opt.enable_oled) {
+		std::cout << "using internal SS1106 oled controller on SPI CS 2" << std::endl;
+		oled = std::make_shared<SS1106>([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
+		spi1.connect(2, std::bind(&SS1106::write, oled, std::placeholders::_1));
+	} else {
+		// pass through to gpio server
+		spi1.connect(2, gpio0.getSPIwriteFunction(2));
+	}
+
 	spi1.connect(3, gpio0.getSPIwriteFunction(3));
 	SPI spi2("SPI2");
 	UART uart0("UART0", 3);

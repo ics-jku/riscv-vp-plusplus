@@ -207,7 +207,7 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 
 bool GpioClient::setupConnection(const char *host, const char *port) {
 	if((fd = connectToHost(host, port)) < 0) {
-		cerr << "[gpio-client] Could not connect to " << host << ":" << port << endl;
+		//cerr << "[gpio-client] Could not connect to " << host << ":" << port << endl;
 		return false;
 	}
 	currentHost = host;

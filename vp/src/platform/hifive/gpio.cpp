@@ -190,6 +190,7 @@ void GPIO::asyncOnchange(PinNumber bit, Tristate val) {
 	switch(val){
 	case Tristate::LOW:
 	case Tristate::HIGH:
+	case Tristate::UNSET:
 		server.state.pins[bit] = val;
 		break;
 	default:
@@ -215,6 +216,14 @@ void GPIO::synchronousChange() {
 	for (PinNumber i = 0; i < available_pins; i++) {
 		const auto bitmask = 1l << i;
 		if (input_en & bitmask) {
+			// Small optimization: If not set as input, unset will stay unset even if not pullup enabled.
+			if (serverSnapshot.pins[i] == Tristate::UNSET) {
+				if(pullup_en & bitmask)
+					serverSnapshot.pins[i] = Tristate::HIGH;
+				else
+					serverSnapshot.pins[i] = Tristate::LOW;
+			}
+
 			// cout << "bit " << (unsigned) i << " is input enabled ";
 			if (!(value & bitmask) && serverSnapshot.pins[i] == Tristate::HIGH) {
 				// cout << " changed to 1 ";
@@ -253,8 +262,7 @@ void GPIO::synchronousChange() {
 				// transfer to value register
 				value &= ~bitmask;
 			} else {
-				cerr << "[GPIO] This branch should not yet be reachable" << endl;
-				// TODO: If Tristate::Unset, determine if pullup or pulldown is set and decide port value state
+				cerr << "[GPIO] This branch should not be reachable (unless pin is set and reset very fast)" << endl;
 			}
 		}
 	}

@@ -11,6 +11,7 @@
 #include <unistd.h>  //sleep
 
 using namespace std;
+using namespace gpio;
 
 void Sevensegment::draw(QPainter& p) {
 	p.save();
@@ -231,21 +232,20 @@ void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 	p.restore();
 }
 
-uint64_t VPBreadboard::translateGpioToExtPin(GpioCommon::Reg reg) {
+uint64_t VPBreadboard::translateGpioToExtPin(gpio::State state) {
 	uint64_t ext = 0;
-	for (uint64_t i = 0; i < 24; i++)  // Max Pin is 32, see SiFive HiFive1
-	                                   // Getting Started Guide 1.0.2 p. 20
+	for (PinNumber i = 0; i < 24; i++)  // Max Pin is 32,  but used are only first 24
+	                                   // see SiFive HiFive1 Getting Started Guide 1.0.2 p. 20
 	{
 		// cout << i << " to ";;
 		if (i >= 16) {
-			ext |= (reg & (1l << i)) >> 16;
+			ext |= (state.pins[i] == Tristate::HIGH ? 1 : 0) << (i - 16);
 			// cout << i - 16 << endl;
 		} else if (i <= 5) {
-			ext |= (reg & (1l << i)) << 8;
+			ext |= (state.pins[i] == Tristate::HIGH ? 1 : 0) << (i + 8);
 			// cout << i + 8 << endl;
 		} else if (i >= 9 && i <= 13) {
-			ext |= (reg & (1l << i)) << 6;  // Bitshift Ninja! (with broken
-			                                // legs) cout << i + 6 << endl;
+			ext |= (state.pins[i] == Tristate::HIGH ? 1 : 0) << (i + 6);;
 		}
 		// rest is not connected.
 	}
@@ -434,13 +434,13 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 			case Qt::Key_0: {
 				uint8_t until = 6;
 				for (uint8_t i = 0; i < 8; i++) {
-					gpio.setBit(i, i < until ? GpioCommon::Tristate::HIGH : GpioCommon::Tristate::LOW);
+					gpio.setBit(i, i < until ? Tristate::HIGH : Tristate::LOW);
 				}
 				break;
 			}
 			case Qt::Key_1: {
 				for (uint8_t i = 0; i < 8; i++) {
-					gpio.setBit(i, GpioCommon::Tristate::LOW);
+					gpio.setBit(i, Tristate::LOW);
 				}
 				break;
 			}
@@ -455,7 +455,7 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 						break;	//this is sorted somewhat
 
 					if (buttons[i]->keybinding == e->key()) {
-						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), GpioCommon::Tristate::LOW);  // Active low
+						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::LOW);  // Active low
 						buttons[i]->pressed = true;
 					}
 				}
@@ -472,7 +472,7 @@ void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
 			break;	//this is sorted somewhat
 
 		if (buttons[i]->keybinding == e->key()) {
-			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin),GpioCommon::Tristate::HIGH);
+			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::UNSET); // simple switch, disconnected
 			buttons[i]->pressed = false;
 		}
 	}
@@ -487,7 +487,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " click!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), GpioCommon::Tristate::LOW);  // Active low
+				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::LOW);  // Active low
 				buttons[i]->pressed = true;
 			}
 		}
@@ -507,7 +507,7 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 				break;	//this is sorted somewhat
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " release!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), GpioCommon::Tristate::HIGH);
+				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::UNSET);
 				buttons[i]->pressed = false;
 			}
 		}
