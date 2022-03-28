@@ -1,6 +1,6 @@
 project(vp-breadboard) # Your project name
 
-set(CMAKE_CXX_STANDARD 11) # This is equal to QMAKE_CXX_FLAGS += -std=c++0x
+set(CMAKE_CXX_STANDARD 17)
 
 cmake_minimum_required(VERSION 3.1.0)
 
@@ -23,6 +23,7 @@ set(UI mainwindow.ui)
 
 set(RESOURCES resources.qrc)
 
+file(GLOB DEVICES ./devices/*.cpp)
 set(SOURCES
     main.cpp
     mainwindow.cpp
@@ -30,6 +31,7 @@ set(SOURCES
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
     ../../../vp/src/util/elegantEnums.cpp
     ../../../vp/src/platform/hifive/oled/common.cpp
+    ${DEVICES}
 )
 
 add_executable(vp-breadboard ${SOURCES} ${HEADERS} ${RESOURCES} ${UI})

@@ -1,63 +1,15 @@
 #pragma once
+
+#include "devices/all_devices.hpp"
 #include <QtWidgets/QMainWindow>
 #include <cassert>
-
 #include <gpio/gpio-client.hpp>
-#include <oled/common.hpp>
 
 namespace Ui {
 class VPBreadboard;
 }
 
 static constexpr unsigned max_num_buttons = 7;
-
-struct Sevensegment {
-	QPoint offs;
-	QPoint extent;
-	uint8_t linewidth;
-	uint8_t map;
-	void draw(QPainter& p);
-	Sevensegment() : offs(50, 50), extent(100, 100), linewidth(10), map(0){};
-	Sevensegment(QPoint offs, QPoint extent, uint8_t linewidth)
-	    : offs(offs), extent(extent), linewidth(linewidth), map(0){};
-};
-
-struct RGBLed {
-	QPoint offs;
-	uint8_t linewidth;
-	uint8_t map;
-	void draw(QPainter& p);
-	RGBLed(QPoint offs, uint8_t linewidth) : offs(offs), linewidth(linewidth){};
-};
-
-struct OLED
-{
-	ss1106::State* state;
-	QPoint offs;
-	QPoint margin;
-	QImage image;
-	float scale;
-	void draw(QPainter& p);
-	OLED(QPoint offs, unsigned margin, float scale = 1) : offs(offs),
-			margin(QPoint(margin, margin)), scale(scale),
-			image(ss1106::width - 2*ss1106::padding_lr, ss1106::height, QImage::Format_Grayscale8)
-	{
-		state = ss1106::getSharedState();
-		state->changed = 1;
-	};
-};
-
-struct Button
-{
-	QRect area;
-	uint8_t pin;
-	QKeySequence keybinding;
-	QString name;
-	bool pressed;
-Button(QRect area, uint8_t pin, QKeySequence keybinding, QString name = "") :
-	area(area), pin(pin), keybinding(keybinding), name(name),
-		pressed(false){};
-};
 
 class VPBreadboard : public QWidget {
 	Q_OBJECT
@@ -78,7 +30,9 @@ class VPBreadboard : public QWidget {
 	uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
 	uint8_t translatePinToGpioOffs(uint8_t pin);
 
-   public:
+	bool loadConfigFile(const char* file);
+
+public:
 	VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent = 0);
 	~VPBreadboard();
 	void showConnectionErrorOverlay(QPainter& p);
