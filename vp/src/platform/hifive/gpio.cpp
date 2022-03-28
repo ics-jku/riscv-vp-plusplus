@@ -216,6 +216,7 @@ void GPIO::synchronousChange() {
 	for (PinNumber i = 0; i < available_pins; i++) {
 		const auto bitmask = 1l << i;
 		if (input_en & bitmask) {
+
 			// Small optimization: If not set as input, unset will stay unset even if not pullup enabled.
 			if (serverSnapshot.pins[i] == Tristate::UNSET) {
 				if(pullup_en & bitmask)
@@ -262,11 +263,13 @@ void GPIO::synchronousChange() {
 				// transfer to value register
 				value &= ~bitmask;
 			} else {
-				cerr << "[GPIO] This branch should not be reachable (unless pin is set and reset very fast)" << endl;
+				// This pin did not change
 			}
 		}
 	}
-	// TODO: Should routine recheck if something was changed in the meantime?
+
+	// if something changed between snapshot and now, change is discarded. "Yeet"
+	server.state = serverSnapshot;
 }
 
 SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
