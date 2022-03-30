@@ -165,13 +165,13 @@ uint64_t VPBreadboard::translateGpioToExtPin(gpio::State state) {
 	{
 		// cout << i << " to ";;
 		if (i >= 16) {
-			ext |= (state.pins[i] == Tristate::HIGH ? 1 : 0) << (i - 16);
+			ext |= (state.pins[i] == Pinstate::HIGH ? 1 : 0) << (i - 16);
 			// cout << i - 16 << endl;
 		} else if (i <= 5) {
-			ext |= (state.pins[i] == Tristate::HIGH ? 1 : 0) << (i + 8);
+			ext |= (state.pins[i] == Pinstate::HIGH ? 1 : 0) << (i + 8);
 			// cout << i + 8 << endl;
 		} else if (i >= 9 && i <= 13) {
-			ext |= (state.pins[i] == Tristate::HIGH ? 1 : 0) << (i + 6);;
+			ext |= (state.pins[i] == Pinstate::HIGH ? 1 : 0) << (i + 6);;
 		}
 		// rest is not connected.
 	}

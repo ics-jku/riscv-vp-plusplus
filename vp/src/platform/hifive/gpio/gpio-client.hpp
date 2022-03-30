@@ -44,7 +44,6 @@ public:
 	bool setBit(gpio::PinNumber pos, gpio::Tristate val);
 
 	// Intended to be used by the external peripherals in simulation
-	// TODO: onchange functions not yet stable
 	// TODO: Somehow unify for code deduplication
 	bool registerSPIOnChange(gpio::PinNumber pin, OnChange_SPI fun);
 	bool registerPINOnChange(gpio::PinNumber pin, OnChange_PIN fun);

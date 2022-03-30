@@ -3,35 +3,35 @@
 using namespace std;
 using namespace gpio;
 
-static Tristate getIOF(PinNumber pin, bool iofsel) {
+static Pinstate getIOF(PinNumber pin, bool iofsel) {
 	switch(pin) {
 	case 16:	// RX
 	case 17:	// TX
-		return !iofsel ? Tristate::IOF_UART : Tristate::UNSET;
+		return !iofsel ? Pinstate::IOF_UART : Pinstate::UNSET;
 	case 19:	// PWM1_1
 	case 20:	// PWM1_0
 	case 21:	// PWM1_2
 	case 22:	// PWM1_3
-		return !iofsel ? Tristate::UNSET : Tristate::IOF_PWM;
+		return !iofsel ? Pinstate::UNSET : Pinstate::IOF_PWM;
 	case  0:	// PWM0_0
 	case  1:	// PWM0_1
-		return !iofsel ? Tristate::UNSET : Tristate::IOF_PWM;
+		return !iofsel ? Pinstate::UNSET : Pinstate::IOF_PWM;
 	case  2:	// SPI1 CS0, PWM0_2
 	case  3:	// SPI1 OSI, PWM0_3
-		return !iofsel ? Tristate::IOF_SPI : Tristate::IOF_PWM;
+		return !iofsel ? Pinstate::IOF_SPI : Pinstate::IOF_PWM;
 	case  4:	// SPI1 MISO
 	case  5:	// SPI1 SCK
-		return !iofsel ? Tristate::IOF_SPI : Tristate::UNSET;
+		return !iofsel ? Pinstate::IOF_SPI : Pinstate::UNSET;
 	case  9:	// SPI1 CS2
-		return !iofsel ? Tristate::IOF_SPI : Tristate::UNSET;
+		return !iofsel ? Pinstate::IOF_SPI : Pinstate::UNSET;
 	case 10:	// SPI1 CS3, PWM2_0
-		return !iofsel ? Tristate::IOF_SPI : Tristate::IOF_PWM;
+		return !iofsel ? Pinstate::IOF_SPI : Pinstate::IOF_PWM;
 	case 11:	// PWM2_1
 	case 12:	// PWM2_2
 	case 13:	// PWM2_3
-		return !iofsel ? Tristate::UNSET : Tristate::IOF_PWM;
+		return !iofsel ? Pinstate::UNSET : Pinstate::IOF_PWM;
 	default:
-		return Tristate::UNSET;
+		return Pinstate::UNSET;
 	}
 }
 
@@ -111,7 +111,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 			value |= newly_pulled_up_bits;
 			for(PinNumber i = 0; i < available_pins; i++) {
 				if((1l << i) & newly_pulled_up_bits) {
-					server.state.pins[i] = Tristate::HIGH;
+					server.state.pins[i] = Pinstate::HIGH;
 				}
 			}
 		}
@@ -122,7 +122,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 			value &= ~(newly_output_disabled_bits);
 			for(PinNumber i = 0; i < available_pins; i++) {
 				if((1l << i) & newly_output_disabled_bits) {
-					server.state.pins[i] = Tristate::UNSET;
+					server.state.pins[i] = Pinstate::UNSET;
 				}
 			}
 		}
@@ -146,7 +146,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 
 			for(PinNumber i = 0; i < available_pins; i++) {
 				if((1l << i) & output_en & ~iof_en) {
-					server.state.pins[i] = valid_output & (1l << i) ? Tristate::HIGH : Tristate::LOW;
+					server.state.pins[i] = valid_output & (1l << i) ? Pinstate::HIGH : Pinstate::LOW;
 				}
 			}
 		}
@@ -158,7 +158,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 					{
 					const auto iof = getIOF(i, iof_sel & (1l << i));
 					//cout << "IOF for pin " << (int)i << " is " << (int) iof << endl;
-					if(iof == Tristate::UNSET)
+					if(iof == Pinstate::UNSET)
 						cerr << "[GPIO] Set invalid iof to pin " << (int)i << endl;
 					else
 						server.state.pins[i] = iof;
@@ -188,13 +188,20 @@ void GPIO::asyncOnchange(PinNumber bit, Tristate val) {
 	const auto state_prev = server.state.pins[bit];
 
 	switch(val){
+	case Tristate::UNSET:
+		/*
+		 * TODO: Maybe do pullup/down decision here or emplace into a queue
+		 * Queue would be better for sync, but unsure about performance.
+		 * May be less overhead as only changed pins can be handled.
+		 * But moving a bitmask unconditionally for 32 Pins is pretty fast, too.
+		 */
+
 	case Tristate::LOW:
 	case Tristate::HIGH:
-	case Tristate::UNSET:
-		server.state.pins[bit] = val;
+		server.state.pins[bit] = toPinstate(val);
 		break;
 	default:
-		cout << "[GPIO] Ignoring other tristates for now" << endl;
+		cout << "[GPIO] Invalid pin value " << (int) val << " on pin " << bit << endl;
 	}
 
 	if(state_prev != server.state.pins[bit]){
@@ -218,15 +225,15 @@ void GPIO::synchronousChange() {
 		if (input_en & bitmask) {
 
 			// Small optimization: If not set as input, unset will stay unset even if not pullup enabled.
-			if (serverSnapshot.pins[i] == Tristate::UNSET) {
+			if (serverSnapshot.pins[i] == Pinstate::UNSET) {
 				if(pullup_en & bitmask)
-					serverSnapshot.pins[i] = Tristate::HIGH;
+					serverSnapshot.pins[i] = Pinstate::HIGH;
 				else
-					serverSnapshot.pins[i] = Tristate::LOW;
+					serverSnapshot.pins[i] = Pinstate::LOW;
 			}
 
 			// cout << "bit " << (unsigned) i << " is input enabled ";
-			if (!(value & bitmask) && serverSnapshot.pins[i] == Tristate::HIGH) {
+			if (!(value & bitmask) && serverSnapshot.pins[i] == Pinstate::HIGH) {
 				// cout << " changed to 1 ";
 				if (rise_intr_en & bitmask) {
 					// cout << "and interrupt is enabled ";
@@ -244,7 +251,7 @@ void GPIO::synchronousChange() {
 				}
 				// transfer to value register
 				value |= bitmask;
-			} else if ((value & bitmask) && serverSnapshot.pins[i] == Tristate::LOW){
+			} else if ((value & bitmask) && serverSnapshot.pins[i] == Pinstate::LOW){
 				// cout << " changed to 0 ";
 				if (fall_intr_en & bitmask) {
 					// cout << "and interrupt is enabled ";

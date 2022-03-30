@@ -28,8 +28,8 @@ void signalHandler(int signum) {
 }
 
 void onChangeCallback(GpioServer* gpio, PinNumber pin, Tristate val) {
-	gpio->state.pins[pin] = val;
-	printf("Bit %d changed to %d\n", pin, gpio->state.pins[pin] == Tristate::HIGH ? 1 : 0);
+	gpio->state.pins[pin] = toPinstate(val);
+	printf("Bit %d changed to %d\n", pin, gpio->state.pins[pin] == Pinstate::HIGH ? 1 : 0);
 }
 
 int main(int argc, char* argv[]) {
@@ -51,8 +51,8 @@ int main(int argc, char* argv[]) {
 	thread server(bind(&GpioServer::startAccepting, &gpio));
 
 	const PinNumber spi_cs = 0;
-	gpio.state.pins[spi_cs] = Tristate::IOF_SPI;
-	gpio.state.pins[1] = Tristate::IOF_PWM;
+	gpio.state.pins[spi_cs] = Pinstate::IOF_SPI;
+	gpio.state.pins[1] = Pinstate::IOF_PWM;
 
 	SPI_Command sumbyte = 0;
 

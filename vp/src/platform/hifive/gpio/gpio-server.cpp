@@ -211,11 +211,7 @@ void GpioServer::handleConnection(int conn) {
 			case Request::Type::SET_BIT: {
 				// printRequest(&req);
 				if (req.setBit.pin >= max_num_pins) {
-					cerr << "[gpio-server] invalid request setbit pinnumber " << req.setBit.pin << endl;
-					return;
-				}
-				if (isIOF(req.setBit.val)) {
-					cerr << "[gpio-server] invalid request setbit Tristate (is IOF)" << endl;
+					cerr << "[gpio-server] invalid request setbit pin number " << req.setBit.pin << endl;
 					return;
 				}
 
@@ -229,7 +225,7 @@ void GpioServer::handleConnection(int conn) {
 				if (fun != nullptr) {
 					fun(req.setBit.pin, req.setBit.val);
 				} else {
-					state.pins[req.setBit.pin] = req.setBit.val;
+					state.pins[req.setBit.pin] = toPinstate(req.setBit.val);
 				}
 				break;
 			}

@@ -15,7 +15,7 @@ void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
 
 namespace gpio {
-	enum class Tristate : uint8_t {
+	enum class Pinstate : uint8_t {
 		UNSET = 0,
 		LOW,
 		HIGH,
@@ -26,7 +26,19 @@ namespace gpio {
 		IOF_UART,	// not yet used
 	};
 
-	bool isIOF(const Tristate s);
+	enum class Tristate : uint8_t {
+		UNSET = 0,
+		LOW,
+		HIGH,
+		//TODO: Maybe _weak for pullups/downs
+	};
+
+	inline Pinstate toPinstate (const Tristate from) {
+		// this is safe because first 2 bits are identical;
+		return static_cast<Pinstate>(from);
+	}
+
+	bool isIOF(const Pinstate s);
 
 	static constexpr unsigned default_port = 1400;
 	static constexpr unsigned max_num_pins = 64;
@@ -40,10 +52,10 @@ namespace gpio {
 	struct State {
 		//TODO somehow packed?
 		union {
-			gpio::Tristate pins[max_num_pins];
-			uint64_t port[(sizeof(gpio::Tristate) * sizeof(pins) + 1) / sizeof(uint64_t)];
+			gpio::Pinstate pins[max_num_pins];
+			uint64_t port[(sizeof(gpio::Pinstate) * sizeof(pins) + 1) / sizeof(uint64_t)];
 		};
-		static_assert(sizeof(gpio::Tristate) * sizeof(pins) != sizeof(port) * sizeof(uint64_t),
+		static_assert(sizeof(gpio::Pinstate) * sizeof(pins) != sizeof(port) * sizeof(uint64_t),
 				"Warning: Convenience-function port is causing State to be bigger than necessary");
 	};
 
@@ -59,7 +71,7 @@ namespace gpio {
 		union {
 			struct {
 				uint8_t pin : 6;	// max num pins: 64
-				gpio::Tristate val : 2;	// needs only to hold first three items
+				gpio::Tristate val : 2;
 			} setBit;
 
 			struct {

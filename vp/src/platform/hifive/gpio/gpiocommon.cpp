@@ -32,7 +32,7 @@ void bitPrint(unsigned char* buf, size_t size) {
 	printf("\n");
 }
 
-bool gpio::isIOF(const Tristate s){
+bool gpio::isIOF(const Pinstate s){
 	return static_cast<uint8_t>(s) > 3;
 }
 
@@ -55,7 +55,7 @@ void GpioCommon::printRequest(const Request& req) {
 					cout << "unset (FLOATING)";
 					break;
 				default:
-					cout << "IO-Function driven (see other)";
+					cout << "-INVALID-";
 					break;
 			}
 			break;
@@ -76,25 +76,25 @@ void GpioCommon::printState(const State& state) {
 		if(pin > 0 && pin % 8 == 0)
 			cout << " ";
 		switch(state.pins[pin]) {
-		case Tristate::LOW:
+		case Pinstate::LOW:
 			cout << "0";
 			break;
-		case Tristate::HIGH:
+		case Pinstate::HIGH:
 			cout << "1";
 			break;
-		case Tristate::UNSET:
+		case Pinstate::UNSET:
 			cout << "X";
 			break;
-		case Tristate::IOF_SPI:
+		case Pinstate::IOF_SPI:
 			cout << "s";
 			break;
-		case Tristate::IOF_I2C:
+		case Pinstate::IOF_I2C:
 			cout << "i";
 			break;
-		case Tristate::IOF_PWM:
+		case Pinstate::IOF_PWM:
 			cout << "p";
 			break;
-		case Tristate::IOF_UART:
+		case Pinstate::IOF_UART:
 			cout << "u";
 			break;
 		default:

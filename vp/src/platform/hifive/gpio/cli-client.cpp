@@ -67,7 +67,7 @@ int registerForSPI(GpioClient& gpio) {
 	PinNumber spi_pin;
 	//looking for all available SPI pins
 	for(spi_pin = 0; spi_pin < max_num_pins; spi_pin++){
-		if(gpio.state.pins[spi_pin] == Tristate::IOF_SPI) {
+		if(gpio.state.pins[spi_pin] == Pinstate::IOF_SPI) {
 			if(gpio.registerSPIOnChange(spi_pin,
 					[spi_pin](SPI_Command c){
 						cout << "Pin " << (int)spi_pin << " got SPI command " << (int)c << endl; return c%4;
