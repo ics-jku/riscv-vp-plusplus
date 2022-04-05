@@ -8,13 +8,15 @@
  */
 
 #pragma once
-#include "spi.h"
-#include "oled/common.hpp"
+#include "common.hpp"
 
 #include <map>
 #include <functional>
 
 class SS1106 {
+public:
+	typedef std::function<bool()> GetDCPin_function;
+private:
 
 	static const std::map<ss1106::Operator, uint8_t> opcode;
 
@@ -35,14 +37,14 @@ class SS1106 {
 
 	Command last_cmd = Command{ss1106::Operator::NOP, 0};
 
-	std::function<bool()> getDCPin;
+	GetDCPin_function getDCPin;
 
 
 	uint8_t mask(ss1106::Operator op);
 	Command match(uint8_t cmd);
 
 public:
-	SS1106(std::function<bool()> getDCPin);
+	SS1106(GetDCPin_function getDCPin, ss1106::State* state_memory_override = nullptr);
 	~SS1106();
 
 	uint8_t write(uint8_t byte);

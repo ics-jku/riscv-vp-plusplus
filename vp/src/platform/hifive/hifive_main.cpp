@@ -3,6 +3,7 @@
 
 #include "aon.h"
 #include "can.h"
+#include "oled/oled.hpp"
 #include "core/common/clint.h"
 #include "core/rv32/syscall.h"
 #include "elf_loader.h"
@@ -17,7 +18,6 @@
 #include "slip.h"
 #include "spi.h"
 #include "uart.h"
-#include "oled.hpp"
 #include "platform/common/options.h"
 
 #include "gdb-mc/gdb_server.h"

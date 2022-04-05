@@ -16,7 +16,7 @@ class VPBreadboard : public QWidget {
 	GpioClient gpio;
 	Sevensegment* sevensegment;
 	RGBLed* rgbLed;
-	OLED* oled;
+	OLED_mmap* oled;
 	Button* buttons[max_num_buttons];
 	const char* host;
 	const char* port;

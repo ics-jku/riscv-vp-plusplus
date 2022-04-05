@@ -6,10 +6,10 @@
  */
 
 
-#include "oled.hpp"
-
+#include <platform/hifive/oled/oled.hpp>
 #include <cstdio>
-
+#include <exception>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/shm.h>
 
@@ -88,14 +88,18 @@ SS1106::Command SS1106::match(uint8_t cmd)
 	return Command{Operator::NOP, 0};
 }
 
-SS1106::SS1106(std::function<bool()> getDCPin) : getDCPin(getDCPin)
+SS1106::SS1106(std::function<bool()> getDCPin, ss1106::State* state_memory_override) : getDCPin(getDCPin)
 {
-	sharedSegment = ss1106::getSharedState();
-	if (sharedSegment == nullptr) {
-		assert(0); // TODO: Proper error handling
+	if(!state_memory_override) {
+		sharedSegment = ss1106::getSharedState();
+		if(sharedSegment == nullptr) {
+			throw std::runtime_error("[OLED] shared Memory unexpectedly NULL");
+		}
+		state = reinterpret_cast<State*>(sharedSegment);
+	} else {
+		// Memory is somewhere else
+		state = state_memory_override;
 	}
-
-	state = reinterpret_cast<State*>(sharedSegment);
 	memset(state, 0, sizeof(State));
 };
 SS1106::~SS1106(){

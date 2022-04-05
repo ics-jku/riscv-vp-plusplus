@@ -69,7 +69,7 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 
 	bkgnd = bkgnd.scaled(size, Qt::IgnoreAspectRatio);
 	QPalette palette;
-	palette.setBrush(QPalette::Background, bkgnd);
+	palette.setBrush(QPalette::Window, bkgnd);
 	this->setPalette(palette);
 	setFixedSize(size);
 
@@ -96,7 +96,7 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 	if(config.contains("oled"))
 	{
 		QJsonObject obj = config["oled"].toObject();
-		oled = new OLED(
+		oled = new OLED_mmap(
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
 			obj["margin"].toInt(15),
@@ -237,7 +237,6 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	}
 
 	painter.setRenderHint(QPainter::Antialiasing);
-	painter.setRenderHint(QPainter::HighQualityAntialiasing);
 
 	if(oled)
 		oled->draw(painter);
