@@ -51,10 +51,10 @@
       "dim" : [56, 58]
     }
   ],
-  "oled" :
+  "oled-mmap" :
   {
     "offs"   : [107, 324],
     "scale"  : 2,
     "margin" : 10
-  }
+  },
 }

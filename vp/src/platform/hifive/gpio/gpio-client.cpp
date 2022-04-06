@@ -117,6 +117,18 @@ uint16_t GpioClient::requestIOFchannel(PinNumber pin) {
 	return resp.port;
 }
 
+void GpioClient::stopIOFchannel(PinNumber pin) {
+	Request req;
+	memset(&req, 0, sizeof(Request));
+	req.op = Request::Type::END_IOF;
+	req.reqIOF.pin = pin;
+
+	if (!writeStruct(fd, &req)) {
+		cerr << "[gpio-client] Error in write 'Stop SPI IOF'" << endl;
+		return ;
+	}
+}
+
 bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 
 	auto port = requestIOFchannel(pin);
@@ -212,4 +224,16 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 	}
 	currentHost = host;
 	return true;
+}
+
+void GpioClient::destroyConnection(){
+	for(auto& channel : dataChannelThreads) {
+		if(channel.fd > 0)	// not already closed
+			stopIOFchannel(channel.pin);
+		close(channel.fd);
+		channel.thread.join();
+	}
+
+	dataChannelThreads.clear();
+	close(fd);
 }

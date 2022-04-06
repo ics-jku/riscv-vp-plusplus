@@ -16,7 +16,9 @@ class VPBreadboard : public QWidget {
 	GpioClient gpio;
 	Sevensegment* sevensegment;
 	RGBLed* rgbLed;
-	OLED_mmap* oled;
+	OLED_mmap* oled_mmap;
+	OLED_iof* oled_iof;
+	gpio::PinNumber oled_cs_pin;	// FIXME: Ugly
 	Button* buttons[max_num_buttons];
 	const char* host;
 	const char* port;
@@ -25,10 +27,12 @@ class VPBreadboard : public QWidget {
 	unsigned moving_button = 0;
 	bool inited = false;
 
-	uint64_t translateGpioToExtPin(gpio::State reg);
-	uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
-	uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
-	uint8_t translatePinToGpioOffs(uint8_t pin);
+	static uint64_t translateGpioToExtPin(gpio::State reg);
+	static gpio::PinNumber translatePinToGpioOffs(gpio::PinNumber pin);
+
+	// TODO: Phase these out and decide based on config
+	static uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
+	static uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
 
 	bool loadConfigFile(const char* file);
 

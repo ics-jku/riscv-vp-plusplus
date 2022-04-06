@@ -25,7 +25,7 @@
     "offs" : [590, 128],
     "linewidth" : 15
   },
-  "oled" :
+  "oled-mmap" :
   {
     "offs" : [535, 395],
     "margin" : 10

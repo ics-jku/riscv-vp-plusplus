@@ -130,7 +130,7 @@ int sc_main(int argc, char **argv) {
 	}
 	std::shared_ptr<SS1106> oled = nullptr;
 	if(opt.enable_oled) {
-		std::cout << "using internal SS1106 oled controller on SPI CS 2" << std::endl;
+		std::cout << "using internal SS1106 oled controller on SPI CS 2 (with DC as Pin 16, Bit 10)" << std::endl;
 		oled = std::make_shared<SS1106>([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
 		spi1.connect(2, std::bind(&SS1106::write, oled, std::placeholders::_1));
 	} else {

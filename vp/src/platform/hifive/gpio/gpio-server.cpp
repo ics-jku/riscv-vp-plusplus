@@ -279,8 +279,8 @@ void GpioServer::handleConnection(int conn) {
 			}
 			case Request::Type::END_IOF:
 				if(!isIOF(state.pins[req.reqIOF.pin])){
-					cerr << "[gpio-server] IOF quit on non-IOF pin " << (int)req.reqIOF.pin << endl;
-					return;
+					//cerr << "[gpio-server] IOF quit on non-IOF pin " << (int)req.reqIOF.pin << endl;
+					// If pin state changed, we still need to quit channel
 				}
 
 				{

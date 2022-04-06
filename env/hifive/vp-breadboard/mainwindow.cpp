@@ -19,7 +19,9 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
       port(port),
       sevensegment(nullptr),
       rgbLed(nullptr),
-      oled(nullptr){
+      oled_mmap(nullptr),
+      oled_iof(nullptr),
+	  oled_cs_pin(0){
 
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
@@ -73,6 +75,8 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 	this->setPalette(palette);
 	setFixedSize(size);
 
+	// TODO: Let every registered "config object" decide its own default values
+
 	if(config.contains("sevensegment"))
 	{
 		QJsonObject obj = config["sevensegment"].toObject();
@@ -93,14 +97,27 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 			obj["linewidth"].toInt(15)
 			);
 	}
-	if(config.contains("oled"))
+	if(config.contains("oled-mmap"))
 	{
-		QJsonObject obj = config["oled"].toObject();
-		oled = new OLED_mmap(
+		QJsonObject obj = config["oled-mmap"].toObject();
+		oled_mmap = new OLED_mmap(
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
 			obj["margin"].toInt(15),
 			obj["scale"].toDouble(1.));
+	}
+	if(config.contains("oled-iof"))
+	{
+		QJsonObject obj = config["oled-iof"].toObject();
+		oled_cs_pin = obj["cs_pin"].toInt(9);
+		const unsigned dc_pin = obj["dc_pin"].toInt(16);
+		oled_iof = new OLED_iof(
+			[this,dc_pin]{return gpio.state.pins[translatePinToGpioOffs(dc_pin)] == gpio::Pinstate::HIGH;},
+			QPoint(obj["offs"].toArray().at(0).toInt(450),
+			       obj["offs"].toArray().at(1).toInt(343)),
+			obj["margin"].toInt(15),
+			obj["scale"].toDouble(1.)
+			);
 	}
 	if(config.contains("buttons"))
 	{
@@ -128,8 +145,8 @@ VPBreadboard::~VPBreadboard()
 		delete sevensegment;
 	if(rgbLed != nullptr)
 		delete rgbLed;
-	if(oled != nullptr)
-		delete oled;
+	if(oled_mmap != nullptr)
+		delete oled_mmap;
 	for(unsigned i = 0; i < max_num_buttons; i++)
 	{
 		if(buttons[i] != nullptr)
@@ -227,6 +244,7 @@ void printBin(char* buf, uint8_t len) {
 void VPBreadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
 
+	// TODO: Differetiate between was not inited and connection lost, for gpio destroy
 	if (!inited || !gpio.update()) {
 		inited = gpio.setupConnection(host, port);
 		showConnectionErrorOverlay(painter);
@@ -238,8 +256,8 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	if(oled)
-		oled->draw(painter);
+	if(oled_mmap)
+		oled_mmap->draw(painter);
 
 	if(sevensegment)
 	{

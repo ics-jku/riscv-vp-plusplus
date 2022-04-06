@@ -33,6 +33,7 @@ private:
 
 	// @return port number, 0 on error
 	uint16_t requestIOFchannel(gpio::PinNumber pin);
+	void stopIOFchannel(gpio::PinNumber pin);
 	// @return filedescriptor, < 0 on error
 	static int connectToHost(const char* host, const char* port);
 
@@ -40,6 +41,7 @@ public:
 	GpioClient();
 	~GpioClient();
 	bool setupConnection(const char* host, const char* port);
+	void destroyConnection();
 	bool update();
 	bool setBit(gpio::PinNumber pos, gpio::Tristate val);
 
