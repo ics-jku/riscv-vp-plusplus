@@ -51,10 +51,11 @@
       "dim" : [56, 58]
     }
   ],
-  "oled-mmap" :
+  "oled-iof" :
   {
-    "offs"   : [107, 324],
-    "scale"  : 2,
-    "margin" : 10
+    "offs"   : [535, 395],
+    "margin" : 10,
+    "cs_pin" : 9,
+    "dc_pin" : 16
   }
 }

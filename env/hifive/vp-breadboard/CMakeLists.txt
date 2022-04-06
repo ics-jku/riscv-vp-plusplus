@@ -31,6 +31,7 @@ set(SOURCES
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
     ../../../vp/src/util/elegantEnums.cpp
     ../../../vp/src/platform/hifive/oled/common.cpp
+    ../../../vp/src/platform/hifive/oled/oled.cpp
     ${DEVICES}
 )
 

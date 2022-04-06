@@ -4,5 +4,6 @@
         <file>img/oled_shield.JPG</file>
         <file>conf/sevensegment.json</file>
         <file>conf/oled_shield.json</file>
+        <file>conf/oled_iof.json</file>
     </qresource>
 </RCC>
