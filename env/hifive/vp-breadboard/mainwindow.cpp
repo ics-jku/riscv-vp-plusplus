@@ -20,8 +20,8 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
       sevensegment(nullptr),
       rgbLed(nullptr),
       oled_mmap(nullptr),
-      oled_iof(nullptr),
-	  oled_cs_pin(0){
+      oled_iof(nullptr)
+	{
 
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
@@ -109,7 +109,7 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 	if(config.contains("oled-iof"))
 	{
 		QJsonObject obj = config["oled-iof"].toObject();
-		oled_cs_pin = obj["cs_pin"].toInt(9);
+		oled_iof_channel.pin = obj["cs_pin"].toInt(9);
 		const unsigned dc_pin = obj["dc_pin"].toInt(16);
 		oled_iof = new OLED_iof(
 			[this,dc_pin]{return gpio.state.pins[translatePinToGpioOffs(dc_pin)] == gpio::Pinstate::HIGH;},
@@ -243,21 +243,31 @@ void printBin(char* buf, uint8_t len) {
 
 void VPBreadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
 
-	// TODO: Differetiate between was not inited and connection lost, for gpio destroy
-	if (!inited || !gpio.update()) {
+	if (inited && !gpio.update()) {
+		// Just lost connection
+		gpio.destroyConnection();
+		inited = false;
+	}
+
+	if (!inited) {
 		inited = gpio.setupConnection(host, port);
 		showConnectionErrorOverlay(painter);
 		if (!inited)
-			usleep(500000);
+			usleep(500000);	// Ugly, sorry
 		this->update();
 		return;
 	}
 
-	painter.setRenderHint(QPainter::Antialiasing);
+	// TODO: Check loaded, drawable plugins instead of hardcoded objects
 
 	if(oled_mmap)
 		oled_mmap->draw(painter);
+
+	if(oled_iof) {
+		// TODO
+	}
 
 	if(sevensegment)
 	{

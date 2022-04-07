@@ -3,6 +3,7 @@
 #include "devices/all_devices.hpp"
 #include <QtWidgets/QMainWindow>
 #include <cassert>
+#include <map>
 #include <gpio/gpio-client.hpp>
 
 namespace Ui {
@@ -14,12 +15,22 @@ static constexpr unsigned max_num_buttons = 7;
 class VPBreadboard : public QWidget {
 	Q_OBJECT
 	GpioClient gpio;
+
+	struct IOF_Request {
+		gpio::PinNumber pin;
+		bool active = false;
+	} oled_iof_channel;	// TODO: Make this a map for all IOF-Devices
+
+	// TODO get Device factory
 	Sevensegment* sevensegment;
 	RGBLed* rgbLed;
 	OLED_mmap* oled_mmap;
 	OLED_iof* oled_iof;
-	gpio::PinNumber oled_cs_pin;	// FIXME: Ugly
 	Button* buttons[max_num_buttons];
+	//
+
+
+
 	const char* host;
 	const char* port;
 

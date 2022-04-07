@@ -52,5 +52,6 @@ public:
 	// registerI2C...
 	// registerUART...
 
+	bool isIOFactive(gpio::PinNumber pin);	// not sure if this is cool
 	void closeIOFunction(gpio::PinNumber pin);
 };
