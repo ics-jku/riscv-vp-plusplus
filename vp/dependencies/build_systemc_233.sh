@@ -17,7 +17,7 @@ fi
 tar xzf $source
 cd systemc-$version
 mkdir -p build && cd build
-../configure CXXFLAGS='-std=c++14' --prefix=$PREFIX --with-arch-suffix=
+../configure CXXFLAGS='-std=c++17' --prefix=$PREFIX --with-arch-suffix=
 make -j$NPROCS
 make install
 

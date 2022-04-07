@@ -19,6 +19,7 @@ namespace gpio {
 		UNSET = 0,
 		LOW,
 		HIGH,
+		//TODO: Maybe _weak for pullups/downs
 
 		IOF_SPI = 4,
 		IOF_I2C,	// not yet used
@@ -36,6 +37,10 @@ namespace gpio {
 	inline Pinstate toPinstate (const Tristate from) {
 		// this is safe because first 2 bits are identical;
 		return static_cast<Pinstate>(from);
+	}
+	inline Tristate toTristate (const Pinstate from) {
+		// this is only safe if a !isIof(from) was done
+		return static_cast<Tristate>(from);
 	}
 
 	bool isIOF(const Pinstate s);
@@ -90,6 +95,7 @@ namespace gpio {
 struct GpioCommon {
 
 	static void printRequest(const gpio::Request& req);
+	static void printPinstate(const gpio::Pinstate& state);
 	static void printState(const gpio::State& state);
 
 	gpio::State state;

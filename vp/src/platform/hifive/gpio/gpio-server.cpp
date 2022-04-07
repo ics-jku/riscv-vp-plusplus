@@ -233,9 +233,14 @@ void GpioServer::handleConnection(int conn) {
 			{
 				Req_IOF_Response response{0};
 				if(!isIOF(state.pins[req.reqIOF.pin])){
-					// Not a major fault
 					cerr << "[gpio-server] IOF request on non-iof pin " << (int)req.reqIOF.pin << endl;
-					return;
+					if (!writeStruct(conn, &response)) {
+						cerr << "[gpio-server] could not write IOF-Req answer" << endl;
+						close(conn);
+						return;
+					}
+					// Not a major fault, so break instead of return
+					break;
 				}
 
 				int new_data_socket = openSocket("0");	// zero shall indicate random port
@@ -319,6 +324,7 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 		cerr << "[gpio-server] Could not write SPI command to cs " << (int)pin << endl;
 		close(sock);
 		active_IOF_channels.erase(channel);
+		return 0;
 	}
 
 	SPI_Response response = 0;

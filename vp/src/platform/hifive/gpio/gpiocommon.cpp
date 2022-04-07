@@ -71,36 +71,40 @@ void GpioCommon::printRequest(const Request& req) {
 	cout << endl;
 };
 
+void GpioCommon::printPinstate(const gpio::Pinstate& state) {
+	switch(state) {
+	case Pinstate::LOW:
+		cout << "0";
+		break;
+	case Pinstate::HIGH:
+		cout << "1";
+		break;
+	case Pinstate::UNSET:
+		cout << "X";
+		break;
+	case Pinstate::IOF_SPI:
+		cout << "s";
+		break;
+	case Pinstate::IOF_I2C:
+		cout << "i";
+		break;
+	case Pinstate::IOF_PWM:
+		cout << "p";
+		break;
+	case Pinstate::IOF_UART:
+		cout << "u";
+		break;
+	default:
+		cout << "?";
+		break;
+	}
+}
+
 void GpioCommon::printState(const State& state) {
 	for(PinNumber pin = 0; pin < max_num_pins; pin++) {
 		if(pin > 0 && pin % 8 == 0)
 			cout << " ";
-		switch(state.pins[pin]) {
-		case Pinstate::LOW:
-			cout << "0";
-			break;
-		case Pinstate::HIGH:
-			cout << "1";
-			break;
-		case Pinstate::UNSET:
-			cout << "X";
-			break;
-		case Pinstate::IOF_SPI:
-			cout << "s";
-			break;
-		case Pinstate::IOF_I2C:
-			cout << "i";
-			break;
-		case Pinstate::IOF_PWM:
-			cout << "p";
-			break;
-		case Pinstate::IOF_UART:
-			cout << "u";
-			break;
-		default:
-			cout << "?";
-			break;
-		}
+		printPinstate(state.pins[pin]);
 	}
 	cout << endl;
 }

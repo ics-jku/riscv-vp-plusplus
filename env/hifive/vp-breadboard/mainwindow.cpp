@@ -109,10 +109,10 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 	if(config.contains("oled-iof"))
 	{
 		QJsonObject obj = config["oled-iof"].toObject();
-		oled_spi_channel = IOF_Request{.pin = obj["cs_pin"].toInt(9), .active = false};
-		const unsigned dc_pin = obj["dc_pin"].toInt(16);
+		oled_spi_channel.pin = obj["cs_pin"].toInt(9);
+		oled_dc_channel.pin = obj["dc_pin"].toInt(16);
 		oled_iof = new OLED_iof(
-			[this,dc_pin]{return gpio.state.pins[translatePinToGpioOffs(dc_pin)] == gpio::Pinstate::HIGH;},
+			[this]{return gpio.state.pins[translatePinToGpioOffs(oled_dc_channel.pin)] == gpio::Pinstate::HIGH;},
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
 			obj["margin"].toInt(15),
@@ -248,7 +248,6 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	if (inited && !gpio.update()) {
 		// Just lost connection
 		gpio.destroyConnection();
-		oled_spi_channel.active = false;	//ugly
 		inited = false;
 	}
 
@@ -267,11 +266,14 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		oled_mmap->draw(painter);
 
 	if(oled_iof) {
-		if(!oled_spi_channel.active) {
-			gpio.registerSPIOnChange(oled_spi_channel.pin,
-					[this](gpio::SPI_Command cmd){ cout << (int) cmd; return oled_iof->write(cmd);}
+		// TODO: Maybe this check less frequent?
+		if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
+			gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
+					[this](gpio::SPI_Command cmd){ return oled_iof->write(cmd);}
 			);
-			oled_spi_channel.active = true;
+		}
+		if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
+			gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin));
 		}
 		oled_iof->draw(painter);
 	}
