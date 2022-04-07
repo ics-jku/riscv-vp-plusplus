@@ -83,10 +83,8 @@ void enableRawMode(int fd) {
 	if (rawfd >= 0)
 		return;
 
-	if (!isatty(STDIN_FILENO)) {
-		errno = ENOTTY;
-		goto fatal;
-	}
+	if (!isatty(STDIN_FILENO))
+		return; // not a tty, nothing to do
 
 	if (tcgetattr(fd, &orig_termios) == -1)
 		goto fatal;
