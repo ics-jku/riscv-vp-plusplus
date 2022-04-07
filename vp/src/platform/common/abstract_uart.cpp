@@ -77,6 +77,7 @@ AbstractUART::~AbstractUART(void) {
 		uint8_t byte = 0;
 		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
 			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+		spost(&rxempty); // unblock receive thread
 		rcvthr->join();
 		delete rcvthr;
 	}
