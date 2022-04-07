@@ -116,12 +116,12 @@ uint8_t SS1106::write(uint8_t byte)
 		//std::cout << "Got Data " << std::hex << (unsigned) byte << std::endl;
 		if(state->column > width)
 		{
-			std::cerr << "OLED: Warning, exceeding column width (" << state->column << " of " << width << ")" << std::endl;
+			std::cerr << "OLED: Warning, exceeding column width (" << (int)state->column << " of " << (int)width << ")" << std::endl;
 			return -1;		//this is not in spec.
 		}
 		if(state->page > height/8)
 		{
-			std::cerr << "OLED: Warning, exceeding page (" << state->page << " of " << height/8 << ")" << std::endl;
+			std::cerr << "OLED: Warning, exceeding page (" << (int)state->page << " of " << (int)height/8 << ")" << std::endl;
 			return -1;		//this is not in spec.
 		}
 		state->frame[state->page][state->column] = byte;

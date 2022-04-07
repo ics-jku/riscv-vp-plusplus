@@ -48,19 +48,7 @@ bool readStruct(int handle, T* s){
 GpioClient::GpioClient() : fd(-1), currentHost("localhost") {}
 
 GpioClient::~GpioClient() {
-	if (fd >= 0) {
-		close(fd);
-	}
-
-	for (const auto& thread : dataChannelThreads) {
-		close(thread.fd); // closing socket should signal quit
-	}
-
-	for (auto& thread : dataChannelThreads) {
-		if(thread.thread.joinable()) {
-			thread.thread.join();
-		}
-	}
+	destroyConnection();
 }
 
 bool GpioClient::update() {
@@ -130,6 +118,7 @@ void GpioClient::stopIOFchannel(PinNumber pin) {
 }
 
 bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
+	// TODO: Dont register if this pin already got existing connection
 
 	auto port = requestIOFchannel(pin);
 

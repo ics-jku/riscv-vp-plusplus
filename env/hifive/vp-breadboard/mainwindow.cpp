@@ -109,7 +109,7 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 	if(config.contains("oled-iof"))
 	{
 		QJsonObject obj = config["oled-iof"].toObject();
-		oled_iof_channel.pin = obj["cs_pin"].toInt(9);
+		oled_spi_channel = IOF_Request{.pin = obj["cs_pin"].toInt(9), .active = false};
 		const unsigned dc_pin = obj["dc_pin"].toInt(16);
 		oled_iof = new OLED_iof(
 			[this,dc_pin]{return gpio.state.pins[translatePinToGpioOffs(dc_pin)] == gpio::Pinstate::HIGH;},
@@ -248,6 +248,7 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	if (inited && !gpio.update()) {
 		// Just lost connection
 		gpio.destroyConnection();
+		oled_spi_channel.active = false;	//ugly
 		inited = false;
 	}
 
@@ -266,7 +267,13 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		oled_mmap->draw(painter);
 
 	if(oled_iof) {
-		// TODO
+		if(!oled_spi_channel.active) {
+			gpio.registerSPIOnChange(oled_spi_channel.pin,
+					[this](gpio::SPI_Command cmd){ cout << (int) cmd; return oled_iof->write(cmd);}
+			);
+			oled_spi_channel.active = true;
+		}
+		oled_iof->draw(painter);
 	}
 
 	if(sevensegment)

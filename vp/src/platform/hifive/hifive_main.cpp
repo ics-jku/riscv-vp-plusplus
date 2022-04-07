@@ -83,14 +83,14 @@ public:
 	addr_t dram_end_addr = dram_start_addr + dram_size - 1;
 
 	bool enable_can = false;
-	bool enable_oled = true;
+	bool disable_inline_oled = true;
 	std::string tun_device = "tun0";
 
 	HifiveOptions(void) {
 		// clang-format off
 		add_options()
 			("enable-inline-can",  po::bool_switch(&enable_can), "enable support for CAN SPI module")
-			("enable-inline-oled", po::bool_switch(&enable_oled)->default_value(true), "enable support for OLED SPI module")
+			("disable-inline-oled", po::bool_switch(&disable_inline_oled), "enable support for OLED SPI module")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
 		// clang-format on
 	}
@@ -129,7 +129,7 @@ int sc_main(int argc, char **argv) {
 		spi1.connect(0, gpio0.getSPIwriteFunction(0));
 	}
 	std::shared_ptr<SS1106> oled = nullptr;
-	if(opt.enable_oled) {
+	if(!opt.disable_inline_oled) {
 		std::cout << "[hifive_main] using internal SS1106 oled controller on SPI CS 2 (with DC as Pin 16, Bit 10)" << std::endl;
 		oled = std::make_shared<SS1106>([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
 		spi1.connect(2, std::bind(&SS1106::write, oled, std::placeholders::_1));

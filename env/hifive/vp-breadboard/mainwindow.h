@@ -19,7 +19,7 @@ class VPBreadboard : public QWidget {
 	struct IOF_Request {
 		gpio::PinNumber pin;
 		bool active = false;
-	} oled_iof_channel;	// TODO: Make this a map for all IOF-Devices
+	} oled_spi_channel;	// TODO: Make this a map for all IOF-Devices
 
 	// TODO get Device factory
 	Sevensegment* sevensegment;
