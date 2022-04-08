@@ -26,6 +26,7 @@ private:
 	OnChangeCallback fun;
 	void handleConnection(int conn);
 
+	// TODO: Performance testing. Better as static array?
 	std::map<gpio::PinNumber,int> active_IOF_channels;
 
 	static int openSocket(const char* port);
@@ -41,6 +42,7 @@ public:
 	void registerOnChange(OnChangeCallback fun);
 	void startAccepting();
 
-	// pin number may be CS? If that works.
+	void pushPin(gpio::PinNumber pin, gpio::Tristate state);
+	// pin number should be the active CS
 	gpio::SPI_Response pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte);
 };

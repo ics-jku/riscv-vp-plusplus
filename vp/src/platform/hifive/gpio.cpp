@@ -102,30 +102,71 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 		case PIN_VALUE_ADDR:
 			cerr << "[GPIO] write to value register is ignored!" << endl;
 			return;
+		case PORT_REG_ADDR:
+			// cout << "[GPIO] new Port value: ";
+			// bitPrint(reinterpret_cast<unsigned char*>(&r.nv), sizeof(uint32_t));
+
+			// value and server.state might differ, if a bit is changed by
+			// client and the synchronous_change was not fired yet.
+			// Server wins in this scenario.
+			{
+				const auto prv_output_enabled_port = (port & output_en) & ~iof_en;
+				const auto new_output_enabled_port = (r.nv & output_en) & ~iof_en;
+				const auto changed_output_pins = new_output_enabled_port ^ prv_output_enabled_port;
+
+				if(!changed_output_pins)
+					break;
+
+				value = (value & ~output_en) | new_output_enabled_port;
+
+				for(PinNumber i = 0; i < available_pins; i++) {
+					const auto bitoffs = (1l << i);
+					if(bitoffs & changed_output_pins) {
+						server.state.pins[i] = new_output_enabled_port & bitoffs ? Pinstate::HIGH : Pinstate::LOW;
+						server.pushPin(i, toTristate(server.state.pins[i]));
+					}
+				}
+			}
+			break;
+
 		case PULLUP_EN_ADDR:
 			// cout << "[GPIO] pullup changed" << endl;
-			// bitPrint(reinterpret_cast<unsigned char*>(&pullup_en),
-			// sizeof(uint32_t));
-		{
-			const auto newly_pulled_up_bits = (r.nv ^ pullup_en) & r.nv;
-			value |= newly_pulled_up_bits;
-			for(PinNumber i = 0; i < available_pins; i++) {
-				if((1l << i) & newly_pulled_up_bits) {
-					server.state.pins[i] = Pinstate::HIGH;
+			// bitPrint(reinterpret_cast<unsigned char*>(&pullup_en), sizeof(uint32_t));
+			{
+				const auto newly_pulled_up_bits = (r.nv ^ pullup_en) & r.nv;
+				value |= newly_pulled_up_bits;
+				for(PinNumber i = 0; i < available_pins; i++) {
+					if((1l << i) & newly_pulled_up_bits) {
+						server.state.pins[i] = Pinstate::HIGH;
+						// TODO: Notify pin subscriber
+					}
 				}
 			}
-		}
 			break;
 		case OUTPUT_EN_REG_ADDR:
-		{
-			const auto newly_output_disabled_bits = (r.nv ^ output_en) & output_en;
-			value &= ~(newly_output_disabled_bits);
-			for(PinNumber i = 0; i < available_pins; i++) {
-				if((1l << i) & newly_output_disabled_bits) {
-					server.state.pins[i] = Pinstate::UNSET;
+			{
+				const auto& old_output_en = output_en;
+				const auto& new_output_en = r.nv;
+
+				const auto newly_output_disabled_bits =  old_output_en & ~new_output_en;
+				const auto newly_output_enabled_bits  = ~old_output_en &  new_output_en;
+				// Implicit zero when output disabled
+				value = (value & ~old_output_en) | (port & new_output_en);
+
+				for(PinNumber i = 0; i < available_pins; i++) {
+					const auto bitoffs = (1l << i);
+					if(bitoffs & newly_output_disabled_bits) {
+						// we can't differentiate between "driven by server" or "by client".
+						// Server wins, so override.
+						server.state.pins[i] = Pinstate::UNSET;
+						server.pushPin(i, Tristate::UNSET);
+					}
+					else if (bitoffs & newly_output_enabled_bits) {
+						server.state.pins[i] = value & bitoffs ? Pinstate::HIGH : Pinstate::LOW;
+						server.pushPin(i, toTristate(server.state.pins[i]));
+					}
 				}
 			}
-		}
 			break;
 		default:
 			break;
@@ -134,23 +175,6 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 	r.fn();
 	if (r.write) {
 		switch (r.addr) {
-		case PORT_REG_ADDR:
-			// cout << "[GPIO] new Port value: ";
-			// bitPrint(reinterpret_cast<unsigned char*>(&port),
-
-			// value and server.state might differ, if a bit is changed by
-			// client and the synchronous_change was not fired yet.
-		{
-			const auto valid_output = (port & output_en);
-			value = (value & ~output_en) | valid_output;
-
-			for(PinNumber i = 0; i < available_pins; i++) {
-				if((1l << i) & output_en & ~iof_en) {
-					server.state.pins[i] = valid_output & (1l << i) ? Pinstate::HIGH : Pinstate::LOW;
-				}
-			}
-		}
-			break;
 		case IOF_EN_REG_ADDR:
 		case IOF_SEL_REG_ADDR:
 			for (PinNumber i = 0; i < available_pins; i++) {
@@ -164,6 +188,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 						server.state.pins[i] = iof;
 					}
 				}
+				// TODO: Upon IOF disable, set value and state according to (port & output_en)
 			}
 			break;
 		case FALL_INTR_EN:

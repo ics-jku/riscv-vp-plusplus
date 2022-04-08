@@ -232,18 +232,8 @@ void GpioServer::handleConnection(int conn) {
 			case Request::Type::REQ_IOF:
 			{
 				Req_IOF_Response response{0};
-				if(!isIOF(state.pins[req.reqIOF.pin])){
-					cerr << "[gpio-server] IOF request on non-iof pin " << (int)req.reqIOF.pin << endl;
-					if (!writeStruct(conn, &response)) {
-						cerr << "[gpio-server] could not write IOF-Req answer" << endl;
-						close(conn);
-						return;
-					}
-					// Not a major fault, so break instead of return
-					break;
-				}
 
-				int new_data_socket = openSocket("0");	// zero shall indicate random port
+				int new_data_socket = openSocket("0");	// zero requests random port
 				if (new_data_socket < 0) {
 					cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
 					// no return, so that response is 0
@@ -278,23 +268,19 @@ void GpioServer::handleConnection(int conn) {
 					return;
 				}
 
+				//cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << endl;
 				active_IOF_channels.emplace(req.reqIOF.pin, data_channel);
 
 				break;
 			}
 			case Request::Type::END_IOF:
-				if(!isIOF(state.pins[req.reqIOF.pin])){
-					//cerr << "[gpio-server] IOF quit on non-IOF pin " << (int)req.reqIOF.pin << endl;
-					// If pin state changed, we still need to quit channel
-				}
-
 				{
 				auto channel = active_IOF_channels.find(req.reqIOF.pin);
 				if(channel == active_IOF_channels.end()) {
-					cerr << "[gpio-server] IOF quit on non followed pin " << (int)req.reqIOF.pin << endl;
+					cerr << "[gpio-server] IOF quit on non active pin " << (int)req.reqIOF.pin << endl;
 					return;
 				}
-
+				//cout << "[gpio-server] IOF quit on pin " << (int)req.reqIOF.pin << endl;
 				close(channel->second);
 				active_IOF_channels.erase(channel);
 				}
@@ -307,6 +293,22 @@ void GpioServer::handleConnection(int conn) {
 
 	DEBUG("gpio-client disconnected (%d)\n", bytes);
 	close(conn);
+}
+
+void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
+	// TODO: Maybe add redundant array with active PIN subscriptions to speed up this check
+	auto channel = active_IOF_channels.find(pin);
+	if(channel == active_IOF_channels.end()) {
+		return;
+	}
+
+	int sock = channel->second;
+
+	if(!writeStruct(sock, &state)) {
+		cerr << "[gpio-server] Could not write PIN update to pin " << (int)pin << endl;
+		close(sock);
+		active_IOF_channels.erase(channel);
+	}
 }
 
 SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {

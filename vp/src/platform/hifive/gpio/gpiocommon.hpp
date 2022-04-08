@@ -34,11 +34,11 @@ namespace gpio {
 		//TODO: Maybe _weak for pullups/downs
 	};
 
-	inline Pinstate toPinstate (const Tristate from) {
+	static constexpr Pinstate toPinstate (const Tristate from) {
 		// this is safe because first 2 bits are identical;
 		return static_cast<Pinstate>(from);
 	}
-	inline Tristate toTristate (const Pinstate from) {
+	static constexpr Tristate toTristate (const Pinstate from) {
 		// this is only safe if a !isIof(from) was done
 		return static_cast<Tristate>(from);
 	}

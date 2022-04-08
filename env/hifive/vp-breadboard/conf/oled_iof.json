@@ -55,7 +55,7 @@
   {
     "offs"   : [535, 395],
     "margin" : 10,
-    "cs_pin" : 9,
+    "cs_pin" : 15,
     "dc_pin" : 16
   }
 }

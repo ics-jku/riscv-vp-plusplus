@@ -115,6 +115,8 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 		cerr << "[gpio-client] Error in write 'Stop SPI IOF'" << endl;
 		return ;
 	}
+
+	cout << "[gpio-client] Sent end-iof for pin " << (int)pin << endl;
 }
 
 bool GpioClient::isIOFactive(gpio::PinNumber pin) {
@@ -131,7 +133,8 @@ void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 	if(desc.fd > 0)
 		notifyEndIOFchannel(pin);
 	close(desc.fd);
-	desc.thread.join();
+	if(desc.thread.joinable())
+		desc.thread.join();
 
 	dataChannelThreads.erase(item);
 }
@@ -244,7 +247,8 @@ void GpioClient::destroyConnection(){
 		if(desc.fd > 0)	// not already closed
 			notifyEndIOFchannel(pin);
 		close(desc.fd);
-		desc.thread.join();
+		if(desc.thread.joinable())
+			desc.thread.join();
 	}
 
 	dataChannelThreads.clear();

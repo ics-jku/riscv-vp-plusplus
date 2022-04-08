@@ -14,10 +14,10 @@ struct GPIO : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<GPIO> tsock;
 
 	// memory mapped configuration registers
-	uint32_t value = 0;
+	uint32_t value = 0;		// Current state of pin, input or output
 	uint32_t input_en = 0;
 	uint32_t output_en = 0;
-	uint32_t port = 0;
+	uint32_t port = 0;		// Desired output values of enabled pins
 	uint32_t pullup_en = 0;
 	uint32_t pin_drive_strength = 0;
 	uint32_t rise_intr_en = 0;
