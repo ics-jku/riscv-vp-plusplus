@@ -27,6 +27,7 @@ private:
 	void handleConnection(int conn);
 
 	// TODO: Performance testing. Better as static array?
+	// TODO: Note requested IO-Function so no proto
 	std::map<gpio::PinNumber,int> active_IOF_channels;
 
 	static int openSocket(const char* port);
@@ -38,9 +39,9 @@ public:
 	~GpioServer();
 	bool setupConnection(const char* port);
 	void quit();
-	bool isStopped();
 	void registerOnChange(OnChangeCallback fun);
 	void startAccepting();
+	bool isConnected();
 
 	void pushPin(gpio::PinNumber pin, gpio::Tristate state);
 	// pin number should be the active CS

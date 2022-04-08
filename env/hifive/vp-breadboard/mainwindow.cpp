@@ -269,12 +269,13 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		// TODO: Maybe this check less frequent?
 		if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
 			gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
-					[this](gpio::SPI_Command cmd){ cout<<" spi"<<(int)cmd; return oled_iof->write(cmd);}
+					[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
+				return oled_iof->write(cmd);}
 			);
 		}
 		if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
-			gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin),
-					[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
+			gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin)//,
+					//[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
 			);
 		}
 		oled_iof->draw(painter);

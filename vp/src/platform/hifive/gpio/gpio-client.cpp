@@ -45,7 +45,7 @@ bool readStruct(int handle, T* s){
 	return read(handle, s, sizeof(T)) == sizeof(T);
 }
 
-GpioClient::GpioClient() : fd(-1), currentHost("localhost") {}
+GpioClient::GpioClient() : server_connection(-1), currentHost("localhost") {}
 
 GpioClient::~GpioClient() {
 	destroyConnection();
@@ -55,11 +55,11 @@ bool GpioClient::update() {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::GET_BANK;
-	if (!writeStruct(fd, &req)) {
+	if (!writeStruct(server_connection, &req)) {
 		cerr << "[gpio-client] Error or closed socket in update request: " << strerror(errno) << endl;
 		return false;
 	}
-	if (!readStruct(fd, &state)) {
+	if (!readStruct(server_connection, &state)) {
 		cerr << "[gpio-client] Error or closed socket in update read: " << strerror(errno) << endl;
 		return false;
 	}
@@ -73,7 +73,7 @@ bool GpioClient::setBit(uint8_t pos, Tristate val) {
 	req.setBit.pin = pos;
 	req.setBit.val = val;
 
-	if (!writeStruct(fd, &req)) {
+	if (!writeStruct(server_connection, &req)) {
 		cerr << "[gpio-client] Error in setBit" << endl;
 		return false;
 	}
@@ -86,14 +86,14 @@ uint16_t GpioClient::requestIOFport(PinNumber pin) {
 	req.op = Request::Type::REQ_IOF;
 	req.reqIOF.pin = pin;
 
-	if (!writeStruct(fd, &req)) {
+	if (!writeStruct(server_connection, &req)) {
 		cerr << "[gpio-client] Error in write SPI IOF register request" << endl;
 		return 0;
 	}
 
 	Req_IOF_Response resp;
 
-	if (!readStruct(fd, &resp)) {
+	if (!readStruct(server_connection, &resp)) {
 		cerr << "[gpio-client] Error in read SPI IOF register response" << endl;
 		return 0;
 	}
@@ -111,12 +111,12 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 	req.op = Request::Type::END_IOF;
 	req.reqIOF.pin = pin;
 
-	if (!writeStruct(fd, &req)) {
-		cerr << "[gpio-client] Error in write 'Stop SPI IOF'" << endl;
+	if (!writeStruct(server_connection, &req)) {
+		cerr << "[gpio-client] Error in write 'Stop SPI IOF' for pin " << (int)pin << endl;
 		return ;
 	}
 
-	cout << "[gpio-client] Sent end-iof for pin " << (int)pin << endl;
+	//cout << "[gpio-client] Sent end-iof for pin " << (int)pin << endl;
 }
 
 bool GpioClient::isIOFactive(gpio::PinNumber pin) {
@@ -129,28 +129,27 @@ void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 	if(item == dataChannelThreads.end())
 		return;
 
-	auto& desc = (*item).second;
-	if(desc.fd > 0)
-		notifyEndIOFchannel(pin);
-	close(desc.fd);
-	if(desc.thread.joinable())
-		desc.thread.join();
-
+	{
+		auto& desc = (*item).second;
+		if(desc.fd > 0)
+			notifyEndIOFchannel(pin);
+		close(desc.fd);
+		if(desc.thread.joinable())
+			desc.thread.join();
+	}
 	dataChannelThreads.erase(item);
 }
 
 bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
 	if(state.pins[pin] != Pinstate::IOF_SPI) {
-		cerr << "[gpio-client] Register SPI onchange on pin " << (int)pin << " with no SPI io-function" << endl;
-		return false;
+		cerr << "[gpio-client] WARN: Register SPI onchange on pin " << (int)pin << " with no SPI io-function" << endl;
 	}
 	return setupIOFhandler(pin, std::bind(&GpioClient::handleSPIchannel, this, pin, fun));
 }
 
 bool GpioClient::registerPINOnChange(PinNumber pin, OnChange_PIN fun){
 	if(isIOF(state.pins[pin])) {
-		cerr << "[gpio-client] Register PIN onchange on pin " << (int)pin << " with some io-function" << (int)state.pins[pin] << endl;
-		return false;
+		cerr << "[gpio-client] WARN: Register PIN onchange on pin " << (int)pin << " with some io-function" << (int)state.pins[pin] << endl;
 	}
 	return setupIOFhandler(pin, std::bind(&GpioClient::handlePINchannel, this, pin, fun));
 }
@@ -234,7 +233,7 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 }
 
 bool GpioClient::setupConnection(const char *host, const char *port) {
-	if((fd = connectToHost(host, port)) < 0) {
+	if((server_connection = connectToHost(host, port)) < 0) {
 		//cerr << "[gpio-client] Could not connect to " << host << ":" << port << endl;
 		return false;
 	}
@@ -252,5 +251,6 @@ void GpioClient::destroyConnection(){
 	}
 
 	dataChannelThreads.clear();
-	close(fd);
+	close(server_connection);
+	server_connection = -1;
 }

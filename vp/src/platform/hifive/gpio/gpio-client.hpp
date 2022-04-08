@@ -19,7 +19,7 @@ public:
 	typedef std::function<void(gpio::Tristate val)> OnChange_PIN;
 
 private:
-	int fd;
+	int server_connection;
 	const char* currentHost;
 
 	struct DataChannelDescription {
@@ -28,8 +28,10 @@ private:
 	};
 	std::unordered_map<gpio::PinNumber, DataChannelDescription> dataChannelThreads;
 
+	// TODO: Add IOF-parameter as specific request
 	// @return port number, 0 on error
 	uint16_t requestIOFport(gpio::PinNumber pin);
+
 	template<typename OnChange_handler>
 		bool setupIOFhandler(gpio::PinNumber pin, OnChange_handler onChange);
 	void notifyEndIOFchannel(gpio::PinNumber pin);

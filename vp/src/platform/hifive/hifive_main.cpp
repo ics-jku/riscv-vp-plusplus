@@ -83,7 +83,8 @@ public:
 	addr_t dram_end_addr = dram_start_addr + dram_size - 1;
 
 	bool enable_can = false;
-	bool disable_inline_oled = true;
+	bool disable_inline_oled = false;
+	bool wait_for_gpio_connection = false;
 	std::string tun_device = "tun0";
 
 	HifiveOptions(void) {
@@ -91,6 +92,7 @@ public:
 		add_options()
 			("enable-inline-can",  po::bool_switch(&enable_can), "enable support for CAN SPI module")
 			("disable-inline-oled", po::bool_switch(&disable_inline_oled), "enable support for OLED SPI module")
+			("wait-for-gpio-connection", po::bool_switch(&wait_for_gpio_connection), "Waits for a GPIO-Connection before starting program")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
 		// clang-format on
 	}
@@ -218,6 +220,12 @@ int sc_main(int argc, char **argv) {
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
 		new DirectCoreRunner(core);
+	}
+
+	if(opt.wait_for_gpio_connection) {
+		while(!gpio0.isServerConnected()) {
+			usleep(2000);
+		}
 	}
 
 	sc_core::sc_start();

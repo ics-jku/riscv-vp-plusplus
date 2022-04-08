@@ -69,9 +69,9 @@ namespace gpio {
 			GET_BANK = 1,
 			SET_BIT,
 			REQ_IOF,
-			REQ_LOGSTATE = REQ_IOF,
 			END_IOF,
-			END_LOGSTATE = END_IOF
+			REQ_START_SIM,
+			REQ_END_SIM
 		} op;
 		union {
 			struct {
@@ -83,6 +83,7 @@ namespace gpio {
 				// Todo: Decide how to determine SPI's Chip Select
 				// Perhaps pin shall be one of the hardware CS pins
 				uint8_t pin;
+				//gpio::Pinstate; // TODO: request a specific IO-function (in advance)
 			} reqIOF;
 		};
 	};

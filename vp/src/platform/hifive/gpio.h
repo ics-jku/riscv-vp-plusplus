@@ -69,6 +69,8 @@ struct GPIO : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 
+	bool isServerConnected();
+
 	void asyncOnchange(gpio::PinNumber bit, gpio::Tristate val);
 	void synchronousChange();
 

@@ -142,6 +142,7 @@ void GpioServer::quit() {
 	// this should force read command to return
 	if(current_connection_fd >= 0){
 		close(current_connection_fd);
+		current_connection_fd = -1;
 	}
 
 	/* The startListening() loop only checks the stop member
@@ -153,10 +154,6 @@ void GpioServer::quit() {
 
 	GpioClient client;
 	if (base_port) client.setupConnection(NULL, base_port);
-}
-
-bool GpioServer::isStopped() {
-	return stop;
 }
 
 void GpioServer::registerOnChange(OnChangeCallback fun) {
@@ -191,7 +188,13 @@ void GpioServer::startAccepting() {
 			continue;
 		}
 		handleConnection(current_connection_fd);
+		close(current_connection_fd);
+		current_connection_fd = -1;
 	}
+}
+
+bool GpioServer::isConnected() {
+	return current_connection_fd >= 0;
 }
 
 void GpioServer::handleConnection(int conn) {
@@ -204,7 +207,6 @@ void GpioServer::handleConnection(int conn) {
 			case Request::Type::GET_BANK:
 				if (!writeStruct(conn, &state)) {
 					cerr << "could not write answer" << endl;
-					close(conn);
 					return;
 				}
 				break;
@@ -212,12 +214,12 @@ void GpioServer::handleConnection(int conn) {
 				// printRequest(&req);
 				if (req.setBit.pin >= max_num_pins) {
 					cerr << "[gpio-server] invalid request setbit pin number " << req.setBit.pin << endl;
-					return;
+					break;
 				}
 
 				if (isIOF(state.pins[req.setBit.pin])){
 					cerr << "[gpio-server] Ignoring setPin on IOF" << endl;
-					return;
+					break;
 				}
 
 				// sanity checks ok
@@ -236,7 +238,7 @@ void GpioServer::handleConnection(int conn) {
 				int new_data_socket = openSocket("0");	// zero requests random port
 				if (new_data_socket < 0) {
 					cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
-					// no return, so that response is 0
+					// no break, so that response is 0
 				}
 
 				{
@@ -251,8 +253,7 @@ void GpioServer::handleConnection(int conn) {
 
 				if (!writeStruct(conn, &response)) {
 					cerr << "[gpio-server] could not write IOF-Req answer" << endl;
-					if (new_data_socket < 0)
-						close(conn);
+					close(new_data_socket);
 					return;
 				}
 
@@ -263,9 +264,7 @@ void GpioServer::handleConnection(int conn) {
 
 				if(data_channel < 0) {
 					cerr << "[gpio-server] IOF data channel connection not successful" << endl;
-					// TODO: really close normal connection for reset?
-					close(conn);
-					return;
+					break;
 				}
 
 				//cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << endl;
@@ -292,7 +291,6 @@ void GpioServer::handleConnection(int conn) {
 	}
 
 	DEBUG("gpio-client disconnected (%d)\n", bytes);
-	close(conn);
 }
 
 void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
@@ -302,7 +300,7 @@ void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
 		return;
 	}
 
-	int sock = channel->second;
+	auto& sock = channel->second;
 
 	if(!writeStruct(sock, &state)) {
 		cerr << "[gpio-server] Could not write PIN update to pin " << (int)pin << endl;

@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 
 	SPI_Command sumbyte = 0;
 
-	while (!stop && !gpio.isStopped()) {
+	while (!stop) {
 		// some example actions
 		usleep(100000);
 		// here was a bitshift, implement this for lulz?

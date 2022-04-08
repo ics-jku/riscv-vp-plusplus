@@ -209,6 +209,10 @@ void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
 
+bool GPIO::isServerConnected() {
+	return server.isConnected();
+}
+
 void GPIO::asyncOnchange(PinNumber bit, Tristate val) {
 	const auto state_prev = server.state.pins[bit];
 
