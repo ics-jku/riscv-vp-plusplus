@@ -25,6 +25,7 @@ class SimpleSerial{
     }
 
 	void write(char *buf, size_t size){
+        
 		boost::asio::write(serial, boost::asio::buffer(buf, size));
 	}
 
@@ -38,6 +39,7 @@ class SimpleSerial{
 	}*/
 
 	void write(char c){
+        std::cout << "[SERIAL] Writing character to UART ttyUSB"  << std::endl;
 		write(&c, 1);
 	}
 

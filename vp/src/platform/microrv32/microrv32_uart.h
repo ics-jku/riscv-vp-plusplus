@@ -52,7 +52,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 		auto cmd = trans.get_command();
 		auto len = trans.get_data_length();
 		auto ptr = trans.get_data_ptr();
-		std::cout << "[UART]TLM Transport" << std::endl;
+		//std::cout << "[UART]TLM Transport" << std::endl;
 
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 			if (addr == 0) {
@@ -94,7 +94,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 	//~ }
 
 	void run_rx() {
-		std::cout << "[UART-TLM] run_rx called" << std::endl;
+		std::cout << "[UART-TLM] RX run_rx called" << std::endl;
 		if (serial.is_open()) {
 			while (true) {
 				run_event_rx.notify(sc_core::sc_time(50, sc_core::SC_US));
@@ -103,7 +103,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 				// read from uart
 				char c;
 				while (c = serial.read()) {
-					std::cout << "[UART] rx_run(): c =" << c << std::endl;
+					std::cout << "[UART] RX rx_run(): c =" << c << std::endl;
 					rxFIFO.push(c);
 					run_event_tx.notify(sc_core::sc_time(50, sc_core::SC_US));
 					sc_core::wait(run_event_tx);  // 40 times per second by default
@@ -124,7 +124,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 	}
 
 	void run_tx() {
-		std::cout << "[UART-TLM] run_rx called" << std::endl;
+		std::cout << "[UART-TLM] TX run_tx called" << std::endl;
 		if (serial.is_open()) {
 			while (true) {
 				run_event_tx.notify(sc_core::sc_time(50, sc_core::SC_US));
@@ -133,7 +133,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 					char c = txFIFO.front();
 					txFIFO.pop();
 					serial.write(c);
-					std::cout << "[UART-TLM] run_tx wrote c=" << c << std::endl;
+					std::cout << "[UART-TLM] TX run_tx() wrote c=" << c << std::endl;
 					run_event_tx.notify(sc_core::sc_time(50, sc_core::SC_US));
 					sc_core::wait(run_event_tx);  // 40 times per second by default
 				}

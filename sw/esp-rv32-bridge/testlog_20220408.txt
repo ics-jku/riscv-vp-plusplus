@@ -1,0 +1,114 @@
+sallar@sallar-ThinkPad-T14-Gen-1:~/work/microrv32-vp-uart/sw/esp-rv32-bridge$ ../../vp/build/bin/microrv32-vp main --uart-port /dev/ttyUSB1 --uart-baud-rate 9600 | tee testlog_20220408.txt
+
+
+VP INIT
+Test UART 
+UART @ /dev/ttyUSB1
+[UART-TLM] RX run_rx called
+[UART-TLM] TX run_tx called
+[UART-TLM] Reading from UART file stream
+[UART] RX rx_run(): c =Æ
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Æ
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=I
+[UART] RX rx_run(): c =Æ
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=I
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =Æ
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=L
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =Æ
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=L
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =Æ
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=L
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=3
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=H
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =Æ
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=3
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=P
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Æ
+[UART] RX rx_run(): c =Æ
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=P
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=P
+[UART] RX rx_run(): c =Æ
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
+[UART] RX rx_run(): c =3
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=P
+[UART] RX rx_run(): c =3
+[UART] RX rx_run(): c =Æ
+[UART] RX rx_run(): c =Z
+[UART] RX rx_run(): c =Z
+[SERIAL] Writing character to UART ttyUSB
+[UART-TLM] TX run_tx() wrote c=Z
