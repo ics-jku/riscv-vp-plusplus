@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <iostream>
 
@@ -57,12 +58,20 @@ bool GpioClient::update() {
 	req.op = Request::Type::GET_BANK;
 	if (!writeStruct(server_connection, &req)) {
 		cerr << "[gpio-client] Error or closed socket in update request: " << strerror(errno) << endl;
+		close(server_connection); // probably closed anyway
+		server_connection = -1;
+		destroyConnection();
 		return false;
 	}
 	if (!readStruct(server_connection, &state)) {
 		cerr << "[gpio-client] Error or closed socket in update read: " << strerror(errno) << endl;
+		close(server_connection); // probably closed anyway
+		server_connection = -1;
+		destroyConnection();
 		return false;
 	}
+
+	// TODO: Housekeeping for closed IOFunctions?
 	return true;
 }
 
@@ -116,7 +125,7 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 		return ;
 	}
 
-	//cout << "[gpio-client] Sent end-iof for pin " << (int)pin << endl;
+	cout << "[gpio-client] Sent end-iof for pin " << (int)pin << endl;
 }
 
 bool GpioClient::isIOFactive(gpio::PinNumber pin) {
@@ -125,13 +134,14 @@ bool GpioClient::isIOFactive(gpio::PinNumber pin) {
 
 void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 	auto item = dataChannelThreads.find(pin);
+	cout << "Closing iof of pin " << (int)pin << endl;
 
 	if(item == dataChannelThreads.end())
 		return;
 
 	{
-		auto& desc = (*item).second;
-		if(desc.fd > 0)
+		auto& desc = item->second;
+		if(server_connection > 0 && desc.fd > 0)
 			notifyEndIOFchannel(pin);
 		close(desc.fd);
 		if(desc.thread.joinable())
@@ -157,7 +167,7 @@ bool GpioClient::registerPINOnChange(PinNumber pin, OnChange_PIN fun){
 void GpioClient::handleSPIchannel(gpio::PinNumber pin, OnChange_SPI fun) {
 	// open and running connection
 	SPI_Command spi_in;
-	int socket = dataChannelThreads[pin].fd;	// this has to be populated
+	auto& socket = dataChannelThreads[pin].fd;	// this has to be populated
 	while(readStruct(socket, &spi_in)) {
 		SPI_Response resp = fun(spi_in);
 		if(!writeStruct(socket, &resp)) {
@@ -165,14 +175,15 @@ void GpioClient::handleSPIchannel(gpio::PinNumber pin, OnChange_SPI fun) {
 			break;
 		}
 	}
-	closeIOFunction(pin);
-	cerr << "[gpio-client] [SPI channel] Error or closed socket" << endl;
+	close(socket);	// unsure if needed
+	socket = -1;
+	cerr << "[gpio-client] [SPI channel] Error or closed socket on pin " << (int)pin << endl;
 }
 
 void GpioClient::handlePINchannel(gpio::PinNumber pin, OnChange_PIN fun) {
 	// open and running connection
 	Pinstate pin_in;
-	int socket = dataChannelThreads[pin].fd;	// this has to be populated
+	auto& socket = dataChannelThreads[pin].fd;	// this has to be populated
 	while(readStruct(socket, &pin_in)) {
 		state.pins[pin] = pin_in;
 		if(isIOF(pin_in)){
@@ -181,8 +192,9 @@ void GpioClient::handlePINchannel(gpio::PinNumber pin, OnChange_PIN fun) {
 		}
 		fun(toTristate(pin_in));
 	}
-	closeIOFunction(pin);
-	cerr << "[gpio-client] [PIN channel] Error or closed socket" << endl;
+	close(socket);
+	socket = -1;
+	cerr << "[gpio-client] [PIN channel] Error or closed socket on pin " << (int)pin << endl;
 }
 
 
@@ -242,15 +254,14 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 }
 
 void GpioClient::destroyConnection(){
-	for(auto& [pin,desc] : dataChannelThreads) {
-		if(desc.fd > 0)	// not already closed
-			notifyEndIOFchannel(pin);
-		close(desc.fd);
-		if(desc.thread.joinable())
-			desc.thread.join();
+	auto it = dataChannelThreads.begin();
+	while (it != dataChannelThreads.end())
+	{
+		auto curr = it++;
+		closeIOFunction(curr->first);
 	}
 
-	dataChannelThreads.clear();
+	assert(dataChannelThreads.size() == 0);
 	close(server_connection);
 	server_connection = -1;
 }

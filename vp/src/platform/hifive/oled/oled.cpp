@@ -134,7 +134,7 @@ uint8_t SS1106::write(uint8_t byte)
 		{
 		case Mode::normal:
 			last_cmd = match(byte);
-			std::cout << "OLED: " << ~last_cmd.op << " " << std::hex << (unsigned)last_cmd.payload << std::endl;
+			//std::cout << "OLED: " << ~last_cmd.op << " " << std::hex << (unsigned)last_cmd.payload << std::endl;
 			switch(last_cmd.op)
 			{
 			case Operator::COL_LOW:

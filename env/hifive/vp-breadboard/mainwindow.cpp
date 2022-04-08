@@ -245,19 +245,34 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	if (inited && !gpio.update()) {
+	if (connected && !gpio.update()) {
 		// Just lost connection
-		gpio.destroyConnection();
-		inited = false;
+		connected = false;
 	}
 
-	if (!inited) {
-		inited = gpio.setupConnection(host, port);
+	if (!connected) {
+		connected = gpio.setupConnection(host, port);
 		showConnectionErrorOverlay(painter);
-		if (!inited)
+		if (!connected) {
 			usleep(500000);	// Ugly, sorry
-		this->update();
-		return;
+			this->update();
+			return;
+		}
+		// just got connection.
+		// TODO: New-connection callback for all devices
+		if(oled_iof) {
+			if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
+				gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
+						[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
+					return oled_iof->write(cmd);}
+				);
+			}
+			if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
+				gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin)//,
+						//[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
+				);
+			}
+		}
 	}
 
 	// TODO: Check loaded, drawable plugins instead of hardcoded objects
@@ -265,21 +280,8 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	if(oled_mmap)
 		oled_mmap->draw(painter);
 
-	if(oled_iof) {
-		// TODO: Maybe this check less frequent?
-		if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
-			gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
-					[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
-				return oled_iof->write(cmd);}
-			);
-		}
-		if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
-			gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin)//,
-					//[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
-			);
-		}
+	if(oled_iof)
 		oled_iof->draw(painter);
-	}
 
 	if(sevensegment)
 	{
@@ -394,6 +396,7 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 		switch (e->key()) {
 			case Qt::Key_Escape:
 			case Qt::Key_Q:
+				gpio.destroyConnection();
 				QApplication::quit();
 				break;
 			case Qt::Key_0: {

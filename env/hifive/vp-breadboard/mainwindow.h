@@ -38,7 +38,7 @@ class VPBreadboard : public QWidget {
 
 	bool debugmode = false;
 	unsigned moving_button = 0;
-	bool inited = false;
+	bool connected = false;
 
 	static uint64_t translateGpioToExtPin(gpio::State reg);
 	static gpio::PinNumber translatePinToGpioOffs(gpio::PinNumber pin);
