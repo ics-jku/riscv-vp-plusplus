@@ -65,6 +65,23 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 }
 
 AbstractUART::~AbstractUART(void) {
+	close(stop_pipe[0]);
+	close(stop_pipe[1]);
+
+	sem_destroy(&txfull);
+	sem_destroy(&rxempty);
+}
+
+void AbstractUART::start_threads(int fd, bool write_only) {
+	fds[0] = newpollfd(stop_fd);
+	fds[1] = newpollfd(fd);
+
+	if (!write_only)
+		rcvthr = new std::thread(&AbstractUART::receive, this);
+	txthr = new std::thread(&AbstractUART::transmit, this);
+}
+
+void AbstractUART::stop_threads(void) {
 	stop = true;
 
 	if (txthr) {
@@ -77,23 +94,10 @@ AbstractUART::~AbstractUART(void) {
 		uint8_t byte = 0;
 		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
 			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+		spost(&rxempty); // unblock receive thread
 		rcvthr->join();
 		delete rcvthr;
 	}
-
-	close(stop_pipe[0]);
-	close(stop_pipe[1]);
-
-	sem_destroy(&txfull);
-	sem_destroy(&rxempty);
-}
-
-void AbstractUART::start_threads(int fd) {
-	fds[0] = newpollfd(stop_fd);
-	fds[1] = newpollfd(fd);
-
-	rcvthr = new std::thread(&AbstractUART::receive, this);
-	txthr = new std::thread(&AbstractUART::transmit, this);
 }
 
 void AbstractUART::rxpush(uint8_t data) {

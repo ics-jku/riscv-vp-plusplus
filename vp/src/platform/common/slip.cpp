@@ -56,6 +56,8 @@ err0:
 }
 
 SLIP::~SLIP(void) {
+	stop_threads();
+
 	if (sndbuf) {
 		free(sndbuf);
 		sndbuf = NULL;

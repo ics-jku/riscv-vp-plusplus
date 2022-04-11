@@ -17,11 +17,16 @@
 
 UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
 		: AbstractUART(name, irqsrc) {
+	// If stdin isn't a tty, it doesn't make much sense to poll from it.
+	// In this case, we will run the UART in write-only mode.
+	bool write_only = !isatty(STDIN_FILENO);
+
 	enableRawMode(STDIN_FILENO);
-	start_threads(STDIN_FILENO);
+	start_threads(STDIN_FILENO, write_only);
 }
 
 UART::~UART(void) {
+	stop_threads();
 	disableRawMode(STDIN_FILENO);
 }
 
