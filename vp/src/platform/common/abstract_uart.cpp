@@ -72,11 +72,12 @@ AbstractUART::~AbstractUART(void) {
 	sem_destroy(&rxempty);
 }
 
-void AbstractUART::start_threads(int fd) {
+void AbstractUART::start_threads(int fd, bool write_only) {
 	fds[0] = newpollfd(stop_fd);
 	fds[1] = newpollfd(fd);
 
-	rcvthr = new std::thread(&AbstractUART::receive, this);
+	if (!write_only)
+		rcvthr = new std::thread(&AbstractUART::receive, this);
 	txthr = new std::thread(&AbstractUART::transmit, this);
 }
 

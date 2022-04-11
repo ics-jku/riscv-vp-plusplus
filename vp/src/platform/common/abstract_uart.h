@@ -28,7 +28,7 @@ public:
 	SC_HAS_PROCESS(AbstractUART);
 
 protected:
-	void start_threads(int fd);
+	void start_threads(int fd, bool write_only = false);
 	void stop_threads(void);
 	void rxpush(uint8_t);
 
