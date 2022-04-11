@@ -29,6 +29,7 @@ public:
 
 protected:
 	void start_threads(int fd);
+	void stop_threads(void);
 	void rxpush(uint8_t);
 
 private:

@@ -22,6 +22,7 @@ UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
 }
 
 UART::~UART(void) {
+	stop_threads();
 	disableRawMode(STDIN_FILENO);
 }
 
