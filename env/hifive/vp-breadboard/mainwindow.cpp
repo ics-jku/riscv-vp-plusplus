@@ -254,23 +254,26 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		connected = gpio.setupConnection(host, port);
 		showConnectionErrorOverlay(painter);
 		if (!connected) {
-			usleep(500000);	// Ugly, sorry
-			this->update();
-			return;
-		}
-		// just got connection.
-		// TODO: New-connection callback for all devices
-		if(oled_iof) {
-			if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
-				gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
-						[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
-					return oled_iof->write(cmd);}
-				);
+			if(!debugmode) {
+				usleep(500000);	// Ugly, sorry
+				this->update();
+				return;
 			}
-			if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
-				gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin)//,
-						//[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
-				);
+		} else {
+			// just got connection.
+			// TODO: New-connection callback for all devices
+			if(oled_iof) {
+				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
+					gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
+							[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
+						return oled_iof->write(cmd);}
+					);
+				}
+				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
+					gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin)//,
+							//[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
+					);
+				}
 			}
 		}
 	}

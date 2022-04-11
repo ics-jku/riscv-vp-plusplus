@@ -53,7 +53,8 @@
   ],
   "oled-iof" :
   {
-    "offs"   : [535, 395],
+    "offs"   : [107, 324],
+    "scale"  : 2,
     "margin" : 10,
     "cs_pin" : 15,
     "dc_pin" : 16

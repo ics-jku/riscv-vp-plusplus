@@ -2,7 +2,10 @@
 
 void OLED_iof::draw(QPainter& p)
 {
-	p.fillRect(QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) * scale + margin.x()*2, ss1106::height * scale + margin.y()*2)), Qt::SolidPattern);
+	p.fillRect(
+			QRect(offs, QSize((ss1106::width - 2 * ss1106::padding_lr) * scale + margin.x()*2, ss1106::height * scale + margin.y()*2)),
+			QBrush(Qt::yellow, Qt::SolidPattern)
+			);
 
 	if(state.display_on && state.changed)
 	{
