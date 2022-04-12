@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>	// for TCP_NODELAY
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +66,8 @@ int GpioServer::openSocket(const char *port) {
 	int new_fd = -1;
 
 	struct addrinfo hints, *servinfo, *p;
-	int yes = 1;
+	const int reuse_addr = 1;
+	const int disable_nagle_buffering = 1;
 	int rv;
 
 	memset(&hints, 0, sizeof hints);
@@ -86,10 +88,14 @@ int GpioServer::openSocket(const char *port) {
 			continue;
 		}
 
-		if (setsockopt(new_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+		if (setsockopt(new_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) == -1) {
 			close(new_fd);
 			cerr << "[gpio-server] setsockopt unsuccessful " << strerror(errno) << endl;
 			continue;
+		}
+
+		if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &disable_nagle_buffering, sizeof(int)) == -1){
+			cerr << "[gpio-server] WARN: setup TCP_NODELAY unsuccessful " << strerror(errno) << endl;
 		}
 
 		if (::bind(new_fd, p->ai_addr, p->ai_addrlen) == -1) {

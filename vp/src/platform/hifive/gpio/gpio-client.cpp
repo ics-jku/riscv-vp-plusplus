@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>	// for TCP_NODELAY
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -204,6 +205,7 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
+	const int disable_nagle_buffering = 1;
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -227,19 +229,22 @@ int GpioClient::connectToHost(const char *host, const char *port) {
 			continue;
 		}
 
+		if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &disable_nagle_buffering, sizeof(int)) == -1){
+			cerr << "[gpio-client] WARN: setup TCP_NODELAY unsuccessful " << strerror(errno) << endl;
+		}
+
 		break;
 	}
 
+	freeaddrinfo(servinfo);
+
 	if (p == NULL) {
 		//fprintf(stderr, "client: failed to connect\n");
-		freeaddrinfo(servinfo);
 		return -1;
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
 	DEBUG("[gpio-client] connecting to %s\n", s);
-
-	freeaddrinfo(servinfo);  // all done with this structure
 
 	return fd;
 }
