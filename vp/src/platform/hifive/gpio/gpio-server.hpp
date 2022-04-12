@@ -19,16 +19,22 @@ public:
 
 
 private:
-	int listener_socket_fd;
-	int current_connection_fd;
+	typedef int Socket;
+	Socket listener_socket_fd;
+	Socket control_channel_fd;
+	Socket data_channel_fd;
+
 	const char *base_port;
 	std::atomic<bool> stop;
-	OnChangeCallback fun;
+	OnChangeCallback onchange_fun;
 	void handleConnection(int conn);
 
 	// TODO: Performance testing. Better as static array?
-	// TODO: Note requested IO-Function so no proto
+	// TODO: Note requested IO-Function so no protocol mismatch
+	// TODO: Register IOF channel ID for dispatcher
 	std::map<gpio::PinNumber,int> active_IOF_channels;
+
+	static void closeAndInvalidate(Socket& fd);
 
 	static int openSocket(const char* port);
 

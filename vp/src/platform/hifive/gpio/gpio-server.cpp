@@ -49,17 +49,23 @@ bool readStruct(int handle, T* s){
 	return read(handle, s, sizeof(T)) == sizeof(T);
 }
 
-GpioServer::GpioServer() : listener_socket_fd(-1), current_connection_fd(-1), base_port(""), stop(false), fun(nullptr){}
+GpioServer::GpioServer() :
+		listener_socket_fd(-1), control_channel_fd(-1), data_channel_fd(-1),
+		base_port(""), stop(false), onchange_fun(nullptr){}
 
 GpioServer::~GpioServer() {
 	if (listener_socket_fd >= 0) {
 		DEBUG("closing gpio-server socket: %d\n", listener_socket_fd);
-		close(listener_socket_fd);
-		listener_socket_fd = -1;
+		closeAndInvalidate(listener_socket_fd);
 	}
 
 	if (this->base_port)
 		free((void*)this->base_port);
+}
+
+static void GpioServer::closeAndInvalidate(Socket& fd) {
+	close(fd);
+	fd = -1;
 }
 
 int GpioServer::openSocket(const char *port) {
@@ -146,9 +152,8 @@ void GpioServer::quit() {
 	stop = true;
 
 	// this should force read command to return
-	if(current_connection_fd >= 0){
-		close(current_connection_fd);
-		current_connection_fd = -1;
+	if(control_channel_fd >= 0){
+		closeAndInvalidate(control_channel_fd);
 	}
 
 	/* The startListening() loop only checks the stop member
@@ -163,7 +168,7 @@ void GpioServer::quit() {
 }
 
 void GpioServer::registerOnChange(OnChangeCallback fun) {
-	this->fun = fun;
+	this->onchange_fun = fun;
 }
 
 int GpioServer::awaitConnection(int socket) {
@@ -189,18 +194,17 @@ void GpioServer::startAccepting() {
 
 	while (!stop)  // this would block a bit
 	{
-		if((current_connection_fd = awaitConnection(listener_socket_fd)) < 0) {
+		if((control_channel_fd = awaitConnection(listener_socket_fd)) < 0) {
 			cerr << "[gpio-server] could not accept new connection" << endl;
 			continue;
 		}
-		handleConnection(current_connection_fd);
-		close(current_connection_fd);
-		current_connection_fd = -1;
+		handleConnection(control_channel_fd);
+		closeAndInvalidate(control_channel_fd);
 	}
 }
 
 bool GpioServer::isConnected() {
-	return current_connection_fd >= 0;
+	return control_channel_fd >= 0;
 }
 
 void GpioServer::handleConnection(int conn) {
@@ -230,8 +234,8 @@ void GpioServer::handleConnection(int conn) {
 
 				// sanity checks ok
 
-				if (fun != nullptr) {
-					fun(req.setBit.pin, req.setBit.val);
+				if (onchange_fun != nullptr) {
+					onchange_fun(req.setBit.pin, req.setBit.val);
 				} else {
 					state.pins[req.setBit.pin] = toPinstate(req.setBit.val);
 				}
@@ -241,39 +245,43 @@ void GpioServer::handleConnection(int conn) {
 			{
 				Req_IOF_Response response{0};
 
-				int new_data_socket = openSocket("0");	// zero requests random port
-				if (new_data_socket < 0) {
-					cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
-					// no break, so that response is 0
-				}
-
-				{
-					struct sockaddr_in sin;
-					socklen_t len = sizeof(sin);
-					if (getsockname(new_data_socket, (struct sockaddr *)&sin, &len) == -1) {
-						cerr << "[gpio-server] Could not get port with sockname" << endl;
-						close(new_data_socket);
+				if(data_channel_fd < 0) {
+					Socket data_channel_listener = openSocket("0");	// zero requests random port
+					if (data_channel_listener < 0) {
+						cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
+						// no break, so that response is 0
 					}
-					response.port = ntohs(sin.sin_port);
+
+					{
+						struct sockaddr_in sin;
+						socklen_t len = sizeof(sin);
+						if (getsockname(data_channel_listener, (struct sockaddr *)&sin, &len) == -1) {
+							cerr << "[gpio-server] Could not get port with sockname" << endl;
+							closeAndInvalidate(data_channel_listener);
+						}
+						response.port = ntohs(sin.sin_port);
+					}
+
+					if (!writeStruct(conn, &response)) {
+						cerr << "[gpio-server] could not write IOF-Req answer" << endl;
+						closeAndInvalidate(data_channel_listener);
+						return;
+					}
+
+					// TODO: set socket nonblock with timeout (~1s)
+					data_channel_fd = awaitConnection(data_channel_listener);
+					closeAndInvalidate(data_channel_listener);	// accepting just the first connection
 				}
 
-				if (!writeStruct(conn, &response)) {
-					cerr << "[gpio-server] could not write IOF-Req answer" << endl;
-					close(new_data_socket);
-					return;
-				}
 
-				// TODO: set socket nonblock with timeout (~1s)
-				int data_channel = awaitConnection(new_data_socket);
-
-				close(new_data_socket);	// accepting just the first connection
-
-				if(data_channel < 0) {
+				if(data_channel_fd < 0) {
 					cerr << "[gpio-server] IOF data channel connection not successful" << endl;
 					break;
 				}
 
 				//cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << endl;
+
+				// TODO: Get new ID, emplace that
 				active_IOF_channels.emplace(req.reqIOF.pin, data_channel);
 
 				break;

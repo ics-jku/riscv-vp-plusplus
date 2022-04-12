@@ -51,8 +51,10 @@ namespace gpio {
 	typedef uint8_t PinNumber;
 	static_assert(std::numeric_limits<PinNumber>::max() >= max_num_pins);
 
+	typedef uint8_t IOF_ID;
 	typedef uint8_t SPI_Command;
 	typedef uint8_t SPI_Response;
+	typedef uint8_t UART_Byte;
 
 	struct State {
 		//TODO somehow packed?
@@ -75,14 +77,14 @@ namespace gpio {
 		} op;
 		union {
 			struct {
-				uint8_t pin : 6;	// max num pins: 64
+				PinNumber pin : 6;	// current max num pins: 64
 				gpio::Tristate val : 2;
 			} setBit;
 
 			struct {
 				// Todo: Decide how to determine SPI's Chip Select
 				// Perhaps pin shall be one of the hardware CS pins
-				uint8_t pin;
+				PinNumber pin;
 				//gpio::Pinstate; // TODO: request a specific IO-function (in advance)
 			} reqIOF;
 		};
@@ -90,6 +92,16 @@ namespace gpio {
 
 	struct Req_IOF_Response {
 		uint16_t port = 0;	// zero is error condition
+		IOF_ID id = 0;
+	};
+
+	struct IOF_Update {		// Server to Client
+		IOF_ID id;
+		union {
+			SPI_Command spi;
+			UART_Byte uart;
+			Pinstate pin;
+		};
 	};
 };
 
