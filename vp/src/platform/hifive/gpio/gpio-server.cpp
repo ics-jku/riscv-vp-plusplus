@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>	// for TCP_NODELAY
+#include <set>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,7 +64,26 @@ GpioServer::~GpioServer() {
 		free((void*)this->base_port);
 }
 
-static void GpioServer::closeAndInvalidate(Socket& fd) {
+IOF_Channel_ID GpioServer::findNewID() {
+	if(active_IOF_channels.size() < numeric_limits<gpio::IOF_Channel_ID>::max()) {
+		return active_IOF_channels.size();
+	}
+	set<IOF_Channel_ID> used_ids;
+	for(const auto& [pin, channelinfo] : active_IOF_channels) {
+		used_ids.insert(channelinfo.id);
+	}
+	IOF_Channel_ID ret = 0;
+	for(const auto& id : used_ids) {
+		if(id > ret)
+			return ret;
+		ret++;
+	}
+	cerr << "[GPIO-Server] No new channel ID could be found! "
+			<< active_IOF_channels.size() << " items in use, what are you doing?" << endl;
+	return ret;
+}
+
+void GpioServer::closeAndInvalidate(Socket& fd) {
 	close(fd);
 	fd = -1;
 }
@@ -280,9 +300,8 @@ void GpioServer::handleConnection(int conn) {
 				}
 
 				//cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << endl;
-
-				// TODO: Get new ID, emplace that
-				active_IOF_channels.emplace(req.reqIOF.pin, data_channel);
+				IOF_Channelinfo info = {.id = findNewID(), .requested_iof = req.reqIOF.iof };
+				active_IOF_channels.emplace(req.reqIOF.pin, info);
 
 				break;
 			}
@@ -294,8 +313,10 @@ void GpioServer::handleConnection(int conn) {
 					return;
 				}
 				//cout << "[gpio-server] IOF quit on pin " << (int)req.reqIOF.pin << endl;
-				close(channel->second);
 				active_IOF_channels.erase(channel);
+				if(active_IOF_channels.size() == 0) {
+					closeAndInvalidate(data_channel_fd);
+				}
 				}
 				break;
 			default:
@@ -314,12 +335,17 @@ void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
 		return;
 	}
 
-	auto& sock = channel->second;
+	if(channel->second.requested_iof != Pinstate::UNSET) {
+		// requested different IOF
+		return;
+	}
 
-	if(!writeStruct(sock, &state)) {
+	IOF_Update update = {.id = channel->second.id, .pin = state};
+
+	if(!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write PIN update to pin " << (int)pin << endl;
-		close(sock);
-		active_IOF_channels.erase(channel);
+		closeAndInvalidate(data_channel_fd);
+		active_IOF_channels.clear();
 	}
 }
 
@@ -332,20 +358,26 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	 * TODO: If registered on SPI data pins (miso, mosi, clk) and not on CS,
 	 * It should receive all SPI data, not just the CS activated ones
 	 */
-	int sock = channel->second;
 
-	if(!writeStruct(sock, &byte)) {
+	if(channel->second.requested_iof != Pinstate::IOF_SPI) {
+		// requested different IOF
+		return 0;
+	}
+
+	IOF_Update update = {.id = channel->second.id, .spi = byte};
+
+	if(!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write SPI command to cs " << (int)pin << endl;
-		close(sock);
-		active_IOF_channels.erase(channel);
+		closeAndInvalidate(data_channel_fd);
+		active_IOF_channels.clear();
 		return 0;
 	}
 
 	SPI_Response response = 0;
-	if(!readStruct(sock, &response)) {
+	if(!readStruct(data_channel_fd, &response)) {
 		cerr << "[gpio-server] Could not read SPI response to cs " << (int)pin << endl;
-		close(sock);
-		active_IOF_channels.erase(channel);
+		closeAndInvalidate(data_channel_fd);
+		active_IOF_channels.clear();
 	}
 	return response;
 }

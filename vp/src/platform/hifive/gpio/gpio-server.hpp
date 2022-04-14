@@ -11,7 +11,7 @@
 
 #include <functional>
 #include <atomic>
-#include <map>
+#include <unordered_map>
 
 class GpioServer : public GpioCommon {
 public:
@@ -30,9 +30,13 @@ private:
 	void handleConnection(int conn);
 
 	// TODO: Performance testing. Better as static array?
-	// TODO: Note requested IO-Function so no protocol mismatch
-	// TODO: Register IOF channel ID for dispatcher
-	std::map<gpio::PinNumber,int> active_IOF_channels;
+	struct IOF_Channelinfo {
+		gpio::IOF_Channel_ID id;
+		gpio::Pinstate requested_iof;		// Requested IO-Function to avoid protocol mismatch
+	};
+	std::unordered_map<gpio::PinNumber, IOF_Channelinfo> active_IOF_channels;
+
+	gpio::IOF_Channel_ID findNewID();
 
 	static void closeAndInvalidate(Socket& fd);
 

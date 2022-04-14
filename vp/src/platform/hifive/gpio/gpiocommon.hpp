@@ -51,7 +51,7 @@ namespace gpio {
 	typedef uint8_t PinNumber;
 	static_assert(std::numeric_limits<PinNumber>::max() >= max_num_pins);
 
-	typedef uint8_t IOF_ID;
+	typedef uint8_t IOF_Channel_ID;
 	typedef uint8_t SPI_Command;
 	typedef uint8_t SPI_Response;
 	typedef uint8_t UART_Byte;
@@ -85,22 +85,22 @@ namespace gpio {
 				// Todo: Decide how to determine SPI's Chip Select
 				// Perhaps pin shall be one of the hardware CS pins
 				PinNumber pin;
-				//gpio::Pinstate; // TODO: request a specific IO-function (in advance)
+				gpio::Pinstate iof; // request a specific IO-function (in advance). UNSET = Tristate update
 			} reqIOF;
 		};
 	};
 
 	struct Req_IOF_Response {
 		uint16_t port = 0;	// zero is error condition
-		IOF_ID id = 0;
+		IOF_Channel_ID id = 0;
 	};
 
 	struct IOF_Update {		// Server to Client
-		IOF_ID id;
+		IOF_Channel_ID id;
 		union {
 			SPI_Command spi;
 			UART_Byte uart;
-			Pinstate pin;
+			Tristate pin;
 		};
 	};
 };
