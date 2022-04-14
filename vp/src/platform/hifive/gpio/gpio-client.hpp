@@ -19,29 +19,37 @@ public:
 	typedef std::function<void(gpio::Tristate val)> OnChange_PIN;
 
 private:
-	int server_connection;
+	typedef int Socket;
+	Socket control_channel;
+	Socket data_channel;
+
 	const char* currentHost;
 
+	std::thread iof_dispatcher;
+
 	struct DataChannelDescription {
-		int fd;
-		std::thread thread;
+		gpio::IOFunction iof;
+		gpio::PinNumber pin;
+		// is this a good idea? Not expecting a huge count of open channels
+		struct {
+		OnChange_SPI spi;
+		OnChange_PIN pin;
+		} onchange;
 	};
-	std::unordered_map<gpio::PinNumber, DataChannelDescription> dataChannelThreads;
+	std::unordered_map<gpio::IOF_Channel_ID, DataChannelDescription> dataChannels;
+	std::unordered_map<gpio::PinNumber, gpio::IOF_Channel_ID> activeIOFs;
 
-	// TODO: Add IOF-parameter as specific request
-	// @return port number, 0 on error
-	uint16_t requestIOFport(gpio::PinNumber pin);
+	static void closeAndInvalidate(Socket& fd);
 
-	template<typename OnChange_handler>
-		bool setupIOFhandler(gpio::PinNumber pin, OnChange_handler onChange);
+	static Socket connectToHost(const char* host, const char* port);
+
+	// Wrapper for server request
+	gpio::Req_IOF_Response requestIOFchannel(gpio::PinNumber pin, gpio::IOFunction iof_type);
 	void notifyEndIOFchannel(gpio::PinNumber pin);
 
-	// @return filedescriptor, < 0 on error
-	static int connectToHost(const char* host, const char* port);
-
-
-	void handleSPIchannel(gpio::PinNumber pin, OnChange_SPI fun);
-	void handlePINchannel(gpio::PinNumber pin, OnChange_PIN fun);
+	// starts the data channel thread if necessary, and inserts given callback
+	bool addIOFchannel(DataChannelDescription desc);
+	void handleDataChannel();
 
 public:
 	GpioClient();
@@ -52,7 +60,6 @@ public:
 	bool setBit(gpio::PinNumber pos, gpio::Tristate val);
 
 	// Intended to be used by the external peripherals in simulation
-	// TODO: Somehow unify for code deduplication
 	bool registerSPIOnChange(gpio::PinNumber pin, OnChange_SPI fun);
 	bool registerPINOnChange(gpio::PinNumber pin, OnChange_PIN fun = [](gpio::Tristate){});
 	// registerI2C...
@@ -61,34 +68,3 @@ public:
 	bool isIOFactive(gpio::PinNumber pin);
 	void closeIOFunction(gpio::PinNumber pin);
 };
-
-template<typename OnChange_handler>
-bool GpioClient::setupIOFhandler(gpio::PinNumber pin, OnChange_handler onChange) {
-	if(isIOFactive(pin)) {
-		std::cerr << "[gpio-client] Pin " << (int)pin << " was already registered" << std::endl;
-		return false;
-	}
-
-	auto port = requestIOFport(pin);
-
-	if(port == 0) {
-		std::cerr << "[gpio-client] IOF port request unsuccessful" << std::endl;
-		return false;
-	}
-
-	char port_c[10]; // may or may not be enough, but we are not planning for failure!
-	sprintf(port_c, "%6d", port);
-
-	//cout << "Got offered port " << port_c << " for pin " << (int) pin << endl;
-
-	int dataChannel = connectToHost(currentHost, port_c);
-	if(dataChannel < 0) {
-		std::cerr << "[gpio-client] Could not connect to offered port " << currentHost << ":" << port_c << std::endl;
-		return false;
-	}
-
-	dataChannelThreads.emplace(pin,
-			DataChannelDescription{dataChannel, std::thread(onChange)}
-	);
-	return true;
-}

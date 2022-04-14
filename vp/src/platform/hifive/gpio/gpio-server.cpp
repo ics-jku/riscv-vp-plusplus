@@ -60,6 +60,9 @@ GpioServer::~GpioServer() {
 		closeAndInvalidate(listener_socket_fd);
 	}
 
+	closeAndInvalidate(control_channel_fd);
+	closeAndInvalidate(data_channel_fd);
+
 	if (this->base_port)
 		free((void*)this->base_port);
 }
@@ -172,11 +175,12 @@ void GpioServer::quit() {
 	stop = true;
 
 	// this should force read command to return
-	if(control_channel_fd >= 0){
-		closeAndInvalidate(control_channel_fd);
-	}
+	closeAndInvalidate(listener_socket_fd);
+	closeAndInvalidate(control_channel_fd);
+	closeAndInvalidate(data_channel_fd);
 
-	/* The startListening() loop only checks the stop member
+
+	/* The startAccepting() loop only checks the stop member
 	* variable after accept() returned. However, accept() is a
 	* blocking system call and may not return unless a new
 	* connection is established. For this reason, we set the stop
@@ -264,8 +268,11 @@ void GpioServer::handleConnection(int conn) {
 			case Request::Type::REQ_IOF:
 			{
 				Req_IOF_Response response{0};
+				response.id = findNewID();			// ignoring the fact that IDs may run out
+				response.port = data_channel_fd;	// will be overwritten if < 0
 
 				if(data_channel_fd < 0) {
+					// need to offer and connect new connection
 					Socket data_channel_listener = openSocket("0");	// zero requests random port
 					if (data_channel_listener < 0) {
 						cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
@@ -285,6 +292,7 @@ void GpioServer::handleConnection(int conn) {
 					if (!writeStruct(conn, &response)) {
 						cerr << "[gpio-server] could not write IOF-Req answer" << endl;
 						closeAndInvalidate(data_channel_listener);
+						closeAndInvalidate(control_channel_fd);
 						return;
 					}
 
@@ -292,15 +300,16 @@ void GpioServer::handleConnection(int conn) {
 					data_channel_fd = awaitConnection(data_channel_listener);
 					closeAndInvalidate(data_channel_listener);	// accepting just the first connection
 				}
-
-
-				if(data_channel_fd < 0) {
-					cerr << "[gpio-server] IOF data channel connection not successful" << endl;
-					break;
+				else {
+					if (!writeStruct(conn, &response)) {
+						cerr << "[gpio-server] could not write IOF-Req answer" << endl;
+						closeAndInvalidate(control_channel_fd);
+						return;
+					}
 				}
 
-				//cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << endl;
-				IOF_Channelinfo info = {.id = findNewID(), .requested_iof = req.reqIOF.iof };
+				cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
+				IOF_Channelinfo info = {.id = response.id, .requested_iof = req.reqIOF.iof };
 				active_IOF_channels.emplace(req.reqIOF.pin, info);
 
 				break;
@@ -314,9 +323,6 @@ void GpioServer::handleConnection(int conn) {
 				}
 				//cout << "[gpio-server] IOF quit on pin " << (int)req.reqIOF.pin << endl;
 				active_IOF_channels.erase(channel);
-				if(active_IOF_channels.size() == 0) {
-					closeAndInvalidate(data_channel_fd);
-				}
 				}
 				break;
 			default:
@@ -335,12 +341,14 @@ void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
 		return;
 	}
 
-	if(channel->second.requested_iof != Pinstate::UNSET) {
+	if(channel->second.requested_iof != IOFunction::BITSYNC) {
 		// requested different IOF
 		return;
 	}
 
-	IOF_Update update = {.id = channel->second.id, .pin = state};
+	IOF_Update update;
+	update.id = channel->second.id;
+	update.payload.pin = state;
 
 	if(!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write PIN update to pin " << (int)pin << endl;
@@ -359,12 +367,14 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	 * It should receive all SPI data, not just the CS activated ones
 	 */
 
-	if(channel->second.requested_iof != Pinstate::IOF_SPI) {
+	if(channel->second.requested_iof != IOFunction::SPI) {
 		// requested different IOF
 		return 0;
 	}
 
-	IOF_Update update = {.id = channel->second.id, .spi = byte};
+	IOF_Update update;
+	update.id = channel->second.id;
+	update.payload.spi = byte;
 
 	if(!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write SPI command to cs " << (int)pin << endl;

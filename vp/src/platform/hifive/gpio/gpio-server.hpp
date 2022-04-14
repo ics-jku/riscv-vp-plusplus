@@ -17,7 +17,6 @@ class GpioServer : public GpioCommon {
 public:
 	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> OnChangeCallback;
 
-
 private:
 	typedef int Socket;
 	Socket listener_socket_fd;
@@ -32,7 +31,7 @@ private:
 	// TODO: Performance testing. Better as static array?
 	struct IOF_Channelinfo {
 		gpio::IOF_Channel_ID id;
-		gpio::Pinstate requested_iof;		// Requested IO-Function to avoid protocol mismatch
+		gpio::IOFunction requested_iof;		// Requested IO-Function to avoid protocol mismatch
 	};
 	std::unordered_map<gpio::PinNumber, IOF_Channelinfo> active_IOF_channels;
 

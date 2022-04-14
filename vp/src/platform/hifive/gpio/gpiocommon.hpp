@@ -15,6 +15,8 @@ void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
 
 namespace gpio {
+
+	// TODO: Remove Redundancies and make Pinstate a struct
 	enum class Pinstate : uint8_t {
 		UNSET = 0,
 		LOW,
@@ -25,6 +27,15 @@ namespace gpio {
 		IOF_I2C,	// not yet used
 		IOF_PWM,	// planned to be used
 		IOF_UART,	// not yet used
+		//BITSYNC,	// reserved
+	};
+
+	enum class IOFunction : uint8_t {
+		SPI = 4,
+		I2C,
+		PWM,
+		UART,
+		BITSYNC,
 	};
 
 	enum class Tristate : uint8_t {
@@ -85,7 +96,7 @@ namespace gpio {
 				// Todo: Decide how to determine SPI's Chip Select
 				// Perhaps pin shall be one of the hardware CS pins
 				PinNumber pin;
-				gpio::Pinstate iof; // request a specific IO-function (in advance). UNSET = Tristate update
+				gpio::IOFunction iof; // request a specific IO-function (in advance).
 			} reqIOF;
 		};
 	};
@@ -101,7 +112,7 @@ namespace gpio {
 			SPI_Command spi;
 			UART_Byte uart;
 			Tristate pin;
-		};
+		} payload;
 	};
 };
 
