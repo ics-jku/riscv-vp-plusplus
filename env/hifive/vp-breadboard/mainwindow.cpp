@@ -112,7 +112,6 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 		oled_spi_channel.pin = obj["cs_pin"].toInt(9);
 		oled_dc_channel.pin = obj["dc_pin"].toInt(16);
 		oled_iof = new OLED_iof(
-			[this]{return gpio.state.pins[translatePinToGpioOffs(oled_dc_channel.pin)] == gpio::Pinstate::HIGH;},
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
 			obj["margin"].toInt(15),
@@ -270,8 +269,8 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 					);
 				}
 				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
-					gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin)//,
-							//[](gpio::Tristate pin) {cout<<" pin" << (int) pin;}
+					gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin),
+							[this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == Tristate::HIGH ? 1 : 0;}
 					);
 				}
 			}
