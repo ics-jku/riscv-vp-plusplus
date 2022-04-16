@@ -52,6 +52,7 @@ bool readStruct(int handle, T* s){
 
 GpioServer::GpioServer() :
 		listener_socket_fd(-1), control_channel_fd(-1), data_channel_fd(-1),
+		data_channel_port(0),
 		base_port(""), stop(false), onchange_fun(nullptr){}
 
 GpioServer::~GpioServer() {
@@ -231,7 +232,7 @@ bool GpioServer::isConnected() {
 	return control_channel_fd >= 0;
 }
 
-void GpioServer::handleConnection(int conn) {
+void GpioServer::handleConnection(Socket conn) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	int bytes;
@@ -269,7 +270,7 @@ void GpioServer::handleConnection(int conn) {
 			{
 				Req_IOF_Response response{0};
 				response.id = findNewID();			// ignoring the fact that IDs may run out
-				response.port = data_channel_fd;	// will be overwritten if < 0
+				response.port = data_channel_port;	// will be overwritten if channel not existing
 
 				if(data_channel_fd < 0) {
 					// need to offer and connect new connection
@@ -287,6 +288,7 @@ void GpioServer::handleConnection(int conn) {
 							closeAndInvalidate(data_channel_listener);
 						}
 						response.port = ntohs(sin.sin_port);
+						data_channel_port = response.port;
 					}
 
 					if (!writeStruct(conn, &response)) {

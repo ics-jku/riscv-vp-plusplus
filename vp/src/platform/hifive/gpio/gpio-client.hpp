@@ -11,6 +11,7 @@
 #include <functional>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 #include <iostream>
 
 class GpioClient : public GpioCommon {
@@ -37,6 +38,7 @@ private:
 		} onchange;
 	};
 	std::unordered_map<gpio::IOF_Channel_ID, DataChannelDescription> dataChannels;
+	std::mutex dataChannel_m;
 	std::unordered_map<gpio::PinNumber, gpio::IOF_Channel_ID> activeIOFs;
 
 	static void closeAndInvalidate(Socket& fd);
@@ -49,6 +51,8 @@ private:
 
 	// starts the data channel thread if necessary, and inserts given callback
 	bool addIOFchannel(DataChannelDescription desc);
+
+	// Main IOF-Dispatcher
 	void handleDataChannel();
 
 public:

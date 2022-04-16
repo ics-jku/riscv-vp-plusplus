@@ -121,38 +121,6 @@ gpio::Req_IOF_Response GpioClient::requestIOFchannel(gpio::PinNumber pin, gpio::
 }
 
 
-/*template<typename OnChange_handler>
-bool GpioClient::setupIOFhandler(gpio::PinNumber pin, OnChange_handler onChange) {
-	if(isIOFactive(pin)) {
-		std::cerr << "[gpio-client] Pin " << (int)pin << " was already registered" << std::endl;
-		return false;
-	}
-
-	auto port = requestIOFchannel(pin);
-
-	if(port == 0) {
-		std::cerr << "[gpio-client] IOF port request unsuccessful" << std::endl;
-		return false;
-	}
-
-	char port_c[10]; // may or may not be enough, but we are not planning for failure!
-	sprintf(port_c, "%6d", port);
-
-	//cout << "Got offered port " << port_c << " for pin " << (int) pin << endl;
-
-	int dataChannel = connectToHost(currentHost, port_c);
-	if(dataChannel < 0) {
-		std::cerr << "[gpio-client] Could not connect to offered port " << currentHost << ":" << port_c << std::endl;
-		return false;
-	}
-
-	dataChannels.emplace(pin,
-			DataChannelDescription{dataChannel, std::thread(onChange)}
-	);
-	return true;
-}*/
-
-
 void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
@@ -212,15 +180,20 @@ bool GpioClient::registerPINOnChange(PinNumber pin, OnChange_PIN fun){
 }
 
 bool GpioClient::addIOFchannel(DataChannelDescription desc){
+	//cout << "Requesting IOF " << (int)desc.iof << " for pin " << (int)desc.pin << endl;
+
+	lock_guard<std::mutex> guard(dataChannel_m);
 	const auto response = requestIOFchannel(desc.pin, desc.iof);
 
-	if(response.port < 1024)
+	if(response.port < 1024) {
+		cerr << "[gpio-client] [data channel] Server returned invalid port " << (int)response.port << endl;
 		return false;
+	}
 
 	if(data_channel < 0) {
 		char port_c[10]; // may or may not be enough, but we are not planning for failure!
 		sprintf(port_c, "%6d", response.port);
-		cout << "Got offered new port " << port_c << " for pin " << (int) desc.pin << endl;
+		//cout << "Got offered new port " << port_c << " for pin " << (int) desc.pin << endl;
 		data_channel = connectToHost(currentHost, port_c);
 
 		dataChannels.emplace(response.id, desc);
@@ -230,17 +203,18 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 	} else {
 		dataChannels.emplace(response.id, desc);
 	}
-	cout << "pin " << (int) desc.pin << " got ID " << (int)response.id << endl;
+	//cout << "pin " << (int) desc.pin << " got ID " << (int)response.id << endl;
 	return true;
 }
 
 void GpioClient::handleDataChannel() {
 	IOF_Update update;
 	while(readStruct(data_channel, &update)) {
-
+		lock_guard<std::mutex> guard(dataChannel_m);
 		auto channel = dataChannels.find(update.id);
 		if(channel == dataChannels.end()) {
 			cerr << "[gpio-client] [data channel] got non-registered IOF-ID " << (int)update.id << endl;
+			// TODO Decide if this is an error condition that resets everything, as we may have lost Sync
 			break;
 		}
 		auto& desc = channel->second;

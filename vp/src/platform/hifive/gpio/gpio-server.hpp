@@ -22,11 +22,12 @@ private:
 	Socket listener_socket_fd;
 	Socket control_channel_fd;
 	Socket data_channel_fd;
+	uint16_t data_channel_port;
 
 	const char *base_port;
 	std::atomic<bool> stop;
 	OnChangeCallback onchange_fun;
-	void handleConnection(int conn);
+	void handleConnection(Socket conn);
 
 	// TODO: Performance testing. Better as static array?
 	struct IOF_Channelinfo {
