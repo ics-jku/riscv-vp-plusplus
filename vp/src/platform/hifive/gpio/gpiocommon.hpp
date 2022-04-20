@@ -23,15 +23,16 @@ namespace gpio {
 		HIGH,
 		//TODO: Maybe _weak for pullups/downs
 
-		IOF_SPI = 4,
+		START_OF_IOFs = 4,
+		IOF_SPI = START_OF_IOFs,
 		IOF_I2C,	// not yet used
 		IOF_PWM,	// planned to be used
 		IOF_UART,	// not yet used
-		//BITSYNC,	// reserved
 	};
 
 	enum class IOFunction : uint8_t {
-		SPI = 4,
+		SPI = 0,
+		SPI_NORESPONSE,
 		I2C,
 		PWM,
 		UART,

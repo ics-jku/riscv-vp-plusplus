@@ -64,7 +64,7 @@ public:
 	bool setBit(gpio::PinNumber pos, gpio::Tristate val);
 
 	// Intended to be used by the external peripherals in simulation
-	bool registerSPIOnChange(gpio::PinNumber pin, OnChange_SPI fun);
+	bool registerSPIOnChange(gpio::PinNumber pin, OnChange_SPI fun, bool noResponse = false);
 	bool registerPINOnChange(gpio::PinNumber pin, OnChange_PIN fun = [](gpio::Tristate){});
 	// registerI2C...
 	// registerUART...

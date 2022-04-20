@@ -111,6 +111,7 @@ bool VPBreadboard::loadConfigFile(const char* file) {
 		QJsonObject obj = config["oled-iof"].toObject();
 		oled_spi_channel.pin = obj["cs_pin"].toInt(9);
 		oled_dc_channel.pin = obj["dc_pin"].toInt(16);
+		oled_spi_noresponse_mode = obj["fastmo"].toBool(true);
 		oled_iof = new OLED_iof(
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
@@ -265,7 +266,7 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
 					gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
 							[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
-						return oled_iof->write(cmd);}
+						return oled_iof->write(cmd);}, oled_spi_noresponse_mode
 					);
 				}
 				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {

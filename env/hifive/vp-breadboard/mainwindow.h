@@ -22,6 +22,7 @@ class VPBreadboard : public QWidget {
 
 	IOF_Request oled_spi_channel;	// TODO: Make this a map for all IOF-Devices?
 	IOF_Request oled_dc_channel;
+	bool oled_spi_noresponse_mode;
 
 	// TODO get Device factory
 	Sevensegment* sevensegment;

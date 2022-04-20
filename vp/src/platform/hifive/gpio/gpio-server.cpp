@@ -369,10 +369,13 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	 * It should receive all SPI data, not just the CS activated ones
 	 */
 
-	if(channel->second.requested_iof != IOFunction::SPI) {
+	if(channel->second.requested_iof != IOFunction::SPI &&
+	   channel->second.requested_iof != IOFunction::SPI_NORESPONSE) {
 		// requested different IOF
 		return 0;
 	}
+
+	const bool noResponse = channel->second.requested_iof == IOFunction::SPI_NORESPONSE;
 
 	IOF_Update update;
 	update.id = channel->second.id;
@@ -386,7 +389,7 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	}
 
 	SPI_Response response = 0;
-	if(!readStruct(data_channel_fd, &response)) {
+	if(!noResponse && !readStruct(data_channel_fd, &response)) {
 		cerr << "[gpio-server] Could not read SPI response to cs " << (int)pin << endl;
 		closeAndInvalidate(data_channel_fd);
 		active_IOF_channels.clear();

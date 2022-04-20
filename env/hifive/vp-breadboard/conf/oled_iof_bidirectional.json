@@ -57,6 +57,7 @@
     "scale"  : 2,
     "margin" : 10,
     "cs_pin" : 15,
-    "dc_pin" : 16
+    "dc_pin" : 16,
+    "fastmod": false
   }
 }

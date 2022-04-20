@@ -153,13 +153,17 @@ void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 	activeIOFs.erase(item);
 }
 
-bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun){
+bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun, bool noResponse){
 	if(state.pins[pin] != Pinstate::IOF_SPI) {
 		cerr << "[gpio-client] WARN: Register SPI onchange on pin " << (int)pin << " with no SPI io-function" << endl;
 	}
 
 	DataChannelDescription desc;
-	desc.iof = IOFunction::SPI;
+	if(!noResponse)
+		desc.iof = IOFunction::SPI;
+	else
+		desc.iof = IOFunction::SPI_NORESPONSE;
+
 	desc.pin = pin;
 	desc.onchange.spi = fun;
 
@@ -224,6 +228,15 @@ void GpioClient::handleDataChannel() {
 			SPI_Response resp = desc.onchange.spi(update.payload.spi);
 			if(!writeStruct(data_channel, &resp)) {
 				cerr << "[gpio-client] [data channel] Error in SPI write answer" << endl;
+				break;
+			}
+			break;
+		}
+		case IOFunction::SPI_NORESPONSE:
+		{
+			SPI_Response resp = desc.onchange.spi(update.payload.spi);
+			if(resp != 0) {
+				cerr << "[gpio-client] [data channel] Warn: Wrote SPI response '" << (int)resp << "' in NORESPONSE mode" << endl;
 				break;
 			}
 			break;

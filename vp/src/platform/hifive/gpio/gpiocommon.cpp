@@ -33,7 +33,7 @@ void bitPrint(unsigned char* buf, size_t size) {
 }
 
 bool gpio::isIOF(const Pinstate s){
-	return static_cast<uint8_t>(s) > 3;
+	return static_cast<uint8_t>(s) >= static_cast<uint8_t>(Pinstate::START_OF_IOFs);
 }
 
 void GpioCommon::printRequest(const Request& req) {
