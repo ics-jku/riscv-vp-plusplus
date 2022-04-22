@@ -58,6 +58,6 @@
     "margin" : 10,
     "cs_pin" : 15,
     "dc_pin" : 16,
-    "fastmod": true
+    "fastmo": true
   }
 }
