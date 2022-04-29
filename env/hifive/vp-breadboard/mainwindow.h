@@ -1,6 +1,6 @@
 #pragma once
 
-#include "devices/all_devices.hpp"
+#include "devices/c/all_devices.hpp"
 #include <QtWidgets/QMainWindow>
 #include <cassert>
 #include <map>
@@ -48,10 +48,10 @@ class VPBreadboard : public QWidget {
 	static uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
 	static uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
 
-	bool loadConfigFile(const char* file);
+	bool loadConfigFile(std::string file);
 
 public:
-	VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent = 0);
+	VPBreadboard(std::string configfile, const char* host, const char* port, QWidget* mparent = 0);
 	~VPBreadboard();
 	void showConnectionErrorOverlay(QPainter& p);
 	void paintEvent(QPaintEvent*) override;

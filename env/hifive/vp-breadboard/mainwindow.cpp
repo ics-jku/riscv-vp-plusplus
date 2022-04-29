@@ -13,7 +13,7 @@
 using namespace std;
 using namespace gpio;
 
-VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char* port, QWidget* mparent)
+VPBreadboard::VPBreadboard(std::string configfile, const char* host, const char* port, QWidget* mparent)
     : QWidget(mparent),
       host(host),
       port(port),
@@ -31,10 +31,10 @@ VPBreadboard::VPBreadboard(const char* configfile, const char* host, const char*
 	}
 }
 
-bool VPBreadboard::loadConfigFile(const char* file) {
+bool VPBreadboard::loadConfigFile(std::string file) {
 	// load configuration
 
-	QFile confFile(file);
+	QFile confFile(file.c_str());
     if (!confFile.open(QIODevice::ReadOnly)) {
         cerr << "Could not open config file " << endl;
         return false;
