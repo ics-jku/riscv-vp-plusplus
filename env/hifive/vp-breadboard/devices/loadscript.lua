@@ -45,6 +45,9 @@ function scriptloader_string (script)
   local scriptenv = {}
   setmetatable (scriptenv, {__index=mt})
   
+  -- print("loading string")
+  -- print(script)
+  
   chunk, error = load (script, "external_script", "bt", scriptenv)
   if not chunk then
     print(error)

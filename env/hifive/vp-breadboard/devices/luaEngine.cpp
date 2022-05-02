@@ -69,7 +69,7 @@ LuaRef loadScriptFromFile(lua_State* L, filesystem::path p) {
 /**
  * @return [false, ...] if invalid
  */
-LuaRef loadScriptFromString(lua_State* L, char* p) {
+LuaRef loadScriptFromString(lua_State* L, std::string p) {
 	LuaRef scriptloader = getGlobal(L, "scriptloader_string");
 	try {
 		LuaResult r = scriptloader(p);
@@ -106,7 +106,7 @@ LuaEngine::LuaEngine(){
 
 	// TODO: If offering c-functions, do this before initalizing scriptloader
 
-	if( luaL_dostring( L, loader_content.data()) )
+	if( luaL_dostring( L, loader_content) )
 	{
 		cerr << "Error loading loadscript:\n" <<
 				 lua_tostring( L, lua_gettop( L ) ) << endl;
@@ -119,19 +119,20 @@ LuaEngine::LuaEngine(){
 	QDirIterator it(":/devices/lua");
 	while (it.hasNext()) {
 		it.next();
+		//cout << "\t" << it.fileName().toStdString() << endl;
 		QFile script_file(it.filePath());
 		if (!script_file.open(QIODevice::ReadOnly)) {
 			throw(runtime_error("Could not open file " + it.fileName().toStdString()));
 		}
 		QByteArray script = script_file.readAll();
 
-		auto chunk = loadScriptFromString(L, script.data());
+		auto chunk = loadScriptFromString(L, script.toStdString());
 		if(chunk.isNil()) {
-			cerr << "Script " << it.fileName().toStdString() << " could not be loaded" << endl;
+			cerr << "\tScript " << it.fileName().toStdString() << " could not be loaded" << endl;
 			continue;
 		}
 		if(chunk["classname"].isNil() || !chunk["classname"].isString()) {
-			cerr << "Script " << it.fileName().toStdString() << " does not contain a (valid) unique_id name" << endl;
+			cerr << "\tScript " << it.fileName().toStdString() << " does not contain a (valid) unique_id name" << endl;
 			continue;
 		}
 		available_devices.emplace(chunk["classname"].cast<string>(), it.fileName().toStdString());
