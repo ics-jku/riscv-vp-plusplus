@@ -45,11 +45,11 @@ function(add_qt_resource target resourceName)
     file(GENERATE OUTPUT "${generatedResourceFile}" CONTENT "${qrcContents}")
 
     # Process .qrc file:
+    find_program(RCC_exe NAMES rcc rcc-qt5 ${QT_CMAKE_EXPORT_NAMESPACE}::rcc)
 
     set(generatedSourceCode "${CMAKE_CURRENT_BINARY_DIR}/qrc_${resourceName}.cpp")
     add_custom_command(OUTPUT "${generatedSourceCode}"
-                       #COMMAND "${QT_CMAKE_EXPORT_NAMESPACE}::rcc"
-                       COMMAND "rcc"
+                       COMMAND ${RCC_exe}
                        ARGS --name "${resourceName}"
                            --output "${generatedSourceCode}" "${generatedResourceFile}"
                        DEPENDS ${files}
