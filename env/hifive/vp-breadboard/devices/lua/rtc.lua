@@ -1,3 +1,7 @@
+classname = "RTC_0815"
+
+-- no config functions
+
 is_cs_active = False
 last_time = 0
 

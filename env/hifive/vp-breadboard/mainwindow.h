@@ -1,6 +1,7 @@
 #pragma once
 
 #include "devices/c/all_devices.hpp"
+#include "devices/luaEngine.hpp"
 #include <QtWidgets/QMainWindow>
 #include <cassert>
 #include <map>
@@ -32,7 +33,7 @@ class VPBreadboard : public QWidget {
 	Button* buttons[max_num_buttons];
 	//
 
-
+	LuaEngine lua_factory;
 
 	const char* host;
 	const char* port;

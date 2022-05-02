@@ -1,3 +1,19 @@
+-- classname = "DHT22"
+
+function getConfig ()
+    return 
+        {"temperature", temp} ,
+        {"humidity", humid}
+        -- {"invalid config"}
+    end
+
+function setConfig(conf)
+    -- user has to keep getConfig and setConfig in sync!
+    temp = conf["temperature"]
+    humid = conf["humidity"]
+end
+
+
 is_cs_active = False
 
 temp = 22
@@ -13,17 +29,4 @@ function receiveSPI(byte_in)
     if is_cs_active then
         return temp
     end
-end
-
-function getConfig ()
-    return 
-        {"temperature", temp} ,
-        {"humidity", humid}
-        -- {"invalid config"}
-    end
-
-function setConfig(conf)
-    -- user has to keep getConfig and setConfig in sync!
-    temp = conf["temperature"]
-    humid = conf["humidity"]
 end

@@ -41,9 +41,8 @@ static lua_State* L;
 /**
  * @return [false, ...] if invalid
  */
-// TODO: LoadSCript from c array, to reduce duplicate code between QT-Ressource and actual file
 LuaRef loadScriptFromFile(lua_State* L, filesystem::path p) {
-	LuaRef scriptloader = getGlobal(L, "scriptloader");
+	LuaRef scriptloader = getGlobal(L, "scriptloader_file");
 	try {
 		LuaResult r = scriptloader(p.c_str());
 		if(!r.wasOk()) {
@@ -67,17 +66,45 @@ LuaRef loadScriptFromFile(lua_State* L, filesystem::path p) {
 	}
 }
 
+/**
+ * @return [false, ...] if invalid
+ */
+LuaRef loadScriptFromString(lua_State* L, char* p) {
+	LuaRef scriptloader = getGlobal(L, "scriptloader_string");
+	try {
+		LuaResult r = scriptloader(p);
+		if(!r.wasOk()) {
+			cerr << p << ": " << r.errorMessage() << endl;
+			return LuaRef(L);
+		}
+		if(r.size() != 1) {
+			//cerr << p << " failed." << endl;
+			return LuaRef(L);
+		}
+		if(!r[0].isTable()) {
+			cerr << p << ": " << r[0] << endl;
+			return LuaRef(L);
+		}
+		return r[0];
+
+	} catch(LuaException& e)	{
+		cerr << "serious shit got down in string \n" << p << endl;
+		cerr << e.what() << endl;
+		return LuaRef(L);
+	}
+}
+
 LuaEngine::LuaEngine(){
 	L = luaL_newstate();
 	luaL_openlibs(L);
 
 	QFile loader(scriptloader.c_str());
 	if (!loader.open(QIODevice::ReadOnly)) {
-		throw(runtime_error("Could not open config file " + scriptloader));
+		throw(runtime_error("Could not open scriptloader at " + scriptloader));
 	}
 	QByteArray loader_content = loader.readAll();
-	// TODO: If offering c-functions, do this here
 
+	// TODO: If offering c-functions, do this before initalizing scriptloader
 
 	if( luaL_dostring( L, loader_content.data()) )
 	{
@@ -86,4 +113,36 @@ LuaEngine::LuaEngine(){
 		lua_pop( L, 1 );
 		throw(runtime_error("Loadscript not valid"));
 	}
+
+	cout << "Scanning built-in devices..." << endl;
+
+	QDirIterator it(":/devices/lua");
+	while (it.hasNext()) {
+		it.next();
+		QFile script_file(it.filePath());
+		if (!script_file.open(QIODevice::ReadOnly)) {
+			throw(runtime_error("Could not open file " + it.fileName().toStdString()));
+		}
+		QByteArray script = script_file.readAll();
+
+		auto chunk = loadScriptFromString(L, script.data());
+		if(chunk.isNil()) {
+			cerr << "Script " << it.fileName().toStdString() << " could not be loaded" << endl;
+			continue;
+		}
+		if(chunk["classname"].isNil() || !chunk["classname"].isString()) {
+			cerr << "Script " << it.fileName().toStdString() << " does not contain a (valid) unique_id name" << endl;
+			continue;
+		}
+		available_devices.emplace(chunk["classname"].cast<string>(), it.fileName().toStdString());
+	}
+
+	cout << "Available devices: " << endl;
+	for(const auto& [name, file] : available_devices) {
+		cout << "\t" << name << " from " << file << endl;
+	}
+}
+
+void LuaEngine::scanAdditionalDir(std::string dir) {
+	cerr << "additional dirs not implemented yet" << endl;
 }

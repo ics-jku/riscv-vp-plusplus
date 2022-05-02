@@ -1,3 +1,7 @@
+--[[
+THANX @ http://lua-users.org/lists/lua-l/2006-05/msg00121.html
+--]]
+
 local cage = {
   -- import some packages:
   string = string,  coroutine = coroutine,
@@ -20,12 +24,13 @@ local cage = {
   -- kill = kill
 }
 
---local mt = {__index=cage} 
+--local mt = {__index=cage}
+local mt = {__index=_G} 
 
-function scriptloader (scriptname)
-  -- print( "scriptloader loading " .. scriptname )
+function scriptloader_file (scriptname)
+  -- print( "scriptloader_file loading " .. scriptname )
   local scriptenv = {}
-  setmetatable (scriptenv, {__index=_G})
+  setmetatable (scriptenv, {__index=mt})
   
   chunk, error = loadfile (scriptname, "bt", scriptenv)
   if not chunk then
@@ -35,6 +40,20 @@ function scriptloader (scriptname)
     return scriptenv
   end
 end
+
+function scriptloader_string (script)
+  local scriptenv = {}
+  setmetatable (scriptenv, {__index=mt})
+  
+  chunk, error = load (script, "external_script", "bt", scriptenv)
+  if not chunk then
+    print(error)
+  else
+    chunk()
+    return scriptenv
+  end
+end
+
 
 -- a = scriptloader("scripts/rtc.lua")
 -- b = scriptloader("scripts/dht22.lua")

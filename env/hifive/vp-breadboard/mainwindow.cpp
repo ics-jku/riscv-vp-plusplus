@@ -29,6 +29,10 @@ VPBreadboard::VPBreadboard(std::string configfile, const char* host, const char*
 		cerr << "Could not load config file '" << configfile << "'" << endl;
 		exit(-4);
 	}
+
+	if(configfile.size() != 0){
+		lua_factory.scanAdditionalDir(configfile);
+	}
 }
 
 bool VPBreadboard::loadConfigFile(std::string file) {

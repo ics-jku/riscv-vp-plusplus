@@ -52,7 +52,7 @@ function(add_qt_resource target resourceName)
                        COMMAND ${RCC_exe}
                        ARGS --name "${resourceName}"
                            --output "${generatedSourceCode}" "${generatedResourceFile}"
-                       DEPENDS ${files}
+                       DEPENDS ${rcc_FILES}
                        COMMENT "RCC ${resourceName}"
                        VERBATIM)
     target_sources(${target} PRIVATE "${generatedSourceCode}")

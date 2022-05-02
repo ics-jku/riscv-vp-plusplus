@@ -9,13 +9,15 @@
 
 #include <iostream>
 #include <string>
-#include <list>
+#include <unordered_map>
 
 #include "device.hpp"
 
 class LuaEngine {
 	const std::string builtin_scripts = ":/devices/lua/";
-	const std::string scriptloader = ":/devices/scriptloader.lua";
+	const std::string scriptloader = ":/devices/loadscript.lua";
+
+	std::unordered_map<std::string,std::string> available_devices;
 public:
 
 	LuaEngine();
