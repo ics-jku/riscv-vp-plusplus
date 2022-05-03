@@ -1,0 +1,29 @@
+{
+  "background" : ":/img/VP-BB_sevensegment.jpg",
+  "windowsize" : [417, 446],
+  "buttons" :
+  [
+    {
+      "pin" : 13,
+      "pos" : [116, 307],
+      "dim":[55, 55]
+    }
+  ],
+  "sevensegment" :
+  {
+    "offs" : [305, 296],
+    "extent" : [53, 80],
+    "linewidth" : 7
+  },
+  "rgb" :
+  {
+    "offs" : [75, 110],
+    "linewidth" : 15
+  },
+ "devices" :
+   [
+    {
+      "class" : "DHT22"
+    }
+   ]
+}

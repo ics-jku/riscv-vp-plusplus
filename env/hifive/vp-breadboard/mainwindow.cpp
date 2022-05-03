@@ -71,6 +71,11 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 	if(bkgnd.isNull())
 	{
 		cerr << "invalid background " << config["background"].toString().toStdString() << endl;
+		cerr << "Available backgrounds:" << endl;
+		QDirIterator it(":/img");
+		while (it.hasNext()) {
+			std::cout << "\t\t " << it.next().toStdString() << std::endl;
+		}
 		return false;
 	}
 
@@ -166,6 +171,9 @@ VPBreadboard::~VPBreadboard()
 void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 	p.save();
 	p.setBrush(QBrush(QColor("black")));
+	if(debugmode)
+		p.setBrush(QBrush(QColor(0,0,0,100)));
+
 	QRect sign;
 	if(this->size().width() > this->size().height())
 	{
@@ -179,6 +187,8 @@ void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 	p.drawRect(sign);
 	p.setFont(QFont("Arial", 25, QFont::Bold));
 	QPen penHText(QColor("red"));
+	if (debugmode)
+		penHText.color().setAlphaF(.5);
 	p.setPen(penHText);
 	p.drawText(sign, QString("No connection"), Qt::AlignHCenter | Qt::AlignVCenter);
 	p.restore();

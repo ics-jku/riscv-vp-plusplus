@@ -38,11 +38,9 @@ set(UI mainwindow.ui)
 file(GLOB CONFIGS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./conf/*.json)
 file(GLOB SCRIPTS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./devices/lua/*.lua)
 set(SCRIPTS ${SCRIPTS} devices/loadscript.lua)
-set(IMAGES 
-	"img/sevensegment.jpg"
-	"img/oled_shield.JPG"
-)
+file(GLOB IMAGES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./img/*.jpg)
 file(GLOB DEVICES ./devices/c/*.cpp)
+
 set(SOURCES
     main.cpp
     mainwindow.cpp

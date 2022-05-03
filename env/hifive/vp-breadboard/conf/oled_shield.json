@@ -27,6 +27,7 @@
     },
     {
       "name": "CENTER",
+      "key" : "SPACE",
       "pin" : 4,
       "pos" : [232, 625],
       "dim" : [56, 58]
