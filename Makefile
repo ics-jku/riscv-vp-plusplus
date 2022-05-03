@@ -1,5 +1,7 @@
 NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
+MAKEFLAGS += --no-print-directory
+
 # We are duplicating the CMake logic here, we should get rid of the
 # Makefile alltogether and simply build the entire thing inlcuding
 # vp/dependencies from CMake.
@@ -18,7 +20,7 @@ vp/dependencies/systemc-dist:
 
 vp/dependencies/softfloat-dist:
 	cd vp/dependencies/ && ./build_softfloat.sh
-	
+
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
 
@@ -44,7 +46,7 @@ env/hifive/vp-breadboard/build/Makefile:
 	cd env/hifive/vp-breadboard/build && cmake ..
 
 vp-breadboard: env/hifive/vp-breadboard/build/Makefile
-	make -C  env/hifive/vp-breadboard/build -j$(NPROCS)
+	make -C env/hifive/vp-breadboard/build -j$(NPROCS)
 
 vp-clean:
 	rm -rf vp/build

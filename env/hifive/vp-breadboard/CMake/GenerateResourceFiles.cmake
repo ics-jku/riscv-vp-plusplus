@@ -56,4 +56,6 @@ function(add_qt_resource target resourceName)
                        COMMENT "RCC ${resourceName}"
                        VERBATIM)
     target_sources(${target} PRIVATE "${generatedSourceCode}")
+    
+    message("${target} with ${generatedSourceCode} depends on ${rcc_FILES}")
 endfunction()
