@@ -23,6 +23,7 @@ public:
 	LuaEngine();
 
 	void scanAdditionalDir(std::string dir);
+	void printAvailableDevices();
 
 	bool deviceExists(std::string name);
 	Device& instantiateDevice(std::string name);

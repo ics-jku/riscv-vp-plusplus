@@ -52,7 +52,10 @@ class VPBreadboard : public QWidget {
 	bool loadConfigFile(std::string file);
 
 public:
-	VPBreadboard(std::string configfile, const char* host, const char* port, QWidget* mparent = 0);
+	VPBreadboard(std::string configfile,
+			const char* host, const char* port,
+			std::string additional_device_dir,
+			QWidget* mparent = 0);
 	~VPBreadboard();
 	void showConnectionErrorOverlay(QPainter& p);
 	void paintEvent(QPaintEvent*) override;

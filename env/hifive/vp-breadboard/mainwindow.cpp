@@ -13,7 +13,10 @@
 using namespace std;
 using namespace gpio;
 
-VPBreadboard::VPBreadboard(std::string configfile, const char* host, const char* port, QWidget* mparent)
+VPBreadboard::VPBreadboard(std::string configfile,
+		const char* host, const char* port,
+		std::string additional_device_dir,
+		QWidget* mparent)
     : QWidget(mparent),
       host(host),
       port(port),
@@ -30,9 +33,11 @@ VPBreadboard::VPBreadboard(std::string configfile, const char* host, const char*
 		exit(-4);
 	}
 
-	if(configfile.size() != 0){
-		lua_factory.scanAdditionalDir(configfile);
+	if(additional_device_dir.size() != 0){
+		lua_factory.scanAdditionalDir(additional_device_dir);
 	}
+
+	lua_factory.printAvailableDevices();
 }
 
 bool VPBreadboard::loadConfigFile(std::string file) {

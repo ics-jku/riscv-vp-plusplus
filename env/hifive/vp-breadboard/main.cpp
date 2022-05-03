@@ -91,11 +91,12 @@ int main(int argc, char* argv[]) {
 		const std::string &scriptpath_c = input.getCmdOption("-s");
 		if (!scriptpath_c.empty()){
 			scriptpath = scriptpath_c;
-			std::cerr << "Custom device script path not yet supported" << std::endl;
 		}
     }
 
-	VPBreadboard w(configfile.c_str(), host.c_str(), port.c_str());
+	VPBreadboard w(configfile.c_str(),
+			host.c_str(), port.c_str(),
+			scriptpath);
 	w.show();
 
 	return a.exec();

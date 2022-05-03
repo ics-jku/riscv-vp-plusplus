@@ -1,4 +1,4 @@
--- classname = "DHT22"
+classname = "DHT22"
 
 function getConfig ()
     return 

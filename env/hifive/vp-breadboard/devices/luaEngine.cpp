@@ -94,6 +94,18 @@ LuaRef loadScriptFromString(lua_State* L, std::string p) {
 	}
 }
 
+bool isScriptValidDevice(LuaRef& chunk, std::string name = "") {
+	if(chunk.isNil()) {
+		cerr << "[lua]\tScript " << name << " could not be loaded" << endl;
+		return false;
+	}
+	if(chunk["classname"].isNil() || !chunk["classname"].isString()) {
+		cerr << "[lua]\tScript " << name << " does not contain a (valid) classname" << endl;
+		return false;
+	}
+	return true;
+}
+
 LuaEngine::LuaEngine(){
 	L = luaL_newstate();
 	luaL_openlibs(L);
@@ -114,7 +126,7 @@ LuaEngine::LuaEngine(){
 		throw(runtime_error("Loadscript not valid"));
 	}
 
-	cout << "Scanning built-in devices..." << endl;
+	//cout << "Scanning built-in devices..." << endl;
 
 	QDirIterator it(":/devices/lua");
 	while (it.hasNext()) {
@@ -127,23 +139,32 @@ LuaEngine::LuaEngine(){
 		QByteArray script = script_file.readAll();
 
 		auto chunk = loadScriptFromString(L, script.toStdString());
-		if(chunk.isNil()) {
-			cerr << "\tScript " << it.fileName().toStdString() << " could not be loaded" << endl;
+		if(!isScriptValidDevice(chunk, it.filePath().toStdString()))
 			continue;
-		}
-		if(chunk["classname"].isNil() || !chunk["classname"].isString()) {
-			cerr << "\tScript " << it.fileName().toStdString() << " does not contain a (valid) unique_id name" << endl;
-			continue;
-		}
-		available_devices.emplace(chunk["classname"].cast<string>(), it.fileName().toStdString());
+		available_devices.emplace(chunk["classname"].cast<string>(), it.filePath().toStdString());
 	}
+}
 
+// TODO: Reduce code duplication for file/string load
+void LuaEngine::scanAdditionalDir(std::string dir) {
+	cout << "[lua] Scanning additional devices at '" << dir << "'." << endl;
+
+	QDirIterator it(dir.c_str(),
+			QStringList() << "*.lua",
+			QDir::Files, QDirIterator::Subdirectories);
+	while (it.hasNext()) {
+		it.next();
+		//cout << "\t" << it.fileName().toStdString() << endl;
+		auto chunk = loadScriptFromFile(L,  it.filePath().toStdString());
+		if(!isScriptValidDevice(chunk, it.filePath().toStdString()))
+			continue;
+		available_devices.emplace(chunk["classname"].cast<string>(), it.filePath().toStdString());
+	}
+}
+
+void LuaEngine::printAvailableDevices(){
 	cout << "Available devices: " << endl;
 	for(const auto& [name, file] : available_devices) {
 		cout << "\t" << name << " from " << file << endl;
 	}
-}
-
-void LuaEngine::scanAdditionalDir(std::string dir) {
-	cerr << "additional dirs not implemented yet" << endl;
 }
