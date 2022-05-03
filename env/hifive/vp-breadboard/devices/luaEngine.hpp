@@ -25,7 +25,7 @@ public:
 	void scanAdditionalDir(std::string dir);
 	void printAvailableDevices();
 
-	bool deviceExists(std::string name);
-	Device& instantiateDevice(std::string name);
+	bool deviceExists(std::string classname);
+	Device instantiateDevice(std::string id, std::string classname);
 };
 

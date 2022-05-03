@@ -15,21 +15,21 @@ using luabridge::LuaRef;
 using luabridge::LuaResult;
 
 
-Device::Device(string name, LuaRef env) : name(name), env(env){
+Device::Device(string id, LuaRef env) : id(id), env(env){
 	if(SPI_Interface::implementsInterface(env)) {
 		//cout << name << " implements spi interface" << endl;
 		spi = std::make_unique<SPI_Interface>(env);
 	}
 };
 
-const string& Device::getName() const {
-	return name;
+const string& Device::getID() const {
+	return id;
 }
 
 Device::Config Device::getConfig(){
 	Device::Config ret;
 	if(env["getConfig"].isNil()){
-		cerr << name << " does not implement getConfig" << endl;
+		cerr << id << " does not implement getConfig" << endl;
 		return ret;
 	}
 	LuaResult r = env["getConfig"]();
@@ -86,18 +86,23 @@ bool Device::setConfig(const Device::Config conf) {
 }
 
 Device::SPI_Interface::SPI_Interface(LuaRef& ref) :
-		m_setCS(ref.state()), m_send(ref.state()){
+		m_setDC(ref.state()), m_send(ref.state()){
 	if(!implementsInterface(ref)) {
 		cerr << ref << "not implementing SPI interface" << endl;
 		return;
 	}
 
-	m_setCS = ref["setCS"];
+	m_setDC = ref["setDC"];
 	m_send = ref["receiveSPI"];
 }
 
-void Device::SPI_Interface::setCS(bool val) {
-	m_setCS(val);
+bool Device::SPI_Interface::hasDC() {
+	return m_setDC.isFunction();
+}
+
+void Device::SPI_Interface::setDC(bool val) {
+	if(m_setDC.isFunction())
+		m_setDC(val);
 }
 
 uint8_t Device::SPI_Interface::send(uint8_t byte) {
@@ -114,7 +119,6 @@ uint8_t Device::SPI_Interface::send(uint8_t byte) {
 }
 
 bool Device::SPI_Interface::implementsInterface(const LuaRef& ref) {
-	//cout << ref["setCS"] << " " << ref["receiveSPI"] << endl;
-	return ref["setCS"].isFunction() && ref["receiveSPI"].isFunction();
+	return ref["receiveSPI"].isFunction();
 }
 

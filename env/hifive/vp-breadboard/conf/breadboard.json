@@ -23,7 +23,22 @@
  "devices" :
    [
     {
-      "class" : "DHT22"
+      "class" : "DHT22",
+      "id"    : "tempsens1"
+    },
+    {
+      "class" : "DHT22",
+      "id"    : "tempsens2"
+    },
+    {
+      "class" : "RTC_0815",
+      "id"    : "somcloc",
+      "spi"   :
+      { 
+        "cs_pin" : 15,
+        "dc_pin" : 16,
+        "noresponse": true
+      }
     }
    ]
 }

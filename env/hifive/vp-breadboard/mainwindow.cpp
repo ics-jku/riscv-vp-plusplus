@@ -37,7 +37,7 @@ VPBreadboard::VPBreadboard(std::string configfile,
 		lua_factory.scanAdditionalDir(additional_device_dir);
 	}
 
-	lua_factory.printAvailableDevices();
+	//lua_factory.printAvailableDevices();
 }
 
 bool VPBreadboard::loadConfigFile(std::string file) {
@@ -149,6 +149,76 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				butt["name"].toString(QString("undef"))
 			};
 		}
+	}
+	if(config.contains("devices")) {
+		auto device_descriptions = config["devices"].toArray();
+		devices.reserve(device_descriptions.count());
+		for(const auto& description : device_descriptions) {
+			const auto elem = description.toObject();
+			const auto& classname = elem["class"].toString("invalid").toStdString();
+			const auto& id = elem["id"].toString("undefined").toStdString();
+
+			if(!lua_factory.deviceExists(classname)) {
+				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
+				continue;
+			}
+			if(devices.find(id) != devices.end()) {
+				cerr << "[config loader] Another device with the ID '" << id << "' is already instatiated!" << endl;
+				continue;
+			}
+			devices.emplace(id, lua_factory.instantiateDevice(id, classname));
+
+			if(elem.contains("spi")) {
+				if(!devices.at(id).spi) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+							" an SPI interface, but device does not implement it" << endl;
+					continue;
+				}
+				const auto spi = elem["spi"].toObject();
+				if(!spi.contains("cs_pin")) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+							" an SPI interface, but does not set a cs_pin." << endl;
+					continue;
+				}
+				const gpio::PinNumber cs = spi["cs_pin"].toInt();
+				const bool noresponse = spi["noresponse"].toBool(true);
+				spi_channels.emplace(id, SPI_IOF_Request{.pin = cs, .noresponse = noresponse,
+						.fun = [this, id](gpio::SPI_Command cmd){return devices.at(id).spi->send(cmd);}
+					 }
+				);
+				const auto device_has_dc = devices.at(id).spi->hasDC();
+				if(spi.contains("dc_pin")) {
+					if(!device_has_dc) {
+						cerr << "[config loader] config for device '" << classname << "' sets"
+								" a dc_pin, but device does not implement it" << endl;
+						continue;
+					}
+					const gpio::PinNumber dc = spi["dc_pin"].toInt();
+					pin_channels.emplace(id, PIN_IOF_Request{.pin = dc,
+						.fun = [this, id](gpio::Tristate pin) { devices.at(id).spi->setDC(pin == Tristate::HIGH ? 1 : 0);}
+					});
+
+				} else {
+					if(device_has_dc) {
+						cerr << "[config loader] Warn: config for device '" << classname << "' sets"
+								" no dc_pin, but device does implement it" << endl;
+					}
+				}
+			}
+		}
+
+		/*
+		cout << "Instatiated devices:" << endl;
+		for (auto& [id, device] : devices) {
+			cout << "\t" << id << " of class " << "?" << " implements SPI: ";
+			if(device.spi) {
+				cout << "yes";
+			} else {
+				cout << "no";
+			}
+			cout << endl;
+		}
+		*/
 	}
 	return true;
 }

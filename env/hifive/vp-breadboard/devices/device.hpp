@@ -5,6 +5,8 @@
  *      Author: dwd
  */
 
+// TODO: Make this a generic (C or Lua) device
+
 #pragma once
 
 #include <string>
@@ -29,7 +31,7 @@ extern "C"
 #include <cstring>
 
 class Device {
-	std::string name;
+	std::string id;
 	luabridge::LuaRef env;
 
 public:
@@ -58,7 +60,7 @@ public:
 		};
 	};
 
-	const std::string& getName() const;
+	const std::string& getID() const;
 
 	typedef std::map<std::string,ConfigElem> Config;
 	Config getConfig();
@@ -68,13 +70,14 @@ public:
 	friend class SPI_Interface;
 
 	class SPI_Interface{
-		luabridge::LuaRef m_setCS;
+		luabridge::LuaRef m_setDC;
 		luabridge::LuaRef m_send;
 
 	public:
 
 		SPI_Interface(luabridge::LuaRef& ref);
-		void setCS(bool val);
+		bool hasDC();
+		void setDC(bool val);
 		uint8_t send(uint8_t byte);
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};

@@ -137,11 +137,18 @@ LuaEngine::LuaEngine(){
 			throw(runtime_error("Could not open file " + it.fileName().toStdString()));
 		}
 		QByteArray script = script_file.readAll();
+		const auto filepath = it.filePath().toStdString();
 
 		auto chunk = loadScriptFromString(L, script.toStdString());
-		if(!isScriptValidDevice(chunk, it.filePath().toStdString()))
+		if(!isScriptValidDevice(chunk, filepath))
 			continue;
-		available_devices.emplace(chunk["classname"].cast<string>(), it.filePath().toStdString());
+		const auto classname = chunk["classname"].cast<string>();
+		if(available_devices.find(classname) != available_devices.end()) {
+			cerr << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
+					"would overwrite device from '" << available_devices.at(classname) << "'" << endl;
+			continue;
+		}
+		available_devices.emplace(classname, filepath);
 	}
 }
 
@@ -155,10 +162,17 @@ void LuaEngine::scanAdditionalDir(std::string dir) {
 	while (it.hasNext()) {
 		it.next();
 		//cout << "\t" << it.fileName().toStdString() << endl;
-		auto chunk = loadScriptFromFile(L,  it.filePath().toStdString());
-		if(!isScriptValidDevice(chunk, it.filePath().toStdString()))
+		const auto filepath = it.filePath().toStdString();
+		auto chunk = loadScriptFromFile(L,  filepath);
+		if(!isScriptValidDevice(chunk, filepath))
 			continue;
-		available_devices.emplace(chunk["classname"].cast<string>(), it.filePath().toStdString());
+		const auto classname = chunk["classname"].cast<string>();
+		if(available_devices.find(classname) != available_devices.end()) {
+			cerr << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
+					"would overwrite device from '" << available_devices.at(classname) << "'" << endl;
+			continue;
+		}
+		available_devices.emplace(classname, filepath);
 	}
 }
 
@@ -168,3 +182,21 @@ void LuaEngine::printAvailableDevices(){
 		cout << "\t" << name << " from " << file << endl;
 	}
 }
+
+bool LuaEngine::deviceExists(std::string classname) {
+	return available_devices.find(classname) != available_devices.end();
+}
+
+Device LuaEngine::instantiateDevice(std::string id, std::string classname) {
+	if(!deviceExists(classname)) {
+		throw (runtime_error("Device " + classname + " does not exist"));
+	}
+	QFile script_file(available_devices[classname].c_str());
+	if (!script_file.open(QIODevice::ReadOnly)) {
+		throw(runtime_error("Could not open file " + available_devices[classname]));
+	}
+	QByteArray script = script_file.readAll();
+
+	return Device(id, loadScriptFromString(L, script.toStdString()));
+}
+
