@@ -18,10 +18,6 @@ class VPBreadboard : public QWidget {
 	Q_OBJECT
 	GpioClient gpio;
 
-	struct IOF_Request {
-		gpio::PinNumber pin;
-	};
-
 	struct SPI_IOF_Request {
 		gpio::PinNumber pin;
 		bool noresponse;
@@ -31,10 +27,6 @@ class VPBreadboard : public QWidget {
 		gpio::PinNumber pin;
 		GpioClient::OnChange_PIN fun;
 	};
-
-	IOF_Request oled_spi_channel;	// TODO: Make this a map for all IOF-Devices?
-	IOF_Request oled_dc_channel;
-	bool oled_spi_noresponse_mode;
 
 	// TODO get Device factory
 	Sevensegment* sevensegment;

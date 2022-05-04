@@ -1,5 +1,5 @@
 {
-  "background" : ":/img/oled_shield.JPG",
+  "background" : ":/img/oled_shield.jpg",
   "original_img_size" : [2667, 4354],
   "windowsize" : [490, 800],
   "buttons" :
@@ -58,6 +58,6 @@
     "margin" : 10,
     "cs_pin" : 15,
     "dc_pin" : 16,
-    "fastmo": true
+    "noresponse": true
   }
 }

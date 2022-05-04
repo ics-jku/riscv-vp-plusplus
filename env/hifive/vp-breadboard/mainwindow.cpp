@@ -123,15 +123,22 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 	if(config.contains("oled-iof"))
 	{
 		QJsonObject obj = config["oled-iof"].toObject();
-		oled_spi_channel.pin = obj["cs_pin"].toInt(9);
-		oled_dc_channel.pin = obj["dc_pin"].toInt(16);
-		oled_spi_noresponse_mode = obj["fastmo"].toBool(true);
+		const gpio::PinNumber cs = obj["cs_pin"].toInt(9);
+		const gpio::PinNumber dc = obj["dc_pin"].toInt(16);
+		const bool noresponse = obj["noresponse"].toBool(true);
 		oled_iof = new OLED_iof(
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
 			obj["margin"].toInt(15),
 			obj["scale"].toDouble(1.)
 			);
+		spi_channels.emplace("oled-iof", SPI_IOF_Request{.pin = cs, .noresponse = noresponse,
+				.fun = [this](gpio::SPI_Command cmd){ return oled_iof->write(cmd);}
+			 }
+		);
+		pin_channels.emplace("oled-iof", PIN_IOF_Request{.pin = dc,
+			.fun = [this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == Tristate::HIGH ? 1 : 0;}
+		});
 	}
 	if(config.contains("buttons"))
 	{
@@ -351,17 +358,33 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		} else {
 			// just got connection.
 			// TODO: New-connection callback for all devices
-			if(oled_iof) {
-				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_spi_channel.pin))) {
-					gpio.registerSPIOnChange(translatePinToGpioOffs(oled_spi_channel.pin),
-							[this](gpio::SPI_Command cmd){ //cout<<" spi"<<(int)cmd;
-						return oled_iof->write(cmd);}, oled_spi_noresponse_mode
-					);
+
+			for(const auto& [id, req] : spi_channels) {
+				const auto gpio_offs = translatePinToGpioOffs(req.pin);
+
+				if(!gpio.isIOFactive(gpio_offs)) {
+					const bool success =
+							gpio.registerSPIOnChange(gpio_offs, req.fun, req.noresponse);
+					if(!success) {
+						cerr << "Registering spi channel for " << id << " "
+								"on CS pin " << (int)req.pin << " (" << (int)gpio_offs << ")";
+						if(req.noresponse)
+								cerr << " in noresponse mode";
+						cerr << " was not successful!" << endl;
+					}
 				}
-				if(!gpio.isIOFactive(translatePinToGpioOffs(oled_dc_channel.pin))) {
-					gpio.registerPINOnChange(translatePinToGpioOffs(oled_dc_channel.pin),
-							[this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == Tristate::HIGH ? 1 : 0;}
-					);
+			}
+			for(const auto& [id, req] : pin_channels) {
+				const auto gpio_offs = translatePinToGpioOffs(req.pin);
+
+				if(!gpio.isIOFactive(gpio_offs)) {
+					const bool success =
+							gpio.registerPINOnChange(gpio_offs, req.fun);
+					if(!success) {
+						cerr << "Registering pin channel for " << id << " "
+								"on pin " << (int)req.pin << " (" << (int)gpio_offs << ")";
+						cerr << " was not successful!" << endl;
+					}
 				}
 			}
 		}
