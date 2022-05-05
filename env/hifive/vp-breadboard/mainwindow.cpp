@@ -79,10 +79,15 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 		return false;
 	}
 
-	QSize size(config["windowsize"].toArray().at(0).toInt(800),
-			   config["windowsize"].toArray().at(1).toInt(600));
+	unsigned windowsize_x = bkgnd.width();
+	unsigned windowsize_y = bkgnd.height();
 
+	if(config.contains("windowsize")) {
+		windowsize_x = config["windowsize"].toArray().at(0).toInt();
+		windowsize_y = config["windowsize"].toArray().at(1).toInt();
+	}
 
+	QSize size(windowsize_x, windowsize_y);
 	bkgnd = bkgnd.scaled(size, Qt::IgnoreAspectRatio);
 	QPalette palette;
 	palette.setBrush(QPalette::Window, bkgnd);
