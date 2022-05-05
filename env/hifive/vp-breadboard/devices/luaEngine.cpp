@@ -69,10 +69,10 @@ LuaRef loadScriptFromFile(lua_State* L, filesystem::path p) {
 /**
  * @return [false, ...] if invalid
  */
-LuaRef loadScriptFromString(lua_State* L, std::string p) {
+LuaRef loadScriptFromString(lua_State* L, std::string p, std::string name = "external script") {
 	LuaRef scriptloader = getGlobal(L, "scriptloader_string");
 	try {
-		LuaResult r = scriptloader(p);
+		LuaResult r = scriptloader(p, name);
 		if(!r.wasOk()) {
 			cerr << p << ": " << r.errorMessage() << endl;
 			return LuaRef(L);
@@ -139,7 +139,7 @@ LuaEngine::LuaEngine(){
 		QByteArray script = script_file.readAll();
 		const auto filepath = it.filePath().toStdString();
 
-		auto chunk = loadScriptFromString(L, script.toStdString());
+		auto chunk = loadScriptFromString(L, script.toStdString(), it.fileName().toStdString());
 		if(!isScriptValidDevice(chunk, filepath))
 			continue;
 		const auto classname = chunk["classname"].cast<string>();
@@ -197,6 +197,6 @@ Device LuaEngine::instantiateDevice(std::string id, std::string classname) {
 	}
 	QByteArray script = script_file.readAll();
 
-	return Device(id, loadScriptFromString(L, script.toStdString()));
+	return Device(id, loadScriptFromString(L, script.toStdString(), classname));
 }
 

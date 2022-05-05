@@ -30,14 +30,22 @@
       "id"    : "tempsens2"
     },
     {
-      "class" : "RTC_0815",
-      "id"    : "somcloc",
+      "class" : "SSD1106",
+      "id"    : "display",
       "spi"   :
       { 
         "cs_pin" : 15,
-        "dc_pin" : 16,
         "noresponse": true
-      }
+      },
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "synchronous" : true,
+          "name": "dc_pin"
+        }
+      ]
     }
    ]
 }

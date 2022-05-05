@@ -7,6 +7,7 @@
 #include <cassert>
 #include <map>
 #include <unordered_map>
+#include <list>
 
 namespace Ui {
 class VPBreadboard;
@@ -19,16 +20,18 @@ class VPBreadboard : public QWidget {
 	GpioClient gpio;
 
 	struct SPI_IOF_Request {
-		gpio::PinNumber pin;
+		gpio::PinNumber gpio_offs;	// calculated from "global pin"
+		gpio::PinNumber global_pin;
 		bool noresponse;
 		GpioClient::OnChange_SPI fun;
 	};
 	struct PIN_IOF_Request {
-		gpio::PinNumber pin;
+		gpio::PinNumber gpio_offs;	// calculated from "global pin"
+		gpio::PinNumber global_pin;
 		GpioClient::OnChange_PIN fun;
 	};
 
-	// TODO get Device factory
+	// TODO get C-Device factory
 	Sevensegment* sevensegment;
 	RGBLed* rgbLed;
 	OLED_mmap* oled_mmap;
@@ -42,6 +45,15 @@ class VPBreadboard : public QWidget {
 	std::unordered_map<DeviceID,SPI_IOF_Request> spi_channels;
 	std::unordered_map<DeviceID,PIN_IOF_Request> pin_channels;
 
+	struct PinMapping{
+		gpio::PinNumber gpio_offs;	// calculated from "global pin"
+		gpio::PinNumber global_pin;
+		gpio::PinNumber device_pin;
+		std::string name;
+		Device* dev;
+	};
+	std::list<PinMapping> reading_connections;		// Semantic subject to change
+	std::list<PinMapping> writing_connections;
 
 
 	const char* host;

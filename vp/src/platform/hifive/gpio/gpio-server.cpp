@@ -310,7 +310,8 @@ void GpioServer::handleConnection(Socket conn) {
 					}
 				}
 
-				cout << "[gpio-server] Started IOF channel on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
+				cout << "[gpio-server] Started IOF channel type " << (int)req.reqIOF.iof <<
+						" on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
 				IOF_Channelinfo info = {.id = response.id, .requested_iof = req.reqIOF.iof };
 				active_IOF_channels.emplace(req.reqIOF.pin, info);
 

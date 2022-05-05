@@ -137,17 +137,22 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			obj["margin"].toInt(15),
 			obj["scale"].toDouble(1.)
 			);
-		spi_channels.emplace("oled-iof", SPI_IOF_Request{.pin = cs, .noresponse = noresponse,
+		spi_channels.emplace("oled-iof", SPI_IOF_Request{
+				.gpio_offs = translatePinToGpioOffs(cs),
+				.global_pin = cs,
+				.noresponse = noresponse,
 				.fun = [this](gpio::SPI_Command cmd){ return oled_iof->write(cmd);}
 			 }
 		);
-		pin_channels.emplace("oled-iof", PIN_IOF_Request{.pin = dc,
+		pin_channels.emplace("oled-iof", PIN_IOF_Request{
+			.gpio_offs = translatePinToGpioOffs(dc),
+			.global_pin = dc,
 			.fun = [this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == Tristate::HIGH ? 1 : 0;}
 		});
 	}
 	if(config.contains("buttons"))
 	{
-		QJsonArray butts = config["buttons"].toArray();
+		const auto butts = config["buttons"].toArray();
 		for(unsigned i = 0; i < butts.size() && i < max_num_buttons; i++)
 		{
 			QJsonObject butt = butts[i].toObject();
@@ -162,12 +167,12 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			};
 		}
 	}
-	if(config.contains("devices")) {
+	if(config.contains("devices") && config["devices"].isArray()) {
 		auto device_descriptions = config["devices"].toArray();
 		devices.reserve(device_descriptions.count());
-		for(const auto& description : device_descriptions) {
-			const auto elem = description.toObject();
-			const auto& classname = elem["class"].toString("invalid").toStdString();
+		for(const auto& device : device_descriptions) {
+			const auto elem = device.toObject();
+			const auto& classname = elem["class"].toString("undefined").toStdString();
 			const auto& id = elem["id"].toString("undefined").toStdString();
 
 			if(!lua_factory.deviceExists(classname)) {
@@ -179,9 +184,10 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				continue;
 			}
 			devices.emplace(id, lua_factory.instantiateDevice(id, classname));
+			Device& instantiated_dev = devices.at(id);
 
-			if(elem.contains("spi")) {
-				if(!devices.at(id).spi) {
+			if(elem.contains("spi") && elem["spi"].isObject()) {
+				if(!instantiated_dev.spi) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but device does not implement it" << endl;
 					continue;
@@ -194,43 +200,94 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				}
 				const gpio::PinNumber cs = spi["cs_pin"].toInt();
 				const bool noresponse = spi["noresponse"].toBool(true);
-				spi_channels.emplace(id, SPI_IOF_Request{.pin = cs, .noresponse = noresponse,
-						.fun = [this, id](gpio::SPI_Command cmd){return devices.at(id).spi->send(cmd);}
+				spi_channels.emplace(id, SPI_IOF_Request{
+						.gpio_offs = translatePinToGpioOffs(cs),
+						.global_pin = cs,
+						.noresponse = noresponse,
+						.fun = [&instantiated_dev](gpio::SPI_Command cmd){return instantiated_dev.spi->send(cmd);}
 					 }
 				);
-				const auto device_has_dc = devices.at(id).spi->hasDC();
-				if(spi.contains("dc_pin")) {
-					if(!device_has_dc) {
-						cerr << "[config loader] config for device '" << classname << "' sets"
-								" a dc_pin, but device does not implement it" << endl;
+			}
+
+			if(elem.contains("pins") && elem["pins"].isArray()) {
+				//cout << classname << " '" << id << "' pin" << endl;
+				if(!instantiated_dev.pin) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+							" an PIN interface, but device does not implement it" << endl;
+					continue;
+				}
+				const auto pinLayout = instantiated_dev.pin->getPinLayout();
+				auto pin_descriptions = elem["pins"].toArray();
+				for (const auto& pin_desc : pin_descriptions) {
+					const auto pin = pin_desc.toObject();
+					if(!pin.contains("device_pin") ||
+					   !pin.contains("global_pin")) {
+						cerr << "[config loader] config for device '" << classname << "' is"
+								" missing device_pin or global_pin mappings" << endl;
 						continue;
 					}
-					const gpio::PinNumber dc = spi["dc_pin"].toInt();
-					pin_channels.emplace(id, PIN_IOF_Request{.pin = dc,
-						.fun = [this, id](gpio::Tristate pin) { devices.at(id).spi->setDC(pin == Tristate::HIGH ? 1 : 0);}
-					});
+					const gpio::PinNumber device_pin = pin["device_pin"].toInt();
+					const gpio::PinNumber global_pin = pin["global_pin"].toInt();
+					const bool synchronous = pin["synchronous"].toBool(false);
+					const string pin_name = pin["name"].toString("undef").toStdString();
 
-				} else {
-					if(device_has_dc) {
-						cerr << "[config loader] Warn: config for device '" << classname << "' sets"
-								" no dc_pin, but device does implement it" << endl;
+					if(pinLayout.find(device_pin) == pinLayout.end()) {
+						cerr << "[config loader] config for device '" << classname << "' names a pin " <<
+								(int)device_pin << " that is not offered by device" << endl;
+						continue;
+					}
+
+					//cout << "Mapping " << instantiated_dev.getID() << "'s pin " << (int)device_pin <<
+					//		" to global pin " << (int)global_pin << endl;
+
+					const auto& pin_l = pinLayout.at(device_pin);
+					if(synchronous) {
+						if(pin_l.dir != Device::PIN_Interface::PinDesc::Dir::input) {
+							cerr << "[config loader] config for device '" << classname << "' maps pin " <<
+									(int)device_pin << " as syncronous, but device labels pin not as input."
+									" This is not supported for inout-pins and unnecessary for output pins." << endl;
+							continue;
+						}
+						pin_channels.emplace(id, PIN_IOF_Request{
+							.gpio_offs = translatePinToGpioOffs(global_pin),
+							.global_pin = global_pin,
+							.fun = [&instantiated_dev, device_pin](gpio::Tristate pin) {
+								instantiated_dev.pin->setPin(device_pin, pin == Tristate::HIGH ? 1 : 0);
+							}
+						});
+					} else {
+						PinMapping mapping = PinMapping{
+							.gpio_offs = translatePinToGpioOffs(global_pin),
+							.global_pin = global_pin,
+							.device_pin = device_pin,
+							.name = pin_name,
+							.dev = &instantiated_dev
+						};
+						if(pin_l.dir == Device::PIN_Interface::PinDesc::Dir::input
+								|| pin_l.dir == Device::PIN_Interface::PinDesc::Dir::inout) {
+							reading_connections.push_back(mapping);
+						}
+						if(pin_l.dir == Device::PIN_Interface::PinDesc::Dir::output
+								|| pin_l.dir == Device::PIN_Interface::PinDesc::Dir::inout) {
+							writing_connections.push_back(mapping);
+						}
 					}
 				}
 			}
 		}
 
-		/*
 		cout << "Instatiated devices:" << endl;
 		for (auto& [id, device] : devices) {
-			cout << "\t" << id << " of class " << "?" << " implements SPI: ";
-			if(device.spi) {
-				cout << "yes";
-			} else {
-				cout << "no";
-			}
+			cout << "\t" << id << " of class " << device.getClass() << endl;
+			if(device.pin)
+				cout << "\t\timplements PIN" << endl;
+			if(device.spi)
+				cout << "\t\timplements SPI" << endl;
+			if(device.conf)
+				cout << "\t\timplements conf" << endl;
+
 			cout << endl;
 		}
-		*/
 	}
 	return true;
 }
@@ -365,14 +422,12 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 			// TODO: New-connection callback for all devices
 
 			for(const auto& [id, req] : spi_channels) {
-				const auto gpio_offs = translatePinToGpioOffs(req.pin);
-
-				if(!gpio.isIOFactive(gpio_offs)) {
+				if(!gpio.isIOFactive(req.gpio_offs)) {
 					const bool success =
-							gpio.registerSPIOnChange(gpio_offs, req.fun, req.noresponse);
+							gpio.registerSPIOnChange(req.gpio_offs, req.fun, req.noresponse);
 					if(!success) {
 						cerr << "Registering spi channel for " << id << " "
-								"on CS pin " << (int)req.pin << " (" << (int)gpio_offs << ")";
+								"on CS pin " << (int)req.global_pin << " (" << (int)req.gpio_offs << ")";
 						if(req.noresponse)
 								cerr << " in noresponse mode";
 						cerr << " was not successful!" << endl;
@@ -380,19 +435,21 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 				}
 			}
 			for(const auto& [id, req] : pin_channels) {
-				const auto gpio_offs = translatePinToGpioOffs(req.pin);
-
-				if(!gpio.isIOFactive(gpio_offs)) {
+				if(!gpio.isIOFactive(req.gpio_offs)) {
 					const bool success =
-							gpio.registerPINOnChange(gpio_offs, req.fun);
+							gpio.registerPINOnChange(req.gpio_offs, req.fun);
 					if(!success) {
 						cerr << "Registering pin channel for " << id << " "
-								"on pin " << (int)req.pin << " (" << (int)gpio_offs << ")";
+								"on pin " << (int)req.global_pin << " (" << (int)req.gpio_offs << ")";
 						cerr << " was not successful!" << endl;
 					}
 				}
 			}
 		}
+	}
+
+	for (auto& c : reading_connections) {
+		c.dev->pin->setPin(c.device_pin, gpio.state.pins[c.gpio_offs] == Pinstate::HIGH ? true : false);
 	}
 
 	// TODO: Check loaded, drawable plugins instead of hardcoded objects
@@ -435,6 +492,10 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 			painter.drawText(buttons[i]->area, buttons[i]->name, Qt::AlignHCenter | Qt::AlignVCenter);
 	}
 	painter.restore();
+
+	for (auto& c : writing_connections) {
+		gpio.setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? Tristate::HIGH : Tristate::LOW);
+	}
 
 
 	if (debugmode) {

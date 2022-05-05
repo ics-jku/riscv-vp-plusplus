@@ -9,9 +9,6 @@
 
 #pragma once
 
-#include <string>
-#include <map>
-
 extern "C"
 {
 	#if __has_include(<lua5.3/lua.h>)
@@ -29,6 +26,9 @@ extern "C"
 #include <LuaBridge/LuaBridge.h>
 
 #include <cstring>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
 class Device {
 	std::string id;
@@ -36,55 +36,83 @@ class Device {
 
 public:
 
-	struct ConfigElem {
-		enum class Type {
-			invalid = 0,
-			integer,
-			boolean,
-			//string,
-		} type;
-		union Value {
-			int64_t integer;
-			bool boolean;
-		} value;
+	const std::string& getID() const;
+	const std::string getClass() const;
 
-		ConfigElem() : type(Type::invalid){};
+	class PIN_Interface {
+		luabridge::LuaRef m_getPinLayout;
+		luabridge::LuaRef m_getPin;
+		luabridge::LuaRef m_setPin;
+	public:
+		typedef unsigned PinNumber;
+		struct PinDesc {
+			enum class Dir {
+				input,
+				output,
+				inout
+			} dir;
+			// TODO: In future, add 'type' for analog values/pwm?
+			std::string name;
+		};
+		typedef std::unordered_map<PinNumber,PinDesc> PinLayout;
 
-		ConfigElem(int64_t val){
-			type = Type::integer;
-			value.integer = val;
-		};
-		ConfigElem(bool val) {
-			type = Type::boolean;
-			value.boolean = val;
-		};
+		PIN_Interface(luabridge::LuaRef& ref);
+		PinLayout getPinLayout();
+		bool getPin(PinNumber num);
+		void setPin(PinNumber num, bool val);	// TODO Tristate?
+		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
-	const std::string& getID() const;
-
-	typedef std::map<std::string,ConfigElem> Config;
-	Config getConfig();
-
-	bool setConfig(const Config conf);
-
-	friend class SPI_Interface;
-
-	class SPI_Interface{
-		luabridge::LuaRef m_setDC;
+	class SPI_Interface {
 		luabridge::LuaRef m_send;
-
 	public:
-
 		SPI_Interface(luabridge::LuaRef& ref);
-		bool hasDC();
-		void setDC(bool val);
 		uint8_t send(uint8_t byte);
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
+	class Config_Interface {
+		luabridge::LuaRef m_getConf;
+		luabridge::LuaRef m_setConf;
+		luabridge::LuaRef& m_env;	// for building table
+	public:
+		struct ConfigElem {
+			enum class Type {
+				invalid = 0,
+				integer,
+				boolean,
+				//string,
+			} type;
+			union Value {
+				int64_t integer;
+				bool boolean;
+			} value;
+
+			ConfigElem() : type(Type::invalid){};
+
+			ConfigElem(int64_t val){
+				type = Type::integer;
+				value.integer = val;
+			};
+			ConfigElem(bool val) {
+				type = Type::boolean;
+				value.boolean = val;
+			};
+		};
+		typedef std::string ConfigDescription;
+		typedef std::unordered_map<ConfigDescription,ConfigElem> Config;
+
+		Config_Interface(luabridge::LuaRef& ref);
+		Config getConfig();
+		bool setConfig(const Config conf);
+		static bool implementsInterface(const luabridge::LuaRef& ref);
+	};
+
+	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;
+	std::unique_ptr<Config_Interface> conf;
 	// TODO: others?
 
-	Device(std::string name, luabridge::LuaRef env);
+	Device(std::string id, luabridge::LuaRef env);
 };
 
