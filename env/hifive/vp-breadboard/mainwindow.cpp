@@ -170,10 +170,10 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 	if(config.contains("devices") && config["devices"].isArray()) {
 		auto device_descriptions = config["devices"].toArray();
 		devices.reserve(device_descriptions.count());
-		for(const auto& device : device_descriptions) {
-			const auto elem = device.toObject();
-			const auto& classname = elem["class"].toString("undefined").toStdString();
-			const auto& id = elem["id"].toString("undefined").toStdString();
+		for(const auto& device_description : device_descriptions) {
+			const auto device = device_description.toObject();
+			const auto& classname = device["class"].toString("undefined").toStdString();
+			const auto& id = device["id"].toString("undefined").toStdString();
 
 			if(!lua_factory.deviceExists(classname)) {
 				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
@@ -186,13 +186,13 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			devices.emplace(id, lua_factory.instantiateDevice(id, classname));
 			Device& instantiated_dev = devices.at(id);
 
-			if(elem.contains("spi") && elem["spi"].isObject()) {
+			if(device.contains("spi") && device["spi"].isObject()) {
 				if(!instantiated_dev.spi) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto spi = elem["spi"].toObject();
+				const auto spi = device["spi"].toObject();
 				if(!spi.contains("cs_pin")) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but does not set a cs_pin." << endl;
@@ -209,7 +209,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				);
 			}
 
-			if(elem.contains("pins") && elem["pins"].isArray()) {
+			if(device.contains("pins") && device["pins"].isArray()) {
 				//cout << classname << " '" << id << "' pin" << endl;
 				if(!instantiated_dev.pin) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
@@ -217,7 +217,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 					continue;
 				}
 				const auto pinLayout = instantiated_dev.pin->getPinLayout();
-				auto pin_descriptions = elem["pins"].toArray();
+				auto pin_descriptions = device["pins"].toArray();
 				for (const auto& pin_desc : pin_descriptions) {
 					const auto pin = pin_desc.toObject();
 					if(!pin.contains("device_pin") ||

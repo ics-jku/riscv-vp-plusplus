@@ -57,11 +57,3 @@ function scriptloader_string (script, name)
     return scriptenv
   end
 end
-
-
--- a = scriptloader("scripts/rtc.lua")
--- b = scriptloader("scripts/dht22.lua")
--- print( env.receiveSPI(0) )
-
--- a.setCS(true)
--- b.setCS(true)

@@ -3,8 +3,19 @@ classname = "SSD1106"
 -- no config functions
 
 function getPinLayout ()
-    return 
-        {1, "input", "data_command"}
+    -- number, [input | output | inout], name
+    return  {1, "input", "data_command"}
+end
+
+function getGraphBufferLayout()
+    -- x width, y width, data type
+    return {200, 200, "rgbalpha"}
+end
+
+local graphbuf
+
+function setGraphBuffer(buf)
+    graphbuf = buf
 end
 
 local dc
