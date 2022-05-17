@@ -110,6 +110,10 @@ public:
 
 	class Graphbuf_Interface {
 		luabridge::LuaRef m_getGraphBufferLayout;
+		luabridge::LuaRef env;
+		lua_State* L;	// to register functions and Format
+
+		static void registerPixelFormat(lua_State* L);
 	public:
 
 		struct Layout {
@@ -129,12 +133,12 @@ public:
 		typedef std::function<void(const Xoffset, const Yoffset, Pixel)> SetBuf_fn;
 		typedef std::function<Pixel(const Xoffset, const Yoffset)> GetBuf_fn;
 
-		Graphbuf_Interface(luabridge::LuaRef& ref);
+		Graphbuf_Interface(luabridge::LuaRef& ref, lua_State* L);
 		Layout getLayout();
 		void registerSetBuf(const SetBuf_fn setBuf);
 		void registerGetBuf(const GetBuf_fn getBuf);
 
-		static bool implmentsInterface(const luabridge::LuaRef& ref);
+		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
 

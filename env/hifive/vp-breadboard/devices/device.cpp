@@ -68,7 +68,7 @@ Device::PIN_Interface::PinLayout Device::PIN_Interface::getPinLayout() {
 			continue;
 		}
 		PinDesc desc;
-		PinNumber number = r[i][1].cast<PinNumber>();
+		auto number = r[i][1].cast<PinNumber>();
 		desc.name = "undef";
 		if(r[i].length() == 3)
 			desc.name = r[i][3].tostring();
@@ -188,14 +188,75 @@ bool Device::Config_Interface::setConfig(const Device::Config_Interface::Config 
 	return m_setConf(c).wasOk();
 }
 
+Device::Graphbuf_Interface::Graphbuf_Interface(luabridge::LuaRef& ref, lua_State* l) :
+		m_getGraphBufferLayout(ref["getGraphBufferLayout"]),env(ref),L(l) {
+	if(!implementsInterface(ref))
+		cerr << "[Device] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 
-/*
- * TODO: Pixelformat
- *   .beginNamespace ("test")
-    .beginClass <Vec> ("Vec")
-      .addProperty ("x", &VecHelper::get <0>, &VecHelper::set <0>)
-      .addProperty ("y", &VecHelper::get <1>, &VecHelper::set <1>)
-      .addProperty ("z", &VecHelper::get <2>, &VecHelper::set <2>)
-    .endClass ()
-  .endNamespace ();
- */
+	registerPixelFormat(L);
+}
+
+Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
+	Layout ret = {0,0,"invalid"};
+	LuaResult r = m_getGraphBufferLayout();
+	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
+		cerr << "[Device] [Graphbuf_Interface] Layout malformed" << endl;
+		return ret;
+	}
+	ret.width = r[0][0].cast<unsigned>();
+	ret.height = r[0][1].cast<unsigned>();
+	const auto& type = r[0][2];
+	if(!type.isString() || type != string("rgba")) {
+		cerr << "[Device] [Graphbuf_Interface] Layout type may only be 'rgba' at the moment." << endl;
+		return ret;
+	}
+	ret.data_type = type.cast<string>();
+	return ret;
+}
+
+void Device::Graphbuf_Interface::registerPixelFormat(lua_State* L) {
+	auto testPixel = getGlobal(L, "graphbuf.Pixel");
+	if(!testPixel(0,0,0,0)) {
+		cout << "Testpixel could not be created, probably was not yet registered" << endl;
+		luabridge::getGlobalNamespace(L)
+			.beginNamespace("graphbuf")
+			  .beginClass <Pixel> ("Pixel")
+			    .addConstructor <void (*) (const uint8_t, const uint8_t, const uint8_t, const uint8_t)> ()
+			    .addProperty ("r", &Pixel::r)
+			    .addProperty ("g", &Pixel::g)
+			    .addProperty ("b", &Pixel::b)
+			    .addProperty ("a", &Pixel::a)
+			  .endClass ()
+			.endNamespace()
+		;
+	}
+}
+
+void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
+	// TODO: Register global function and insert into local table
+
+	/*
+	const auto getGraphbuf_name = instance_id+"_getGraphbuf";
+	const auto setGraphbuf_name = instance_id+"_setGraphbuf";
+
+	luabridge::getGlobalNamespace(open_lua_states.back())
+		  .addFunction(getGraphbuf_name.c_str(),
+				[&mock_graphbuffers,instance_id](const unsigned offs){
+					cout << "getGraphbuf for instance " << instance_id << endl;
+					return mock_graphbuffers.at(instance_id)[offs];
+				}
+	);
+	luabridge::getGlobalNamespace(open_lua_states.back())
+		  .addFunction(setGraphbuf_name.c_str(),
+				[&mock_graphbuffers,instance_id](const unsigned offs, const int val){
+					cout << "setGraphbuf for instance " << instance_id << endl;
+					mock_graphbuffers.at(instance_id)[offs] = val;
+				}
+	);
+	const auto& device_table = devices.at(instance_id);
+	const auto getGraphbuf_fun = getGlobal(device_table.L, getGraphbuf_name.c_str());
+	const auto setGraphbuf_fun = getGlobal(device_table.L, setGraphbuf_name.c_str());
+	device_table.env["getGraphbuf"] = getGraphbuf_fun;
+	device_table.env["setGraphbuf"] = setGraphbuf_fun;
+	 */
+}

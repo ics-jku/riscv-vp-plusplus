@@ -8,8 +8,8 @@ function getPinLayout ()
 end
 
 function getGraphBufferLayout()
-    -- x width, y width, data type
-    return {200, 200, "rgbalpha"}
+    -- x width, y width, data type (currently only rgba)
+    return {200, 200, "rgba"}
 end
 
 local dc
