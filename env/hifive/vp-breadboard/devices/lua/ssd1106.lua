@@ -12,12 +12,6 @@ function getGraphBufferLayout()
     return {200, 200, "rgbalpha"}
 end
 
-local graphbuf
-
-function setGraphBuffer(buf)
-    graphbuf = buf
-end
-
 local dc
 
 function getPin(number)

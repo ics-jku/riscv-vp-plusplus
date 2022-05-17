@@ -108,6 +108,36 @@ public:
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
+	class Graphbuf_Interface {
+		luabridge::LuaRef m_getGraphBufferLayout;
+	public:
+
+		struct Layout {
+			unsigned width;
+			unsigned height;
+			std::string data_type;	// Currently ignored and always RGBA8888
+		};
+
+		typedef unsigned Xoffset;
+		typedef unsigned Yoffset;
+		struct Pixel {
+			uint8_t r;
+			uint8_t g;
+			uint8_t b;
+			uint8_t a;
+		};
+		typedef std::function<void(const Xoffset, const Yoffset, Pixel)> SetBuf_fn;
+		typedef std::function<Pixel(const Xoffset, const Yoffset)> GetBuf_fn;
+
+		Graphbuf_Interface(luabridge::LuaRef& ref);
+		Layout getLayout();
+		void registerSetBuf(const SetBuf_fn setBuf);
+		void registerGetBuf(const GetBuf_fn getBuf);
+
+		static bool implmentsInterface(const luabridge::LuaRef& ref);
+	};
+
+
 	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;
 	std::unique_ptr<Config_Interface> conf;

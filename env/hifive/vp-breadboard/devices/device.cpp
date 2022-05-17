@@ -188,3 +188,14 @@ bool Device::Config_Interface::setConfig(const Device::Config_Interface::Config 
 	return m_setConf(c).wasOk();
 }
 
+
+/*
+ * TODO: Pixelformat
+ *   .beginNamespace ("test")
+    .beginClass <Vec> ("Vec")
+      .addProperty ("x", &VecHelper::get <0>, &VecHelper::set <0>)
+      .addProperty ("y", &VecHelper::get <1>, &VecHelper::set <1>)
+      .addProperty ("z", &VecHelper::get <2>, &VecHelper::set <2>)
+    .endClass ()
+  .endNamespace ();
+ */
