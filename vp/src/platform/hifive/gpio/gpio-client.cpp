@@ -308,6 +308,11 @@ GpioClient::Socket GpioClient::connectToHost(const char *host, const char *port)
 }
 
 bool GpioClient::setupConnection(const char *host, const char *port) {
+	if(iof_dispatcher.joinable()) {
+		// If we re-connect after having used IOFs. Ugly
+		// TODO: Should/could be done with housekeeping?
+		iof_dispatcher.join();
+	}
 	if((control_channel = connectToHost(host, port)) < 0) {
 		//cerr << "[gpio-client] Could not connect to " << host << ":" << port << endl;
 		return false;
@@ -320,4 +325,6 @@ void GpioClient::destroyConnection(){
 	dataChannels.clear();
 	closeAndInvalidate(data_channel);
 	closeAndInvalidate(control_channel);
+	if(iof_dispatcher.joinable())
+		iof_dispatcher.join();
 }
