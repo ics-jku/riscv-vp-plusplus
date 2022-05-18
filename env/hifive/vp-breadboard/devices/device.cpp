@@ -215,7 +215,7 @@ Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
 }
 
 void Device::Graphbuf_Interface::registerPixelFormat(lua_State* L) {
-	auto testPixel = getGlobal(L, "graphbuf.Pixel");
+	auto testPixel = luabridge::getGlobal(L, "graphbuf.Pixel");
 	if(!testPixel(0,0,0,0)) {
 		cout << "Testpixel could not be created, probably was not yet registered" << endl;
 		luabridge::getGlobalNamespace(L)
@@ -259,4 +259,9 @@ void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
 	device_table.env["getGraphbuf"] = getGraphbuf_fun;
 	device_table.env["setGraphbuf"] = setGraphbuf_fun;
 	 */
+}
+
+bool Device::Graphbuf_Interface::implementsInterface(const luabridge::LuaRef& ref) {
+	// TODO
+	return false;
 }
