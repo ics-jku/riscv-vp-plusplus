@@ -15,7 +15,7 @@ using luabridge::LuaRef;
 using luabridge::LuaResult;
 
 
-Device::Device(string id, LuaRef env) : id(id), env(env){
+Device::Device(string id, LuaRef env, lua_State* l) : id(id), env(env){
 	if(PIN_Interface::implementsInterface(env)) {
 		pin = std::make_unique<PIN_Interface>(env);
 	}
@@ -24,6 +24,9 @@ Device::Device(string id, LuaRef env) : id(id), env(env){
 	}
 	if(Config_Interface::implementsInterface(env)) {
 		conf = std::make_unique<Config_Interface>(env);
+	}
+	if(Graphbuf_Interface::implementsInterface(env)) {
+		graph = std::make_unique<Graphbuf_Interface>(env, id, l);
 	}
 };
 
@@ -206,9 +209,9 @@ Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
 		cerr << "[Device] [Graphbuf_Interface] Layout malformed" << endl;
 		return ret;
 	}
-	ret.width = r[0][0].cast<unsigned>();
-	ret.height = r[0][1].cast<unsigned>();
-	const auto& type = r[0][2];
+	ret.width = r[0][1].cast<unsigned>();
+	ret.height = r[0][2].cast<unsigned>();
+	const auto& type = r[0][3];
 	if(!type.isString() || type != string("rgba")) {
 		cerr << "[Device] [Graphbuf_Interface] Layout type may only be 'rgba' at the moment." << endl;
 		return ret;
@@ -258,14 +261,18 @@ void Device::Graphbuf_Interface::registerGetBuf(const GetBuf_fn getBuf) {
 }
 
 bool Device::Graphbuf_Interface::implementsInterface(const luabridge::LuaRef& ref) {
-	if(!ref["getGraphBufferLayout"].isFunction())
-		return false;
-	LuaResult r = ref["getGraphBufferLayout"]();
-	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
+	if(!ref["getGraphBufferLayout"].isFunction()) {
+		//cout << "getGraphBufferLayout not a Function" << endl;
 		return false;
 	}
-	const auto& type = r[0][2];
+	LuaResult r = ref["getGraphBufferLayout"]();
+	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
+		//cout << "return val is " << r.size() << " " << !r[0].isTable() << r[0].length() << endl;
+		return false;
+	}
+	const auto& type = r[0][3];
 	if(!type.isString()) {
+		//cout << "Type not a string" << endl;
 		return false;
 	}
 	return true;

@@ -197,6 +197,6 @@ Device LuaEngine::instantiateDevice(std::string id, std::string classname) {
 	}
 	QByteArray script = script_file.readAll();
 
-	return Device(id, loadScriptFromString(L, script.toStdString(), classname));
+	return Device(id, loadScriptFromString(L, script.toStdString(), classname), L);
 }
 

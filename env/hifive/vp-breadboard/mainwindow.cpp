@@ -285,6 +285,11 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				cout << "\t\timplements SPI" << endl;
 			if(device.conf)
 				cout << "\t\timplements conf" << endl;
+			if(device.graph) {
+				cout << "\t\timplements graphbuf: ";
+				const auto layout = device.graph->getLayout();
+				cout << layout.width << " by " << layout.height << " pixel in " << layout.data_type << " requested." << endl;
+			}
 
 			cout << endl;
 		}
@@ -314,12 +319,10 @@ void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
 		p.setBrush(QBrush(QColor(0,0,0,100)));
 
 	QRect sign;
-	if(this->size().width() > this->size().height())
-	{
+	if(this->size().width() > this->size().height()) {
 		sign = QRect (QPoint(this->size().width()/4, this->size().height()/4), this->size()/2);
 	}
-	else
-	{
+	else {
 		sign = QRect (QPoint(this->size().width()/10, this->size().height()/4),
 				QSize(4*this->size().width()/5, this->size().height()/4));
 	}

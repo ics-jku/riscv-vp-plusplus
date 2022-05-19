@@ -1,0 +1,78 @@
+{
+  "background" : ":/img/oled_shield.jpg",
+  "original_img_size" : [2667, 4354],
+  "windowsize" : [490, 800],
+  "buttons" :
+  [
+    {
+      "name": "UP",
+      "key" : "UP",
+      "pin" : 7,
+      "pos" : [234, 554],
+      "dim" : [56, 56]
+    },
+    {
+      "name": "LEFT",
+      "key" : "LEFT",
+      "pin" : 6,
+      "pos" : [158, 628],
+      "dim" : [56, 56]
+    },
+    {
+      "name": "RIGHT",
+      "key" : "RIGHT",
+      "pin" : 5,
+      "pos" : [307, 630],
+      "dim" : [56, 56]
+    },
+    {
+      "name": "CENTER",
+      "pin" : 4,
+      "pos" : [232, 625],
+      "dim" : [56, 58]
+    },
+    {
+      "name": "DOWN",
+      "key" : "DOWN",
+      "pin" : 3,
+      "pos" : [234, 697],
+      "dim" : [56, 58]
+    },
+    {
+      "name": "A",
+      "key" : "A",
+      "pin" : 18,
+      "pos" : [89, 581],
+      "dim" : [56, 58]
+    },
+    {
+      "name": "B",
+      "key" : "B",
+      "pin" : 19,
+      "pos" : [87, 670],
+      "dim" : [56, 58]
+    }
+  ],
+  "devices" :
+   [
+    {
+      "class" : "SSD1106",
+      "id"    : "display",
+      "spi"   :
+      { 
+        "cs_pin" : 15,
+        "noresponse": true
+      },
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "synchronous" : true,
+          "name": "dc_pin"
+        }
+      ]
+    }
+   ]
+
+}

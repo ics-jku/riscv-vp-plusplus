@@ -149,8 +149,8 @@ public:
 	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;
 	std::unique_ptr<Config_Interface> conf;
-	// TODO: others?
+	std::unique_ptr<Graphbuf_Interface> graph;
 
-	Device(std::string id, luabridge::LuaRef env);
+	Device(std::string id, luabridge::LuaRef env, lua_State* L);
 };
 
