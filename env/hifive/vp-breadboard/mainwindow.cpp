@@ -276,22 +276,64 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			}
 		}
 
-		cout << "Instatiated devices:" << endl;
+		//cout << "Instatiated devices:" << endl;
 		for (auto& [id, device] : devices) {
-			cout << "\t" << id << " of class " << device.getClass() << endl;
+			/*cout << "\t" << id << " of class " << device.getClass() << endl;
 			if(device.pin)
 				cout << "\t\timplements PIN" << endl;
 			if(device.spi)
 				cout << "\t\timplements SPI" << endl;
 			if(device.conf)
 				cout << "\t\timplements conf" << endl;
+			*/
 			if(device.graph) {
-				cout << "\t\timplements graphbuf: ";
+				//cout << "\t\timplements graphbuf: ";
+				cout << "Device " << id << " tells its ID as " << device.getID() << endl;
 				const auto layout = device.graph->getLayout();
-				cout << layout.width << " by " << layout.height << " pixel in " << layout.data_type << " requested." << endl;
+				//cout << layout.width << " by " << layout.height << " pixel in " << layout.data_type << " requested." << endl;
+				if(layout.width == 0 || layout.height == 0) {
+					cerr << "Device " << id << " of class " << device.getClass() << " "
+							"requested an invalid graphbuffer size '" << layout.width << "x" << layout.height << "'" << endl;
+					continue;
+				}
+				if(layout.data_type != "rgba") {
+					cerr << "Device " << id << " of class " << device.getClass() << " "
+							"requested an unsupported graph buffer data type '" << layout.data_type << "'" << endl;
+					continue;
+				}
+				typedef Device::Graphbuf_Interface::Xoffset Xoffset;
+				typedef Device::Graphbuf_Interface::Yoffset Yoffset;
+				typedef Device::Graphbuf_Interface::Pixel Pixel;
+				device_graphics.emplace(id, QImage(layout.width, layout.height, QImage::Format_RGBA8888));
+				auto& new_buffer = device_graphics.at(id);
+				device.graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
+						auto* img = new_buffer.bits();
+						if(x >= layout.width || y >= layout.height) {
+							cerr << "[Graphbuf] WARN: device " << id << " write accessing graphbuffer out of bounds!" << endl;
+							return;
+						}
+						img[x * layout.width + y] =
+								p.r << (3 * 8) |  p.g << (2 * 8) | p.b << (1 * 8) | p.a << (0 * 8);
+					}
+				);
+				device.graph->registerGetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y){
+						auto* img = new_buffer.bits();
+						if(x >= layout.width || y >= layout.height) {
+							cerr << "[Graphbuf] WARN: device " << id << " read accessing graphbuffer out of bounds!" << endl;
+							return Pixel{0,0,0,0};
+						}
+						const auto& p = img[x * layout.width + y];
+						return Pixel{
+							static_cast<uint8_t>(p & (0xFF << (3 * 8)) >> (3 * 8)),
+							static_cast<uint8_t>(p & (0xFF << (2 * 8)) >> (2 * 8)),
+							static_cast<uint8_t>(p & (0xFF << (1 * 8)) >> (1 * 8)),
+							static_cast<uint8_t>(p & (0xFF << (0 * 8)) >> (0 * 8))
+						};
+					}
+				);
 			}
 
-			cout << endl;
+			//cout << endl;
 		}
 	}
 	return true;

@@ -15,27 +15,27 @@ using luabridge::LuaRef;
 using luabridge::LuaResult;
 
 
-Device::Device(string id, LuaRef env, lua_State* l) : id(id), env(env){
-	if(PIN_Interface::implementsInterface(env)) {
-		pin = std::make_unique<PIN_Interface>(env);
+Device::Device(const string id, LuaRef env, lua_State* l) : m_id(id), m_env(env){
+	if(PIN_Interface::implementsInterface(m_env)) {
+		pin = std::make_unique<PIN_Interface>(m_env);
 	}
-	if(SPI_Interface::implementsInterface(env)) {
-		spi = std::make_unique<SPI_Interface>(env);
+	if(SPI_Interface::implementsInterface(m_env)) {
+		spi = std::make_unique<SPI_Interface>(m_env);
 	}
-	if(Config_Interface::implementsInterface(env)) {
-		conf = std::make_unique<Config_Interface>(env);
+	if(Config_Interface::implementsInterface(m_env)) {
+		conf = std::make_unique<Config_Interface>(m_env);
 	}
-	if(Graphbuf_Interface::implementsInterface(env)) {
-		graph = std::make_unique<Graphbuf_Interface>(env, id, l);
+	if(Graphbuf_Interface::implementsInterface(m_env)) {
+		graph = std::make_unique<Graphbuf_Interface>(env, m_id, l);
 	}
 };
 
 const string& Device::getID() const {
-	return id;
+	return m_id;
 }
 
 const string Device::getClass() const {
-	return env["classname"].cast<string>();
+	return m_env["classname"].cast<string>();
 }
 
 Device::PIN_Interface::PIN_Interface(LuaRef& ref) :
@@ -194,8 +194,8 @@ bool Device::Config_Interface::setConfig(const Device::Config_Interface::Config 
 Device::Graphbuf_Interface::Graphbuf_Interface(luabridge::LuaRef& ref,
 	                                           std::string& device_id,
 	                                           lua_State* l) :
-		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), env(ref),
-		device_id(device_id), L(l) {
+		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_env(ref),
+		m_deviceId(device_id), L(l) {
 	if(!implementsInterface(ref))
 		cerr << "[Device] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 
@@ -241,6 +241,11 @@ void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
 template<typename FunctionFootprint>
 void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(const std::string prefix, const std::string name,
 		                                                  FunctionFootprint fun) {
+	if(prefix.length() == 0 || name.length() == 0) {
+		cerr << "[Graphbuf] Error: Name '" << name << "' or prefix '"
+				<< prefix << "' invalid!" << endl;
+		return;
+	}
 	luabridge::getGlobalNamespace(L)
 		.beginNamespace(prefix.c_str())
 		  .addFunction(name.c_str(), fun)
@@ -248,16 +253,17 @@ void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(const
 
 	const auto global_name = prefix+"."+name;
 	const auto getGraphbuf_fun = luabridge::getGlobal(L, global_name.c_str());
-	env[name.c_str()] = fun;
+	m_env[name.c_str()] = fun;
 };
 
 
 void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
-	registerGlobalFunctionAndInsertLocalAlias<>(device_id, "setGraphbuffer", setBuf);
+	cout << "Graphbuf_Interface device id: " << m_deviceId << endl;
+	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "setGraphbuffer", setBuf);
 }
 
 void Device::Graphbuf_Interface::registerGetBuf(const GetBuf_fn getBuf) {
-	registerGlobalFunctionAndInsertLocalAlias<>(device_id, "getGraphbuffer", getBuf);
+	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "getGraphbuffer", getBuf);
 }
 
 bool Device::Graphbuf_Interface::implementsInterface(const luabridge::LuaRef& ref) {

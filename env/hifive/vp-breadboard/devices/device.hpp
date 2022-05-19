@@ -31,8 +31,8 @@ extern "C"
 #include <unordered_map>
 
 class Device {
-	std::string id;
-	luabridge::LuaRef env;
+	std::string m_id;
+	luabridge::LuaRef m_env;
 
 public:
 
@@ -110,8 +110,8 @@ public:
 
 	class Graphbuf_Interface {
 		luabridge::LuaRef m_getGraphBufferLayout;
-		luabridge::LuaRef env;
-		std::string& device_id;
+		luabridge::LuaRef m_env;
+		std::string& m_deviceId;
 		lua_State* L;	// to register functions and Format
 
 		static void declarePixelFormat(lua_State* L);
@@ -151,6 +151,6 @@ public:
 	std::unique_ptr<Config_Interface> conf;
 	std::unique_ptr<Graphbuf_Interface> graph;
 
-	Device(std::string id, luabridge::LuaRef env, lua_State* L);
+	Device(const std::string id, luabridge::LuaRef env, lua_State* L);
 };
 

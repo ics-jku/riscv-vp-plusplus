@@ -68,8 +68,8 @@
         {
           "device_pin" : 1,
           "global_pin" : 16,
-          "synchronous" : true,
-          "name": "dc_pin"
+          "name": "dc_pin",
+          "synchronous" : true
         }
       ]
     }
