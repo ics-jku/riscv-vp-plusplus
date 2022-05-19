@@ -188,12 +188,15 @@ bool Device::Config_Interface::setConfig(const Device::Config_Interface::Config 
 	return m_setConf(c).wasOk();
 }
 
-Device::Graphbuf_Interface::Graphbuf_Interface(luabridge::LuaRef& ref, lua_State* l) :
-		m_getGraphBufferLayout(ref["getGraphBufferLayout"]),env(ref),L(l) {
+Device::Graphbuf_Interface::Graphbuf_Interface(luabridge::LuaRef& ref,
+	                                           std::string& device_id,
+	                                           lua_State* l) :
+		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), env(ref),
+		device_id(device_id), L(l) {
 	if(!implementsInterface(ref))
 		cerr << "[Device] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 
-	registerPixelFormat(L);
+	declarePixelFormat(L);
 }
 
 Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
@@ -214,7 +217,7 @@ Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
 	return ret;
 }
 
-void Device::Graphbuf_Interface::registerPixelFormat(lua_State* L) {
+void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
 	auto testPixel = luabridge::getGlobal(L, "graphbuf.Pixel");
 	if(!testPixel(0,0,0,0)) {
 		cout << "Testpixel could not be created, probably was not yet registered" << endl;
@@ -232,36 +235,39 @@ void Device::Graphbuf_Interface::registerPixelFormat(lua_State* L) {
 	}
 }
 
+template<typename FunctionFootprint>
+void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(const std::string prefix, const std::string name,
+		                                                  FunctionFootprint fun) {
+	luabridge::getGlobalNamespace(L)
+		.beginNamespace(prefix.c_str())
+		  .addFunction(name.c_str(), fun)
+		.endNamespace();
+
+	const auto global_name = prefix+"."+name;
+	const auto getGraphbuf_fun = luabridge::getGlobal(L, global_name.c_str());
+	env[name.c_str()] = fun;
+};
+
+
 void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
-	// TODO: Register global function and insert into local table
+	registerGlobalFunctionAndInsertLocalAlias<>(device_id, "setGraphbuffer", setBuf);
+}
 
-	/*
-	const auto getGraphbuf_name = instance_id+"_getGraphbuf";
-	const auto setGraphbuf_name = instance_id+"_setGraphbuf";
-
-	luabridge::getGlobalNamespace(open_lua_states.back())
-		  .addFunction(getGraphbuf_name.c_str(),
-				[&mock_graphbuffers,instance_id](const unsigned offs){
-					cout << "getGraphbuf for instance " << instance_id << endl;
-					return mock_graphbuffers.at(instance_id)[offs];
-				}
-	);
-	luabridge::getGlobalNamespace(open_lua_states.back())
-		  .addFunction(setGraphbuf_name.c_str(),
-				[&mock_graphbuffers,instance_id](const unsigned offs, const int val){
-					cout << "setGraphbuf for instance " << instance_id << endl;
-					mock_graphbuffers.at(instance_id)[offs] = val;
-				}
-	);
-	const auto& device_table = devices.at(instance_id);
-	const auto getGraphbuf_fun = getGlobal(device_table.L, getGraphbuf_name.c_str());
-	const auto setGraphbuf_fun = getGlobal(device_table.L, setGraphbuf_name.c_str());
-	device_table.env["getGraphbuf"] = getGraphbuf_fun;
-	device_table.env["setGraphbuf"] = setGraphbuf_fun;
-	 */
+void Device::Graphbuf_Interface::registerGetBuf(const GetBuf_fn getBuf) {
+	registerGlobalFunctionAndInsertLocalAlias<>(device_id, "getGraphbuffer", getBuf);
 }
 
 bool Device::Graphbuf_Interface::implementsInterface(const luabridge::LuaRef& ref) {
-	// TODO
-	return false;
+	if(!ref["getGraphBufferLayout"].isFunction())
+		return false;
+	LuaResult r = ref["getGraphBufferLayout"]();
+	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
+		return false;
+	}
+	const auto& type = r[0][2];
+	if(!type.isString()) {
+		return false;
+	}
+	return true;
 }
+

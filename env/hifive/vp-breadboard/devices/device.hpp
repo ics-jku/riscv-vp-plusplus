@@ -111,9 +111,10 @@ public:
 	class Graphbuf_Interface {
 		luabridge::LuaRef m_getGraphBufferLayout;
 		luabridge::LuaRef env;
+		std::string& device_id;
 		lua_State* L;	// to register functions and Format
 
-		static void registerPixelFormat(lua_State* L);
+		static void declarePixelFormat(lua_State* L);
 	public:
 
 		struct Layout {
@@ -133,10 +134,13 @@ public:
 		typedef std::function<void(const Xoffset, const Yoffset, Pixel)> SetBuf_fn;
 		typedef std::function<Pixel(const Xoffset, const Yoffset)> GetBuf_fn;
 
-		Graphbuf_Interface(luabridge::LuaRef& ref, lua_State* L);
+		Graphbuf_Interface(luabridge::LuaRef& ref, std::string& device_id, lua_State* L);
 		Layout getLayout();
 		void registerSetBuf(const SetBuf_fn setBuf);
 		void registerGetBuf(const GetBuf_fn getBuf);
+
+		template<typename FunctionFootprint>
+		void registerGlobalFunctionAndInsertLocalAlias(const std::string prefix, const std::string name, FunctionFootprint fun);
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
