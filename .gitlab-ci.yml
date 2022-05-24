@@ -1,4 +1,4 @@
-image: alpine:3.15
+image: alpine:edge
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
