@@ -33,5 +33,16 @@ end
 
 function receiveSPI(byte_in)
     -- print("SSD1106: Got byte")
+    p = graphbuf.Pixel(byte_in, 255-byte_in, 09, 128)
+    display.setGraphbuffer(64, 32, p)
     return 0
+end
+
+function debug_printAll(table)
+    print("given table:\n")
+    for n in pairs(table) do print("\t" .. tostring(n)) end
+    print("G:\n")
+    for n in pairs(_G) do print("\t" .. tostring(n)) end
+    print("graphbuf:\n")
+    for n in pairs(graphbuf) do print("\t" .. tostring(n)) end
 end

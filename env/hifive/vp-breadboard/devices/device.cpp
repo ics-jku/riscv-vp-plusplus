@@ -242,43 +242,49 @@ void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
 
 template<typename FunctionFootprint>
 void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(
-		const std::string prefix, const std::string name, FunctionFootprint fun) {
-	if(prefix.length() == 0 || name.length() == 0) {
+		const std::string name, FunctionFootprint fun) {
+	if(m_deviceId.length() == 0 || name.length() == 0) {
 		cerr << "[Graphbuf] Error: Name '" << name << "' or prefix '"
-				<< prefix << "' invalid!" << endl;
+				<< m_deviceId << "' invalid!" << endl;
 		return;
 	}
 
 	// TODO: Maybe without namespace? Is this faster?
 	luabridge::getGlobalNamespace(L)
-		.beginNamespace(prefix.c_str())
+		.beginNamespace(m_deviceId.c_str())
 		  .addFunction(name.c_str(), fun)
-		.endNamespace();
+		.endNamespace()
+	;
 
 	//cout << "Inserted function " << prefix << "." << name << " into global namespace" << endl;
 
-	const auto prefix_ns = luabridge::getGlobal(L, prefix.c_str());
-	if(prefix_ns.isNil()) {
-		cerr << "[Graphbuf] Error: could not get namespace " << prefix << endl;
+	const auto prefix_ns = luabridge::getGlobal(L, m_deviceId.c_str());
+	if(!prefix_ns.isTable()) {
+		cerr << "[Graphbuf] Error: could not get namespace " << m_deviceId << endl;
 		return;
 	}
-	const auto getGraphbuf_fun = prefix_ns[name.c_str()];
-	if(getGraphbuf_fun.isNil()) {
-		cerr << "[Graphbuf] Error: " << prefix << "." << name  << " is not valid!" << endl;
+	const auto global_lua_fun = prefix_ns[name.c_str()];
+	if(!global_lua_fun.isFunction()) {
+		cerr << "[Graphbuf] Error: " << m_deviceId << "." << name  << " is not valid!" << endl;
 		return;
 	}
-	m_env[name.c_str()] = getGraphbuf_fun;
+	m_env[name.c_str()] = global_lua_fun;
+	m_env["testkey"] = "testvalue";
 
-	//cout << "Added function " << prefix << "." << name << endl;
+	cout << "Registered function " << m_deviceId + "." + name << " to " << name << endl;
+
+	m_env["debug_printAll"](m_env);
+
+	//exit(01);
 };
 
 
 void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
-	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "setGraphbuffer", setBuf);
+	registerGlobalFunctionAndInsertLocalAlias<>("setGraphbuffer", setBuf);
 }
 
 void Device::Graphbuf_Interface::registerGetBuf(const GetBuf_fn getBuf) {
-	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "getGraphbuffer", getBuf);
+	registerGlobalFunctionAndInsertLocalAlias<>("getGraphbuffer", getBuf);
 }
 
 bool Device::Graphbuf_Interface::implementsInterface(const luabridge::LuaRef& ref) {

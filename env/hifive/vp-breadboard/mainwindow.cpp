@@ -308,6 +308,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				device_graphics.emplace(id, QImage(layout.width, layout.height, QImage::Format_RGBA8888));
 				auto& new_buffer = device_graphics.at(id);
 				device.graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
+						//cout << "setBuf at " << (int) x << "x" << (int) y <<
+						//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
 						auto* img = new_buffer.bits();
 						if(x >= layout.width || y >= layout.height) {
 							cerr << "[Graphbuf] WARN: device " << id << " write accessing graphbuffer out of bounds!" << endl;

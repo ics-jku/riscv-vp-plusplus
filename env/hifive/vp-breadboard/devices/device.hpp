@@ -140,7 +140,7 @@ public:
 		void registerGetBuf(const GetBuf_fn getBuf);
 
 		template<typename FunctionFootprint>
-		void registerGlobalFunctionAndInsertLocalAlias(const std::string prefix, const std::string name, FunctionFootprint fun);
+		void registerGlobalFunctionAndInsertLocalAlias(const std::string name, FunctionFootprint fun);
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
