@@ -34,7 +34,7 @@ end
 function receiveSPI(byte_in)
     -- print("SSD1106: Got byte")
     p = graphbuf.Pixel(byte_in, 255-byte_in, 09, 128)
-    display.setGraphbuffer(64, 32, p)
+    setGraphbuffer(64, 32, p)
     return 0
 end
 

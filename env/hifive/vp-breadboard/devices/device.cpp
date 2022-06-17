@@ -222,7 +222,7 @@ Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
 
 void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
 	if(luaL_dostring (L, "graphbuf.Pixel(0,0,0,0)") != 0) {
-		cout << "Testpixel could not be created, probably was not yet registered" << endl;
+		//cout << "Testpixel could not be created, probably was not yet registered" << endl;
 		luabridge::getGlobalNamespace(L)
 			.beginNamespace("graphbuf")
 			  .beginClass <Pixel> ("Pixel")
@@ -234,9 +234,9 @@ void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
 			  .endClass ()
 			.endNamespace()
 		;
-		cout << "Graphbuf: Declared Pixel class to lua." << endl;
+		//cout << "Graphbuf: Declared Pixel class to lua." << endl;
 	} else {
-		cout << "Pixel class already registered." << endl;
+		//cout << "Pixel class already registered." << endl;
 	}
 }
 
@@ -249,33 +249,20 @@ void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(
 		return;
 	}
 
-	// TODO: Maybe without namespace? Is this faster?
+	const auto globalFunctionName = m_deviceId + "_" + name;
 	luabridge::getGlobalNamespace(L)
-		.beginNamespace(m_deviceId.c_str())
-		  .addFunction(name.c_str(), fun)
-		.endNamespace()
+		.addFunction(globalFunctionName.c_str(), fun)
 	;
+	//cout << "Inserted function " << globalFunctionName << " into global namespace" << endl;
 
-	//cout << "Inserted function " << prefix << "." << name << " into global namespace" << endl;
-
-	const auto prefix_ns = luabridge::getGlobal(L, m_deviceId.c_str());
-	if(!prefix_ns.isTable()) {
-		cerr << "[Graphbuf] Error: could not get namespace " << m_deviceId << endl;
-		return;
-	}
-	const auto global_lua_fun = prefix_ns[name.c_str()];
+	const auto global_lua_fun = luabridge::getGlobal(L, globalFunctionName.c_str());
 	if(!global_lua_fun.isFunction()) {
-		cerr << "[Graphbuf] Error: " << m_deviceId << "." << name  << " is not valid!" << endl;
+		cerr << "[Graphbuf] Error: " << globalFunctionName  << " is not valid!" << endl;
 		return;
 	}
 	m_env[name.c_str()] = global_lua_fun;
-	m_env["testkey"] = "testvalue";
 
-	cout << "Registered function " << m_deviceId + "." + name << " to " << name << endl;
-
-	m_env["debug_printAll"](m_env);
-
-	//exit(01);
+	//cout << "Registered function " << globalFunctionName << " to " << name << endl;
 };
 
 
