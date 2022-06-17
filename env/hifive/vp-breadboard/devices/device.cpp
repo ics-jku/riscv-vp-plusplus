@@ -192,7 +192,7 @@ bool Device::Config_Interface::setConfig(const Device::Config_Interface::Config 
 }
 
 Device::Graphbuf_Interface::Graphbuf_Interface(luabridge::LuaRef& ref,
-	                                           std::string& device_id,
+	                                           std::string device_id,
 	                                           lua_State* l) :
 		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_env(ref),
 		m_deviceId(device_id), L(l) {
