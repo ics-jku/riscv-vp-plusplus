@@ -111,8 +111,8 @@ public:
 	class Graphbuf_Interface {
 		luabridge::LuaRef m_getGraphBufferLayout;
 		luabridge::LuaRef m_env;
-		std::string m_deviceId;
-		lua_State* L;	// to register functions and Format
+		std::string m_deviceId;		// Redundant to Device's ID member
+		lua_State* L;				// to register functions and Format
 
 		static void declarePixelFormat(lua_State* L);
 	public:

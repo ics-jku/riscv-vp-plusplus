@@ -9,7 +9,7 @@ end
 
 function getGraphBufferLayout()
     -- x width, y width, data type (currently only rgba)
-    return {200, 200, "rgba"}
+    return {128, 64, "rgba"}
 end
 
 local dc

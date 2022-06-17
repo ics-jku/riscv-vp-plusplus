@@ -221,8 +221,7 @@ Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
 }
 
 void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
-	auto testPixel = luabridge::getGlobal(L, "graphbuf.Pixel");
-	if(!testPixel(0,0,0,0)) {
+	if(luaL_dostring (L, "graphbuf.Pixel(0,0,0,0)") != 0) {
 		cout << "Testpixel could not be created, probably was not yet registered" << endl;
 		luabridge::getGlobalNamespace(L)
 			.beginNamespace("graphbuf")
@@ -235,34 +234,48 @@ void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
 			  .endClass ()
 			.endNamespace()
 		;
+		cout << "Graphbuf: Declared Pixel class to lua." << endl;
+	} else {
+		cout << "Pixel class already registered." << endl;
 	}
 }
 
 template<typename FunctionFootprint>
-void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(const std::string prefix, const std::string name,
-		                                                  FunctionFootprint fun) {
+void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(
+		const std::string prefix, const std::string name, FunctionFootprint fun) {
 	if(prefix.length() == 0 || name.length() == 0) {
 		cerr << "[Graphbuf] Error: Name '" << name << "' or prefix '"
 				<< prefix << "' invalid!" << endl;
 		return;
 	}
+
 	luabridge::getGlobalNamespace(L)
 		.beginNamespace(prefix.c_str())
 		  .addFunction(name.c_str(), fun)
 		.endNamespace();
 
-	const auto global_name = prefix+"."+name;
-	const auto getGraphbuf_fun = luabridge::getGlobal(L, global_name.c_str());
+	cout << "Inserted function " << prefix << "." << name << " into global namespace" << endl;
+
+	const auto global_function_name = prefix+"."+name;
+	const auto getGraphbuf_fun = luabridge::getGlobal(L, global_function_name.c_str());
+	if(getGraphbuf_fun.isNil()) {
+		cerr << "[Graphbuf] Error: " << global_function_name << " is not valid!" << endl;
+		exit(-1);
+		return;
+	}
 	m_env[name.c_str()] = fun;
+
+	cout << "Added function " << global_function_name << endl;
 };
 
 
 void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
-	cout << "Graphbuf_Interface device id: " << m_deviceId << endl;
+	cout << "Graphbuf_Interface:: registerSetBuf" << endl;
 	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "setGraphbuffer", setBuf);
 }
 
 void Device::Graphbuf_Interface::registerGetBuf(const GetBuf_fn getBuf) {
+	cout << "Graphbuf_Interface:: registerGetBuf" << endl;
 	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "getGraphbuffer", getBuf);
 }
 
