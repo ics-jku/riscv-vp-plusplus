@@ -32,6 +32,6 @@ end
 
 
 function receiveSPI(byte_in)
-    print("SSD1106: Got byte")
-    return byte_in
+    -- print("SSD1106: Got byte")
+    return 0
 end

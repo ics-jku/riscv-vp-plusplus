@@ -249,33 +249,35 @@ void Device::Graphbuf_Interface::registerGlobalFunctionAndInsertLocalAlias(
 		return;
 	}
 
+	// TODO: Maybe without namespace? Is this faster?
 	luabridge::getGlobalNamespace(L)
 		.beginNamespace(prefix.c_str())
 		  .addFunction(name.c_str(), fun)
 		.endNamespace();
 
-	cout << "Inserted function " << prefix << "." << name << " into global namespace" << endl;
+	//cout << "Inserted function " << prefix << "." << name << " into global namespace" << endl;
 
-	const auto global_function_name = prefix+"."+name;
-	const auto getGraphbuf_fun = luabridge::getGlobal(L, global_function_name.c_str());
-	if(getGraphbuf_fun.isNil()) {
-		cerr << "[Graphbuf] Error: " << global_function_name << " is not valid!" << endl;
-		exit(-1);
+	const auto prefix_ns = luabridge::getGlobal(L, prefix.c_str());
+	if(prefix_ns.isNil()) {
+		cerr << "[Graphbuf] Error: could not get namespace " << prefix << endl;
 		return;
 	}
-	m_env[name.c_str()] = fun;
+	const auto getGraphbuf_fun = prefix_ns[name.c_str()];
+	if(getGraphbuf_fun.isNil()) {
+		cerr << "[Graphbuf] Error: " << prefix << "." << name  << " is not valid!" << endl;
+		return;
+	}
+	m_env[name.c_str()] = getGraphbuf_fun;
 
-	cout << "Added function " << global_function_name << endl;
+	//cout << "Added function " << prefix << "." << name << endl;
 };
 
 
 void Device::Graphbuf_Interface::registerSetBuf(const SetBuf_fn setBuf) {
-	cout << "Graphbuf_Interface:: registerSetBuf" << endl;
 	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "setGraphbuffer", setBuf);
 }
 
 void Device::Graphbuf_Interface::registerGetBuf(const GetBuf_fn getBuf) {
-	cout << "Graphbuf_Interface:: registerGetBuf" << endl;
 	registerGlobalFunctionAndInsertLocalAlias<>(m_deviceId, "getGraphbuffer", getBuf);
 }
 
