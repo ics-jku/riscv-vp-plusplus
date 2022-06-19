@@ -500,6 +500,12 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		c.dev->pin->setPin(c.device_pin, gpio.state.pins[c.gpio_offs] == Pinstate::HIGH ? true : false);
 	}
 
+	for (auto& [id, image] : device_graphics) {
+		// TODO: determine xy offset in config/runtime map
+		QPoint offs(535, 395);
+		painter.drawImage(offs, image);
+	}
+
 	// TODO: Check loaded, drawable plugins instead of hardcoded objects
 
 	if(oled_mmap)

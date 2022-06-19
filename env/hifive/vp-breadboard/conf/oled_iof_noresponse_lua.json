@@ -71,7 +71,11 @@
           "name": "dc_pin",
           "synchronous" : true
         }
-      ]
+      ],
+     "graphics" :
+     {
+       "offs" : [535, 395]
+     }
     }
    ]
 
