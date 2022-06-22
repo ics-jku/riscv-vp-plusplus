@@ -31,13 +31,11 @@ function setPin(number, val)
 end
 
 
+-- graphbuf.Pixel(r, g, b, a) Where values range from 0-255 where 255 is color/opaque
+-- setGraphbuffer(x, y, Pixel)
+
 function receiveSPI(byte_in)
-    -- print("SSD1106: Got byte")
-    -- for x=0,127 do
-    --    for y=0,63 do
-            setGraphbuffer(50, 20, graphbuf.Pixel(byte_in, 255-byte_in, 0, 255))
-    --    end
-    --end
+    setGraphbuffer(50, 20, graphbuf.Pixel(byte_in, 255-byte_in, 0, 255))
     return 0
 end
 

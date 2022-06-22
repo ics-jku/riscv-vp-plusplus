@@ -123,6 +123,9 @@ public:
 			std::string data_type;	// Currently ignored and always RGBA8888
 		};
 
+		// TODO: Add a scheme that only alpha channel is changed?
+		//       either rgb may be negative (don't change)
+		//       or just another function (probably better)
 		typedef unsigned Xoffset;
 		typedef unsigned Yoffset;
 		struct Pixel {

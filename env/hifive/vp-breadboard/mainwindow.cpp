@@ -65,12 +65,12 @@ bool VPBreadboard::loadConfigFile(std::string file) {
     	cerr << error.errorString().toStdString() << endl;
     	return false;
     }
-    QJsonObject config = json_doc.object();
+    QJsonObject config_root = json_doc.object();
 
-	QPixmap bkgnd(config["background"].toString(""));
+	QPixmap bkgnd(config_root["background"].toString(""));
 	if(bkgnd.isNull())
 	{
-		cerr << "invalid background " << config["background"].toString().toStdString() << endl;
+		cerr << "invalid background " << config_root["background"].toString().toStdString() << endl;
 		cerr << "Available backgrounds:" << endl;
 		QDirIterator it(":/img");
 		while (it.hasNext()) {
@@ -82,9 +82,9 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 	unsigned windowsize_x = bkgnd.width();
 	unsigned windowsize_y = bkgnd.height();
 
-	if(config.contains("windowsize")) {
-		windowsize_x = config["windowsize"].toArray().at(0).toInt();
-		windowsize_y = config["windowsize"].toArray().at(1).toInt();
+	if(config_root.contains("windowsize")) {
+		windowsize_x = config_root["windowsize"].toArray().at(0).toInt();
+		windowsize_y = config_root["windowsize"].toArray().at(1).toInt();
 	}
 
 	QSize size(windowsize_x, windowsize_y);
@@ -96,9 +96,9 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 
 	// TODO: Let every registered "config object" decide its own default values
 
-	if(config.contains("sevensegment"))
+	if(config_root.contains("sevensegment"))
 	{
-		QJsonObject obj = config["sevensegment"].toObject();
+		QJsonObject obj = config_root["sevensegment"].toObject();
 		sevensegment = new Sevensegment(
 			QPoint(obj["offs"].toArray().at(0).toInt(312),
 			       obj["offs"].toArray().at(1).toInt(353)),
@@ -107,27 +107,27 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			obj["linewidth"].toInt(7)
 			);
 	}
-	if(config.contains("rgb"))
+	if(config_root.contains("rgb"))
 	{
-		QJsonObject obj = config["rgb"].toObject();
+		QJsonObject obj = config_root["rgb"].toObject();
 		rgbLed = new RGBLed(
 			QPoint(obj["offs"].toArray().at(0).toInt(89),
 			       obj["offs"].toArray().at(1).toInt(161)),
 			obj["linewidth"].toInt(15)
 			);
 	}
-	if(config.contains("oled-mmap"))
+	if(config_root.contains("oled-mmap"))
 	{
-		QJsonObject obj = config["oled-mmap"].toObject();
+		QJsonObject obj = config_root["oled-mmap"].toObject();
 		oled_mmap = new OLED_mmap(
 			QPoint(obj["offs"].toArray().at(0).toInt(450),
 			       obj["offs"].toArray().at(1).toInt(343)),
 			obj["margin"].toInt(15),
 			obj["scale"].toDouble(1.));
 	}
-	if(config.contains("oled-iof"))
+	if(config_root.contains("oled-iof"))
 	{
-		QJsonObject obj = config["oled-iof"].toObject();
+		QJsonObject obj = config_root["oled-iof"].toObject();
 		const gpio::PinNumber cs = obj["cs_pin"].toInt(9);
 		const gpio::PinNumber dc = obj["dc_pin"].toInt(16);
 		const bool noresponse = obj["noresponse"].toBool(true);
@@ -150,9 +150,9 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			.fun = [this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == Tristate::HIGH ? 1 : 0;}
 		});
 	}
-	if(config.contains("buttons"))
+	if(config_root.contains("buttons"))
 	{
-		const auto butts = config["buttons"].toArray();
+		const auto butts = config_root["buttons"].toArray();
 		for(unsigned i = 0; i < butts.size() && i < max_num_buttons; i++)
 		{
 			QJsonObject butt = butts[i].toObject();
@@ -167,13 +167,13 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			};
 		}
 	}
-	if(config.contains("devices") && config["devices"].isArray()) {
-		auto device_descriptions = config["devices"].toArray();
+	if(config_root.contains("devices") && config_root["devices"].isArray()) {
+		auto device_descriptions = config_root["devices"].toArray();
 		devices.reserve(device_descriptions.count());
 		for(const auto& device_description : device_descriptions) {
-			const auto device = device_description.toObject();
-			const auto& classname = device["class"].toString("undefined").toStdString();
-			const auto& id = device["id"].toString("undefined").toStdString();
+			const auto device_desc = device_description.toObject();
+			const auto& classname = device_desc["class"].toString("undefined").toStdString();
+			const auto& id = device_desc["id"].toString("undefined").toStdString();
 
 			if(!lua_factory.deviceExists(classname)) {
 				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
@@ -184,15 +184,15 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				continue;
 			}
 			devices.emplace(id, lua_factory.instantiateDevice(id, classname));
-			Device& instantiated_dev = devices.at(id);
+			Device& device = devices.at(id);
 
-			if(device.contains("spi") && device["spi"].isObject()) {
-				if(!instantiated_dev.spi) {
+			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
+				if(!device.spi) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto spi = device["spi"].toObject();
+				const auto spi = device_desc["spi"].toObject();
 				if(!spi.contains("cs_pin")) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but does not set a cs_pin." << endl;
@@ -204,20 +204,20 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						.gpio_offs = translatePinToGpioOffs(cs),
 						.global_pin = cs,
 						.noresponse = noresponse,
-						.fun = [&instantiated_dev](gpio::SPI_Command cmd){return instantiated_dev.spi->send(cmd);}
+						.fun = [&device](gpio::SPI_Command cmd){return device.spi->send(cmd);}
 					 }
 				);
 			}
 
-			if(device.contains("pins") && device["pins"].isArray()) {
+			if(device_desc.contains("pins") && device_desc["pins"].isArray()) {
 				//cout << classname << " '" << id << "' pin" << endl;
-				if(!instantiated_dev.pin) {
+				if(!device.pin) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an PIN interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto pinLayout = instantiated_dev.pin->getPinLayout();
-				auto pin_descriptions = device["pins"].toArray();
+				const auto pinLayout = device.pin->getPinLayout();
+				auto pin_descriptions = device_desc["pins"].toArray();
 				for (const auto& pin_desc : pin_descriptions) {
 					const auto pin = pin_desc.toObject();
 					if(!pin.contains("device_pin") ||
@@ -251,8 +251,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						pin_channels.emplace(id, PIN_IOF_Request{
 							.gpio_offs = translatePinToGpioOffs(global_pin),
 							.global_pin = global_pin,
-							.fun = [&instantiated_dev, device_pin](gpio::Tristate pin) {
-								instantiated_dev.pin->setPin(device_pin, pin == Tristate::HIGH ? 1 : 0);
+							.fun = [&device, device_pin](gpio::Tristate pin) {
+								device.pin->setPin(device_pin, pin == Tristate::HIGH ? 1 : 0);
 							}
 						});
 					} else {
@@ -261,7 +261,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 							.global_pin = global_pin,
 							.device_pin = device_pin,
 							.name = pin_name,
-							.dev = &instantiated_dev
+							.dev = &device
 						};
 						if(pin_l.dir == Device::PIN_Interface::PinDesc::Dir::input
 								|| pin_l.dir == Device::PIN_Interface::PinDesc::Dir::inout) {
@@ -274,39 +274,53 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 					}
 				}
 			}
-		}
 
-		cout << "Instatiated devices:" << endl;
-		for (auto& [id, device] : devices) {
-			cout << "\t" << id << " of class " << device.getClass() << endl;
-			if(device.pin)
-				cout << "\t\timplements PIN" << endl;
-			if(device.spi)
-				cout << "\t\timplements SPI" << endl;
-			if(device.conf)
-				cout << "\t\timplements conf" << endl;
-
-			if(device.graph) {
-				cout << "\t\timplements graphbuf" << endl;
-				//cout << "Device " << id << " tells its ID as " << device.getID() << endl;
+			if(device_desc.contains("graphics") && device_desc["graphics"].isObject()) {
+				if(!device.graph) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+							" a graph buffer interface, but device does not implement it" << endl;
+					continue;
+				}
 				const auto layout = device.graph->getLayout();
-				//cout << layout.width << " by " << layout.height << " pixel in " << layout.data_type << " requested." << endl;
+				//cout << "\t\t\tBuffer Layout: " << layout.width << "x" << layout.height << " pixel with type " << layout.data_type << endl;
 				if(layout.width == 0 || layout.height == 0) {
-					cerr << "Device " << id << " of class " << device.getClass() << " "
-							"requested an invalid graphbuffer size '" << layout.width << "x" << layout.height << "'" << endl;
+					cerr << "Device " << id << " of class " << classname << " "
+							"requests an invalid graphbuffer size '" << layout.width << "x" << layout.height << "'" << endl;
 					continue;
 				}
-				cout << "\t\t\tBuffer Layout: " << layout.width << "x" << layout.height << " pixel with type " << layout.data_type << endl;
 				if(layout.data_type != "rgba") {
-					cerr << "Device " << id << " of class " << device.getClass() << " "
-							"requested an unsupported graph buffer data type '" << layout.data_type << "'" << endl;
+					cerr << "Device " << id << " of class " << classname << " "
+							"requested a currently unsupported graph buffer data type '" << layout.data_type << "'" << endl;
 					continue;
 				}
+
+				const auto graphics_desc = device_desc["graphics"].toObject();
+				if(!(graphics_desc.contains("offs") && graphics_desc["offs"].isArray())) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+					" a graph buffer interface, but no valid offset given" << endl;
+					continue;
+				}
+				const auto offs_desc = graphics_desc["offs"].toArray();
+				if(offs_desc.size() != 2) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+					" a graph buffer interface, but offset is malformed (needs x,y, is size " << offs_desc.size() << ")" << endl;
+					continue;
+				}
+
+				QPoint offs(offs_desc[0].toInt(), offs_desc[1].toInt());
+				const unsigned scale = graphics_desc["scale"].toInt(1);
+
 				typedef Device::Graphbuf_Interface::Xoffset Xoffset;
 				typedef Device::Graphbuf_Interface::Yoffset Yoffset;
 				typedef Device::Graphbuf_Interface::Pixel Pixel;
-				device_graphics.emplace(id, QImage(layout.width, layout.height, QImage::Format_RGBA8888));
-				auto& new_buffer = device_graphics.at(id);
+				device_graphics.emplace(id, DeviceGraphic{
+					.image = QImage(layout.width, layout.height, QImage::Format_RGBA8888),
+					.offset = offs,
+					.scale = scale
+				});
+
+				// setting up the image buffer and its functions
+				auto& new_buffer = device_graphics.at(id).image;
 				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
 
 				device.graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
@@ -340,8 +354,21 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 					}
 				);
 			}
+		}
 
-			//cout << endl;
+		cout << "Instatiated devices:" << endl;
+		for (auto& [id, device] : devices) {
+			cout << "\t" << id << " of class " << device.getClass() << endl;
+			/*
+			if(device.pin)
+				cout << "\t\timplements PIN" << endl;
+			if(device.spi)
+				cout << "\t\timplements SPI" << endl;
+			if(device.conf)
+				cout << "\t\timplements conf" << endl;
+			if(device.graph)
+				cout << "\t\timplements graphbuf" << endl;
+			*/
 		}
 	}
 	return true;
@@ -505,10 +532,11 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		c.dev->pin->setPin(c.device_pin, gpio.state.pins[c.gpio_offs] == Pinstate::HIGH ? true : false);
 	}
 
-	for (auto& [id, image] : device_graphics) {
-		// TODO: determine xy offset in config/runtime map
-		QPoint offs(107, 324);
-		painter.drawImage(offs, image.scaled(image.size().width()*2, image.size().height()*2));
+	for (auto& [id, graphic] : device_graphics) {
+		const auto& image = graphic.image;
+		painter.drawImage(graphic.offset,
+				image.scaled(image.size().width()*graphic.scale,
+				image.size().height()*graphic.scale));
 	}
 
 	// TODO: Check loaded, drawable plugins instead of hardcoded objects

@@ -44,7 +44,12 @@ class VPBreadboard : public QWidget {
 	std::unordered_map<DeviceID,Device> devices;
 	std::unordered_map<DeviceID,SPI_IOF_Request> spi_channels;
 	std::unordered_map<DeviceID,PIN_IOF_Request> pin_channels;
-	std::unordered_map<DeviceID, QImage> device_graphics;
+	struct DeviceGraphic {
+		QImage image;
+		QPoint offset;
+		unsigned scale;
+	};
+	std::unordered_map<DeviceID, DeviceGraphic> device_graphics;
 
 	struct PinMapping{
 		gpio::PinNumber gpio_offs;	// calculated from "global pin"
