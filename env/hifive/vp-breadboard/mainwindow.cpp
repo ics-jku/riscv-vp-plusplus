@@ -307,6 +307,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				typedef Device::Graphbuf_Interface::Pixel Pixel;
 				device_graphics.emplace(id, QImage(layout.width, layout.height, QImage::Format_RGBA8888));
 				auto& new_buffer = device_graphics.at(id);
+				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
+
 				device.graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
 						//cout << "setBuf at " << (int) x << "x" << (int) y <<
 						//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
@@ -315,8 +317,11 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 							cerr << "[Graphbuf] WARN: device " << id << " write accessing graphbuffer out of bounds!" << endl;
 							return;
 						}
-						img[x * layout.width + y] =
-								p.r << (3 * 8) |  p.g << (2 * 8) | p.b << (1 * 8) | p.a << (0 * 8);
+						const auto offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
+						img[offs+0] = p.r;
+						img[offs+1] = p.g;
+						img[offs+2] = p.b;
+						img[offs+3] = p.a;
 					}
 				);
 				device.graph->registerGetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y){
@@ -325,12 +330,12 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 							cerr << "[Graphbuf] WARN: device " << id << " read accessing graphbuffer out of bounds!" << endl;
 							return Pixel{0,0,0,0};
 						}
-						const auto& p = img[x * layout.width + y];
+						const auto& offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
 						return Pixel{
-							static_cast<uint8_t>(p & (0xFF << (3 * 8)) >> (3 * 8)),
-							static_cast<uint8_t>(p & (0xFF << (2 * 8)) >> (2 * 8)),
-							static_cast<uint8_t>(p & (0xFF << (1 * 8)) >> (1 * 8)),
-							static_cast<uint8_t>(p & (0xFF << (0 * 8)) >> (0 * 8))
+							static_cast<uint8_t>(img[offs+0]),
+							static_cast<uint8_t>(img[offs+1]),
+							static_cast<uint8_t>(img[offs+2]),
+							static_cast<uint8_t>(img[offs+3])
 						};
 					}
 				);
@@ -502,8 +507,8 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 
 	for (auto& [id, image] : device_graphics) {
 		// TODO: determine xy offset in config/runtime map
-		QPoint offs(535, 395);
-		painter.drawImage(offs, image);
+		QPoint offs(107, 324);
+		painter.drawImage(offs, image.scaled(image.size().width()*2, image.size().height()*2));
 	}
 
 	// TODO: Check loaded, drawable plugins instead of hardcoded objects
@@ -547,16 +552,16 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	}
 	painter.restore();
 
-	for (auto& c : writing_connections) {
-		gpio.setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? Tristate::HIGH : Tristate::LOW);
-	}
-
 
 	if (debugmode) {
 		if(sevensegment)
 			painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
 	}
 	painter.end();
+
+	for (auto& c : writing_connections) {
+		gpio.setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? Tristate::HIGH : Tristate::LOW);
+	}
 	// intentional slow down
 	// TODO: update at fixed rate, async between redraw and gpioserver
 	usleep(10000);

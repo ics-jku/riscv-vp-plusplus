@@ -13,7 +13,7 @@ else
 endif
 
 vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile
-	make install -C vp/build -j$(NPROCS)
+	make install -C vp/build #-j$(NPROCS)
 
 vp/dependencies/systemc-dist:
 	cd vp/dependencies/ && ./build_systemc_233.sh
@@ -39,14 +39,14 @@ env/basic/vp-display/build/Makefile:
 	cd env/basic/vp-display/build && cmake ..
 
 vp-display: env/basic/vp-display/build/Makefile
-	make -C  env/basic/vp-display/build -j$(NPROCS)
+	make -C  env/basic/vp-display/build #-j$(NPROCS)
 
 env/hifive/vp-breadboard/build/Makefile:
 	mkdir -p env/hifive/vp-breadboard/build
-	cd env/hifive/vp-breadboard/build && cmake ..
+	cd env/hifive/vp-breadboard/build && cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 vp-breadboard: env/hifive/vp-breadboard/build/Makefile
-	make -C env/hifive/vp-breadboard/build -j$(NPROCS)
+	make -C env/hifive/vp-breadboard/build #-j$(NPROCS)
 
 vp-clean:
 	rm -rf vp/build

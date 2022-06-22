@@ -155,7 +155,7 @@ void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 
 bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun, bool noResponse){
 	if(state.pins[pin] != Pinstate::IOF_SPI) {
-		cerr << "[gpio-client] WARN: Register SPI onchange on pin " << (int)pin << " with no SPI io-function" << endl;
+		cerr << "[gpio-client] WARN: Register SPI onchange on pin " << (int)pin << " with no SPI io-function (yet)" << endl;
 	}
 
 	DataChannelDescription desc;
