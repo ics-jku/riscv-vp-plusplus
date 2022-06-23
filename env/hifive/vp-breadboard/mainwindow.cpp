@@ -13,7 +13,7 @@
 using namespace std;
 using namespace gpio;
 
-constexpr bool debug_logging = true;
+constexpr bool debug_logging = false;
 
 VPBreadboard::VPBreadboard(std::string configfile,
 		const char* host, const char* port,
@@ -365,6 +365,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						};
 					}
 				);
+				// only called if lua implements the function
+				device.graph->initializeBufferMaybe();
 			}
 		}
 
@@ -380,7 +382,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				if(device.conf)
 					cout << "\t\timplements conf" << endl;
 				if(device.graph)
-					cout << "\t\timplements graphbuf" << endl;
+					cout << "\t\timplements graphbuf (" << device.graph->getLayout().width << "x" <<
+					device.graph->getLayout().height << " pixel)"<< endl;
 			}
 
 			cout << "Active pin connections:" << endl;

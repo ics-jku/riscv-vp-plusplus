@@ -110,6 +110,7 @@ public:
 
 	class Graphbuf_Interface {
 		luabridge::LuaRef m_getGraphBufferLayout;
+		luabridge::LuaRef m_initializeGraphBuffer;
 		luabridge::LuaRef m_env;
 		std::string m_deviceId;		// Redundant to Device's ID member
 		lua_State* L;				// to register functions and Format
@@ -139,6 +140,7 @@ public:
 
 		Graphbuf_Interface(luabridge::LuaRef& ref, std::string device_id, lua_State* L);
 		Layout getLayout();
+		void initializeBufferMaybe();
 		void registerSetBuf(const SetBuf_fn setBuf);
 		void registerGetBuf(const GetBuf_fn getBuf);
 

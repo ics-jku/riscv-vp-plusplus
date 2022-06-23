@@ -194,8 +194,8 @@ bool Device::Config_Interface::setConfig(const Device::Config_Interface::Config 
 Device::Graphbuf_Interface::Graphbuf_Interface(luabridge::LuaRef& ref,
 	                                           std::string device_id,
 	                                           lua_State* l) :
-		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_env(ref),
-		m_deviceId(device_id), L(l) {
+		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_initializeGraphBuffer(ref["initializeGraphBuffer"]),
+		m_env(ref), m_deviceId(device_id), L(l) {
 	if(!implementsInterface(ref))
 		cerr << "[Device] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 
@@ -218,6 +218,15 @@ Device::Graphbuf_Interface::Layout Device::Graphbuf_Interface::getLayout() {
 	}
 	ret.data_type = type.cast<string>();
 	return ret;
+}
+
+
+void Device::Graphbuf_Interface::initializeBufferMaybe(){
+	if(m_initializeGraphBuffer.isFunction()) {
+		m_initializeGraphBuffer();
+	} else {
+		//cout << "Device " << m_deviceId << " does not implement 'initializeGraphBuffer()'" << endl;
+	}
 }
 
 void Device::Graphbuf_Interface::declarePixelFormat(lua_State* L) {
