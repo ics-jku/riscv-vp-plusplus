@@ -36,6 +36,7 @@ int main(int argc, char* argv[]) {
 	std::string scriptpath = "";
 	std::string host = "localhost";
 	std::string port = "1400";
+	bool overwrite_integrated_devices = false;
 
 	InputParser input(argc, argv);
     if(input.cmdOptionExists("-h") || input.cmdOptionExists("--help")){
@@ -65,6 +66,7 @@ int main(int argc, char* argv[]) {
 			}
 			std::cout << std::endl;
         }
+        std::cout << "\t--overwrite \tCustom scripts will take priority in registry" << std::endl;
 		std::cout << "\t-d <target_host> (default " << host << ")" << std::endl;
         std::cout << "\t-p <portnumber>\t (default " << port << ")" << std::endl;
         return 0;
@@ -99,10 +101,12 @@ int main(int argc, char* argv[]) {
 			scriptpath = scriptpath_c;
 		}
     }
+    {
+    	overwrite_integrated_devices = input.cmdOptionExists("--overwrite");
+    }
 
-	VPBreadboard w(configfile.c_str(),
-			host.c_str(), port.c_str(),
-			scriptpath);
+	VPBreadboard w(configfile.c_str(), host.c_str(), port.c_str(),
+			scriptpath, overwrite_integrated_devices);
 	w.show();
 
 	return a.exec();

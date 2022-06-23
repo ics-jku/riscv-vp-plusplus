@@ -22,7 +22,7 @@ public:
 
 	LuaEngine();
 
-	void scanAdditionalDir(std::string dir);
+	void scanAdditionalDir(std::string dir, bool overwrite_existing = false);
 	void printAvailableDevices();
 
 	bool deviceExists(std::string classname);

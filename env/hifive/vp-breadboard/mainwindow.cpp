@@ -15,7 +15,7 @@ using namespace gpio;
 
 VPBreadboard::VPBreadboard(std::string configfile,
 		const char* host, const char* port,
-		std::string additional_device_dir,
+		std::string additional_device_dir, bool overwrite_integrated_devices,
 		QWidget* mparent)
     : QWidget(mparent),
       host(host),
@@ -29,7 +29,7 @@ VPBreadboard::VPBreadboard(std::string configfile,
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
 	if(additional_device_dir.size() != 0){
-		lua_factory.scanAdditionalDir(additional_device_dir);
+		lua_factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
 	}
 
 	if(!loadConfigFile(configfile)) {

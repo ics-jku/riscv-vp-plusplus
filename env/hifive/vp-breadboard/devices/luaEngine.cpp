@@ -151,7 +151,7 @@ LuaEngine::LuaEngine(){
 }
 
 // TODO: Reduce code duplication for file/string load
-void LuaEngine::scanAdditionalDir(std::string dir) {
+void LuaEngine::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	cout << "[lua] Scanning additional devices at '" << dir << "'." << endl;
 
 	QDirIterator it(dir.c_str(),
@@ -166,9 +166,14 @@ void LuaEngine::scanAdditionalDir(std::string dir) {
 			continue;
 		const auto classname = chunk["classname"].cast<string>();
 		if(available_devices.find(classname) != available_devices.end()) {
+			if(!overwrite_existing) {
 			cerr << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
 					"would overwrite device from '" << available_devices.at(classname) << "'" << endl;
 			continue;
+			} else {
+				cout << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
+						"overwrites device from '" << available_devices.at(classname) << "'" << endl;
+			}
 		}
 		available_devices.emplace(classname, filepath);
 	}

@@ -81,7 +81,7 @@ class VPBreadboard : public QWidget {
 public:
 	VPBreadboard(std::string configfile,
 			const char* host, const char* port,
-			std::string additional_device_dir,
+			std::string additional_device_dir, bool overwrite_integrated_devices = false,
 			QWidget* mparent = 0);
 	~VPBreadboard();
 	void showConnectionErrorOverlay(QPainter& p);
