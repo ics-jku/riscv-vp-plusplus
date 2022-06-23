@@ -77,7 +77,41 @@
        "offs" : [107, 324],
        "scale" : 2
      }
+    },
+    {
+      "class" : "LED",
+      "id"    : "led1_down",
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 3,
+          "name": "led_pin"
+        }
+      ],
+      "graphics" :
+      {
+        "offs" : [230, 650],
+        "scale" : 8
+      }
+    },
+    {
+      "class" : "LED",
+      "id"    : "led2_dc",
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "name": "led_pin",
+          "synchronous" : true
+        }
+      ],
+      "graphics" :
+      {
+        "offs" : [200, 500],
+        "scale" : 8
+      }
     }
-   ]
-
+  ]
 }

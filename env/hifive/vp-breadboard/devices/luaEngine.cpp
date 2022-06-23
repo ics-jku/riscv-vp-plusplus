@@ -30,7 +30,6 @@ extern "C"
 #include <LuaBridge/LuaBridge.h>
 
 
-
 using namespace std;
 using namespace luabridge;
 using std::filesystem::directory_iterator;

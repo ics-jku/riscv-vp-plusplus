@@ -13,6 +13,8 @@
 using namespace std;
 using namespace gpio;
 
+constexpr bool debug_logging = true;
+
 VPBreadboard::VPBreadboard(std::string configfile,
 		const char* host, const char* port,
 		std::string additional_device_dir, bool overwrite_integrated_devices,
@@ -37,7 +39,8 @@ VPBreadboard::VPBreadboard(std::string configfile,
 		exit(-4);
 	}
 
-	//lua_factory.printAvailableDevices();
+	if(debug_logging)
+		lua_factory.printAvailableDevices();
 }
 
 bool VPBreadboard::loadConfigFile(std::string file) {
@@ -170,6 +173,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 	if(config_root.contains("devices") && config_root["devices"].isArray()) {
 		auto device_descriptions = config_root["devices"].toArray();
 		devices.reserve(device_descriptions.count());
+		if(debug_logging)
+			cout << "[config loader] reserving space for " << device_descriptions.count() << " devices." << endl;
 		for(const auto& device_description : device_descriptions) {
 			const auto device_desc = device_description.toObject();
 			const auto& classname = device_desc["class"].toString("undefined").toStdString();
@@ -205,13 +210,17 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						.gpio_offs = translatePinToGpioOffs(cs),
 						.global_pin = cs,
 						.noresponse = noresponse,
-						.fun = [&device](gpio::SPI_Command cmd){return device.spi->send(cmd);}
-					 }
+						.fun = [this, &device](gpio::SPI_Command cmd){
+							lua_access.lock();
+							const auto ret = device.spi->send(cmd);
+							lua_access.unlock();
+							return ret;
+						}
+					}
 				);
 			}
 
 			if(device_desc.contains("pins") && device_desc["pins"].isArray()) {
-				//cout << classname << " '" << id << "' pin" << endl;
 				if(!device.pin) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an PIN interface, but device does not implement it" << endl;
@@ -238,7 +247,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						continue;
 					}
 
-					//cout << "Mapping " << instantiated_dev.getID() << "'s pin " << (int)device_pin <<
+					//cout << "Mapping " << device.getID() << "'s pin " << (int)device_pin <<
 					//		" to global pin " << (int)global_pin << endl;
 
 					const auto& pin_l = pinLayout.at(device_pin);
@@ -252,8 +261,10 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						pin_channels.emplace(id, PIN_IOF_Request{
 							.gpio_offs = translatePinToGpioOffs(global_pin),
 							.global_pin = global_pin,
-							.fun = [&device, device_pin](gpio::Tristate pin) {
+							.fun = [this, &device, device_pin](gpio::Tristate pin) {
+								lua_access.lock();
 								device.pin->setPin(device_pin, pin == Tristate::HIGH ? 1 : 0);
+								lua_access.unlock();
 							}
 						});
 					} else {
@@ -357,21 +368,37 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			}
 		}
 
-		/*
-		cout << "Instatiated devices:" << endl;
-		for (auto& [id, device] : devices) {
-			cout << "\t" << id << " of class " << device.getClass() << endl;
+		if(debug_logging) {
+			cout << "Instatiated devices:" << endl;
+			for (auto& [id, device] : devices) {
+				cout << "\t" << id << " of class " << device.getClass() << endl;
 
-			if(device.pin)
-				cout << "\t\timplements PIN" << endl;
-			if(device.spi)
-				cout << "\t\timplements SPI" << endl;
-			if(device.conf)
-				cout << "\t\timplements conf" << endl;
-			if(device.graph)
-				cout << "\t\timplements graphbuf" << endl;
+				if(device.pin)
+					cout << "\t\timplements PIN" << endl;
+				if(device.spi)
+					cout << "\t\timplements SPI" << endl;
+				if(device.conf)
+					cout << "\t\timplements conf" << endl;
+				if(device.graph)
+					cout << "\t\timplements graphbuf" << endl;
+			}
+
+			cout << "Active pin connections:" << endl;
+			cout << "\tReading (async): " << reading_connections.size() << endl;
+			for(auto& conn : reading_connections){
+				cout << "\t\t" << conn.dev->getID() << " (" << conn.name << "): global pin " << (int)conn.global_pin <<
+						" to device pin " << (int)conn.device_pin << endl;
+			}
+			cout << "\tReading (synchronous): " << pin_channels.size() << endl;
+			for(auto& conn : pin_channels){
+				cout << "\t\t" << conn.first << ": global pin " << (int)conn.second.global_pin << endl;
+			}
+			cout << "\tWriting: " << writing_connections.size() << endl;
+			for(auto& conn : writing_connections){
+				cout << "\t\t" << conn.dev->getID() << " (" << conn.name << "): device pin " << (int)conn.device_pin <<
+						" to global pin " << (int)conn.global_pin << endl;
+			}
 		}
-		*/
 	}
 	return true;
 }
@@ -530,9 +557,12 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 		}
 	}
 
+	lua_access.lock();
 	for (auto& c : reading_connections) {
+		// TODO: Only if pin changed?
 		c.dev->pin->setPin(c.device_pin, gpio.state.pins[c.gpio_offs] == Pinstate::HIGH ? true : false);
 	}
+	lua_access.unlock();
 
 	for (auto& [id, graphic] : device_graphics) {
 		const auto& image = graphic.image;
@@ -589,9 +619,12 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	}
 	painter.end();
 
+	lua_access.lock();
 	for (auto& c : writing_connections) {
 		gpio.setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? Tristate::HIGH : Tristate::LOW);
 	}
+	lua_access.unlock();
+
 	// intentional slow down
 	// TODO: update at fixed rate, async between redraw and gpioserver
 	usleep(10000);

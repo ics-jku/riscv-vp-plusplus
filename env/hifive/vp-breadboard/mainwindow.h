@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <list>
 
+#include <mutex> // TODO: FIXME: Create one Lua state per device that uses asyncs like SPI and synchronous pins
+
 namespace Ui {
 class VPBreadboard;
 }
@@ -39,6 +41,7 @@ class VPBreadboard : public QWidget {
 	Button* buttons[max_num_buttons];
 	//
 
+	std::mutex lua_access;		//TODO: Use multiple Lua states per 'async called' device
 	LuaEngine lua_factory;
 	typedef std::string DeviceID;
 	std::unordered_map<DeviceID,Device> devices;
