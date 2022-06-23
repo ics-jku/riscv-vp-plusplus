@@ -21,6 +21,13 @@ if(NOT LUA_LIB)
     endif()
 endif()
 
+if(NOT DONT_INCLUDE_LUA_DEVICES)
+    set(DONT_INCLUDE_LUA_DEVICES false)
+endif()
+if(NOT DONT_INCLUDE_CONFIGS)
+    set(DONT_INCLUDE_CONFIGS false)
+endif()
+
 include(CMake/AddGitSubmodule.cmake)
 include(CMake/GenerateResourceFiles.cmake)
 
@@ -56,8 +63,12 @@ set(SOURCES
 
 add_executable(vp-breadboard ${SOURCES} ${HEADERS} ${UI})
 
-add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
-add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})
+if(NOT DONT_INCLUDE_CONFIGS)
+	add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
+endif()
+if(NOT DONT_INCLUDE_LUA_DEVICES)
+	add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})
+endif()
 add_qt_resource(vp-breadboard images FILES ${IMAGES})
 
 target_link_libraries(vp-breadboard Qt5::Widgets pthread LuaBridge ${LUA_LIB})
