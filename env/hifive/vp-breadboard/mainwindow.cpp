@@ -28,13 +28,13 @@ VPBreadboard::VPBreadboard(std::string configfile,
 
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
+	if(additional_device_dir.size() != 0){
+		lua_factory.scanAdditionalDir(additional_device_dir);
+	}
+
 	if(!loadConfigFile(configfile)) {
 		cerr << "Could not load config file '" << configfile << "'" << endl;
 		exit(-4);
-	}
-
-	if(additional_device_dir.size() != 0){
-		lua_factory.scanAdditionalDir(additional_device_dir);
 	}
 
 	//lua_factory.printAvailableDevices();
@@ -177,6 +177,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 
 			if(!lua_factory.deviceExists(classname)) {
 				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
+
 				continue;
 			}
 			if(devices.find(id) != devices.end()) {
@@ -356,10 +357,11 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			}
 		}
 
+		/*
 		cout << "Instatiated devices:" << endl;
 		for (auto& [id, device] : devices) {
 			cout << "\t" << id << " of class " << device.getClass() << endl;
-			/*
+
 			if(device.pin)
 				cout << "\t\timplements PIN" << endl;
 			if(device.spi)
@@ -368,8 +370,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				cout << "\t\timplements conf" << endl;
 			if(device.graph)
 				cout << "\t\timplements graphbuf" << endl;
-			*/
 		}
+		*/
 	}
 	return true;
 }

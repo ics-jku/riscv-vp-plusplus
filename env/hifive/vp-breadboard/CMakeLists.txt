@@ -42,8 +42,12 @@ set(HEADERS mainwindow.h)
 
 set(UI mainwindow.ui)
 
-file(GLOB CONFIGS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./conf/*.json)
-file(GLOB SCRIPTS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./devices/lua/*.lua)
+if(NOT DONT_INCLUDE_CONFIGS)
+	file(GLOB CONFIGS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./conf/*.json)
+endif()
+if(NOT DONT_INCLUDE_LUA_DEVICES)
+	file(GLOB SCRIPTS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./devices/lua/*.lua)
+endif()
 set(SCRIPTS ${SCRIPTS} devices/loadscript.lua)
 file(GLOB IMAGES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./img/*.jpg)
 file(GLOB DEVICES ./devices/c/*.cpp)
@@ -63,12 +67,8 @@ set(SOURCES
 
 add_executable(vp-breadboard ${SOURCES} ${HEADERS} ${UI})
 
-if(NOT DONT_INCLUDE_CONFIGS)
-	add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
-endif()
-if(NOT DONT_INCLUDE_LUA_DEVICES)
-	add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})
-endif()
+add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
+add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})
 add_qt_resource(vp-breadboard images FILES ${IMAGES})
 
 target_link_libraries(vp-breadboard Qt5::Widgets pthread LuaBridge ${LUA_LIB})

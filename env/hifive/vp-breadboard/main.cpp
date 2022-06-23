@@ -43,21 +43,27 @@ int main(int argc, char* argv[]) {
         std::cout << "    options:" << std::endl;
         std::cout << "\t-h, --help\t prints this help text" << std::endl;
         std::cout << "\t-c <config_file> (default " << configfile << ")" << std::endl;
-        std::cout << "\t\t\t Integrated config-files:" << std::endl;
+        std::cout << "\t\t\t Integrated config-files:";
         {
 			QDirIterator it(":/conf");
+			if(!it.hasNext())
+				std::cout << " NONE";
 			while (it.hasNext()) {
-				std::cout << "\t\t\t   " << it.next().toStdString() << std::endl;
+				std::cout << std::endl << "\t\t\t   " << it.next().toStdString();
 			}
+			std::cout << std::endl;
         }
         std::cout << "\t-s <custom_device_folder>" << std::endl;
-        std::cout << "\t\t\t Builtin scripted devices:" << std::endl;
+        std::cout << "\t\t\t Builtin scripted devices:";
         {
         	QDirIterator it(":/devices/lua");
+			if(!it.hasNext())
+				std::cout << " NONE";
 			while (it.hasNext()) {
 				it.next();
-				std::cout << "\t\t\t   " << it.fileName().toStdString() << std::endl;
+				std::cout << std::endl << "\t\t\t   " << it.fileName().toStdString();
 			}
+			std::cout << std::endl;
         }
 		std::cout << "\t-d <target_host> (default " << host << ")" << std::endl;
         std::cout << "\t-p <portnumber>\t (default " << port << ")" << std::endl;

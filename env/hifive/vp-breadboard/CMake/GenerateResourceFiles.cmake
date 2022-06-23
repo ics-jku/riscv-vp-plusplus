@@ -57,5 +57,5 @@ function(add_qt_resource target resourceName)
                        VERBATIM)
     target_sources(${target} PRIVATE "${generatedSourceCode}")
     
-    message("${target} with ${generatedSourceCode} depends on ${rcc_FILES}")
+    #message("${target} with ${generatedSourceCode} depends on ${rcc_FILES}")
 endfunction()

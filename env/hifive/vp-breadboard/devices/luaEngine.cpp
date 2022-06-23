@@ -116,8 +116,6 @@ LuaEngine::LuaEngine(){
 	}
 	QByteArray loader_content = loader.readAll();
 
-	// TODO: If offering c-functions, do this before initalizing scriptloader
-
 	if( luaL_dostring( L, loader_content) )
 	{
 		cerr << "Error loading loadscript:\n" <<
