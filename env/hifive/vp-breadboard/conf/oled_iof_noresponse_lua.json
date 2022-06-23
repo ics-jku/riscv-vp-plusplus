@@ -74,7 +74,7 @@
       ],
      "graphics" :
      {
-       "offs" : [107, 324],
+       "offs" : [112, 330],
        "scale" : 2
      }
     },
@@ -91,7 +91,7 @@
       ],
       "graphics" :
       {
-        "offs" : [435, 650],
+        "offs" : [435, 655],
         "scale" : 2
       }
     },
@@ -104,7 +104,7 @@
           "device_pin" : 1,
           "global_pin" : 16,
           "name": "led_pin",
-          "synchronous" : true
+          "synchronous" : false
         }
       ],
       "graphics" :

@@ -252,6 +252,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 
 					const auto& pin_l = pinLayout.at(device_pin);
 					if(synchronous) {
+						// TODO FIXME : Currently, only one synchronous pin seems to work!
 						if(pin_l.dir != Device::PIN_Interface::PinDesc::Dir::input) {
 							cerr << "[config loader] config for device '" << classname << "' maps pin " <<
 									(int)device_pin << " as syncronous, but device labels pin not as input."
