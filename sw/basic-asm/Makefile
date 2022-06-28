@@ -5,7 +5,7 @@ sim: all
 	riscv-vp main
 	
 sum.o : sum.S
-	riscv32-unknown-elf-as sum.S -o sum.o -march=rv32i -mabi=ilp32
+	riscv32-unknown-elf-gcc -c sum.S -o sum.o -march=rv32i -mabi=ilp32
 	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main
