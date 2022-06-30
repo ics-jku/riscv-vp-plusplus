@@ -84,6 +84,7 @@ Device::PIN_Interface::PinLayout Device::PIN_Interface::getPinLayout() {
 		} else if(direction_raw == "inout") {
 			desc.dir = PinDesc::Dir::inout;
 		} else {
+			// TODO: Add PWM input here? Or better, lua script has to cope with ratios
 			cerr << "Pinlayout element " << i << " (" << r[i] << "), direction " << direction_raw << " is malformed" << endl;
 			continue;
 		}
