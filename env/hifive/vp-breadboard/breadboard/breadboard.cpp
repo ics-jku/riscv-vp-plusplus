@@ -1,101 +1,119 @@
-#include "mainwindow.h"
-#include <qpainter.h>
-#include <QKeyEvent>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <cassert>
-#include <iostream>
-#include "ui_mainwindow.h"
-
-#include <unistd.h>  //sleep
+#include "breadboard.h"
 
 using namespace std;
-using namespace gpio;
 
 constexpr bool debug_logging = false;
 
-VPBreadboard::VPBreadboard(std::string configfile,
-		const char* host, const char* port,
-		std::string additional_device_dir, bool overwrite_integrated_devices,
-		QWidget* mparent)
-    : QWidget(mparent),
-      host(host),
-      port(port),
-      sevensegment(nullptr),
-      rgbLed(nullptr),
-      oled_mmap(nullptr),
-      oled_iof(nullptr)
-	{
+Breadboard::Breadboard(QWidget* parent) : QWidget(parent),
+		sevensegment(nullptr), rgbLed(nullptr), oled_mmap(nullptr), oled_iof(nullptr) {
+	QString bkgnd_path = ":/img/virtual_breadbaord.png";
+	QSize bkgnd_size = QSize(486, 233);
 
+	setStyleSheet("background-image: url("+bkgnd_path+");");
+	setFixedSize(bkgnd_size);
+}
+
+Breadboard::~Breadboard() {
+	if(sevensegment != nullptr)
+		delete sevensegment;
+	if(rgbLed != nullptr)
+		delete rgbLed;
+	if(oled_mmap != nullptr)
+		delete oled_mmap;
+	for(unsigned i = 0; i < max_num_buttons; i++)
+	{
+		if(buttons[i] != nullptr)
+		delete buttons[i];
+	}
+}
+
+/* UPDATE */
+
+uint8_t Breadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
+	uint8_t ret = 0;
+	static uint8_t pinMapping[8] =
+	{
+	  15, 16, 17, 18, 19, 7, 6, 5
+	};
+	for(unsigned i = 0; i < 8; i++)
+	{
+		ret |= pinmap & (1 << pinMapping[i]) ? (1 << i) : 0;
+	}
+	return ret;
+}
+
+uint8_t Breadboard::translatePinNumberToRGBLed(uint64_t pinmap) {
+	uint8_t ret = 0;
+	ret |= (~pinmap & (1 << 6)) >> 6;  // R
+	ret |= (~pinmap & (1 << 3)) >> 2;  // G
+	ret |= (~pinmap & (1 << 5)) >> 3;  // B
+	return ret;
+}
+
+void Breadboard::timerUpdate(gpio::State state) {
+	lua_access.lock();
+	for (auto& c : reading_connections) {
+		// TODO: Only if pin changed?
+		c.dev->pin->setPin(c.device_pin, state.pins[c.gpio_offs] == gpio::Pinstate::HIGH ? true : false);
+	}
+	lua_access.unlock();
+
+	if(sevensegment) {
+		sevensegment->map = translatePinNumberToSevensegment(translateGpioToExtPin(state));
+	}
+
+	if(rgbLed) {
+		rgbLed->map = translatePinNumberToRGBLed(translateGpioToExtPin(state));
+	}
+
+	lua_access.lock();
+	for (auto& c : writing_connections) {
+		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
+	}
+	lua_access.unlock();
+}
+
+void Breadboard::reconnected() { // new gpio connection
+	for(const auto& [id, req] : spi_channels) {
+		emit(registerIOF_SPI(req.gpio_offs, req.fun, req.noresponse));
+	}
+	for(const auto& [id, req] : pin_channels) {
+		emit(registerIOF_PIN(req.gpio_offs, req.fun));
+	}
+}
+
+/* JSON */
+
+bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool overwrite_integrated_devices) {
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
 	if(additional_device_dir.size() != 0){
 		lua_factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
 	}
 
-	if(!loadConfigFile(configfile)) {
-		cerr << "Could not load config file '" << configfile << "'" << endl;
-		exit(-4);
-	}
-
-	if(debug_logging)
-		lua_factory.printAvailableDevices();
-}
-
-bool VPBreadboard::loadConfigFile(std::string file) {
-	// load configuration
-
-	QFile confFile(file.c_str());
-    if (!confFile.open(QIODevice::ReadOnly)) {
-        cerr << "Could not open config file " << endl;
-        return false;
-    }
-
-    QByteArray  raw_file = confFile.readAll();
-    /*
-    for(unsigned i = 0; i < raw_file.size(); i++)
-    {
-    	cout << raw_file.data()[i];
-    }
-    cout << endl;
-    */
-    QJsonParseError error;
-    QJsonDocument json_doc = QJsonDocument::fromJson(raw_file, &error);
-    if(json_doc.isNull())
-    {
-    	cerr << "Config seems to be invalid: ";
-    	cerr << error.errorString().toStdString() << endl;
-    	return false;
-    }
-    QJsonObject config_root = json_doc.object();
-
-	QPixmap bkgnd(config_root["background"].toString(""));
-	if(bkgnd.isNull())
-	{
-		cerr << "invalid background " << config_root["background"].toString().toStdString() << endl;
-		cerr << "Available backgrounds:" << endl;
-		QDirIterator it(":/img");
-		while (it.hasNext()) {
-			std::cout << "\t\t " << it.next().toStdString() << std::endl;
-		}
+	QFile confFile(file);
+	if (!confFile.open(QIODevice::ReadOnly)) {
+		cerr << "Could not open config file " << endl;
 		return false;
 	}
 
-	unsigned windowsize_x = bkgnd.width();
-	unsigned windowsize_y = bkgnd.height();
-
-	if(config_root.contains("windowsize")) {
-		windowsize_x = config_root["windowsize"].toArray().at(0).toInt();
-		windowsize_y = config_root["windowsize"].toArray().at(1).toInt();
+	QByteArray  raw_file = confFile.readAll();
+	/*
+	    for(unsigned i = 0; i < raw_file.size(); i++)
+	    {
+	    	cout << raw_file.data()[i];
+	    }
+	    cout << endl;
+	 */
+	QJsonParseError error;
+	QJsonDocument json_doc = QJsonDocument::fromJson(raw_file, &error);
+	if(json_doc.isNull())
+	{
+		cerr << "Config seems to be invalid: ";
+		cerr << error.errorString().toStdString() << endl;
+		return false;
 	}
-
-	QSize size(windowsize_x, windowsize_y);
-	bkgnd = bkgnd.scaled(size, Qt::IgnoreAspectRatio);
-	QPalette palette;
-	palette.setBrush(QPalette::Window, bkgnd);
-	this->setPalette(palette);
-	setFixedSize(size);
+	QJsonObject config_root = json_doc.object();
 
 	// TODO: Let every registered "config object" decide its own default values
 
@@ -103,30 +121,30 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 	{
 		QJsonObject obj = config_root["sevensegment"].toObject();
 		sevensegment = new Sevensegment(
-			QPoint(obj["offs"].toArray().at(0).toInt(312),
-			       obj["offs"].toArray().at(1).toInt(353)),
-			QPoint(obj["extent"].toArray().at(0).toInt(36),
-			       obj["extent"].toArray().at(1).toInt(50)),
-			obj["linewidth"].toInt(7)
-			);
+				QPoint(obj["offs"].toArray().at(0).toInt(312),
+						obj["offs"].toArray().at(1).toInt(353)),
+						QPoint(obj["extent"].toArray().at(0).toInt(36),
+								obj["extent"].toArray().at(1).toInt(50)),
+								obj["linewidth"].toInt(7)
+		);
 	}
 	if(config_root.contains("rgb"))
 	{
 		QJsonObject obj = config_root["rgb"].toObject();
 		rgbLed = new RGBLed(
-			QPoint(obj["offs"].toArray().at(0).toInt(89),
-			       obj["offs"].toArray().at(1).toInt(161)),
-			obj["linewidth"].toInt(15)
-			);
+				QPoint(obj["offs"].toArray().at(0).toInt(89),
+						obj["offs"].toArray().at(1).toInt(161)),
+						obj["linewidth"].toInt(15)
+		);
 	}
 	if(config_root.contains("oled-mmap"))
 	{
 		QJsonObject obj = config_root["oled-mmap"].toObject();
 		oled_mmap = new OLED_mmap(
-			QPoint(obj["offs"].toArray().at(0).toInt(450),
-			       obj["offs"].toArray().at(1).toInt(343)),
-			obj["margin"].toInt(15),
-			obj["scale"].toDouble(1.));
+				QPoint(obj["offs"].toArray().at(0).toInt(450),
+						obj["offs"].toArray().at(1).toInt(343)),
+						obj["margin"].toInt(15),
+						obj["scale"].toDouble(1.));
 	}
 	if(config_root.contains("oled-iof"))
 	{
@@ -135,22 +153,22 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 		const gpio::PinNumber dc = obj["dc_pin"].toInt(16);
 		const bool noresponse = obj["noresponse"].toBool(true);
 		oled_iof = new OLED_iof(
-			QPoint(obj["offs"].toArray().at(0).toInt(450),
-			       obj["offs"].toArray().at(1).toInt(343)),
-			obj["margin"].toInt(15),
-			obj["scale"].toDouble(1.)
-			);
+				QPoint(obj["offs"].toArray().at(0).toInt(450),
+						obj["offs"].toArray().at(1).toInt(343)),
+						obj["margin"].toInt(15),
+						obj["scale"].toDouble(1.)
+		);
 		spi_channels.emplace("oled-iof", SPI_IOF_Request{
-				.gpio_offs = translatePinToGpioOffs(cs),
-				.global_pin = cs,
-				.noresponse = noresponse,
-				.fun = [this](gpio::SPI_Command cmd){ return oled_iof->write(cmd);}
-			 }
+			.gpio_offs = translatePinToGpioOffs(cs),
+					.global_pin = cs,
+					.noresponse = noresponse,
+					.fun = [this](gpio::SPI_Command cmd){ return oled_iof->write(cmd);}
+		}
 		);
 		pin_channels.emplace("oled-iof", PIN_IOF_Request{
 			.gpio_offs = translatePinToGpioOffs(dc),
-			.global_pin = dc,
-			.fun = [this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == Tristate::HIGH ? 1 : 0;}
+					.global_pin = dc,
+					.fun = [this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == gpio::Tristate::HIGH ? 1 : 0;}
 		});
 	}
 	if(config_root.contains("buttons"))
@@ -207,16 +225,16 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				const gpio::PinNumber cs = spi["cs_pin"].toInt();
 				const bool noresponse = spi["noresponse"].toBool(true);
 				spi_channels.emplace(id, SPI_IOF_Request{
-						.gpio_offs = translatePinToGpioOffs(cs),
-						.global_pin = cs,
-						.noresponse = noresponse,
-						.fun = [this, &device](gpio::SPI_Command cmd){
-							lua_access.lock();
-							const auto ret = device.spi->send(cmd);
-							lua_access.unlock();
-							return ret;
-						}
+					.gpio_offs = translatePinToGpioOffs(cs),
+							.global_pin = cs,
+							.noresponse = noresponse,
+							.fun = [this, &device](gpio::SPI_Command cmd){
+						lua_access.lock();
+						const auto ret = device.spi->send(cmd);
+						lua_access.unlock();
+						return ret;
 					}
+				}
 				);
 			}
 
@@ -231,7 +249,7 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				for (const auto& pin_desc : pin_descriptions) {
 					const auto pin = pin_desc.toObject();
 					if(!pin.contains("device_pin") ||
-					   !pin.contains("global_pin")) {
+							!pin.contains("global_pin")) {
 						cerr << "[config loader] config for device '" << classname << "' is"
 								" missing device_pin or global_pin mappings" << endl;
 						continue;
@@ -261,20 +279,20 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 						}
 						pin_channels.emplace(id, PIN_IOF_Request{
 							.gpio_offs = translatePinToGpioOffs(global_pin),
-							.global_pin = global_pin,
-							.fun = [this, &device, device_pin](gpio::Tristate pin) {
+									.global_pin = global_pin,
+									.fun = [this, &device, device_pin](gpio::Tristate pin) {
 								lua_access.lock();
-								device.pin->setPin(device_pin, pin == Tristate::HIGH ? 1 : 0);
+								device.pin->setPin(device_pin, pin == gpio::Tristate::HIGH ? 1 : 0);
 								lua_access.unlock();
 							}
 						});
 					} else {
 						PinMapping mapping = PinMapping{
 							.gpio_offs = translatePinToGpioOffs(global_pin),
-							.global_pin = global_pin,
-							.device_pin = device_pin,
-							.name = pin_name,
-							.dev = &device
+									.global_pin = global_pin,
+									.device_pin = device_pin,
+									.name = pin_name,
+									.dev = &device
 						};
 						if(pin_l.dir == Device::PIN_Interface::PinDesc::Dir::input
 								|| pin_l.dir == Device::PIN_Interface::PinDesc::Dir::inout) {
@@ -310,13 +328,13 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				const auto graphics_desc = device_desc["graphics"].toObject();
 				if(!(graphics_desc.contains("offs") && graphics_desc["offs"].isArray())) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
-					" a graph buffer interface, but no valid offset given" << endl;
+							" a graph buffer interface, but no valid offset given" << endl;
 					continue;
 				}
 				const auto offs_desc = graphics_desc["offs"].toArray();
 				if(offs_desc.size() != 2) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
-					" a graph buffer interface, but offset is malformed (needs x,y, is size " << offs_desc.size() << ")" << endl;
+							" a graph buffer interface, but offset is malformed (needs x,y, is size " << offs_desc.size() << ")" << endl;
 					continue;
 				}
 
@@ -328,8 +346,8 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				typedef Device::Graphbuf_Interface::Pixel Pixel;
 				device_graphics.emplace(id, DeviceGraphic{
 					.image = QImage(layout.width, layout.height, QImage::Format_RGBA8888),
-					.offset = offs,
-					.scale = scale
+							.offset = offs,
+							.scale = scale
 				});
 
 				// setting up the image buffer and its functions
@@ -337,34 +355,34 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
 
 				device.graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
-						//cout << "setBuf at " << (int) x << "x" << (int) y <<
-						//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
-						auto* img = new_buffer.bits();
-						if(x >= layout.width || y >= layout.height) {
-							cerr << "[Graphbuf] WARN: device " << id << " write accessing graphbuffer out of bounds!" << endl;
-							return;
-						}
-						const auto offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
-						img[offs+0] = p.r;
-						img[offs+1] = p.g;
-						img[offs+2] = p.b;
-						img[offs+3] = p.a;
+					//cout << "setBuf at " << (int) x << "x" << (int) y <<
+					//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
+					auto* img = new_buffer.bits();
+					if(x >= layout.width || y >= layout.height) {
+						cerr << "[Graphbuf] WARN: device " << id << " write accessing graphbuffer out of bounds!" << endl;
+						return;
 					}
+					const auto offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
+					img[offs+0] = p.r;
+					img[offs+1] = p.g;
+					img[offs+2] = p.b;
+					img[offs+3] = p.a;
+				}
 				);
 				device.graph->registerGetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y){
-						auto* img = new_buffer.bits();
-						if(x >= layout.width || y >= layout.height) {
-							cerr << "[Graphbuf] WARN: device " << id << " read accessing graphbuffer out of bounds!" << endl;
-							return Pixel{0,0,0,0};
-						}
-						const auto& offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
-						return Pixel{
-							static_cast<uint8_t>(img[offs+0]),
-							static_cast<uint8_t>(img[offs+1]),
-							static_cast<uint8_t>(img[offs+2]),
-							static_cast<uint8_t>(img[offs+3])
-						};
+					auto* img = new_buffer.bits();
+					if(x >= layout.width || y >= layout.height) {
+						cerr << "[Graphbuf] WARN: device " << id << " read accessing graphbuffer out of bounds!" << endl;
+						return Pixel{0,0,0,0};
 					}
+					const auto& offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
+					return Pixel{
+						static_cast<uint8_t>(img[offs+0]),
+								static_cast<uint8_t>(img[offs+1]),
+								static_cast<uint8_t>(img[offs+2]),
+								static_cast<uint8_t>(img[offs+3])
+					};
+				}
 				);
 				// only called if lua implements the function
 				device.graph->initializeBufferMaybe();
@@ -404,169 +422,26 @@ bool VPBreadboard::loadConfigFile(std::string file) {
 			}
 		}
 	}
+
+	if(debug_logging)
+		lua_factory.printAvailableDevices();
+
 	return true;
 }
 
-VPBreadboard::~VPBreadboard()
-{
-	if(sevensegment != nullptr)
-		delete sevensegment;
-	if(rgbLed != nullptr)
-		delete rgbLed;
-	if(oled_mmap != nullptr)
-		delete oled_mmap;
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(buttons[i] != nullptr)
-		delete buttons[i];
-	}
-}
+/* QT */
 
-void VPBreadboard::showConnectionErrorOverlay(QPainter& p) {
-	p.save();
-	p.setBrush(QBrush(QColor("black")));
-	if(debugmode)
-		p.setBrush(QBrush(QColor(0,0,0,100)));
-
-	QRect sign;
-	if(this->size().width() > this->size().height()) {
-		sign = QRect (QPoint(this->size().width()/4, this->size().height()/4), this->size()/2);
-	}
-	else {
-		sign = QRect (QPoint(this->size().width()/10, this->size().height()/4),
-				QSize(4*this->size().width()/5, this->size().height()/4));
-	}
-	p.drawRect(sign);
-	p.setFont(QFont("Arial", 25, QFont::Bold));
-	QPen penHText(QColor("red"));
-	if (debugmode)
-		penHText.color().setAlphaF(.5);
-	p.setPen(penHText);
-	p.drawText(sign, QString("No connection"), Qt::AlignHCenter | Qt::AlignVCenter);
-	p.restore();
-}
-
-uint64_t VPBreadboard::translateGpioToExtPin(gpio::State state) {
-	uint64_t ext = 0;
-	for (PinNumber i = 0; i < 24; i++)  // Max Pin is 32,  but used are only first 24
-	                                   // see SiFive HiFive1 Getting Started Guide 1.0.2 p. 20
-	{
-		// cout << i << " to ";;
-		if (i >= 16) {
-			ext |= (state.pins[i] == Pinstate::HIGH ? 1 : 0) << (i - 16);
-			// cout << i - 16 << endl;
-		} else if (i <= 5) {
-			ext |= (state.pins[i] == Pinstate::HIGH ? 1 : 0) << (i + 8);
-			// cout << i + 8 << endl;
-		} else if (i >= 9 && i <= 13) {
-			ext |= (state.pins[i] == Pinstate::HIGH ? 1 : 0) << (i + 6);;
-		}
-		// rest is not connected.
-	}
-	return ext;
-}
-
-uint8_t VPBreadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
-	uint8_t ret = 0;
-	static uint8_t pinMapping[8] =
-	{
-	  15, 16, 17, 18, 19, 7, 6, 5
-	};
-	for(unsigned i = 0; i < 8; i++)
-	{
-		ret |= pinmap & (1 << pinMapping[i]) ? (1 << i) : 0;
-	}
-	return ret;
-}
-
-uint8_t VPBreadboard::translatePinNumberToRGBLed(uint64_t pinmap) {
-	uint8_t ret = 0;
-	ret |= (~pinmap & (1 << 6)) >> 6;  // R
-	ret |= (~pinmap & (1 << 3)) >> 2;  // G
-	ret |= (~pinmap & (1 << 5)) >> 3;  // B
-	return ret;
-}
-
-uint8_t VPBreadboard::translatePinToGpioOffs(uint8_t pin) {
-	if (pin < 8) {
-		return pin + 16;  // PIN_0_OFFSET
-	}
-	if(pin >= 8 && pin < 14) {
-		return pin - 8;
-	}
-	//ignoring non-wired pin 14 <==> 8
-	if(pin > 14 && pin < 20){
-		return pin - 6;
-	}
-
-	return 0;
-}
-
-void printBin(char* buf, uint8_t len) {
-	for (uint16_t byte = 0; byte < len; byte++) {
-		for (int8_t bit = 7; bit >= 0; bit--) {
-			printf("%c", buf[byte] & (1 << bit) ? '1' : '0');
-		}
-		printf(" ");
-	}
-	printf("\n");
-}
-
-void VPBreadboard::paintEvent(QPaintEvent*) {
+void Breadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	if (connected && !gpio.update()) {
-		// Just lost connection
-		connected = false;
-	}
+	// background
+	QStyleOption opt;
+	opt.init(this);
 
-	if (!connected) {
-		connected = gpio.setupConnection(host, port);
-		showConnectionErrorOverlay(painter);
-		if (!connected) {
-			if(!debugmode) {
-				usleep(500000);	// Ugly, sorry
-				this->update();
-				return;
-			}
-		} else {
-			// just got connection.
-			// TODO: New-connection callback for all devices
+	style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 
-			for(const auto& [id, req] : spi_channels) {
-				if(!gpio.isIOFactive(req.gpio_offs)) {
-					const bool success =
-							gpio.registerSPIOnChange(req.gpio_offs, req.fun, req.noresponse);
-					if(!success) {
-						cerr << "Registering spi channel for " << id << " "
-								"on CS pin " << (int)req.global_pin << " (" << (int)req.gpio_offs << ")";
-						if(req.noresponse)
-								cerr << " in noresponse mode";
-						cerr << " was not successful!" << endl;
-					}
-				}
-			}
-			for(const auto& [id, req] : pin_channels) {
-				if(!gpio.isIOFactive(req.gpio_offs)) {
-					const bool success =
-							gpio.registerPINOnChange(req.gpio_offs, req.fun);
-					if(!success) {
-						cerr << "Registering pin channel for " << id << " "
-								"on pin " << (int)req.global_pin << " (" << (int)req.gpio_offs << ")";
-						cerr << " was not successful!" << endl;
-					}
-				}
-			}
-		}
-	}
-
-	lua_access.lock();
-	for (auto& c : reading_connections) {
-		// TODO: Only if pin changed?
-		c.dev->pin->setPin(c.device_pin, gpio.state.pins[c.gpio_offs] == Pinstate::HIGH ? true : false);
-	}
-	lua_access.unlock();
+	// Graph Buffers
 
 	for (auto& [id, graphic] : device_graphics) {
 		const auto& image = graphic.image;
@@ -585,13 +460,11 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 
 	if(sevensegment)
 	{
-		sevensegment->map = translatePinNumberToSevensegment(translateGpioToExtPin(gpio.state));
 		sevensegment->draw(painter);
 	}
 
 	if(rgbLed)
 	{
-		rgbLed->map = translatePinNumberToRGBLed(translateGpioToExtPin(gpio.state));
 		rgbLed->draw(painter);
 	}
 
@@ -616,31 +489,19 @@ void VPBreadboard::paintEvent(QPaintEvent*) {
 	}
 	painter.restore();
 
-
 	if (debugmode) {
-		if(sevensegment)
-			painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
-	}
+			if(sevensegment)
+				painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
+		}
+
 	painter.end();
-
-	lua_access.lock();
-	for (auto& c : writing_connections) {
-		gpio.setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? Tristate::HIGH : Tristate::LOW);
-	}
-	lua_access.unlock();
-
-	// intentional slow down
-	// TODO: update at fixed rate, async between redraw and gpioserver
-	usleep(10000);
-	this->update();
 }
 
-void VPBreadboard::notifyChange(bool success) {
-	assert(success);
-	update();
-}
+/* User input */
 
-void VPBreadboard::keyPressEvent(QKeyEvent* e) {
+
+
+void Breadboard::keyPressEvent(QKeyEvent* e) {
 	this->update();
 	// scout << "Yee, keypress" << endl;
 
@@ -703,19 +564,19 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 		switch (e->key()) {
 			case Qt::Key_Escape:
 			case Qt::Key_Q:
-				gpio.destroyConnection();
+				emit(destroyConnection());
 				QApplication::quit();
 				break;
 			case Qt::Key_0: {
 				uint8_t until = 6;
 				for (uint8_t i = 0; i < 8; i++) {
-					gpio.setBit(i, i < until ? Tristate::HIGH : Tristate::LOW);
+					emit(setBit(i, i < until ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
 				}
 				break;
 			}
 			case Qt::Key_1: {
 				for (uint8_t i = 0; i < 8; i++) {
-					gpio.setBit(i, Tristate::LOW);
+					emit(setBit(i, gpio::Tristate::LOW));
 				}
 				break;
 			}
@@ -730,7 +591,7 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 						break;	//this is sorted somewhat
 
 					if (buttons[i]->keybinding == e->key()) {
-						gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::LOW);  // Active low
+						emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
 						buttons[i]->pressed = true;
 					}
 				}
@@ -739,7 +600,7 @@ void VPBreadboard::keyPressEvent(QKeyEvent* e) {
 	}
 }
 
-void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
+void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
 	for(unsigned i = 0; i < max_num_buttons; i++)
 	{
@@ -747,13 +608,13 @@ void VPBreadboard::keyReleaseEvent(QKeyEvent* e)
 			break;	//this is sorted somewhat
 
 		if (buttons[i]->keybinding == e->key()) {
-			gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::UNSET); // simple switch, disconnected
+			emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET)); // simple switch, disconnected
 			buttons[i]->pressed = false;
 		}
 	}
 }
 
-void VPBreadboard::mousePressEvent(QMouseEvent* e) {
+void Breadboard::mousePressEvent(QMouseEvent* e) {
 	if (e->button() == Qt::LeftButton) {
 		for(unsigned i = 0; i < max_num_buttons; i++)
 		{
@@ -762,7 +623,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " click!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::LOW);  // Active low
+				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
 				buttons[i]->pressed = true;
 			}
 		}
@@ -774,7 +635,7 @@ void VPBreadboard::mousePressEvent(QMouseEvent* e) {
 	e->accept();
 }
 
-void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
+void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	if (e->button() == Qt::LeftButton) {
 		for(unsigned i = 0; i < max_num_buttons; i++)
 		{
@@ -782,7 +643,7 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 				break;	//this is sorted somewhat
 			if (buttons[i]->area.contains(e->pos())) {
 				//cout << "button " << i << " release!" << endl;
-				gpio.setBit(translatePinToGpioOffs(buttons[i]->pin), Tristate::UNSET);
+				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET));
 				buttons[i]->pressed = false;
 			}
 		}
@@ -793,3 +654,4 @@ void VPBreadboard::mouseReleaseEvent(QMouseEvent* e) {
 	this->update();
 	e->accept();
 }
+

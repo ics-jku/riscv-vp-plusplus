@@ -38,9 +38,16 @@ include_directories(
     ../../../vp/src/
 )
 
-set(HEADERS mainwindow.h)
+set(HEADERS 
+	window/window.h
+	window/central.h
+	embedded/embedded.h
+	embedded/gpio-helpers.h
+	breadboard/breadboard.h
+	breadboard/configurations.h
+)
 
-set(UI mainwindow.ui)
+set(UI window/mainwindow.ui)
 
 if(NOT DONT_INCLUDE_CONFIGS)
 	file(GLOB CONFIGS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./conf/*.json)
@@ -54,7 +61,11 @@ file(GLOB DEVICES ./devices/c/*.cpp)
 
 set(SOURCES
     main.cpp
-    mainwindow.cpp
+    window/window.cpp
+    window/central.cpp
+    embedded/embedded.cpp
+    embedded/gpio-helpers.cpp
+    breadboard/breadboard.cpp
     ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
     ../../../vp/src/util/elegantEnums.cpp

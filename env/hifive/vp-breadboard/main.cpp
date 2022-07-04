@@ -1,5 +1,5 @@
 #include <QApplication>
-#include "mainwindow.h"
+#include "window/window.h"
 
 #include <string>
 #include <vector>
@@ -105,8 +105,8 @@ int main(int argc, char* argv[]) {
     	overwrite_integrated_devices = input.cmdOptionExists("--overwrite");
     }
 
-	VPBreadboard w(configfile.c_str(), host.c_str(), port.c_str(),
-			scriptpath, overwrite_integrated_devices);
+	MainWindow w(QString(configfile.c_str()), scriptpath.c_str(), host.c_str(), port.c_str(),
+			overwrite_integrated_devices);
 	w.show();
 
 	return a.exec();
