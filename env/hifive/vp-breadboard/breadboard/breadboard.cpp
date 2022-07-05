@@ -6,7 +6,7 @@ constexpr bool debug_logging = false;
 
 Breadboard::Breadboard(QWidget* parent) : QWidget(parent),
 		sevensegment(nullptr), rgbLed(nullptr), oled_mmap(nullptr), oled_iof(nullptr) {
-	QString bkgnd_path = ":/img/virtual_breadbaord.png";
+	QString bkgnd_path = ":/img/virtual_breadboard.png";
 	QSize bkgnd_size = QSize(486, 233);
 
 	setStyleSheet("background-image: url("+bkgnd_path+");");
