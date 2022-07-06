@@ -3,23 +3,22 @@ classname = "SSD1106"
 -- no config functions
 
 function getPinLayout ()
-    -- number, [input | output | inout], name
-    return  {1, "input", "data_command"}
+	-- number, [input | output | inout], name
+	return  {1, "input", "data_command"}
 end
 
 local width = 132
 local height = 64
 
 function getGraphBufferLayout()
-    -- x width, y width, data type (currently only rgba)
-    return {width, height, "rgba"}
+	-- x width, y width, data type (currently only rgba)
+	return {width, height, "rgba"}
 end
 
 local isData
 
 function setPin(number, val)
 	if number == 1 then
-		--print("setpin " .. tostring(val))
 		isData = val
 	end
 end
@@ -34,14 +33,14 @@ function initializeGraphBuffer()
 end
 
 operators = {
-	COL_LOW		= 0   ,
-	COL_HIGH	= 0x10,
-	PUMP_VOLTAGE= 0x30, --0b00110000
+	COL_LOW	           = 0   ,
+	COL_HIGH           = 0x10,
+	PUMP_VOLTAGE       = 0x30, --0b00110000
 	DISPLAY_START_LINE = 0x40, --0b01000000
 	CONTRAST_MODE_SET  = 0x81, --0b10000001		//Double Command
-	DISPLAY_ON	= 0xAE,
-	PAGE_ADDR	= 0xB0,
-	NOP			= 0xE3 --0b11100011
+	DISPLAY_ON         = 0xAE,
+	PAGE_ADDR          = 0xB0,
+	NOP                = 0xE3  --0b11100011
 }
 
 function getMask(op)
@@ -70,8 +69,6 @@ function match(cmd)
 	return operators.NOP, 0
 end
 
---match(operators.PAGE_ADDR)
-
 local state = {
 	column = 0,
 	page = 0,
@@ -81,7 +78,6 @@ local state = {
 
 -- graphbuf.Pixel(r, g, b, a) Where values range from 0-255 where 255 is color/opaque
 -- setGraphbuffer(x, y, Pixel)
-
 function receiveSPI(byte_in)
 	if isData then
 		-- print( " data at " .. tostring(state.column))
@@ -100,7 +96,7 @@ function receiveSPI(byte_in)
 				pix = 0
 			end
 			--print ( tostring(state.column) .. " x " .. tostring((state.page*8)+y) .. " to " .. tostring(pix))
-			setGraphbuffer(state.column, (state.page*8)+y, graphbuf.Pixel(pix,pix,pix, 255))
+			setGraphbuffer(state.column, (state.page*8)+y, graphbuf.Pixel(pix,pix,pix, state.contrast))
 		end
 		state.column = state.column + 1
 	else
