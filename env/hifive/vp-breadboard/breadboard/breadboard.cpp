@@ -11,6 +11,8 @@ Breadboard::Breadboard(QWidget* parent) : QWidget(parent),
 
 	setStyleSheet("background-image: url("+bkgnd_path+");");
 	setFixedSize(bkgnd_size);
+
+	setFocusPolicy(Qt::StrongFocus);
 }
 
 Breadboard::~Breadboard() {
@@ -71,6 +73,8 @@ void Breadboard::timerUpdate(gpio::State state) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
 	}
 	lua_access.unlock();
+
+	this->update();
 }
 
 void Breadboard::reconnected() { // new gpio connection
