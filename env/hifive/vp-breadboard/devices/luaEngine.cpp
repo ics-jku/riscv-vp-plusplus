@@ -189,7 +189,7 @@ bool LuaEngine::deviceExists(std::string classname) {
 	return available_devices.find(classname) != available_devices.end();
 }
 
-Device LuaEngine::instantiateDevice(std::string id, std::string classname) {
+LuaDevice* LuaEngine::instantiateDevice(std::string id, std::string classname) {
 	if(!deviceExists(classname)) {
 		throw (runtime_error("Device " + classname + " does not exist"));
 	}
@@ -199,6 +199,6 @@ Device LuaEngine::instantiateDevice(std::string id, std::string classname) {
 	}
 	QByteArray script = script_file.readAll();
 
-	return Device(id, loadScriptFromString(L, script.toStdString(), classname), L);
+	return new LuaDevice(id, loadScriptFromString(L, script.toStdString(), classname), L);
 }
 

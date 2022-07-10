@@ -45,6 +45,8 @@ set(HEADERS
 	embedded/gpio-helpers.h
 	breadboard/breadboard.h
 	breadboard/configurations.h
+	devices/device.hpp
+	devices/configurations.h
 )
 
 set(UI window/mainwindow.ui)
@@ -71,8 +73,9 @@ set(SOURCES
     ../../../vp/src/util/elegantEnums.cpp
     ../../../vp/src/platform/hifive/oled/common.cpp
     ../../../vp/src/platform/hifive/oled/oled.cpp
-    devices/device.cpp
+    devices/luaDevice.cpp
     devices/luaEngine.cpp
+    devices/device.cpp
     ${DEVICES}
 )
 

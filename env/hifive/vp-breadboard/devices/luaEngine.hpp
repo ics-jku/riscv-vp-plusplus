@@ -11,7 +11,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "device.hpp"
+#include "luaDevice.hpp"
 
 class LuaEngine {
 	const std::string builtin_scripts = ":/devices/lua/";
@@ -26,6 +26,6 @@ public:
 	void printAvailableDevices();
 
 	bool deviceExists(std::string classname);
-	Device instantiateDevice(std::string id, std::string classname);
+	LuaDevice* instantiateDevice(std::string id, std::string classname);
 };
 

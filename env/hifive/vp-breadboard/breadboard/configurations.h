@@ -30,5 +30,5 @@ struct PinMapping{
 	gpio::PinNumber global_pin;
 	gpio::PinNumber device_pin;
 	std::string name;
-	Device* dev;
+	LuaDevice* dev;
 };

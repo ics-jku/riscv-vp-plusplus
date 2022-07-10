@@ -212,10 +212,10 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				continue;
 			}
 			devices.emplace(id, lua_factory.instantiateDevice(id, classname));
-			Device& device = devices.at(id);
+			LuaDevice* device = devices.at(id);
 
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
-				if(!device.spi) {
+				if(!device->spi) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but device does not implement it" << endl;
 					continue;
@@ -232,9 +232,9 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					.gpio_offs = translatePinToGpioOffs(cs),
 							.global_pin = cs,
 							.noresponse = noresponse,
-							.fun = [this, &device](gpio::SPI_Command cmd){
+							.fun = [this, device](gpio::SPI_Command cmd){
 						lua_access.lock();
-						const auto ret = device.spi->send(cmd);
+						const auto ret = device->spi->send(cmd);
 						lua_access.unlock();
 						return ret;
 					}
@@ -243,12 +243,12 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 			}
 
 			if(device_desc.contains("pins") && device_desc["pins"].isArray()) {
-				if(!device.pin) {
+				if(!device->pin) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an PIN interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto pinLayout = device.pin->getPinLayout();
+				const auto pinLayout = device->pin->getPinLayout();
 				auto pin_descriptions = device_desc["pins"].toArray();
 				for (const auto& pin_desc : pin_descriptions) {
 					const auto pin = pin_desc.toObject();
@@ -275,7 +275,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					const auto& pin_l = pinLayout.at(device_pin);
 					if(synchronous) {
 						// TODO FIXME : Currently, only one synchronous pin seems to work!
-						if(pin_l.dir != Device::PIN_Interface::PinDesc::Dir::input) {
+						if(pin_l.dir != PinDesc::Dir::input) {
 							cerr << "[config loader] config for device '" << classname << "' maps pin " <<
 									(int)device_pin << " as syncronous, but device labels pin not as input."
 									" This is not supported for inout-pins and unnecessary for output pins." << endl;
@@ -284,9 +284,9 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 						pin_channels.emplace(id, PIN_IOF_Request{
 							.gpio_offs = translatePinToGpioOffs(global_pin),
 									.global_pin = global_pin,
-									.fun = [this, &device, device_pin](gpio::Tristate pin) {
+									.fun = [this, device, device_pin](gpio::Tristate pin) {
 								lua_access.lock();
-								device.pin->setPin(device_pin, pin == gpio::Tristate::HIGH ? 1 : 0);
+								device->pin->setPin(device_pin, pin == gpio::Tristate::HIGH ? 1 : 0);
 								lua_access.unlock();
 							}
 						});
@@ -296,14 +296,14 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 									.global_pin = global_pin,
 									.device_pin = device_pin,
 									.name = pin_name,
-									.dev = &device
+									.dev = device
 						};
-						if(pin_l.dir == Device::PIN_Interface::PinDesc::Dir::input
-								|| pin_l.dir == Device::PIN_Interface::PinDesc::Dir::inout) {
+						if(pin_l.dir == PinDesc::Dir::input
+								|| pin_l.dir == PinDesc::Dir::inout) {
 							reading_connections.push_back(mapping);
 						}
-						if(pin_l.dir == Device::PIN_Interface::PinDesc::Dir::output
-								|| pin_l.dir == Device::PIN_Interface::PinDesc::Dir::inout) {
+						if(pin_l.dir == PinDesc::Dir::output
+								|| pin_l.dir == PinDesc::Dir::inout) {
 							writing_connections.push_back(mapping);
 						}
 					}
@@ -311,12 +311,12 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 			}
 
 			if(device_desc.contains("graphics") && device_desc["graphics"].isObject()) {
-				if(!device.graph) {
+				if(!device->graph) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" a graph buffer interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto layout = device.graph->getLayout();
+				const auto layout = device->graph->getLayout();
 				//cout << "\t\t\tBuffer Layout: " << layout.width << "x" << layout.height << " pixel with type " << layout.data_type << endl;
 				if(layout.width == 0 || layout.height == 0) {
 					cerr << "Device " << id << " of class " << classname << " "
@@ -345,9 +345,6 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				QPoint offs(offs_desc[0].toInt(), offs_desc[1].toInt());
 				const unsigned scale = graphics_desc["scale"].toInt(1);
 
-				typedef Device::Graphbuf_Interface::Xoffset Xoffset;
-				typedef Device::Graphbuf_Interface::Yoffset Yoffset;
-				typedef Device::Graphbuf_Interface::Pixel Pixel;
 				device_graphics.emplace(id, DeviceGraphic{
 					.image = QImage(layout.width, layout.height, QImage::Format_RGBA8888),
 							.offset = offs,
@@ -358,7 +355,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				auto& new_buffer = device_graphics.at(id).image;
 				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
 
-				device.graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
+				device->graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
 					//cout << "setBuf at " << (int) x << "x" << (int) y <<
 					//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
 					auto* img = new_buffer.bits();
@@ -373,7 +370,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					img[offs+3] = p.a;
 				}
 				);
-				device.graph->registerGetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y){
+				device->graph->registerGetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y){
 					auto* img = new_buffer.bits();
 					if(x >= layout.width || y >= layout.height) {
 						cerr << "[Graphbuf] WARN: device " << id << " read accessing graphbuffer out of bounds!" << endl;
@@ -389,24 +386,24 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				}
 				);
 				// only called if lua implements the function
-				device.graph->initializeBufferMaybe();
+				device->graph->initializeBufferMaybe();
 			}
 		}
 
 		if(debug_logging) {
 			cout << "Instatiated devices:" << endl;
 			for (auto& [id, device] : devices) {
-				cout << "\t" << id << " of class " << device.getClass() << endl;
+				cout << "\t" << id << " of class " << device->getClass() << endl;
 
-				if(device.pin)
+				if(device->pin)
 					cout << "\t\timplements PIN" << endl;
-				if(device.spi)
+				if(device->spi)
 					cout << "\t\timplements SPI" << endl;
-				if(device.conf)
+				if(device->conf)
 					cout << "\t\timplements conf" << endl;
-				if(device.graph)
-					cout << "\t\timplements graphbuf (" << device.graph->getLayout().width << "x" <<
-					device.graph->getLayout().height << " pixel)"<< endl;
+				if(device->graph)
+					cout << "\t\timplements graphbuf (" << device->graph->getLayout().width << "x" <<
+					device->graph->getLayout().height << " pixel)"<< endl;
 			}
 
 			cout << "Active pin connections:" << endl;
