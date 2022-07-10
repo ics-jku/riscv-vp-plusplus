@@ -6,8 +6,6 @@
 
 #include "devices/factory.h"
 
-typedef std::string DeviceID;
-
 struct SPI_IOF_Request {
 	gpio::PinNumber gpio_offs;	// calculated from "global pin"
 	gpio::PinNumber global_pin;

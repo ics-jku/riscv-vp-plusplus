@@ -185,11 +185,11 @@ void LuaEngine::printAvailableDevices(){
 	}
 }
 
-bool LuaEngine::deviceExists(std::string classname) {
+bool LuaEngine::deviceExists(DeviceClass classname) {
 	return available_devices.find(classname) != available_devices.end();
 }
 
-LuaDevice* LuaEngine::instantiateDevice(std::string id, std::string classname) {
+LuaDevice* LuaEngine::instantiateDevice(DeviceID id, DeviceClass classname) {
 	if(!deviceExists(classname)) {
 		throw (runtime_error("Device " + classname + " does not exist"));
 	}

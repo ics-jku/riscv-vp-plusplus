@@ -1,10 +1,10 @@
 #include "device.hpp"
 
-Device::Device(const std::string id) : m_id(id) {}
+Device::Device(const DeviceID id) : m_id(id) {}
 
 Device::~Device() {}
 
-const std::string& Device::getID() const {
+const DeviceID& Device::getID() const {
 	return m_id;
 }
 

@@ -11,10 +11,10 @@ void Factory::printAvailableDevices() {
 	lua_factory.printAvailableDevices();
 }
 
-bool Factory::deviceExists(std::string classname) {
+bool Factory::deviceExists(DeviceClass classname) {
 	return lua_factory.deviceExists(classname);
 }
 
-Device* Factory::instantiateDevice(std::string id, std::string classname) {
+Device* Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	return lua_factory.instantiateDevice(id, classname);
 }

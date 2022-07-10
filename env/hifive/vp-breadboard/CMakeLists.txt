@@ -78,6 +78,7 @@ set(SOURCES
     devices/luaEngine.cpp
     devices/device.cpp
     devices/factory.cpp
+    devices/cdevice.cpp
     ${DEVICES}
 )
 

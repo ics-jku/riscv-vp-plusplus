@@ -15,7 +15,7 @@ using luabridge::LuaRef;
 using luabridge::LuaResult;
 
 
-LuaDevice::LuaDevice(const string id, LuaRef env, lua_State* l) : Device(id), m_env(env){
+LuaDevice::LuaDevice(const DeviceID id, LuaRef env, lua_State* l) : Device(id), m_env(env){
 	if(PIN_Interface_Lua::implementsInterface(m_env)) {
 		pin = std::make_unique<PIN_Interface_Lua>(m_env);
 	}
@@ -32,7 +32,7 @@ LuaDevice::LuaDevice(const string id, LuaRef env, lua_State* l) : Device(id), m_
 
 LuaDevice::~LuaDevice() {}
 
-const string LuaDevice::getClass() const {
+const DeviceClass LuaDevice::getClass() const {
 	return m_env["classname"].cast<string>();
 }
 

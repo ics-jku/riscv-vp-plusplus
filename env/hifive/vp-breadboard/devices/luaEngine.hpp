@@ -25,7 +25,7 @@ public:
 	void scanAdditionalDir(std::string dir, bool overwrite_existing = false);
 	void printAvailableDevices();
 
-	bool deviceExists(std::string classname);
-	LuaDevice* instantiateDevice(std::string id, std::string classname);
+	bool deviceExists(DeviceClass classname);
+	LuaDevice* instantiateDevice(DeviceID id, DeviceClass classname);
 };
 

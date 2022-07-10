@@ -10,12 +10,12 @@
 
 class Device {
 protected:
-	std::string m_id;
+	DeviceID m_id;
 
 public:
 
-	const std::string& getID() const;
-	virtual const std::string getClass() const = 0;
+	const DeviceID& getID() const;
+	virtual const DeviceClass getClass() const = 0;
 
 	class PIN_Interface {
 	public:
@@ -45,9 +45,6 @@ public:
 		virtual void initializeBufferMaybe() = 0;
 		virtual void registerSetBuf(const SetBuf_fn setBuf) = 0;
 		virtual void registerGetBuf(const GetBuf_fn getBuf) = 0;
-
-		template<typename FunctionFootprint>
-		void registerGlobalFunctionAndInsertLocalAlias(const std::string name, FunctionFootprint fun);
 	};
 
 
@@ -56,6 +53,6 @@ public:
 	std::unique_ptr<Config_Interface> conf;
 	std::unique_ptr<Graphbuf_Interface> graph;
 
-	Device(const std::string id);
+	Device(DeviceID id);
 	virtual ~Device();
 };

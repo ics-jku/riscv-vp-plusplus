@@ -4,6 +4,9 @@
 
 // PIN_Interface
 
+typedef std::string DeviceID;
+typedef std::string DeviceClass;
+
 typedef unsigned PinNumber;
 
 struct PinDesc {

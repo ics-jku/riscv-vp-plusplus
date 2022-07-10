@@ -61,14 +61,13 @@ void Embedded::setBit(gpio::PinNumber gpio_offs, gpio::Tristate state) {
 /* PAINT */
 
 void Embedded::paintEvent(QPaintEvent*) {
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
+	QStyleOption opt;
+	opt.init(this);
+
+	style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 	if(!connected) {
-		QPainter painter(this);
-		painter.setRenderHint(QPainter::Antialiasing);
-		QStyleOption opt;
-		opt.init(this);
-
-		style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
-
 		painter.setBrush(QBrush(QColor("black")));
 		QRect sign;
 		if(this->size().width() > this->size().height())

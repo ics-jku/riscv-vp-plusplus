@@ -35,7 +35,7 @@ class LuaDevice : public Device {
 
 public:
 
-	const std::string getClass() const;
+	const DeviceClass getClass() const;
 
 	class PIN_Interface_Lua : public Device::PIN_Interface {
 		luabridge::LuaRef m_getPinLayout;
@@ -75,12 +75,12 @@ public:
 		luabridge::LuaRef m_getGraphBufferLayout;
 		luabridge::LuaRef m_initializeGraphBuffer;
 		luabridge::LuaRef m_env;
-		std::string m_deviceId;		// Redundant to Device's ID member
+		DeviceID m_deviceId;		// Redundant to Device's ID member
 		lua_State* L;				// to register functions and Format
 
 		static void declarePixelFormat(lua_State* L);
 	public:
-		Graphbuf_Interface_Lua(luabridge::LuaRef& ref, std::string device_id, lua_State* L);
+		Graphbuf_Interface_Lua(luabridge::LuaRef& ref, DeviceID device_id, lua_State* L);
 		~Graphbuf_Interface_Lua();
 		Layout getLayout();
 		void initializeBufferMaybe();
@@ -93,7 +93,7 @@ public:
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
-	LuaDevice(const std::string id, luabridge::LuaRef env, lua_State* L);
+	LuaDevice(DeviceID id, luabridge::LuaRef env, lua_State* L);
 	~LuaDevice();
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "luaEngine.hpp"
+#include "cdevice.h"
 
 
 class Factory {
@@ -12,6 +13,6 @@ public:
 	void scanAdditionalDir(std::string dir, bool overwrite_existing = false);
 	void printAvailableDevices();
 
-	bool deviceExists(std::string classname);
-	Device* instantiateDevice(std::string id, std::string classname);
+	bool deviceExists(DeviceClass classname);
+	Device* instantiateDevice(DeviceID id, DeviceClass classname);
 };
