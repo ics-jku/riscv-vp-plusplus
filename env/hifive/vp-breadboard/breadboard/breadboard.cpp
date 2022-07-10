@@ -73,8 +73,6 @@ void Breadboard::timerUpdate(gpio::State state) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
 	}
 	lua_access.unlock();
-
-	this->update();
 }
 
 void Breadboard::reconnected() { // new gpio connection
@@ -92,7 +90,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
 	if(additional_device_dir.size() != 0){
-		lua_factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
+		factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
 	}
 
 	QFile confFile(file);
@@ -202,7 +200,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 			const auto& classname = device_desc["class"].toString("undefined").toStdString();
 			const auto& id = device_desc["id"].toString("undefined").toStdString();
 
-			if(!lua_factory.deviceExists(classname)) {
+			if(!factory.deviceExists(classname)) {
 				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
 
 				continue;
@@ -211,8 +209,8 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				cerr << "[config loader] Another device with the ID '" << id << "' is already instatiated!" << endl;
 				continue;
 			}
-			devices.emplace(id, lua_factory.instantiateDevice(id, classname));
-			LuaDevice* device = devices.at(id);
+			devices.emplace(id, factory.instantiateDevice(id, classname));
+			Device* device = devices.at(id);
 
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
 				if(!device->spi) {
@@ -425,7 +423,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 	}
 
 	if(debug_logging)
-		lua_factory.printAvailableDevices();
+		factory.printAvailableDevices();
 
 	return true;
 }

@@ -23,9 +23,8 @@ class Breadboard : public QWidget {
 	//
 
 	std::mutex lua_access;		//TODO: Use multiple Lua states per 'async called' device
-	LuaEngine lua_factory;
-	typedef std::string DeviceID;
-	std::unordered_map<DeviceID,LuaDevice*> devices;
+	Factory factory;
+	std::unordered_map<DeviceID,Device*> devices;
 	std::unordered_map<DeviceID,SPI_IOF_Request> spi_channels;
 	std::unordered_map<DeviceID,PIN_IOF_Request> pin_channels;
 	std::unordered_map<DeviceID,DeviceGraphic> device_graphics;

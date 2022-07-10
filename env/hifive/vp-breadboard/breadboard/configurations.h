@@ -4,7 +4,9 @@
 #include <QImage>
 #include <QPoint>
 
-#include "devices/luaEngine.hpp"
+#include "devices/factory.h"
+
+typedef std::string DeviceID;
 
 struct SPI_IOF_Request {
 	gpio::PinNumber gpio_offs;	// calculated from "global pin"
@@ -30,5 +32,5 @@ struct PinMapping{
 	gpio::PinNumber global_pin;
 	gpio::PinNumber device_pin;
 	std::string name;
-	LuaDevice* dev;
+	Device* dev;
 };

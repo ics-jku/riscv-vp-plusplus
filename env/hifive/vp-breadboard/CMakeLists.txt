@@ -47,6 +47,7 @@ set(HEADERS
 	breadboard/configurations.h
 	devices/device.hpp
 	devices/configurations.h
+	devices/factory.h
 )
 
 set(UI window/mainwindow.ui)
@@ -76,6 +77,7 @@ set(SOURCES
     devices/luaDevice.cpp
     devices/luaEngine.cpp
     devices/device.cpp
+    devices/factory.cpp
     ${DEVICES}
 )
 

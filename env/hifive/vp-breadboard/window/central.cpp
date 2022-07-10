@@ -34,4 +34,5 @@ void Central::timerUpdate() {
 	if(embedded->gpioConnected()) {
 		breadboard->timerUpdate(embedded->getState());
 	}
+	this->update();
 }
