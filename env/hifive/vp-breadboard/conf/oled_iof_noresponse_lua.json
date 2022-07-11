@@ -1,7 +1,4 @@
 {
-  "background" : ":/img/oled_shield.jpg",
-  "original_img_size" : [2667, 4354],
-  "windowsize" : [490, 800],
   "buttons" :
   [
     {

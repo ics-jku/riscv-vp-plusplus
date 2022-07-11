@@ -2,20 +2,28 @@
 
 OLED::OLED(DeviceID id) : CDevice(id) {
 	// Pin Layout
-	PinLayout layout_pin = PinLayout();
-	layout_pin.emplace(1, PinDesc{PinDesc::Dir::input, "data_command"});
-	setPIN_Interface(layout_pin);
+	if(!pin) {
+		layout_pin = PinLayout();
+		layout_pin.emplace(1, PinDesc{PinDesc::Dir::input, "data_command"});
+		pin = std::make_unique<OLED_PIN>(this);
+	}
 	// SPI
-	setSPI_Interface();
+	if(!spi) {
+		spi = std::make_unique<OLED_SPI>(this);
+	}
 	// Graph
-	Layout layout_graph = Layout{132, 64, "rgba"};
-	setGraphbuf_Interface(layout_graph);
+	if(!graph) {
+		layout_graph = Layout{132, 64, "rgba"};
+		graph = std::make_unique<OLED_Graph>(this);
+	}
 }
 OLED::~OLED() {}
 
 const DeviceClass OLED::getClass() const { return "oled"; }
 
 /* PIN Interface */
+
+OLED::OLED_PIN::OLED_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {}
 
 void OLED::OLED_PIN::setPin(PinNumber num, bool val) {
 	if(num == 1) {
@@ -25,6 +33,8 @@ void OLED::OLED_PIN::setPin(PinNumber num, bool val) {
 }
 
 /* SPI Interface */
+
+OLED::OLED_SPI::OLED_SPI(CDevice* device) : CDevice::SPI_Interface_C(device) {}
 
 uint8_t getMask(uint8_t op) {
 	if(op == DISPLAY_START_LINE) {
@@ -88,6 +98,8 @@ uint8_t OLED::OLED_SPI::send(uint8_t byte) {
 }
 
 /* Graphbuf Interfacae */
+
+OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 
 void OLED::OLED_Graph::initializeBufferMaybe() {
 	for(unsigned x=0; x<device->layout_graph.width; x++) {

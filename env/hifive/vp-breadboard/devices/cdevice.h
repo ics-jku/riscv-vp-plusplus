@@ -4,12 +4,6 @@
 
 class CDevice : public Device {
 
-protected:
-	void setPIN_Interface(PinLayout layout);
-	void setSPI_Interface();
-	void setConfig_Interface(Config config);
-	void setGraphbuf_Interface(Layout layout);
-
 public:
 	SetBuf_fn set_buf;
 	GetBuf_fn get_buf;

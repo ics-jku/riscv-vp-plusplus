@@ -6,33 +6,6 @@
 CDevice::CDevice(DeviceID id) : Device(id) {}
 CDevice::~CDevice() {}
 
-void CDevice::setPIN_Interface(PinLayout layout) {
-	if(!pin) {
-		pin = std::make_unique<PIN_Interface_C>(this);
-		layout_pin = layout;
-	}
-}
-
-void CDevice::setSPI_Interface() {
-	if(!spi) {
-		spi = std::make_unique<SPI_Interface_C>(this);
-	}
-}
-
-void CDevice::setConfig_Interface(Config config) {
-	if(!conf) {
-		conf = std::make_unique<Config_Interface_C>(this);
-		this->config = config;
-	}
-}
-
-void CDevice::setGraphbuf_Interface(Layout layout) {
-	if(!graph) {
-		graph = std::make_unique<Graphbuf_Interface_C>(this);
-		layout_graph = layout;
-	}
-}
-
 /* PIN Interface */
 
 CDevice::PIN_Interface_C::PIN_Interface_C(CDevice* device) : device(device) {}

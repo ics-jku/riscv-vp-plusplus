@@ -1,65 +1,79 @@
 {
-  "background" : ":/img/oled_shield.jpg",
-  "original_img_size" : [2667, 4354],
-  "windowsize" : [490, 800],
   "buttons" :
   [
     {
       "name": "UP",
       "key" : "UP",
       "pin" : 7,
-      "pos" : [234, 554],
+      "pos" : [350, 0],
       "dim" : [56, 56]
     },
     {
       "name": "LEFT",
       "key" : "LEFT",
       "pin" : 6,
-      "pos" : [158, 628],
+      "pos" : [290, 60],
       "dim" : [56, 56]
     },
     {
       "name": "RIGHT",
       "key" : "RIGHT",
       "pin" : 5,
-      "pos" : [307, 630],
+      "pos" : [410, 60],
       "dim" : [56, 56]
     },
     {
       "name": "CENTER",
       "pin" : 4,
-      "pos" : [232, 625],
+      "pos" : [350, 60],
       "dim" : [56, 58]
     },
     {
       "name": "DOWN",
       "key" : "DOWN",
       "pin" : 3,
-      "pos" : [234, 697],
+      "pos" : [350, 120],
       "dim" : [56, 58]
     },
     {
       "name": "A",
       "key" : "A",
       "pin" : 18,
-      "pos" : [89, 581],
+      "pos" : [290, 120],
       "dim" : [56, 58]
     },
     {
       "name": "B",
       "key" : "B",
       "pin" : 19,
-      "pos" : [87, 670],
+      "pos" : [410, 120],
       "dim" : [56, 58]
     }
   ],
-  "oled-iof" :
-  {
-    "offs"   : [107, 324],
-    "scale"  : 2,
-    "margin" : 10,
-    "cs_pin" : 15,
-    "dc_pin" : 16,
-    "noresponse": true
-  }
+  "devices" :
+   [
+    {
+      "class" : "oled",
+      "id"    : "display",
+      "spi"   :
+      { 
+        "cs_pin" : 15,
+        "noresponse": true
+      },
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "name": "dc_pin",
+          "synchronous" : true
+        }
+      ],
+     "graphics" :
+     {
+       "offs" : [0, 0],
+       "scale" : 2
+     }
+    }
+  ]
 }
