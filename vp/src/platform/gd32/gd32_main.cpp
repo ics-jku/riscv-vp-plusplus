@@ -16,6 +16,17 @@ class GD32Options : public Options {
    public:
 	typedef unsigned int addr_t;
 
+	addr_t gpioa_start_addr = 0x40010800;
+	addr_t gpioa_end_addr = 0x40010BFF;
+	addr_t gpiob_start_addr = 0x40010C00;
+	addr_t gpiob_end_addr = 0x40010FFF;
+	addr_t gpioc_start_addr = 0x40011000;
+	addr_t gpioc_end_addr = 0x400113FF;
+	addr_t gpiod_start_addr = 0x40011400;
+	addr_t gpiod_end_addr = 0x400117FF;
+	addr_t gpioe_start_addr = 0x40011800;
+	addr_t gpioe_end_addr = 0x40011BFF;
+
 	addr_t flash_size = 1024 * 128;  // 128 KB flash
 	addr_t flash_start_addr = 0x08000000;
 	addr_t flash_end_addr = flash_start_addr + flash_size - 1;
