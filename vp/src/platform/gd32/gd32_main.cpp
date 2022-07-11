@@ -1,7 +1,11 @@
 #include <boost/program_options.hpp>
 #include <systemc>
 
+#include "elf_loader.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
+#include "mem.h"
 #include "memory.h"
 #include "platform/common/options.h"
 
@@ -34,6 +38,55 @@ int sc_main(int argc, char **argv) {
 	ISS core(0);
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
+	ELFLoader loader(opt.input_program.c_str());
+	SimpleBus<2, 2> ahb("AHB");
+	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
+
+	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+
+	MemoryDMI sram_dmi = MemoryDMI::create_start_size_mapping(sram.data, opt.sram_start_addr, sram.size);
+	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.size);
+	InstrMemoryProxy instr_mem(flash_dmi, core);
+
+	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
+	iss_mem_if.bus_lock = bus_lock;
+
+	instr_memory_if *instr_mem_if = &iss_mem_if;
+	data_memory_if *data_mem_if = &iss_mem_if;
+	if (opt.use_instr_dmi)
+		instr_mem_if = &instr_mem;
+	if (opt.use_data_dmi)
+		iss_mem_if.dmi_ranges.emplace_back(sram_dmi);
+
+	ahb.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
+	ahb.ports[1] = new PortMapping(opt.sram_start_addr, opt.sram_end_addr);
+
+	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
+	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);
+
+	// TODO replace nullptr with the GD32 version of CLINT
+	core.init(instr_mem_if, data_mem_if, nullptr, loader.get_entrypoint(), rv32_align_address(opt.sram_end_addr));
+
+	// connect TLM sockets
+	iss_mem_if.isock.bind(ahb.tsocks[0]);
+	dbg_if.isock.bind(ahb.tsocks[1]);
+	ahb.isocks[0].bind(flash.tsock);
+	ahb.isocks[1].bind(sram.tsock);
+
+	std::vector<debug_target_if *> threads;
+	threads.push_back(&core);
+
+	core.trace = opt.trace_mode;  // switch for printing instructions
+	if (opt.use_debug_runner) {
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+		new GDBServerRunner("GDBRunner", server, &core);
+	} else {
+		new DirectCoreRunner(core);
+	}
+
+	sc_core::sc_start();
+
+	core.show();
 
 	return 0;
 }
