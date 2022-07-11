@@ -3,8 +3,6 @@
 #include "device.hpp"
 
 class CDevice : public Device {
-	SetBuf_fn set_buf;
-	GetBuf_fn get_buf;
 
 protected:
 	void setPIN_Interface(PinLayout layout);
@@ -13,12 +11,17 @@ protected:
 	void setGraphbuf_Interface(Layout layout);
 
 public:
+	SetBuf_fn set_buf;
+	GetBuf_fn get_buf;
+	Layout layout_graph;
+	PinLayout layout_pin;
+	Config config;
 
 	class PIN_Interface_C : public Device::PIN_Interface {
-		PinLayout layout;
+	protected:
 		CDevice* device;
 	public:
-		PIN_Interface_C(CDevice* device, PinLayout layout);
+		PIN_Interface_C(CDevice* device);
 		~PIN_Interface_C();
 		PinLayout getPinLayout();
 		bool getPin(PinNumber num); // implement this
@@ -26,6 +29,7 @@ public:
 	};
 
 	class SPI_Interface_C : public Device::SPI_Interface {
+	protected:
 		CDevice* device;
 	public:
 		SPI_Interface_C(CDevice* device);
@@ -34,20 +38,20 @@ public:
 	};
 
 	class Config_Interface_C : public Device::Config_Interface {
-		Config config;
+	protected:
 		CDevice* device;
 	public:
-		Config_Interface_C(CDevice *device, Config config);
+		Config_Interface_C(CDevice *device);
 		~Config_Interface_C();
 		Config getConfig();
 		bool setConfig(const Config conf);
 	};
 
 	class Graphbuf_Interface_C : public Device::Graphbuf_Interface {
-		Layout layout;
+	protected:
 		CDevice* device;
 	public:
-		Graphbuf_Interface_C(CDevice* device, Layout layout);
+		Graphbuf_Interface_C(CDevice* device);
 		~Graphbuf_Interface_C();
 		Layout getLayout();
 		void initializeBufferMaybe(); // implement this
@@ -55,5 +59,6 @@ public:
 		void registerGetBuf(const GetBuf_fn getBuf);
 	};
 
+	CDevice(DeviceID id);
 	~CDevice();
 };

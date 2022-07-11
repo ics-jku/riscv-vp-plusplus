@@ -4,8 +4,7 @@ using namespace std;
 
 constexpr bool debug_logging = false;
 
-Breadboard::Breadboard(QWidget* parent) : QWidget(parent),
-		sevensegment(nullptr), rgbLed(nullptr), oled_mmap(nullptr), oled_iof(nullptr) {
+Breadboard::Breadboard(QWidget* parent) : QWidget(parent) {
 	QString bkgnd_path = ":/img/virtual_breadboard.png";
 	QSize bkgnd_size = QSize(486, 233);
 
@@ -16,17 +15,6 @@ Breadboard::Breadboard(QWidget* parent) : QWidget(parent),
 }
 
 Breadboard::~Breadboard() {
-	if(sevensegment != nullptr)
-		delete sevensegment;
-	if(rgbLed != nullptr)
-		delete rgbLed;
-	if(oled_mmap != nullptr)
-		delete oled_mmap;
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(buttons[i] != nullptr)
-		delete buttons[i];
-	}
 }
 
 /* UPDATE */
@@ -60,14 +48,6 @@ void Breadboard::timerUpdate(gpio::State state) {
 	}
 	lua_access.unlock();
 
-	if(sevensegment) {
-		sevensegment->map = translatePinNumberToSevensegment(translateGpioToExtPin(state));
-	}
-
-	if(rgbLed) {
-		rgbLed->map = translatePinNumberToRGBLed(translateGpioToExtPin(state));
-	}
-
 	lua_access.lock();
 	for (auto& c : writing_connections) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
@@ -87,7 +67,6 @@ void Breadboard::reconnected() { // new gpio connection
 /* JSON */
 
 bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool overwrite_integrated_devices) {
-	memset(buttons, 0, max_num_buttons * sizeof(Button*));
 
 	if(additional_device_dir.size() != 0){
 		factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
@@ -119,77 +98,6 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 
 	// TODO: Let every registered "config object" decide its own default values
 
-	if(config_root.contains("sevensegment"))
-	{
-		QJsonObject obj = config_root["sevensegment"].toObject();
-		sevensegment = new Sevensegment(
-				QPoint(obj["offs"].toArray().at(0).toInt(312),
-						obj["offs"].toArray().at(1).toInt(353)),
-						QPoint(obj["extent"].toArray().at(0).toInt(36),
-								obj["extent"].toArray().at(1).toInt(50)),
-								obj["linewidth"].toInt(7)
-		);
-	}
-	if(config_root.contains("rgb"))
-	{
-		QJsonObject obj = config_root["rgb"].toObject();
-		rgbLed = new RGBLed(
-				QPoint(obj["offs"].toArray().at(0).toInt(89),
-						obj["offs"].toArray().at(1).toInt(161)),
-						obj["linewidth"].toInt(15)
-		);
-	}
-	if(config_root.contains("oled-mmap"))
-	{
-		QJsonObject obj = config_root["oled-mmap"].toObject();
-		oled_mmap = new OLED_mmap(
-				QPoint(obj["offs"].toArray().at(0).toInt(450),
-						obj["offs"].toArray().at(1).toInt(343)),
-						obj["margin"].toInt(15),
-						obj["scale"].toDouble(1.));
-	}
-	if(config_root.contains("oled-iof"))
-	{
-		QJsonObject obj = config_root["oled-iof"].toObject();
-		const gpio::PinNumber cs = obj["cs_pin"].toInt(9);
-		const gpio::PinNumber dc = obj["dc_pin"].toInt(16);
-		const bool noresponse = obj["noresponse"].toBool(true);
-		oled_iof = new OLED_iof(
-				QPoint(obj["offs"].toArray().at(0).toInt(450),
-						obj["offs"].toArray().at(1).toInt(343)),
-						obj["margin"].toInt(15),
-						obj["scale"].toDouble(1.)
-		);
-		spi_channels.emplace("oled-iof", SPI_IOF_Request{
-			.gpio_offs = translatePinToGpioOffs(cs),
-					.global_pin = cs,
-					.noresponse = noresponse,
-					.fun = [this](gpio::SPI_Command cmd){ return oled_iof->write(cmd);}
-		}
-		);
-		pin_channels.emplace("oled-iof", PIN_IOF_Request{
-			.gpio_offs = translatePinToGpioOffs(dc),
-					.global_pin = dc,
-					.fun = [this](gpio::Tristate pin) { oled_iof->data_command_pin = pin == gpio::Tristate::HIGH ? 1 : 0;}
-		});
-	}
-	if(config_root.contains("buttons"))
-	{
-		const auto butts = config_root["buttons"].toArray();
-		for(unsigned i = 0; i < butts.size() && i < max_num_buttons; i++)
-		{
-			QJsonObject butt = butts[i].toObject();
-			buttons[i] = new Button{
-				QRect{
-					QPoint{butt["pos"].toArray().at(0).toInt(), butt["pos"].toArray().at(1).toInt()},
-					QSize{butt["dim"].toArray().at(0).toInt(), butt["dim"].toArray().at(1).toInt()}
-				},
-				static_cast<uint8_t>(butt["pin"].toInt()),
-				butt["key"].toString(QString("")),
-				butt["name"].toString(QString("undef"))
-			};
-		}
-	}
 	if(config_root.contains("devices") && config_root["devices"].isArray()) {
 		auto device_descriptions = config_root["devices"].toArray();
 		devices.reserve(device_descriptions.count());
@@ -449,49 +357,31 @@ void Breadboard::paintEvent(QPaintEvent*) {
 				image.size().height()*graphic.scale));
 	}
 
-	// TODO: Check loaded, drawable plugins instead of hardcoded objects
-
-	if(oled_mmap)
-		oled_mmap->draw(painter);
-
-	if(oled_iof)
-		oled_iof->draw(painter);
-
-	if(sevensegment)
-	{
-		sevensegment->draw(painter);
-	}
-
-	if(rgbLed)
-	{
-		rgbLed->draw(painter);
-	}
-
-	//buttons
-	painter.save();
-	QColor dark("#101010");
-	dark.setAlphaF(0.5);
-	painter.setBrush(QBrush(dark));
-	if(debugmode)
-	{
-		painter.setPen(QPen(QColor("red")));
-		painter.setFont(QFont("Arial", 12));
-	}
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(!buttons[i])
-			break;
-		if(buttons[i]->pressed || debugmode)
-			painter.drawRect(buttons[i]->area);
-		if(debugmode)
-			painter.drawText(buttons[i]->area, buttons[i]->name, Qt::AlignHCenter | Qt::AlignVCenter);
-	}
-	painter.restore();
-
-	if (debugmode) {
-			if(sevensegment)
-				painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
-		}
+//	//buttons
+//	painter.save();
+//	QColor dark("#101010");
+//	dark.setAlphaF(0.5);
+//	painter.setBrush(QBrush(dark));
+//	if(debugmode)
+//	{
+//		painter.setPen(QPen(QColor("red")));
+//		painter.setFont(QFont("Arial", 12));
+//	}
+//	for(unsigned i = 0; i < max_num_buttons; i++)
+//	{
+//		if(!buttons[i])
+//			break;
+//		if(buttons[i]->pressed || debugmode)
+//			painter.drawRect(buttons[i]->area);
+//		if(debugmode)
+//			painter.drawText(buttons[i]->area, buttons[i]->name, Qt::AlignHCenter | Qt::AlignVCenter);
+//	}
+//	painter.restore();
+//
+//	if (debugmode) {
+//			if(sevensegment)
+//				painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
+//	}
 
 	painter.end();
 }
@@ -508,47 +398,47 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 	{
 		switch(e->key())
 		{
-		case Qt::Key_Right:
-			if(buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
-				moving_button = 0;
-			if(buttons[moving_button] == nullptr)
-			{
-				cout << "No Buttons available" << endl;
-			}
-			else
-			{
-				cout << "Moving button " << buttons[moving_button]->name.toStdString() << endl;
-			}
-			break;
-
-		case Qt::Key_W:
-			if(buttons[moving_button] == nullptr)
-				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(0, 1));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_A:
-			if(buttons[moving_button] == nullptr)
-				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(1, 0));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_S:
-			if(buttons[moving_button] == nullptr)
-				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(0, 1));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
-		case Qt::Key_D:
-			if(buttons[moving_button] == nullptr)
-				break;
-			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(1, 0));
-			cout << buttons[moving_button]->name.toStdString() << " ";
-			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-			break;
+//		case Qt::Key_Right:
+//			if(buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
+//				moving_button = 0;
+//			if(buttons[moving_button] == nullptr)
+//			{
+//				cout << "No Buttons available" << endl;
+//			}
+//			else
+//			{
+//				cout << "Moving button " << buttons[moving_button]->name.toStdString() << endl;
+//			}
+//			break;
+//
+//		case Qt::Key_W:
+//			if(buttons[moving_button] == nullptr)
+//				break;
+//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(0, 1));
+//			cout << buttons[moving_button]->name.toStdString() << " ";
+//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
+//			break;
+//		case Qt::Key_A:
+//			if(buttons[moving_button] == nullptr)
+//				break;
+//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(1, 0));
+//			cout << buttons[moving_button]->name.toStdString() << " ";
+//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
+//			break;
+//		case Qt::Key_S:
+//			if(buttons[moving_button] == nullptr)
+//				break;
+//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(0, 1));
+//			cout << buttons[moving_button]->name.toStdString() << " ";
+//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
+//			break;
+//		case Qt::Key_D:
+//			if(buttons[moving_button] == nullptr)
+//				break;
+//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(1, 0));
+//			cout << buttons[moving_button]->name.toStdString() << " ";
+//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
+//			break;
 		case Qt::Key_Space:
 			cout << "Debug mode off" << endl;
 			debugmode = 0;
@@ -583,74 +473,74 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				cout << "Set Debug mode" << endl;
 				debugmode = true;
 				break;
-			default:
-				for(unsigned i = 0; i < max_num_buttons; i++)
-				{
-					if(buttons[i] == nullptr)
-						break;	//this is sorted somewhat
-
-					if (buttons[i]->keybinding == e->key()) {
-						emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
-						buttons[i]->pressed = true;
-					}
-				}
-				break;
+//			default:
+//				for(unsigned i = 0; i < max_num_buttons; i++)
+//				{
+//					if(buttons[i] == nullptr)
+//						break;	//this is sorted somewhat
+//
+//					if (buttons[i]->keybinding == e->key()) {
+//						emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
+//						buttons[i]->pressed = true;
+//					}
+//				}
+//				break;
 		}
 	}
 }
 
 void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
-	for(unsigned i = 0; i < max_num_buttons; i++)
-	{
-		if(buttons[i] == nullptr)
-			break;	//this is sorted somewhat
-
-		if (buttons[i]->keybinding == e->key()) {
-			emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET)); // simple switch, disconnected
-			buttons[i]->pressed = false;
-		}
-	}
+//	for(unsigned i = 0; i < max_num_buttons; i++)
+//	{
+//		if(buttons[i] == nullptr)
+//			break;	//this is sorted somewhat
+//
+//		if (buttons[i]->keybinding == e->key()) {
+//			emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET)); // simple switch, disconnected
+//			buttons[i]->pressed = false;
+//		}
+//	}
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
-	if (e->button() == Qt::LeftButton) {
-		for(unsigned i = 0; i < max_num_buttons; i++)
-		{
-			if(buttons[i] == nullptr)
-				break;	//this is sorted somewhat
-
-			if (buttons[i]->area.contains(e->pos())) {
-				//cout << "button " << i << " click!" << endl;
-				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
-				buttons[i]->pressed = true;
-			}
-		}
-		// cout << "clicked summin elz" << endl;
-	} else {
-		cout << "Whatcha doin' there?" << endl;
-	}
-	this->update();
-	e->accept();
+//	if (e->button() == Qt::LeftButton) {
+//		for(unsigned i = 0; i < max_num_buttons; i++)
+//		{
+//			if(buttons[i] == nullptr)
+//				break;	//this is sorted somewhat
+//
+//			if (buttons[i]->area.contains(e->pos())) {
+//				//cout << "button " << i << " click!" << endl;
+//				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
+//				buttons[i]->pressed = true;
+//			}
+//		}
+//		// cout << "clicked summin elz" << endl;
+//	} else {
+//		cout << "Whatcha doin' there?" << endl;
+//	}
+//	this->update();
+//	e->accept();
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
-	if (e->button() == Qt::LeftButton) {
-		for(unsigned i = 0; i < max_num_buttons; i++)
-		{
-			if(buttons[i] == nullptr)
-				break;	//this is sorted somewhat
-			if (buttons[i]->area.contains(e->pos())) {
-				//cout << "button " << i << " release!" << endl;
-				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET));
-				buttons[i]->pressed = false;
-			}
-		}
-		// cout << "released summin elz" << endl;
-	} else {
-		cout << "Whatcha doin' there?" << endl;
-	}
-	this->update();
-	e->accept();
+//	if (e->button() == Qt::LeftButton) {
+//		for(unsigned i = 0; i < max_num_buttons; i++)
+//		{
+//			if(buttons[i] == nullptr)
+//				break;	//this is sorted somewhat
+//			if (buttons[i]->area.contains(e->pos())) {
+//				//cout << "button " << i << " release!" << endl;
+//				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET));
+//				buttons[i]->pressed = false;
+//			}
+//		}
+//		// cout << "released summin elz" << endl;
+//	} else {
+//		cout << "Whatcha doin' there?" << endl;
+//	}
+//	this->update();
+//	e->accept();
 }
 

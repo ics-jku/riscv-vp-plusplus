@@ -1,12 +1,11 @@
 #pragma once
 
 #include "luaEngine.hpp"
-#include "cdevice.h"
+#include "c/all_devices.hpp"
 
 
 class Factory {
 	LuaEngine lua_factory;
-	// TODO C factory
 
 public:
 

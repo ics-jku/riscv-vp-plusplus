@@ -70,3 +70,21 @@ struct Pixel {
 };
 typedef std::function<void(const Xoffset, const Yoffset, Pixel)> SetBuf_fn;
 typedef std::function<Pixel(const Xoffset, const Yoffset)> GetBuf_fn;
+
+struct State {
+	unsigned column = 0;
+	unsigned page = 0;
+	uint8_t contrast = 255;
+	bool display_on = true;
+};
+
+const uint8_t COL_LOW= 0;
+const uint8_t COL_HIGH = 0x10;
+const uint8_t PUMP_VOLTAGE = 0x30;
+const uint8_t DISPLAY_START_LINE = 0x40;
+const uint8_t CONTRAST_MODE_SET = 0x81;
+const uint8_t DISPLAY_ON = 0xAE;
+const uint8_t PAGE_ADDR = 0xB0;
+const uint8_t NOP = 0xE3;
+
+const uint8_t COMMANDS [8] = {COL_LOW, COL_HIGH, PUMP_VOLTAGE, DISPLAY_START_LINE, CONTRAST_MODE_SET, DISPLAY_ON, PAGE_ADDR, NOP};

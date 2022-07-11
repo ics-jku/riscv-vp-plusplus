@@ -12,9 +12,12 @@ void Factory::printAvailableDevices() {
 }
 
 bool Factory::deviceExists(DeviceClass classname) {
-	return lua_factory.deviceExists(classname);
+	return lua_factory.deviceExists(classname) || classname == "oled";
 }
 
 Device* Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
+	if(classname == "oled") {
+		return new OLED(id);
+	}
 	return lua_factory.instantiateDevice(id, classname);
 }

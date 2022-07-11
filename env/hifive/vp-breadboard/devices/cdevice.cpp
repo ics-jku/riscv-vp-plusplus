@@ -3,11 +3,13 @@
 #include <stdexcept>
 #include <iostream>
 
+CDevice::CDevice(DeviceID id) : Device(id) {}
 CDevice::~CDevice() {}
 
 void CDevice::setPIN_Interface(PinLayout layout) {
 	if(!pin) {
-		pin = std::make_unique<PIN_Interface_C>(this, layout);
+		pin = std::make_unique<PIN_Interface_C>(this);
+		layout_pin = layout;
 	}
 }
 
@@ -19,26 +21,25 @@ void CDevice::setSPI_Interface() {
 
 void CDevice::setConfig_Interface(Config config) {
 	if(!conf) {
-		conf = std::make_unique<Config_Interface_C>(this, config);
+		conf = std::make_unique<Config_Interface_C>(this);
+		this->config = config;
 	}
 }
 
 void CDevice::setGraphbuf_Interface(Layout layout) {
 	if(!graph) {
-		graph = std::make_unique<Graphbuf_Interface_C>(this, layout);
+		graph = std::make_unique<Graphbuf_Interface_C>(this);
+		layout_graph = layout;
 	}
 }
 
 /* PIN Interface */
 
-CDevice::PIN_Interface_C::PIN_Interface_C(CDevice* device, PinLayout layout) : device(device), layout(layout) {
-
-}
-
+CDevice::PIN_Interface_C::PIN_Interface_C(CDevice* device) : device(device) {}
 CDevice::PIN_Interface_C::~PIN_Interface_C() {}
 
 PinLayout CDevice::PIN_Interface_C::getPinLayout() {
-	return layout;
+	return device->layout_pin;
 }
 
 void CDevice::PIN_Interface_C::setPin(PinNumber num, bool val) {
@@ -61,25 +62,24 @@ uint8_t CDevice::SPI_Interface_C::send(uint8_t byte) {
 
 /* Config Interface */
 
-CDevice::Config_Interface_C::Config_Interface_C(CDevice* device, Config config) : device(device), config(config) {}
-
+CDevice::Config_Interface_C::Config_Interface_C(CDevice* device) : device(device) {}
 CDevice::Config_Interface_C::~Config_Interface_C() {}
 
 Config CDevice::Config_Interface_C::getConfig() {
-	return config;
+	return device->config;
 }
 
 bool CDevice::Config_Interface_C::setConfig(const Config conf) {
-	config = conf;
+	device->config = conf;
 	return true;
 }
 
 /* Graph Buf Interface */
 
-CDevice::Graphbuf_Interface_C::Graphbuf_Interface_C(CDevice* device, Layout layout) : device(device), layout(layout) {}
+CDevice::Graphbuf_Interface_C::Graphbuf_Interface_C(CDevice* device) : device(device) {}
 CDevice::Graphbuf_Interface_C::~Graphbuf_Interface_C() {}
 
-Layout CDevice::Graphbuf_Interface_C::getLayout() { return layout; }
+Layout CDevice::Graphbuf_Interface_C::getLayout() { return device->layout_graph; }
 void CDevice::Graphbuf_Interface_C::initializeBufferMaybe() {
 	std::cout << "Warning: initialize graph buffer was not implemented" << std::endl;
 }

@@ -14,14 +14,6 @@ static constexpr unsigned max_num_buttons = 7;
 class Breadboard : public QWidget {
 	Q_OBJECT
 
-	// TODO get C-Device factory
-	Sevensegment* sevensegment;
-	RGBLed* rgbLed;
-	OLED_mmap* oled_mmap;
-	OLED_iof* oled_iof;
-	Button* buttons[max_num_buttons];
-	//
-
 	std::mutex lua_access;		//TODO: Use multiple Lua states per 'async called' device
 	Factory factory;
 	std::unordered_map<DeviceID,Device*> devices;
