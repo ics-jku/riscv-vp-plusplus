@@ -30,7 +30,6 @@ struct GPIO : public sc_core::sc_module {
 	vp::map::LocalRouter router = {"GPIO"};
 
 	GPIO(sc_core::sc_module_name);
-	~GPIO();
 
 	void register_access_callback(const vp::map::register_access_t &r);
 

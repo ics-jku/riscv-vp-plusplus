@@ -4,6 +4,7 @@
 #include "elf_loader.h"
 #include "gdb-mc/gdb_runner.h"
 #include "gdb-mc/gdb_server.h"
+#include "gpio.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
@@ -54,10 +55,11 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 2> ahb("AHB");
+	SimpleBus<2, 4> ahb("AHB");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
 	TIMER timer("TIMER");
+	GPIO gpioa("GPIOA");
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
@@ -77,6 +79,8 @@ int sc_main(int argc, char **argv) {
 
 	ahb.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
 	ahb.ports[1] = new PortMapping(opt.sram_start_addr, opt.sram_end_addr);
+	ahb.ports[2] = new PortMapping(opt.gpioa_start_addr, opt.gpioa_end_addr);
+	ahb.ports[3] = new PortMapping(opt.timer_start_addr, opt.timer_end_addr);
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);
@@ -88,6 +92,8 @@ int sc_main(int argc, char **argv) {
 	dbg_if.isock.bind(ahb.tsocks[1]);
 	ahb.isocks[0].bind(flash.tsock);
 	ahb.isocks[1].bind(sram.tsock);
+	ahb.isocks[2].bind(gpioa.tsock);
+	ahb.isocks[3].bind(timer.tsock);
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);

@@ -37,13 +37,13 @@ class TIMER : public clint_if, public sc_core::sc_module {
 
 	IntegerView<uint64_t> mtime;
 	IntegerView<uint64_t> mtimecmp;
-	IntegerView<uint64_t> msftrst;
-	IntegerView<uint64_t> mtimectl;
-	IntegerView<uint64_t> msip;
-	IntegerView<uint64_t> msip_hart0;
-	IntegerView<uint64_t> msip_hart1;
-	IntegerView<uint64_t> msip_hart2;
-	IntegerView<uint64_t> msip_hart3;
+	IntegerView<uint32_t> msftrst;
+	IntegerView<uint32_t> mtimectl;
+	IntegerView<uint32_t> msip;
+	IntegerView<uint32_t> msip_hart0;
+	IntegerView<uint32_t> msip_hart1;
+	IntegerView<uint32_t> msip_hart2;
+	IntegerView<uint32_t> msip_hart3;
 	IntegerView<uint64_t> mtimecmp_hart0;
 	IntegerView<uint64_t> mtimecmp_hart1;
 	IntegerView<uint64_t> mtimecmp_hart2;

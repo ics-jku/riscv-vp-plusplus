@@ -1,5 +1,3 @@
-#pragma once
-
 #include "timer.h"
 
 enum {
@@ -83,3 +81,5 @@ TIMER::TIMER(sc_core::sc_module_name)
 uint64_t TIMER::update_and_get_mtime() {
 	return 0;
 }
+
+void TIMER::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {}

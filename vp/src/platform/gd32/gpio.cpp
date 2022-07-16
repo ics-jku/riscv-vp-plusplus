@@ -19,3 +19,5 @@ GPIO::GPIO(sc_core::sc_module_name) {
 void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
+
+void GPIO::register_access_callback(const vp::map::register_access_t &r) {}
