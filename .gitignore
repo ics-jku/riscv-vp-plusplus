@@ -18,3 +18,4 @@ nbdist/
 nbproject/
 sw/basic-gcov/main.*
 sw/**/*.o
+.vscode/
