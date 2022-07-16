@@ -8,6 +8,7 @@
 #include "mem.h"
 #include "memory.h"
 #include "platform/common/options.h"
+#include "timer.h"
 
 using namespace rv32;
 namespace po = boost::program_options;
@@ -15,6 +16,9 @@ namespace po = boost::program_options;
 class GD32Options : public Options {
    public:
 	typedef unsigned int addr_t;
+
+	addr_t timer_start_addr = 0xD1000000;
+	addr_t timer_end_addr = 0xD100D000;
 
 	addr_t gpioa_start_addr = 0x40010800;
 	addr_t gpioa_end_addr = 0x40010BFF;
@@ -53,6 +57,8 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<2, 2> ahb("AHB");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
+	TIMER timer("TIMER");
+
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
 	MemoryDMI sram_dmi = MemoryDMI::create_start_size_mapping(sram.data, opt.sram_start_addr, sram.size);
@@ -75,8 +81,7 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);
 
-	// TODO replace nullptr with the GD32 version of CLINT
-	core.init(instr_mem_if, data_mem_if, nullptr, loader.get_entrypoint(), rv32_align_address(opt.sram_end_addr));
+	core.init(instr_mem_if, data_mem_if, &timer, loader.get_entrypoint(), rv32_align_address(opt.sram_end_addr));
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(ahb.tsocks[0]);
