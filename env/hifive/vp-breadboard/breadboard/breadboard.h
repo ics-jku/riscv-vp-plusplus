@@ -33,10 +33,6 @@ class Breadboard : public QWidget {
 	void mousePressEvent(QMouseEvent* e) override;
 	void mouseReleaseEvent(QMouseEvent* e) override;
 
-	// TODO: Phase these out and decide based on config
-	static uint8_t translatePinNumberToSevensegment(uint64_t pinmap);
-	static uint8_t translatePinNumberToRGBLed(uint64_t pinmap);
-
 public:
 	Breadboard(QWidget *parent);
 	~Breadboard();

@@ -97,7 +97,7 @@ uint8_t OLED::OLED_SPI::send(uint8_t byte) {
 	return 0;
 }
 
-/* Graphbuf Interfacae */
+/* Graphbuf Interface */
 
 OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 

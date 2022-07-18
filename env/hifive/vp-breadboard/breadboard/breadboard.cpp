@@ -19,27 +19,6 @@ Breadboard::~Breadboard() {
 
 /* UPDATE */
 
-uint8_t Breadboard::translatePinNumberToSevensegment(uint64_t pinmap) {
-	uint8_t ret = 0;
-	static uint8_t pinMapping[8] =
-	{
-	  15, 16, 17, 18, 19, 7, 6, 5
-	};
-	for(unsigned i = 0; i < 8; i++)
-	{
-		ret |= pinmap & (1 << pinMapping[i]) ? (1 << i) : 0;
-	}
-	return ret;
-}
-
-uint8_t Breadboard::translatePinNumberToRGBLed(uint64_t pinmap) {
-	uint8_t ret = 0;
-	ret |= (~pinmap & (1 << 6)) >> 6;  // R
-	ret |= (~pinmap & (1 << 3)) >> 2;  // G
-	ret |= (~pinmap & (1 << 5)) >> 3;  // B
-	return ret;
-}
-
 void Breadboard::timerUpdate(gpio::State state) {
 	lua_access.lock();
 	for (auto& c : reading_connections) {

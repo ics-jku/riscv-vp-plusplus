@@ -19,7 +19,7 @@ struct PinDesc {
 	std::string name;
 };
 
-typedef std::unordered_map<PinNumber,PinDesc> PinLayout;
+typedef std::unordered_map<PinNumber,PinDesc> PinLayout; // device pin
 
 //ConfigInterface
 

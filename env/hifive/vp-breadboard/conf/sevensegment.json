@@ -1,6 +1,4 @@
 {
-  "background" : ":/img/sevensegment.jpg",
-  "windowsize" : [640, 480],
   "buttons" :
   [
     {
@@ -9,15 +7,61 @@
       "dim":[55, 55]
     }
   ],
-  "sevensegment" :
-  {
-    "offs" : [312, 353],
-    "extent" : [36, 50],
-    "linewidth" : 7
-  },
-  "rgb" :
-  {
-    "offs" : [89, 161],
-    "linewidth" : 15
-  }
+  "devices": 
+   [
+    {
+      "class" : "sevensegment",
+      "id"    : "display",
+      "pins"  :
+      [
+        {
+          "device_pin" : 0,
+          "global_pin" : 15,
+          "name": "top",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "name": "top_right",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 2,
+          "global_pin" : 17,
+          "name": "bottom_right",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 3,
+          "global_pin" : 18,
+          "name": "bottom",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 4,
+          "global_pin" : 19,
+          "name": "bottom_left",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 5,
+          "global_pin" : 7,
+          "name": "top_left",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 6,
+          "global_pin" : 6,
+          "name": "center",
+          "synchronous" : false
+        }
+      ],
+     "graphics" :
+     {
+       "offs" : [0, 0],
+       "scale" : 2
+     }
+    }
+  ]
 }
