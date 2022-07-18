@@ -9,8 +9,6 @@
 #include "devices/c/all_devices.hpp"
 #include "embedded/gpio-helpers.h"
 
-static constexpr unsigned max_num_buttons = 7;
-
 class Breadboard : public QWidget {
 	Q_OBJECT
 
@@ -25,7 +23,6 @@ class Breadboard : public QWidget {
 	std::list<PinMapping> writing_connections;
 
 	bool debugmode = false;
-	unsigned moving_button = 0;
 
 	void paintEvent(QPaintEvent*) override;
 	void keyPressEvent(QKeyEvent* e) override;

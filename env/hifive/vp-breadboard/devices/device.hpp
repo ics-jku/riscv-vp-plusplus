@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include <gpio/gpio-client.hpp>
+
 #include "configurations.h"
 
 class Device {
@@ -47,11 +49,18 @@ public:
 		virtual void registerGetBuf(const GetBuf_fn getBuf) = 0;
 	};
 
+	class Input_Interface {
+	public:
+		virtual ~Input_Interface();
+		virtual gpio::Tristate pressed(bool active) = 0;
+	};
+
 
 	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;
 	std::unique_ptr<Config_Interface> conf;
 	std::unique_ptr<Graphbuf_Interface> graph;
+	std::unique_ptr<Input_Interface> input;
 
 	Device(DeviceID id);
 	virtual ~Device();

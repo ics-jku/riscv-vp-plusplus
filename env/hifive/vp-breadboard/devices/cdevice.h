@@ -53,6 +53,15 @@ public:
 		void registerGetBuf(const GetBuf_fn getBuf);
 	};
 
+	class Input_Interface_C : public Device::Input_Interface {
+	protected:
+		CDevice* device;
+	public:
+		Input_Interface_C(CDevice* device);
+		~Input_Interface_C();
+		gpio::Tristate pressed(bool active);
+	};
+
 	CDevice(DeviceID id);
 	~CDevice();
 };

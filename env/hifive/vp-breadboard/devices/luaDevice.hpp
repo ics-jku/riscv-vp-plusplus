@@ -93,6 +93,16 @@ public:
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
+	class Input_Interface_Lua : public Device::Input_Interface {
+		luabridge::LuaRef m_pressed;
+	public:
+		Input_Interface_Lua(luabridge::LuaRef& ref);
+		~Input_Interface_Lua();
+		gpio::Tristate pressed(bool active);
+
+		static bool implementsInterface(const luabridge::LuaRef& ref);
+	};
+
 	LuaDevice(DeviceID id, luabridge::LuaRef env, lua_State* L);
 	~LuaDevice();
 };

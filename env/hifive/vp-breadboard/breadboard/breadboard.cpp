@@ -328,39 +328,12 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 
 	// Graph Buffers
-
 	for (auto& [id, graphic] : device_graphics) {
 		const auto& image = graphic.image;
 		painter.drawImage(graphic.offset,
 				image.scaled(image.size().width()*graphic.scale,
 				image.size().height()*graphic.scale));
 	}
-
-//	//buttons
-//	painter.save();
-//	QColor dark("#101010");
-//	dark.setAlphaF(0.5);
-//	painter.setBrush(QBrush(dark));
-//	if(debugmode)
-//	{
-//		painter.setPen(QPen(QColor("red")));
-//		painter.setFont(QFont("Arial", 12));
-//	}
-//	for(unsigned i = 0; i < max_num_buttons; i++)
-//	{
-//		if(!buttons[i])
-//			break;
-//		if(buttons[i]->pressed || debugmode)
-//			painter.drawRect(buttons[i]->area);
-//		if(debugmode)
-//			painter.drawText(buttons[i]->area, buttons[i]->name, Qt::AlignHCenter | Qt::AlignVCenter);
-//	}
-//	painter.restore();
-//
-//	if (debugmode) {
-//			if(sevensegment)
-//				painter.drawRect(QRect(sevensegment->offs, QSize(sevensegment->extent.x(), sevensegment->extent.y())));
-//	}
 
 	painter.end();
 }
@@ -377,47 +350,6 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 	{
 		switch(e->key())
 		{
-//		case Qt::Key_Right:
-//			if(buttons[++moving_button] == nullptr || moving_button >= max_num_buttons)
-//				moving_button = 0;
-//			if(buttons[moving_button] == nullptr)
-//			{
-//				cout << "No Buttons available" << endl;
-//			}
-//			else
-//			{
-//				cout << "Moving button " << buttons[moving_button]->name.toStdString() << endl;
-//			}
-//			break;
-//
-//		case Qt::Key_W:
-//			if(buttons[moving_button] == nullptr)
-//				break;
-//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(0, 1));
-//			cout << buttons[moving_button]->name.toStdString() << " ";
-//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-//			break;
-//		case Qt::Key_A:
-//			if(buttons[moving_button] == nullptr)
-//				break;
-//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() - QPoint(1, 0));
-//			cout << buttons[moving_button]->name.toStdString() << " ";
-//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-//			break;
-//		case Qt::Key_S:
-//			if(buttons[moving_button] == nullptr)
-//				break;
-//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(0, 1));
-//			cout << buttons[moving_button]->name.toStdString() << " ";
-//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-//			break;
-//		case Qt::Key_D:
-//			if(buttons[moving_button] == nullptr)
-//				break;
-//			buttons[moving_button]->area.moveTopLeft(buttons[moving_button]->area.topLeft() + QPoint(1, 0));
-//			cout << buttons[moving_button]->name.toStdString() << " ";
-//			cout << "X: " << buttons[moving_button]->area.topLeft().x() << " Y: " << buttons[moving_button]->area.topLeft().y() << endl;
-//			break;
 		case Qt::Key_Space:
 			cout << "Debug mode off" << endl;
 			debugmode = 0;
@@ -483,43 +415,18 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
-//	if (e->button() == Qt::LeftButton) {
-//		for(unsigned i = 0; i < max_num_buttons; i++)
-//		{
-//			if(buttons[i] == nullptr)
-//				break;	//this is sorted somewhat
-//
-//			if (buttons[i]->area.contains(e->pos())) {
-//				//cout << "button " << i << " click!" << endl;
-//				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
-//				buttons[i]->pressed = true;
-//			}
-//		}
-//		// cout << "clicked summin elz" << endl;
-//	} else {
-//		cout << "Whatcha doin' there?" << endl;
-//	}
-//	this->update();
-//	e->accept();
+	for(pair<DeviceID,DeviceGraphic> graph_it : device_graphics) {
+		// test if device graphic contains e->pos()
+		// take into account graph_it.second->image.rect()
+		// as well as scale and offs (as they are not actually applied to image)
+		// if yes, get device from devices
+		// then check for input-Interface
+		// if existing, call pressed with true and set bit according to return
+	}
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
-//	if (e->button() == Qt::LeftButton) {
-//		for(unsigned i = 0; i < max_num_buttons; i++)
-//		{
-//			if(buttons[i] == nullptr)
-//				break;	//this is sorted somewhat
-//			if (buttons[i]->area.contains(e->pos())) {
-//				//cout << "button " << i << " release!" << endl;
-//				emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET));
-//				buttons[i]->pressed = false;
-//			}
-//		}
-//		// cout << "released summin elz" << endl;
-//	} else {
-//		cout << "Whatcha doin' there?" << endl;
-//	}
-//	this->update();
-//	e->accept();
+	// basically the same as mousePressEvent
+	// maybe one helper method for everything?
 }
 

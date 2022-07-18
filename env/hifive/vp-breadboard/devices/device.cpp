@@ -9,9 +9,7 @@ const DeviceID& Device::getID() const {
 }
 
 Device::PIN_Interface::~PIN_Interface() {}
-
 Device::SPI_Interface::~SPI_Interface() {}
-
 Device::Config_Interface::~Config_Interface() {}
-
 Device::Graphbuf_Interface::~Graphbuf_Interface() {}
+Device::Input_Interface::~Input_Interface() {}

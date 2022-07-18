@@ -12,7 +12,8 @@ void Factory::printAvailableDevices() {
 }
 
 bool Factory::deviceExists(DeviceClass classname) {
-	return lua_factory.deviceExists(classname) || classname == "oled" || classname == "sevensegment";
+	return lua_factory.deviceExists(classname) || classname == "oled"
+			|| classname == "sevensegment" || classname == "button";
 }
 
 Device* Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
@@ -21,6 +22,9 @@ Device* Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	}
 	else if(classname == "sevensegment") {
 		return new Sevensegment(id);
+	}
+	else if(classname == "button") {
+		return new Button(id);
 	}
 	return lua_factory.instantiateDevice(id, classname);
 }

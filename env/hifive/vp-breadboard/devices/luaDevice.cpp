@@ -28,6 +28,9 @@ LuaDevice::LuaDevice(const DeviceID id, LuaRef env, lua_State* l) : Device(id), 
 	if(Graphbuf_Interface_Lua::implementsInterface(m_env)) {
 		graph = std::make_unique<Graphbuf_Interface_Lua>(env, m_id, l);
 	}
+	if(Input_Interface_Lua::implementsInterface(m_env)) {
+		input = std::make_unique<Input_Interface_Lua>(m_env);
+	}
 };
 
 LuaDevice::~LuaDevice() {}
@@ -305,5 +308,20 @@ bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::Lua
 		return false;
 	}
 	return true;
+}
+
+LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_pressed(ref["pressed"]) {
+	if(!implementsInterface(ref))
+		cerr << "[Device] [Input_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+}
+
+LuaDevice::Input_Interface_Lua::~Input_Interface_Lua() {}
+
+gpio::Tristate LuaDevice::Input_Interface_Lua::pressed(bool active) {
+	return gpio::Tristate::UNSET; // TODO
+}
+
+bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {
+	return !ref["pressed"].isNil();
 }
 
