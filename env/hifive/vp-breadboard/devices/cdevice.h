@@ -59,7 +59,8 @@ public:
 	public:
 		Input_Interface_C(CDevice* device);
 		~Input_Interface_C();
-		gpio::Tristate pressed(bool active);
+		gpio::Tristate mouse(bool active);
+		gpio::Tristate key(int key, bool active);
 	};
 
 	CDevice(DeviceID id);

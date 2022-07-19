@@ -52,7 +52,8 @@ public:
 	class Input_Interface {
 	public:
 		virtual ~Input_Interface();
-		virtual gpio::Tristate pressed(bool active) = 0;
+		virtual gpio::Tristate mouse(bool active) = 0; // requires graph
+		virtual gpio::Tristate key(int key, bool active) = 0; // requires config
 	};
 
 

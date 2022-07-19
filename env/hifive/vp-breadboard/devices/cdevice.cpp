@@ -69,7 +69,12 @@ void CDevice::Graphbuf_Interface_C::registerGetBuf(const GetBuf_fn getBuf) {
 CDevice::Input_Interface_C::Input_Interface_C(CDevice* device) : device(device) {}
 CDevice::Input_Interface_C::~Input_Interface_C() {}
 
-gpio::Tristate CDevice::Input_Interface_C::pressed(bool active) {
-	std::cout << "Warning: pressed was not implemented" << std::endl;
+gpio::Tristate CDevice::Input_Interface_C::mouse(bool active) {
+	std::cout << "Warning: mouse was not implemented" << std::endl;
+	return gpio::Tristate::UNSET;
+}
+
+gpio::Tristate CDevice::Input_Interface_C::key(int key, bool active) {
+	std::cout << "Warning: key was not implemented" << std::endl;
 	return gpio::Tristate::UNSET;
 }

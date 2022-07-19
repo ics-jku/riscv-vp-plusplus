@@ -1,14 +1,28 @@
 {
-  "buttons" :
-  [
-    {
-      "pin" : 3,
-      "pos" : [373, 343],
-      "dim":[55, 55]
-    }
-  ],
   "devices": 
    [
+    { 
+      "class" : "button",
+      "id" : "reverse_count",
+      "graphics" : 
+      { 
+        "offs" : [100, 0],
+        "scale" : 1
+      },
+      "pins" : 
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 3,
+          "name" : "output",
+          "synchronous": false 
+        } 
+      ],
+      "conf" : 
+      { 
+        "keybinding" : 75
+      }
+    },
     {
       "class" : "sevensegment",
       "id"    : "display",
@@ -54,6 +68,12 @@
           "device_pin" : 6,
           "global_pin" : 6,
           "name": "center",
+          "synchronous" : false
+        },
+        { 
+          "device_pin" : 7,
+          "global_pin" : 5,
+          "name" : "dot",
           "synchronous" : false
         }
       ],

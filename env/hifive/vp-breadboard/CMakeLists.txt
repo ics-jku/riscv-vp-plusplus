@@ -45,6 +45,7 @@ set(HEADERS
 	embedded/gpio-helpers.h
 	breadboard/breadboard.h
 	breadboard/configurations.h
+	breadboard/raster.h
 	devices/device.hpp
 	devices/configurations.h
 	devices/factory.h
@@ -69,6 +70,7 @@ set(SOURCES
     embedded/embedded.cpp
     embedded/gpio-helpers.cpp
     breadboard/breadboard.cpp
+    breadboard/raster.cpp
     ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
     ../../../vp/src/util/elegantEnums.cpp

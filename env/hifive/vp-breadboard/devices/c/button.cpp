@@ -2,11 +2,20 @@
 
 Button::Button(DeviceID id) : CDevice(id) {
 	if(!graph) {
-		layout_graph = Layout{36, 36, "rgba"};
+		layout_graph = Layout{35, 35, "rgba"};
 		graph = std::make_unique<Button_Graph>(this);
 	}
 	if(!input) {
 		input = std::make_unique<Button_Input>(this);
+	}
+	if(!pin) {
+		layout_pin = PinLayout();
+		layout_pin.emplace(1, PinDesc{PinDesc::Dir::output, "output"});
+		pin = std::make_unique<Button_PIN>(this);
+	}
+	if(!conf) {
+		config = Config();
+		conf = std::make_unique<Config_Interface_C>(this);
 	}
 }
 
@@ -14,17 +23,28 @@ Button::~Button() {}
 
 const DeviceClass Button::getClass() const { return "button"; }
 
+/* PIN Interface */
+
+Button::Button_PIN::Button_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {}
+
+bool Button::Button_PIN::getPin(PinNumber num) {
+	if(num == 1) {
+		Button* button_device = static_cast<Button*>(device);
+		return button_device->active;
+	}
+	return false;
+}
+
 /* Graph Interface */
 
 Button::Button_Graph::Button_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 
 void Button::Button_Graph::initializeBufferMaybe() {
 	Button* button_device = static_cast<Button*>(device);
-	button_device->draw_area(false);
+	button_device->draw_area();
 }
 
-void Button::draw_area(bool active) {
-	// background
+void Button::draw_area() {
 	for(unsigned x=0; x<layout_graph.width; x++) {
 		for(unsigned y=0; y<layout_graph.height; y++) {
 			set_buf(x, y, Pixel{(active?(uint8_t)255:(uint8_t)0), 0, 0, 128});
@@ -36,8 +56,21 @@ void Button::draw_area(bool active) {
 
 Button::Button_Input::Button_Input(CDevice* device) : CDevice::Input_Interface_C(device) {}
 
-gpio::Tristate Button::Button_Input::pressed(bool active) {
+gpio::Tristate Button::Button_Input::mouse(bool active) {
 	Button* button_device = static_cast<Button*>(device);
-	button_device->draw_area(active);
+	button_device->active = active;
+	button_device->draw_area();
 	return active ? gpio::Tristate::LOW : gpio::Tristate::UNSET;
+}
+
+gpio::Tristate Button::Button_Input::key(int key, bool active) {
+	if(device->conf) {
+		Config::iterator keybinding_it = device->conf->getConfig().find("keybinding");
+		if(keybinding_it != device->conf->getConfig().end() &&
+				keybinding_it->second.type == ConfigElem::Type::integer &&
+				keybinding_it->second.value.integer == key) {
+			return mouse(active);
+		}
+	}
+	return gpio::Tristate::UNSET;
 }

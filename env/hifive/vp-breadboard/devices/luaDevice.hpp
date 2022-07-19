@@ -94,11 +94,13 @@ public:
 	};
 
 	class Input_Interface_Lua : public Device::Input_Interface {
-		luabridge::LuaRef m_pressed;
+		luabridge::LuaRef m_mouse;
+		luabridge::LuaRef m_key;
 	public:
 		Input_Interface_Lua(luabridge::LuaRef& ref);
 		~Input_Interface_Lua();
-		gpio::Tristate pressed(bool active);
+		gpio::Tristate mouse(bool active);
+		gpio::Tristate key(int key, bool active);
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};

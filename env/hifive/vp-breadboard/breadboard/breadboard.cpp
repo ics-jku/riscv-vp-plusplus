@@ -1,4 +1,5 @@
 #include "breadboard.h"
+#include "raster.h"
 
 using namespace std;
 
@@ -75,8 +76,6 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 	}
 	QJsonObject config_root = json_doc.object();
 
-	// TODO: Let every registered "config object" decide its own default values
-
 	if(config_root.contains("devices") && config_root["devices"].isArray()) {
 		auto device_descriptions = config_root["devices"].toArray();
 		devices.reserve(device_descriptions.count());
@@ -98,6 +97,29 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 			}
 			devices.emplace(id, factory.instantiateDevice(id, classname));
 			Device* device = devices.at(id);
+
+			if(device_desc.contains("conf") && device_desc["conf"].isObject()) {
+				if(!device->conf) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+							" a Config Interface, but device does no implement it" << endl;
+					continue;
+				}
+
+				QJsonObject conf_obj = device_desc["conf"].toObject();
+				Config conf = Config();
+				for(QJsonObject::iterator conf_it = conf_obj.begin(); conf_it != conf_obj.end(); conf_it++) {
+					if(conf_it.value().isBool()) {
+						conf.emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
+					}
+					else if(conf_it.value().isDouble()) {
+						conf.emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
+					}
+					else {
+						cerr << "Invalid conf element type" << endl;
+					}
+				}
+				device->conf->setConfig(conf);
+			}
 
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
 				if(!device->spi) {
@@ -384,49 +406,45 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				cout << "Set Debug mode" << endl;
 				debugmode = true;
 				break;
-//			default:
-//				for(unsigned i = 0; i < max_num_buttons; i++)
-//				{
-//					if(buttons[i] == nullptr)
-//						break;	//this is sorted somewhat
-//
-//					if (buttons[i]->keybinding == e->key()) {
-//						emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::LOW));  // Active low
-//						buttons[i]->pressed = true;
-//					}
-//				}
-//				break;
+			default:
+				for(pair<DeviceID,Device*> dev_it : devices) {
+					if(dev_it.second->input) {
+						dev_it.second->input->key(e->key(), true);
+					}
+				}
+				break;
 		}
 	}
 }
 
 void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
-//	for(unsigned i = 0; i < max_num_buttons; i++)
-//	{
-//		if(buttons[i] == nullptr)
-//			break;	//this is sorted somewhat
-//
-//		if (buttons[i]->keybinding == e->key()) {
-//			emit(setBit(translatePinToGpioOffs(buttons[i]->pin), gpio::Tristate::UNSET)); // simple switch, disconnected
-//			buttons[i]->pressed = false;
-//		}
-//	}
+	for(pair<DeviceID,Device*> dev_it : devices) {
+		if(dev_it.second->input) {
+			dev_it.second->input->key(e->key(), false);
+		}
+	}
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
 	for(pair<DeviceID,DeviceGraphic> graph_it : device_graphics) {
-		// test if device graphic contains e->pos()
-		// take into account graph_it.second->image.rect()
-		// as well as scale and offs (as they are not actually applied to image)
-		// if yes, get device from devices
-		// then check for input-Interface
-		// if existing, call pressed with true and set bit according to return
+		if(graphicContainsPoint(graph_it.second, e->pos())) {
+			Device* dev = devices.at(graph_it.first);
+			if(dev->input) {
+				dev->input->mouse(true);
+			}
+		}
 	}
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
-	// basically the same as mousePressEvent
-	// maybe one helper method for everything?
+	for(pair<DeviceID,DeviceGraphic> graph_it : device_graphics) {
+		if(graphicContainsPoint(graph_it.second, e->pos())) {
+			Device* dev = devices.at(graph_it.first);
+			if(dev->input) {
+				dev->input->mouse(false);
+			}
+		}
+	}
 }
 

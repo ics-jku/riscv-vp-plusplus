@@ -310,18 +310,22 @@ bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::Lua
 	return true;
 }
 
-LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_pressed(ref["pressed"]) {
+LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_mouse(ref["mouse"]), m_key(ref["key"]) {
 	if(!implementsInterface(ref))
 		cerr << "[Device] [Input_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 }
 
 LuaDevice::Input_Interface_Lua::~Input_Interface_Lua() {}
 
-gpio::Tristate LuaDevice::Input_Interface_Lua::pressed(bool active) {
+gpio::Tristate LuaDevice::Input_Interface_Lua::mouse(bool active) {
+	return gpio::Tristate::UNSET; // TODO
+}
+
+gpio::Tristate LuaDevice::Input_Interface_Lua::key(int key, bool active) {
 	return gpio::Tristate::UNSET; // TODO
 }
 
 bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {
-	return !ref["pressed"].isNil();
+	return !ref["mouse"].isNil() || !ref["key"].isNil();
 }
 
