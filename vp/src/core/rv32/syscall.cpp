@@ -199,7 +199,11 @@ int sys_close(int fd) {
 	}
 }
 
-// TODO: add support for additional syscalls if necessary
+/*
+ *  TODO: Some parameters need to be aligned to the hosts word width (mostly 64 bit)
+ *	Especially when coming from a 32 bit guest system.
+ */
+
 int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t) {
 	// NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
 

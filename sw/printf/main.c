@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
 	int n = printf("ABCDEFX %s\n", "Done");
 	int e = errno;
 	puts(strerror(e));
-	
+
 	puts ("Hello World!");
 	puts ("  Hello World!");
 	puts (" X A ");
@@ -17,7 +17,8 @@ int main(int argc, char **argv) {
 	putchar('\n');
 	printf("  X Test\n");
 	printf("%d\n", 12);
-	puts ("Hello World!");
+
+	printf("Should print 1.2: %f\n", 1.2f);
 
 	return 0;
 }
