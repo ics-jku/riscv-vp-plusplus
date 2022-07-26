@@ -244,8 +244,8 @@ struct ISS : public external_interrupt_target,
 	void fp_setup_rm();
 	void fp_require_not_off();
 
-	uint32_t get_csr_value(uint32_t addr);
-	void set_csr_value(uint32_t addr, uint32_t value);
+	virtual uint32_t get_csr_value(uint32_t addr);
+	virtual void set_csr_value(uint32_t addr, uint32_t value);
 
 	bool is_invalid_csr_access(uint32_t csr_addr, bool is_write);
 	void validate_csr_counter_read_access_rights(uint32_t addr);

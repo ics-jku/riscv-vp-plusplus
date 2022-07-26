@@ -5,9 +5,9 @@
 #include "gdb-mc/gdb_runner.h"
 #include "gdb-mc/gdb_server.h"
 #include "gpio.h"
-#include "iss.h"
 #include "mem.h"
 #include "memory.h"
+#include "nuclei_iss.h"
 #include "platform/common/options.h"
 #include "rcu.h"
 #include "spi.h"
@@ -59,7 +59,7 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core(0);
+	NUCLEI_ISS core(0);
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
