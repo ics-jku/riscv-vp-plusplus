@@ -16,7 +16,7 @@ Central::Central(QString configfile, std::string additional_device_dir, const ch
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, &Central::timerUpdate);
-	timer->start(250);
+	timer->start(50);
 
 	connect(breadboard, &Breadboard::registerIOF_PIN, embedded, &Embedded::registerIOF_PIN);
 	connect(breadboard, &Breadboard::registerIOF_SPI, embedded, &Embedded::registerIOF_SPI);
