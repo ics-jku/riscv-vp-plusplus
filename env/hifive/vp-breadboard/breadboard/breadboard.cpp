@@ -26,9 +26,7 @@ void Breadboard::timerUpdate(gpio::State state) {
 		// TODO: Only if pin changed?
 		c.dev->pin->setPin(c.device_pin, state.pins[c.gpio_offs] == gpio::Pinstate::HIGH ? true : false);
 	}
-	lua_access.unlock();
 
-	lua_access.lock();
 	for (auto& c : writing_connections) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
 	}
