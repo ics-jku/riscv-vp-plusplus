@@ -9,6 +9,7 @@
 #include "mem.h"
 #include "memory.h"
 #include "platform/common/options.h"
+#include "rcu.h"
 #include "spi.h"
 #include "timer.h"
 
@@ -21,6 +22,9 @@ class GD32Options : public Options {
 
 	addr_t timer_start_addr = 0xD1000000;
 	addr_t timer_end_addr = 0xD100D000;
+
+	addr_t rcu_start_addr = 0x40021000;
+	addr_t rcu_end_addr = 0x400213FF;
 
 	addr_t spi_start_addr = 0x40013000;
 	addr_t spi_end_addr = 0x400133FF;
@@ -59,9 +63,10 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 5> ahb("AHB");
+	SimpleBus<2, 6> ahb("AHB");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
+	RCU rcu("RCU");
 	TIMER timer("TIMER");
 	GPIO gpioa("GPIOA");
 	SPI spi0("SPI0");
@@ -87,6 +92,7 @@ int sc_main(int argc, char **argv) {
 	ahb.ports[2] = new PortMapping(opt.gpioa_start_addr, opt.gpioa_end_addr);
 	ahb.ports[3] = new PortMapping(opt.timer_start_addr, opt.timer_end_addr);
 	ahb.ports[4] = new PortMapping(opt.spi_start_addr, opt.spi_end_addr);
+	ahb.ports[5] = new PortMapping(opt.rcu_start_addr, opt.rcu_end_addr);
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);
@@ -101,6 +107,7 @@ int sc_main(int argc, char **argv) {
 	ahb.isocks[2].bind(gpioa.tsock);
 	ahb.isocks[3].bind(timer.tsock);
 	ahb.isocks[4].bind(spi0.tsock);
+	ahb.isocks[5].bind(rcu.tsock);
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
