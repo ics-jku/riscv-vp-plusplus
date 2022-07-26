@@ -17,7 +17,7 @@ class Embedded : public QWidget {
 
 
 public:
-	Embedded(const char* host, const char* port, QWidget *parent);
+	Embedded(const char* host, const char* port, bool visible, QWidget *parent);
 	~Embedded();
 
 	bool timerUpdate();

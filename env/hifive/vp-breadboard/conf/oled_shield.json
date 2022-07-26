@@ -1,7 +1,8 @@
 {
-  "background" : ":/img/oled_shield.jpg",
-  "original_img_size" : [2667, 4354],
-  "windowsize" : [490, 800],
+  "window" : {
+    "background" : ":/img/oled_shield.jpg",
+    "windowsize" : [367, 600]
+  },
   "devices" :
   [
    { 
@@ -9,7 +10,7 @@
       "id" : "button_b",
       "graphics" : 
       { 
-        "offs" : [390, 80],
+        "offs" : [70, 440],
         "scale" : 1
       },
       "conf" : 
@@ -31,7 +32,7 @@
       "id" : "button_a",
       "graphics" : 
       { 
-        "offs" : [310, 80],
+        "offs" : [70, 510],
         "scale" : 1
       },
       "conf" : 
@@ -53,7 +54,7 @@
       "id" : "button_right",
       "graphics" : 
       { 
-        "offs" : [390, 40],
+        "offs" : [235, 475],
         "scale" : 1
       },
       "conf" : 
@@ -75,7 +76,7 @@
       "id" : "button_left",
       "graphics" : 
       { 
-        "offs" : [310, 40],
+        "offs" : [125, 475],
         "scale" : 1
       },
       "conf" : 
@@ -97,7 +98,7 @@
       "id" : "button_up",
       "graphics" : 
       { 
-        "offs" : [350, 0],
+        "offs" : [180, 420],
         "scale" : 1
       },
       "conf" : 
@@ -119,7 +120,7 @@
       "id" : "button_down",
       "graphics" : 
       { 
-        "offs" : [350, 80],
+        "offs" : [180, 530],
         "scale" : 1
       },
       "conf" : 
@@ -141,7 +142,7 @@
       "id" : "button_center",
       "graphics" : 
       { 
-        "offs" : [350, 40],
+        "offs" : [180, 475],
         "scale" : 1
       },
       "pins" :
@@ -153,12 +154,29 @@
           "synchronous" : false 
         } 
       ]
+    },
+    {
+      "class" : "SSD1106",
+      "id"    : "display",
+      "spi"   :
+      { 
+        "cs_pin" : 15,
+        "noresponse": true
+      },
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "name": "dc_pin",
+          "synchronous" : true
+        }
+      ],
+     "graphics" :
+     {
+       "offs" : [60, 220],
+       "scale" : 2
+     }
     }
-  ],
-  "oled-mmap" :
-  {
-    "offs"   : [107, 324],
-    "scale"  : 2,
-    "margin" : 10
-  }
+  ]
 }

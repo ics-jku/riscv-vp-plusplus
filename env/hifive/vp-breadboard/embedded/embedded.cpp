@@ -5,12 +5,19 @@
 using namespace gpio;
 using namespace std;
 
-Embedded::Embedded(const char* host, const char* port, QWidget *parent) : QWidget(parent), host(host), port(port) {
-	QString bkgd_path = ":/img/virtual_hifive.png";
-	QSize bkgd_size = QSize(417, 231);
+Embedded::Embedded(const char* host, const char* port, bool visible, QWidget *parent) : QWidget(parent), host(host), port(port) {
+	QSize bkgnd_size = QSize(417, 231);
+	if(visible) {
+		QString bkgnd_path = ":/img/virtual_hifive.png";
+		QPixmap bkgnd(bkgnd_path);
+		bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
+		QPalette palette;
+		palette.setBrush(QPalette::Window, bkgnd);
+		this->setPalette(palette);
+		this->setAutoFillBackground(true);
+	}
 
-	setStyleSheet("background-image: url("+bkgd_path+");");
-	setFixedSize(bkgd_size);
+	setFixedSize(bkgnd_size);
 }
 
 Embedded::~Embedded() {}
@@ -27,6 +34,7 @@ bool Embedded::timerUpdate() { // return: new connection?
 			return true;
 		}
 	}
+	this->update();
 	return false;
 }
 
@@ -61,13 +69,9 @@ void Embedded::setBit(gpio::PinNumber gpio_offs, gpio::Tristate state) {
 /* PAINT */
 
 void Embedded::paintEvent(QPaintEvent*) {
-	QPainter painter(this);
-	painter.setRenderHint(QPainter::Antialiasing);
-	QStyleOption opt;
-	opt.init(this);
-
-	style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 	if(!connected) {
+		QPainter painter(this);
+		painter.setRenderHint(QPainter::Antialiasing);
 		painter.setBrush(QBrush(QColor("black")));
 		QRect sign;
 		if(this->size().width() > this->size().height())

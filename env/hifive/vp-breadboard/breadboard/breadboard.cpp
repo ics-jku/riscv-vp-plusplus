@@ -6,12 +6,6 @@ using namespace std;
 constexpr bool debug_logging = false;
 
 Breadboard::Breadboard(QWidget* parent) : QWidget(parent) {
-	QString bkgnd_path = ":/img/virtual_breadboard.png";
-	QSize bkgnd_size = QSize(486, 233);
-
-	setStyleSheet("background-image: url("+bkgnd_path+");");
-	setFixedSize(bkgnd_size);
-
 	setFocusPolicy(Qt::StrongFocus);
 }
 
@@ -31,6 +25,7 @@ void Breadboard::timerUpdate(gpio::State state) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
 	}
 	lua_access.unlock();
+	this->update();
 }
 
 void Breadboard::reconnected() { // new gpio connection
@@ -57,13 +52,6 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 	}
 
 	QByteArray  raw_file = confFile.readAll();
-	/*
-	    for(unsigned i = 0; i < raw_file.size(); i++)
-	    {
-	    	cout << raw_file.data()[i];
-	    }
-	    cout << endl;
-	 */
 	QJsonParseError error;
 	QJsonDocument json_doc = QJsonDocument::fromJson(raw_file, &error);
 	if(json_doc.isNull())
@@ -73,6 +61,26 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 		return false;
 	}
 	QJsonObject config_root = json_doc.object();
+
+	QString bkgnd_path = ":/img/virtual_breadboard.png";
+	QSize bkgnd_size = QSize(486, 233);
+	if(config_root.contains("window") && config_root["window"].isObject()) {
+		breadboard = false;
+		QJsonObject window = config_root["window"].toObject();
+		bkgnd_path = window["background"].toString(bkgnd_path);
+		unsigned windowsize_x = window["windowsize"].toArray().at(0).toInt();
+		unsigned windowsize_y = window["windowsize"].toArray().at(1).toInt();
+		bkgnd_size = QSize(windowsize_x, windowsize_y);
+	}
+
+	QPixmap bkgnd(bkgnd_path);
+	bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
+	QPalette palette;
+	palette.setBrush(QPalette::Window, bkgnd);
+	this->setPalette(palette);
+	this->setAutoFillBackground(true);
+
+	setFixedSize(bkgnd_size);
 
 	if(config_root.contains("devices") && config_root["devices"].isArray()) {
 		auto device_descriptions = config_root["devices"].toArray();
@@ -341,12 +349,6 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	// background
-	QStyleOption opt;
-	opt.init(this);
-
-	style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
-
 	// Graph Buffers
 	for (auto& [id, graphic] : device_graphics) {
 		const auto& image = graphic.image;
@@ -413,6 +415,7 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				break;
 		}
 	}
+	this->update();
 }
 
 void Breadboard::keyReleaseEvent(QKeyEvent* e)
@@ -422,6 +425,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 			dev_it.second->input->key(e->key(), false);
 		}
 	}
+	this->update();
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
@@ -433,6 +437,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 			}
 		}
 	}
+	this->update();
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
@@ -444,5 +449,8 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 			}
 		}
 	}
+	this->update();
 }
+
+bool Breadboard::isBreadboard() { return breadboard; }
 

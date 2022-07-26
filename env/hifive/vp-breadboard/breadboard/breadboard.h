@@ -23,6 +23,7 @@ class Breadboard : public QWidget {
 	std::list<PinMapping> writing_connections;
 
 	bool debugmode = false;
+	bool breadboard = true;
 
 	void paintEvent(QPaintEvent*) override;
 	void keyPressEvent(QKeyEvent* e) override;
@@ -38,6 +39,7 @@ public:
 
 	void timerUpdate(gpio::State state);
 	void reconnected();
+	bool isBreadboard();
 
 signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);

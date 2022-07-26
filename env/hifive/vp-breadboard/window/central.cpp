@@ -8,11 +8,13 @@ Central::Central(QString configfile, std::string additional_device_dir, const ch
 		exit(-4);
 	}
 
-	embedded = new Embedded(host, port, this);
+	embedded = new Embedded(host, port, breadboard->isBreadboard(), this);
 
-	QVBoxLayout *layout = new QVBoxLayout(this);
-	layout->addWidget(embedded);
-	layout->addWidget(breadboard);
+	if(breadboard->isBreadboard()) {
+		QVBoxLayout *layout = new QVBoxLayout(this);
+		layout->addWidget(embedded);
+		layout->addWidget(breadboard);
+	}
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, &Central::timerUpdate);
@@ -34,5 +36,4 @@ void Central::timerUpdate() {
 	if(embedded->gpioConnected()) {
 		breadboard->timerUpdate(embedded->getState());
 	}
-	this->update();
 }
