@@ -60,7 +60,7 @@ if(NOT DONT_INCLUDE_LUA_DEVICES)
 	file(GLOB SCRIPTS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./devices/lua/*.lua)
 endif()
 set(SCRIPTS ${SCRIPTS} devices/loadscript.lua)
-file(GLOB IMAGES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./img/*.jpg)
+file(GLOB IMAGES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "./img/*.jpg" "./img/*.png")
 file(GLOB DEVICES ./devices/c/*.cpp)
 
 set(SOURCES
