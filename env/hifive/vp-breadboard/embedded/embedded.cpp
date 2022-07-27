@@ -6,8 +6,8 @@ using namespace gpio;
 using namespace std;
 
 Embedded::Embedded(const char* host, const char* port, bool visible, QWidget *parent) : QWidget(parent), host(host), port(port) {
-	QSize bkgnd_size = QSize(417, 231);
 	if(visible) {
+		QSize bkgnd_size = QSize(417, 231);
 		QString bkgnd_path = ":/img/virtual_hifive.png";
 		QPixmap bkgnd(bkgnd_path);
 		bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
@@ -15,9 +15,8 @@ Embedded::Embedded(const char* host, const char* port, bool visible, QWidget *pa
 		palette.setBrush(QPalette::Window, bkgnd);
 		this->setPalette(palette);
 		this->setAutoFillBackground(true);
+		setFixedSize(bkgnd_size);
 	}
-
-	setFixedSize(bkgnd_size);
 }
 
 Embedded::~Embedded() {}

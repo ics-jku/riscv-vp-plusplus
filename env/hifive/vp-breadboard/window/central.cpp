@@ -14,6 +14,9 @@ Central::Central(QString configfile, std::string additional_device_dir, const ch
 	if(breadboard->isBreadboard()) {
 		layout->addWidget(embedded);
 	}
+	else {
+		embedded->setFixedSize(breadboard->size());
+	}
 	layout->addWidget(breadboard);
 
 	QTimer *timer = new QTimer(this);
