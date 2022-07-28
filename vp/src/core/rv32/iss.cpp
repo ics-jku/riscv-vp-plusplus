@@ -4329,6 +4329,10 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 	return num_cycles;
 }
 
+csr_table *ISS::get_csr_table() {
+	return &csrs;
+}
+
 bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
 	if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
 		REQUIRE_ISA(F_ISA_EXT);

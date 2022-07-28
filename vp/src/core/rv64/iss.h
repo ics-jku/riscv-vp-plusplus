@@ -230,6 +230,7 @@ struct ISS : public external_interrupt_target,
 	void fp_setup_rm();
 	void fp_require_not_off();
 
+	virtual csr_table *get_csr_table();
 	uint64_t get_csr_value(uint64_t addr);
 
 	void set_csr_value(uint64_t addr, uint64_t value);

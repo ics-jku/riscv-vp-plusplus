@@ -4448,6 +4448,10 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 	return num_cycles;
 }
 
+csr_table *ISS::get_csr_table() {
+	return &csrs;
+}
+
 void ISS::validate_csr_counter_read_access_rights(uint64_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
 	if ((addr >= 0xC00 && addr <= 0xC1F)) {

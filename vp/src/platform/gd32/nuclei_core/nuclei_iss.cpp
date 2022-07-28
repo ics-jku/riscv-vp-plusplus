@@ -4,13 +4,19 @@
 
 using namespace rv32;
 
+csr_table* NUCLEI_ISS::get_csr_table() {
+	return &csrs;
+}
+
 uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
-	// validate_csr_counter_read_access_rights(addr);
 	// auto read = [=](auto &x, uint32_t mask) { return x.reg & mask; };
 
 	using namespace csr;
 
 	switch (addr) {
+		case MTVEC_ADDR:
+		case MCAUSE_ADDR:
+
 		case MTVT_ADDR:
 		case MNXTI_ADDR:
 		case MINTSTATUS_ADDR:
@@ -45,18 +51,21 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 		case MDCFG_INFO_ADDR:
 		case MCFG_INFO_ADDR:
 		case MTLBCFG_INFO_ADDR:
-			return 0;
+			return get_csr_table()->default_read32(addr);
 		default:
 			return ISS::get_csr_value(addr);
 	}
 }
 
 void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
-	// auto read = [=](auto &x, uint32_t mask) { return x.reg & mask; };
+	// auto write = [=](auto &x, uint32_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
 
 	using namespace csr;
 
 	switch (addr) {
+		case MTVEC_ADDR:
+		case MCAUSE_ADDR:
+
 		case MTVT_ADDR:
 		case MNXTI_ADDR:
 		case MINTSTATUS_ADDR:
@@ -91,6 +100,7 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		case MDCFG_INFO_ADDR:
 		case MCFG_INFO_ADDR:
 		case MTLBCFG_INFO_ADDR:
+			get_csr_table()->default_write32(addr, value);
 			break;
 		default:
 			ISS::set_csr_value(addr, value);

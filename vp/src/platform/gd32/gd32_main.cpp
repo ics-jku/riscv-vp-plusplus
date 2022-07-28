@@ -7,7 +7,7 @@
 #include "gpio.h"
 #include "mem.h"
 #include "memory.h"
-#include "nuclei_iss.h"
+#include "nuclei_core/nuclei_iss.h"
 #include "platform/common/options.h"
 #include "rcu.h"
 #include "spi.h"
