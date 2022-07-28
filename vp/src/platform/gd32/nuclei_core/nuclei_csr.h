@@ -328,6 +328,30 @@ struct nuclei_csr_mtlb_ctl {
 };
 
 namespace csr {
+constexpr uint32_t MCAUSE_MASK = 0b11111000111111111111000000000000;
+constexpr uint32_t MILM_CTL_MASK = 0b11111111111111111111110000000001;
+constexpr uint32_t MDLM_CTL_MASK = MILM_CTL_MASK;
+constexpr uint32_t MSUBM_MASK = 0b1111000000;
+constexpr uint32_t MDCAUSE_MASK = 0b11;
+constexpr uint32_t MCACHE_CTL_MASK = 0b111110000000000111111;
+constexpr uint32_t MMISC_CTL_MASK = 0b1001001000;
+constexpr uint32_t MSAVESTATUS_MASK = 0b1100011111000111;
+constexpr uint32_t MINTSTATUS_MASK = 0b11111111000000000000000011111111;
+constexpr uint32_t MTVT2_MASK = ~0b10;
+constexpr uint32_t SLEEPVALUE_MASK = 0b1;
+constexpr uint32_t TXEVT_MASK = 0b1;
+constexpr uint32_t WFE_MASK = 0b1;
+constexpr uint32_t UCODE_MASK = 0b1;
+constexpr uint32_t MCFG_INFO_MASK = 0b11111111111;
+constexpr uint32_t MICFG_INFO_MASK = 0b1111110000001111111111;
+constexpr uint32_t MDCFG_INFO_MASK = 0b111110000001111111111;
+constexpr uint32_t MTLBCFG_INFO_MASK = 0b1111110000011111111111;
+constexpr uint32_t MPPICFG_INFO_MASK = 0b11111111111111111111110000111110;
+constexpr uint32_t MFIOCFG_INFO_MASK = MPPICFG_INFO_MASK;
+constexpr uint32_t MECC_LOCK_MASK = 0b1;
+constexpr uint32_t MECC_CODE_MASK = 0b11111000111110000000111111111;
+constexpr uint32_t MTLB_CTL_MASK = 0b1111;
+
 constexpr unsigned MTVT_ADDR = 0x307;
 constexpr unsigned MNXTI_ADDR = 0x345;
 constexpr unsigned MINTSTATUS_ADDR = 0x346;
