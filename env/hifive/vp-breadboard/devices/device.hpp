@@ -23,8 +23,8 @@ public:
 	public:
 		virtual ~PIN_Interface();
 		virtual PinLayout getPinLayout() = 0;
-		virtual bool getPin(PinNumber num) = 0;
-		virtual void setPin(PinNumber num, bool val) = 0;	// TODO Tristate?
+		virtual gpio::Tristate getPin(PinNumber num) = 0;
+		virtual void setPin(PinNumber num, gpio::Tristate val) = 0;	// TODO Tristate?
 	};
 
 	class SPI_Interface {
@@ -52,8 +52,8 @@ public:
 	class Input_Interface {
 	public:
 		virtual ~Input_Interface();
-		virtual gpio::Tristate mouse(bool active) = 0; // requires graph
-		virtual gpio::Tristate key(int key, bool active) = 0; // requires config
+		virtual void mouse(bool active) = 0; // requires graph
+		virtual void key(int key, bool active) = 0; // requires config
 	};
 
 

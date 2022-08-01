@@ -13,7 +13,7 @@ public:
 	class Segment_PIN : public CDevice::PIN_Interface_C {
 	public:
 		Segment_PIN(CDevice* device);
-		void setPin(PinNumber num, bool val);
+		void setPin(PinNumber num, gpio::Tristate val);
 	};
 
 	class Segment_Graph : public CDevice::Graphbuf_Interface_C {

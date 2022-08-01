@@ -97,17 +97,17 @@ PinLayout LuaDevice::PIN_Interface_Lua::getPinLayout() {
 }
 
 
-bool LuaDevice::PIN_Interface_Lua::getPin(PinNumber num) {
+gpio::Tristate LuaDevice::PIN_Interface_Lua::getPin(PinNumber num) {
 	const LuaResult r = m_getPin(num);
 	if(!r || !r[0].isBool()) {
 		cerr << "[lua] Device getPin returned malformed output" << endl;
-		return false;
+		return gpio::Tristate::LOW;
 	}
-	return r[0].cast<bool>();
+	return r[0].cast<bool>() ? gpio::Tristate::HIGH : gpio::Tristate::LOW;
 }
 
-void LuaDevice::PIN_Interface_Lua::setPin(PinNumber num, bool val) {
-	m_setPin(num, val);
+void LuaDevice::PIN_Interface_Lua::setPin(PinNumber num, gpio::Tristate val) {
+	m_setPin(num, val == gpio::Tristate::HIGH ? true : false);
 }
 
 LuaDevice::SPI_Interface_Lua::SPI_Interface_Lua(LuaRef& ref) :
@@ -317,12 +317,12 @@ LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_
 
 LuaDevice::Input_Interface_Lua::~Input_Interface_Lua() {}
 
-gpio::Tristate LuaDevice::Input_Interface_Lua::mouse(bool active) {
-	return gpio::Tristate::UNSET; // TODO
+void LuaDevice::Input_Interface_Lua::mouse(bool active) {
+	// TODO
 }
 
-gpio::Tristate LuaDevice::Input_Interface_Lua::key(int key, bool active) {
-	return gpio::Tristate::UNSET; // TODO
+void LuaDevice::Input_Interface_Lua::key(int key, bool active) {
+	// TODO
 }
 
 bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {

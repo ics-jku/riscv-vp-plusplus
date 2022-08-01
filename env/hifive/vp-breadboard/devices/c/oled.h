@@ -27,7 +27,7 @@ public:
 	class OLED_PIN : public CDevice::PIN_Interface_C {
 	public:
 		OLED_PIN(CDevice* device);
-		void setPin(PinNumber num, bool val);
+		void setPin(PinNumber num, gpio::Tristate val);
 	};
 
 	class OLED_SPI : public CDevice::SPI_Interface_C {

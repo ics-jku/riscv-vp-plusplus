@@ -25,10 +25,10 @@ const DeviceClass OLED::getClass() const { return "oled"; }
 
 OLED::OLED_PIN::OLED_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {}
 
-void OLED::OLED_PIN::setPin(PinNumber num, bool val) {
+void OLED::OLED_PIN::setPin(PinNumber num, gpio::Tristate val) {
 	if(num == 1) {
 		OLED* oled_device = static_cast<OLED*>(device);
-		oled_device->is_data = val;
+		oled_device->is_data = val == gpio::Tristate::HIGH;
 	}
 }
 

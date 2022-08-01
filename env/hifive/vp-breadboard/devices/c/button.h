@@ -13,7 +13,7 @@ public:
 	class Button_PIN : public CDevice::PIN_Interface_C {
 	public:
 		Button_PIN(CDevice* device);
-		bool getPin(PinNumber num);
+		gpio::Tristate getPin(PinNumber num);
 	};
 
 	class Button_Graph : public CDevice::Graphbuf_Interface_C {
@@ -25,7 +25,7 @@ public:
 	class Button_Input : public CDevice::Input_Interface_C {
 	public:
 		Button_Input(CDevice* device);
-		gpio::Tristate mouse(bool active);
-		gpio::Tristate key(int key, bool active);
+		void mouse(bool active);
+		void key(int key, bool active);
 	};
 };

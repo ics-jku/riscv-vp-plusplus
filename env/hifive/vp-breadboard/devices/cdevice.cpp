@@ -15,13 +15,13 @@ PinLayout CDevice::PIN_Interface_C::getPinLayout() {
 	return device->layout_pin;
 }
 
-void CDevice::PIN_Interface_C::setPin(PinNumber num, bool val) {
+void CDevice::PIN_Interface_C::setPin(PinNumber num, gpio::Tristate val) {
 	std::cout << "Warning: setPin was not implemented" << std::endl;
 }
 
-bool CDevice::PIN_Interface_C::getPin(PinNumber num) {
+gpio::Tristate CDevice::PIN_Interface_C::getPin(PinNumber num) {
 	std::cout << "Warning: getPin was not implemented" << std::endl;
-	return false;
+	return gpio::Tristate::LOW;
 }
 
 /* SPI Interface */
@@ -69,12 +69,10 @@ void CDevice::Graphbuf_Interface_C::registerGetBuf(const GetBuf_fn getBuf) {
 CDevice::Input_Interface_C::Input_Interface_C(CDevice* device) : device(device) {}
 CDevice::Input_Interface_C::~Input_Interface_C() {}
 
-gpio::Tristate CDevice::Input_Interface_C::mouse(bool active) {
+void CDevice::Input_Interface_C::mouse(bool active) {
 	std::cout << "Warning: mouse was not implemented" << std::endl;
-	return gpio::Tristate::UNSET;
 }
 
-gpio::Tristate CDevice::Input_Interface_C::key(int key, bool active) {
+void CDevice::Input_Interface_C::key(int key, bool active) {
 	std::cout << "Warning: key was not implemented" << std::endl;
-	return gpio::Tristate::UNSET;
 }

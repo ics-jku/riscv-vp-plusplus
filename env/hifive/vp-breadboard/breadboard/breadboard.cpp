@@ -18,11 +18,11 @@ void Breadboard::timerUpdate(gpio::State state) {
 	lua_access.lock();
 	for (auto& c : reading_connections) {
 		// TODO: Only if pin changed?
-		c.dev->pin->setPin(c.device_pin, state.pins[c.gpio_offs] == gpio::Pinstate::HIGH ? true : false);
+		c.dev->pin->setPin(c.device_pin, state.pins[c.gpio_offs] == gpio::Pinstate::HIGH ? gpio::Tristate::HIGH : gpio::Tristate::LOW);
 	}
 
 	for (auto& c : writing_connections) {
-		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin) ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
+		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin)));
 	}
 	lua_access.unlock();
 	this->update();
@@ -199,7 +199,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 									.global_pin = global_pin,
 									.fun = [this, device, device_pin](gpio::Tristate pin) {
 								lua_access.lock();
-								device->pin->setPin(device_pin, pin == gpio::Tristate::HIGH ? 1 : 0);
+								device->pin->setPin(device_pin, pin);
 								lua_access.unlock();
 							}
 						});

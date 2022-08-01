@@ -17,6 +17,9 @@ Embedded::Embedded(const char* host, const char* port, bool visible, QWidget *pa
 		this->setAutoFillBackground(true);
 		setFixedSize(bkgnd_size);
 	}
+	else {
+		setAttribute(Qt::WA_TransparentForMouseEvents);
+	}
 }
 
 Embedded::~Embedded() {}

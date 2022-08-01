@@ -29,10 +29,10 @@ const DeviceClass Sevensegment::getClass() const { return "sevensegment"; }
 
 Sevensegment::Segment_PIN::Segment_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {}
 
-void Sevensegment::Segment_PIN::setPin(PinNumber num, bool val) {
+void Sevensegment::Segment_PIN::setPin(PinNumber num, gpio::Tristate val) {
 	if(num <= 7) {
 		Sevensegment* segment_device = static_cast<Sevensegment*>(device);
-		segment_device->draw_segment(num, val);
+		segment_device->draw_segment(num, val == gpio::Tristate::HIGH);
 	}
 }
 

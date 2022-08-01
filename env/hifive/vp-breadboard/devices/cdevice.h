@@ -18,8 +18,8 @@ public:
 		PIN_Interface_C(CDevice* device);
 		~PIN_Interface_C();
 		PinLayout getPinLayout();
-		bool getPin(PinNumber num); // implement this
-		void setPin(PinNumber num, bool val);	// implement this
+		gpio::Tristate getPin(PinNumber num); // implement this
+		void setPin(PinNumber num, gpio::Tristate val);	// implement this
 	};
 
 	class SPI_Interface_C : public Device::SPI_Interface {
@@ -59,8 +59,8 @@ public:
 	public:
 		Input_Interface_C(CDevice* device);
 		~Input_Interface_C();
-		gpio::Tristate mouse(bool active);
-		gpio::Tristate key(int key, bool active);
+		void mouse(bool active);
+		void key(int key, bool active);
 	};
 
 	CDevice(DeviceID id);

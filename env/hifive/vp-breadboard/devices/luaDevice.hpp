@@ -45,8 +45,8 @@ public:
 		PIN_Interface_Lua(luabridge::LuaRef& ref);
 		~PIN_Interface_Lua();
 		PinLayout getPinLayout();
-		bool getPin(PinNumber num);
-		void setPin(PinNumber num, bool val);	// TODO Tristate?
+		gpio::Tristate getPin(PinNumber num);
+		void setPin(PinNumber num, gpio::Tristate val);
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 
@@ -99,8 +99,8 @@ public:
 	public:
 		Input_Interface_Lua(luabridge::LuaRef& ref);
 		~Input_Interface_Lua();
-		gpio::Tristate mouse(bool active);
-		gpio::Tristate key(int key, bool active);
+		void mouse(bool active);
+		void key(int key, bool active);
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
