@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include <QImage>
+
 #include <gpio/gpio-client.hpp>
 
 #include "configurations.h"
@@ -45,8 +47,9 @@ public:
 		virtual ~Graphbuf_Interface();
 		virtual Layout getLayout() = 0;
 		virtual void initializeBufferMaybe() = 0;
-		virtual void registerSetBuf(const SetBuf_fn setBuf) = 0;
-		virtual void registerGetBuf(const GetBuf_fn getBuf) = 0;
+		virtual void registerBuffer(QImage& image) = 0;
+		void setBuffer(QImage&, const Xoffset, const Yoffset, Pixel);
+		Pixel getBuffer(QImage&, const Xoffset, const Yoffset);
 	};
 
 	class Input_Interface {

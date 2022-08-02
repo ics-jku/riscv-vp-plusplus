@@ -72,7 +72,7 @@ uint8_t OLED::OLED_SPI::send(uint8_t byte) {
 			if(byte & 1<<y) {
 				pix = 255;
 			}
-			device->set_buf(oled_device->state.column, (oled_device->state.page*8)+y, Pixel{pix, pix, pix, oled_device->state.contrast});
+			device->setBuffer(oled_device->state.column, (oled_device->state.page*8)+y, Pixel{pix, pix, pix, oled_device->state.contrast});
 		}
 		oled_device->state.column += 1;
 	}
@@ -104,7 +104,7 @@ OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(de
 void OLED::OLED_Graph::initializeBufferMaybe() {
 	for(unsigned x=0; x<device->layout_graph.width; x++) {
 		for(unsigned y=0; y<device->layout_graph.height; y++) {
-			device->set_buf(x, y, Pixel{0,0,0,255});
+			device->setBuffer(x, y, Pixel{0,0,0,255});
 		}
 	}
 }

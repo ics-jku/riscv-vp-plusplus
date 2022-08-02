@@ -268,36 +268,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				auto& new_buffer = device_graphics.at(id).image;
 				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
 
-				device->graph->registerSetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y, Pixel p){
-					//cout << "setBuf at " << (int) x << "x" << (int) y <<
-					//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
-					auto* img = new_buffer.bits();
-					if(x >= layout.width || y >= layout.height) {
-						cerr << "[Graphbuf] WARN: device " << id << " write accessing graphbuffer out of bounds!" << endl;
-						return;
-					}
-					const auto offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
-					img[offs+0] = p.r;
-					img[offs+1] = p.g;
-					img[offs+2] = p.b;
-					img[offs+3] = p.a;
-				}
-				);
-				device->graph->registerGetBuf([&new_buffer, layout, id](const Xoffset x, const Yoffset y){
-					auto* img = new_buffer.bits();
-					if(x >= layout.width || y >= layout.height) {
-						cerr << "[Graphbuf] WARN: device " << id << " read accessing graphbuffer out of bounds!" << endl;
-						return Pixel{0,0,0,0};
-					}
-					const auto& offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
-					return Pixel{
-						static_cast<uint8_t>(img[offs+0]),
-								static_cast<uint8_t>(img[offs+1]),
-								static_cast<uint8_t>(img[offs+2]),
-								static_cast<uint8_t>(img[offs+3])
-					};
-				}
-				);
+				device->graph->registerBuffer(new_buffer);
 				// only called if lua implements the function
 				device->graph->initializeBufferMaybe();
 			}

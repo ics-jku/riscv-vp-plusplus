@@ -57,11 +57,16 @@ void CDevice::Graphbuf_Interface_C::initializeBufferMaybe() {
 	std::cout << "Warning: initialize graph buffer was not implemented" << std::endl;
 }
 
-void CDevice::Graphbuf_Interface_C::registerSetBuf(const SetBuf_fn setBuf) {
-	device->set_buf = setBuf;
+void CDevice::Graphbuf_Interface_C::registerBuffer(QImage& image) {
+	device->image = &image;
 }
-void CDevice::Graphbuf_Interface_C::registerGetBuf(const GetBuf_fn getBuf) {
-	device->get_buf = getBuf;
+
+void CDevice::setBuffer(const Xoffset x, const Yoffset y, Pixel p) {
+	graph->setBuffer(*image, x, y, p);
+}
+
+Pixel CDevice::getBuffer(const Xoffset x, const Yoffset y) {
+	return graph->getBuffer(*image, x, y);
 }
 
 /* Input interface */

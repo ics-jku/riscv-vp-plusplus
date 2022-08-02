@@ -5,8 +5,7 @@
 class CDevice : public Device {
 
 public:
-	SetBuf_fn set_buf;
-	GetBuf_fn get_buf;
+	QImage* image;
 	Layout layout_graph;
 	PinLayout layout_pin;
 	Config config;
@@ -49,8 +48,7 @@ public:
 		~Graphbuf_Interface_C();
 		Layout getLayout();
 		void initializeBufferMaybe(); // implement this
-		void registerSetBuf(const SetBuf_fn setBuf);
-		void registerGetBuf(const GetBuf_fn getBuf);
+		void registerBuffer(QImage& image);
 	};
 
 	class Input_Interface_C : public Device::Input_Interface {
@@ -65,4 +63,6 @@ public:
 
 	CDevice(DeviceID id);
 	~CDevice();
+	void setBuffer(const Xoffset, const Yoffset, Pixel);
+	Pixel getBuffer(const Xoffset, const Yoffset);
 };

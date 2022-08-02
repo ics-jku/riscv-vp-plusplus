@@ -47,7 +47,7 @@ void Button::Button_Graph::initializeBufferMaybe() {
 void Button::draw_area() {
 	for(unsigned x=0; x<layout_graph.width; x++) {
 		for(unsigned y=0; y<layout_graph.height; y++) {
-			set_buf(x, y, Pixel{(active?(uint8_t)255:(uint8_t)0), 0, 0, 128});
+			setBuffer(x, y, Pixel{(active?(uint8_t)255:(uint8_t)0), 0, 0, 128});
 		}
 	}
 }

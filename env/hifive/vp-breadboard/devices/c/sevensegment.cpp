@@ -43,7 +43,7 @@ Sevensegment::Segment_Graph::Segment_Graph(CDevice* device) : CDevice::Graphbuf_
 void Sevensegment::Segment_Graph::initializeBufferMaybe() {
 	for(unsigned x=0; x<device->layout_graph.width; x++) {
 		for(unsigned y=0; y<device->layout_graph.height; y++) {
-			device->set_buf(x, y, Pixel{0, 0, 0, 128});
+			device->setBuffer(x, y, Pixel{0, 0, 0, 128});
 		}
 	}
 	for(PinNumber num=0; num<=7; num++) {
@@ -90,7 +90,7 @@ void Sevensegment::draw_segment(PinNumber num, bool val) {
 	}
 	for(unsigned x=x1; x<=x2+1; x++) {
 		for(unsigned y=y1; y<=y2+1; y++) {
-			set_buf(x, y, Pixel{(val?(uint8_t)255:(uint8_t)0), 0, 0, 255});
+			setBuffer(x, y, Pixel{(val?(uint8_t)255:(uint8_t)0), 0, 0, 255});
 		}
 	}
 }

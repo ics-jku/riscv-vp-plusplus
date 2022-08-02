@@ -283,13 +283,38 @@ void LuaDevice::Graphbuf_Interface_Lua::registerGlobalFunctionAndInsertLocalAlia
 	//cout << "Registered function " << globalFunctionName << " to " << name << endl;
 };
 
-
-void LuaDevice::Graphbuf_Interface_Lua::registerSetBuf(const SetBuf_fn setBuf) {
+void LuaDevice::Graphbuf_Interface_Lua::registerBuffer(QImage& image) {
+	Layout layout = getLayout();
+	GetBuf_fn getBuf = [&image, layout](const Xoffset x, const Yoffset y){
+		auto* img = image.bits();
+		if(x >= layout.width || y >= layout.height) {
+			std::cerr << "[Graphbuf] WARN: device read accessing graphbuffer out of bounds!" << std::endl;
+			return Pixel{0,0,0,0};
+		}
+		const auto& offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
+		return Pixel{
+			static_cast<uint8_t>(img[offs+0]),
+					static_cast<uint8_t>(img[offs+1]),
+					static_cast<uint8_t>(img[offs+2]),
+					static_cast<uint8_t>(img[offs+3])
+		};
+	};
+	registerGlobalFunctionAndInsertLocalAlias("getGraphbuffer", getBuf);
+	SetBuf_fn setBuf = [&image, layout](const Xoffset x, const Yoffset y, Pixel p){
+		//cout << "setBuf at " << (int) x << "x" << (int) y <<
+		//		": (" << (int)p.r << "," << (int)p.g << "," << (int)p.b << "," << (int)p.a << ")" << endl;
+		auto* img = image.bits();
+		if(x >= layout.width || y >= layout.height) {
+			std::cerr << "[Graphbuf] WARN: device write accessing graphbuffer out of bounds!" << std::endl;
+			return;
+		}
+		const auto offs = (y * layout.width + x) * 4; // heavily depends on rgba8888
+		img[offs+0] = p.r;
+		img[offs+1] = p.g;
+		img[offs+2] = p.b;
+		img[offs+3] = p.a;
+	};
 	registerGlobalFunctionAndInsertLocalAlias<>("setGraphbuffer", setBuf);
-}
-
-void LuaDevice::Graphbuf_Interface_Lua::registerGetBuf(const GetBuf_fn getBuf) {
-	registerGlobalFunctionAndInsertLocalAlias<>("getGraphbuffer", getBuf);
 }
 
 bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {
