@@ -62,11 +62,11 @@ void CDevice::Graphbuf_Interface_C::registerBuffer(QImage& image) {
 }
 
 void CDevice::setBuffer(const Xoffset x, const Yoffset y, Pixel p) {
-	graph->setBuffer(*image, x, y, p);
+	graph->setBuffer(*image, graph->getLayout(), x, y, p);
 }
 
 Pixel CDevice::getBuffer(const Xoffset x, const Yoffset y) {
-	return graph->getBuffer(*image, x, y);
+	return graph->getBuffer(*image, graph->getLayout(), x, y);
 }
 
 /* Input interface */

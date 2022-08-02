@@ -68,8 +68,6 @@ struct Pixel {
 	uint8_t b;
 	uint8_t a;
 };
-typedef std::function<void(const Xoffset, const Yoffset, Pixel)> SetBuf_fn;
-typedef std::function<Pixel(const Xoffset, const Yoffset)> GetBuf_fn;
 
 struct State {
 	unsigned column = 0;

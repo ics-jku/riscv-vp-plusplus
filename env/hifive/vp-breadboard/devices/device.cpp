@@ -14,8 +14,7 @@ Device::Config_Interface::~Config_Interface() {}
 Device::Graphbuf_Interface::~Graphbuf_Interface() {}
 Device::Input_Interface::~Input_Interface() {}
 
-void Device::Graphbuf_Interface::setBuffer(QImage& image, const Xoffset x, const Yoffset y, Pixel p) {
-	Layout layout = getLayout();
+void Device::Graphbuf_Interface::setBuffer(QImage& image, Layout layout, const Xoffset x, const Yoffset y, Pixel p) {
 	auto* img = image.bits();
 	if(x >= layout.width || y >= layout.height) {
 		std::cerr << "[Graphbuf] WARN: device write accessing graphbuffer out of bounds!" << std::endl;
@@ -28,8 +27,7 @@ void Device::Graphbuf_Interface::setBuffer(QImage& image, const Xoffset x, const
 	img[offs+3] = p.a;
 }
 
-Pixel Device::Graphbuf_Interface::getBuffer(QImage& image, const Xoffset x, const Yoffset y) {
-	Layout layout = getLayout();
+Pixel Device::Graphbuf_Interface::getBuffer(QImage& image, Layout layout, const Xoffset x, const Yoffset y) {
 	auto* img = image.bits();
 	if(x >= layout.width || y >= layout.height) {
 		std::cerr << "[Graphbuf] WARN: device read accessing graphbuffer out of bounds!" << std::endl;
