@@ -1754,6 +1754,13 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			pc = csrs.mtvec.get_base_address();
 
+			if(pc == 0) {
+				static bool once = true;
+				if (once)
+					std::cout << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error." << std::endl;
+				once = false;
+			}
+
 			if (csrs.mcause.interrupt && csrs.mtvec.mode == csrs.mtvec.Vectored)
 				pc += 4 * csrs.mcause.exception_code;
 			break;
