@@ -321,11 +321,11 @@ LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_
 LuaDevice::Input_Interface_Lua::~Input_Interface_Lua() {}
 
 void LuaDevice::Input_Interface_Lua::mouse(bool active) {
-	// TODO
+	m_mouse(active);
 }
 
 void LuaDevice::Input_Interface_Lua::key(int key, bool active) {
-	// TODO
+	m_key(key, active);
 }
 
 bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {

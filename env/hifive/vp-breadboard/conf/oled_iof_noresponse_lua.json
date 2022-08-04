@@ -2,7 +2,7 @@
   "devices" :
    [
    { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_b",
       "graphics" : 
       { 
@@ -24,7 +24,7 @@
       ]
     },
    { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_a",
       "graphics" : 
       { 
@@ -46,7 +46,7 @@
       ]
     },
    { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_right",
       "graphics" : 
       { 
@@ -68,7 +68,7 @@
       ]
     },
    { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_left",
       "graphics" : 
       { 
@@ -90,7 +90,7 @@
       ]
     },
     { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_up",
       "graphics" : 
       { 
@@ -112,7 +112,7 @@
       ]
     },
     { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_down",
       "graphics" : 
       { 
@@ -134,7 +134,7 @@
       ]
     },
     { 
-      "class" : "button",
+      "class" : "button_lua",
       "id" : "button_center",
       "graphics" : 
       { 
