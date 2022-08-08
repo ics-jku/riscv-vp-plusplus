@@ -7,6 +7,8 @@ constexpr bool debug_logging = false;
 
 Breadboard::Breadboard(QWidget* parent) : QWidget(parent) {
 	setFocusPolicy(Qt::StrongFocus);
+
+	connect(this, &Breadboard::repaintSignal, this, [this]{repaint();});
 }
 
 Breadboard::~Breadboard() {
@@ -149,6 +151,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 						lua_access.lock();
 						const auto ret = device->spi->send(cmd);
 						lua_access.unlock();
+						emit(repaintSignal());
 						return ret;
 					}
 				}
@@ -201,6 +204,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 								lua_access.lock();
 								device->pin->setPin(device_pin, pin);
 								lua_access.unlock();
+								emit(repaintSignal());
 							}
 						});
 					} else {

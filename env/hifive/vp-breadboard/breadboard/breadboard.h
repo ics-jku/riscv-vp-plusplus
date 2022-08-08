@@ -46,4 +46,5 @@ signals:
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
 	void destroyConnection();
 	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
+	void repaintSignal();
 };
