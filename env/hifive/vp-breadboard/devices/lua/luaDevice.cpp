@@ -48,7 +48,6 @@ LuaDevice::PIN_Interface_Lua::PIN_Interface_Lua(LuaRef& ref) :
 
 LuaDevice::PIN_Interface_Lua::~PIN_Interface_Lua() {}
 
-
 bool LuaDevice::PIN_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {
 	// TODO: Better checks
 	return ref["getPinLayout"].isFunction() &&

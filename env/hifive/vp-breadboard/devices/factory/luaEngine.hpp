@@ -11,11 +11,11 @@
 #include <string>
 #include <unordered_map>
 
-#include "luaDevice.hpp"
+#include "devices/lua/luaDevice.hpp"
 
 class LuaEngine {
 	const std::string builtin_scripts = ":/devices/lua/";
-	const std::string scriptloader = ":/devices/loadscript.lua";
+	const std::string scriptloader = ":/devices/factory/loadscript.lua";
 
 	std::unordered_map<std::string,std::string> available_devices;
 public:

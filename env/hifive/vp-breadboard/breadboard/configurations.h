@@ -4,7 +4,7 @@
 #include <QImage>
 #include <QPoint>
 
-#include "devices/factory.h"
+#include "devices/factory/factory.h"
 
 struct SPI_IOF_Request {
 	gpio::PinNumber gpio_offs;	// calculated from "global pin"

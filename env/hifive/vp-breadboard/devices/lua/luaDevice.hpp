@@ -28,7 +28,7 @@ extern "C"
 #include <vector>
 #include <unordered_map>
 
-#include "device.hpp"
+#include "devices/device.hpp"
 
 class LuaDevice : public Device {
 	luabridge::LuaRef m_env;
@@ -41,6 +41,7 @@ public:
 		luabridge::LuaRef m_getPinLayout;
 		luabridge::LuaRef m_getPin;
 		luabridge::LuaRef m_setPin;
+
 	public:
 		PIN_Interface_Lua(luabridge::LuaRef& ref);
 		~PIN_Interface_Lua();

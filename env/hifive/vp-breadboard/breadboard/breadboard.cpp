@@ -380,7 +380,9 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 			default:
 				for(pair<DeviceID,Device*> dev_it : devices) {
 					if(dev_it.second->input) {
+						lua_access.lock();
 						dev_it.second->input->key(e->key(), true);
+						lua_access.unlock();
 					}
 				}
 				break;
@@ -393,7 +395,9 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
 	for(pair<DeviceID,Device*> dev_it : devices) {
 		if(dev_it.second->input) {
+			lua_access.lock();
 			dev_it.second->input->key(e->key(), false);
+			lua_access.unlock();
 		}
 	}
 	this->update();
@@ -404,7 +408,9 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 		if(graphicContainsPoint(graph_it.second, e->pos())) {
 			Device* dev = devices.at(graph_it.first);
 			if(dev->input) {
+				lua_access.lock();
 				dev->input->mouse(true);
+				lua_access.unlock();
 			}
 		}
 	}
@@ -416,7 +422,9 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 		if(graphicContainsPoint(graph_it.second, e->pos())) {
 			Device* dev = devices.at(graph_it.first);
 			if(dev->input) {
+				lua_access.lock();
 				dev->input->mouse(false);
+				lua_access.unlock();
 			}
 		}
 	}

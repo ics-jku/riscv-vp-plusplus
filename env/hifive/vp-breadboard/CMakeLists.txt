@@ -48,7 +48,7 @@ set(HEADERS
 	breadboard/raster.h
 	devices/device.hpp
 	devices/configurations.h
-	devices/factory.h
+	devices/factory/factory.h
 )
 
 set(UI window/mainwindow.ui)
@@ -59,7 +59,7 @@ endif()
 if(NOT DONT_INCLUDE_LUA_DEVICES)
 	file(GLOB SCRIPTS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./devices/lua/*.lua)
 endif()
-set(SCRIPTS ${SCRIPTS} devices/loadscript.lua)
+set(SCRIPTS ${SCRIPTS} devices/factory/loadscript.lua)
 file(GLOB IMAGES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "./img/*.jpg" "./img/*.png")
 file(GLOB DEVICES ./devices/c/*.cpp)
 
@@ -76,11 +76,11 @@ set(SOURCES
     ../../../vp/src/util/elegantEnums.cpp
     ../../../vp/src/platform/hifive/oled/common.cpp
     ../../../vp/src/platform/hifive/oled/oled.cpp
-    devices/luaDevice.cpp
-    devices/luaEngine.cpp
+    devices/lua/luaDevice.cpp
+    devices/factory/luaEngine.cpp
     devices/device.cpp
-    devices/factory.cpp
-    devices/cdevice.cpp
+    devices/factory/factory.cpp
+    devices/c/cdevice.cpp
     ${DEVICES}
 )
 

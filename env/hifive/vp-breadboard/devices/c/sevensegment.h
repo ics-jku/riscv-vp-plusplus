@@ -1,6 +1,6 @@
 #pragma once
 
-#include "devices/cdevice.h"
+#include "cdevice.h"
 
 class Sevensegment : public CDevice {
 

@@ -4,7 +4,7 @@ function getPinLayout ()
 	return {1, "output", "output"}
 end
 
-is_active = false
+is_active = true
 
 function getPin(number)
 	if number == 1 then
@@ -33,9 +33,9 @@ function draw_area()
 	for x = 0, width-1 do
 		for y = 0, height-1 do
 			if is_active then
-				setGraphbuffer(x, y, graphbuf.Pixel(255,0,0, 128))
+				setGraphbuffer(x, y, graphbuf.Pixel(0,0,0,128))
 			else 
-				setGraphbuffer(x, y, graphbuf.Pixel(0, 0, 0, 128))
+				setGraphbuffer(x, y, graphbuf.Pixel(255,0,0,128))
 			end
 		end
 	end
@@ -46,13 +46,13 @@ function initializeGraphBuffer()
 end
 
 function mouse(active)
-	is_active = active
+	is_active = not active
 	draw_area()
 end
 
 function key(number, active)
 	if number == keybinding then
-		is_active = active
+		is_active = not active
 		draw_area()
 	end
 end

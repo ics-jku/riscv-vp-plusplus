@@ -1,7 +1,7 @@
 #pragma once
 
 #include "luaEngine.hpp"
-#include "c/all_devices.hpp"
+#include "devices/c/all_devices.hpp"
 
 
 class Factory {
