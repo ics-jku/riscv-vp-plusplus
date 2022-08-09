@@ -6,7 +6,9 @@ using namespace std;
 Breadboard::Breadboard(QWidget* parent) : QWidget(parent) {
 	setFocusPolicy(Qt::StrongFocus);
 
-	connect(this, &Breadboard::repaintSignal, this, [this]{repaint();});
+	QTimer *timer = new QTimer(this);
+	connect(timer, &QTimer::timeout, this, [this]{update();});
+	timer->start(1000/30);
 }
 
 Breadboard::~Breadboard() {
@@ -25,7 +27,6 @@ void Breadboard::timerUpdate(gpio::State state) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin)));
 	}
 	lua_access.unlock();
-	this->update();
 }
 
 void Breadboard::reconnected() { // new gpio connection
@@ -67,9 +68,6 @@ void Breadboard::paintEvent(QPaintEvent*) {
 /* User input */
 
 void Breadboard::keyPressEvent(QKeyEvent* e) {
-	this->update();
-	// scout << "Yee, keypress" << endl;
-
 	if(debugmode)
 	{
 		switch(e->key())
@@ -120,7 +118,7 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				break;
 		}
 	}
-	this->update();
+	update();
 }
 
 void Breadboard::keyReleaseEvent(QKeyEvent* e)
@@ -133,7 +131,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 			writeDevice(dev_it.second->getID());
 		}
 	}
-	this->update();
+	update();
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
@@ -148,7 +146,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 			}
 		}
 	}
-	this->update();
+	update();
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
@@ -163,7 +161,7 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 			}
 		}
 	}
-	this->update();
+	update();
 }
 
 bool Breadboard::isBreadboard() { return breadboard; }
