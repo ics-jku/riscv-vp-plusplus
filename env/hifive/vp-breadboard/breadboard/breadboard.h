@@ -25,6 +25,8 @@ class Breadboard : public QWidget {
 	bool debugmode = false;
 	bool breadboard = true;
 
+	void writeDevice(DeviceID device);
+
 	void paintEvent(QPaintEvent*) override;
 	void keyPressEvent(QKeyEvent* e) override;
 	void keyReleaseEvent(QKeyEvent* e) override;

@@ -37,6 +37,16 @@ void Breadboard::reconnected() { // new gpio connection
 	}
 }
 
+void Breadboard::writeDevice(DeviceID device) {
+	lua_access.lock();
+	for(PinMapping w : writing_connections) {
+		if(w.dev->getID() == device) {
+			emit(setBit(w.gpio_offs, w.dev->pin->getPin(w.device_pin)));
+		}
+	}
+	lua_access.unlock();
+}
+
 /* QT */
 
 void Breadboard::paintEvent(QPaintEvent*) {
@@ -104,6 +114,7 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 						lua_access.lock();
 						dev_it.second->input->key(e->key(), true);
 						lua_access.unlock();
+						writeDevice(dev_it.second->getID());
 					}
 				}
 				break;
@@ -119,6 +130,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 			lua_access.lock();
 			dev_it.second->input->key(e->key(), false);
 			lua_access.unlock();
+			writeDevice(dev_it.second->getID());
 		}
 	}
 	this->update();
@@ -132,6 +144,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 				lua_access.lock();
 				dev->input->mouse(true);
 				lua_access.unlock();
+				writeDevice(dev->getID());
 			}
 		}
 	}
@@ -146,6 +159,7 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 				lua_access.lock();
 				dev->input->mouse(false);
 				lua_access.unlock();
+				writeDevice(dev->getID());
 			}
 		}
 	}
