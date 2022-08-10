@@ -63,7 +63,7 @@ struct RegisterRange {
 		return {start, sizeof(T) * num_elems};
 	}
 
-	bool contains(uint64_t addr) {
+	virtual bool contains(uint64_t addr) {
 		return addr >= start && addr <= end;
 	}
 
@@ -71,12 +71,16 @@ struct RegisterRange {
 		return addr - start;
 	}
 
+	virtual void assert_range(size_t len, uint64_t local_addr) {
+		assert(local_addr + len <= mem.size());
+	}
+
 	void write(uint64_t addr, const uint8_t *src, size_t len, tlm::tlm_generic_payload &trans,
 	           sc_core::sc_time &delay) {
 		assert(contains(addr));
 
 		auto local_addr = to_local(addr);
-		assert(local_addr + len <= mem.size());
+		assert_range(len, local_addr);
 
 		if (pre_write_callback)
 			if (!pre_write_callback({local_addr, len, trans, delay}))
@@ -92,7 +96,7 @@ struct RegisterRange {
 		assert(contains(addr));
 
 		auto local_addr = to_local(addr);
-		assert(local_addr + len <= mem.size());
+		assert_range(len, local_addr);
 
 		if (pre_read_callback)
 			if (!pre_read_callback({local_addr, len, trans, delay}))
