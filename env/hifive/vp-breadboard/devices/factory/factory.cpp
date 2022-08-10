@@ -9,22 +9,19 @@ void Factory::printAvailableDevices() {
 	std::cout << "All Available Devices: " << std::endl;
 	std::cout << "LUA: " << std::endl;
 	lua_factory.printAvailableDevices();
+	std::cout << "C: " << std::endl;
+	c_factory.printAvailableDevices();
 }
 
 bool Factory::deviceExists(DeviceClass classname) {
-	return lua_factory.deviceExists(classname) || classname == "oled"
-			|| classname == "sevensegment" || classname == "button";
+	return lua_factory.deviceExists(classname) || c_factory.deviceExists(classname);
 }
 
 Device* Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
-	if(classname == "oled") {
-		return new OLED(id);
+	try {
+		return c_factory.instantiateDevice(id, classname);
 	}
-	else if(classname == "sevensegment") {
-		return new Sevensegment(id);
+	catch(const std::runtime_error e) {
+		return lua_factory.instantiateDevice(id, classname);
 	}
-	else if(classname == "button") {
-		return new Button(id);
-	}
-	return lua_factory.instantiateDevice(id, classname);
 }

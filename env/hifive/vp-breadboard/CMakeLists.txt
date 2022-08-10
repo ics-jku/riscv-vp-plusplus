@@ -82,6 +82,7 @@ set(SOURCES
     devices/device.cpp
     devices/factory/factory.cpp
     devices/c/cdevice.cpp
+    devices/factory/cfactory.cpp
     ${DEVICES}
 )
 
