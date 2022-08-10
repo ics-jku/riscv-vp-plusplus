@@ -76,10 +76,24 @@ TIMER::TIMER(sc_core::sc_module_name)
       mtime_clint(regs_mtime_clint) {
 	for (auto reg : register_ranges) reg->alignment = 4;
 	tsock.register_b_transport(this, &TIMER::transport);
+
+	regs_mtime.pre_read_callback = std::bind(&TIMER::pre_read_mtime, this, std::placeholders::_1);
+}
+
+bool TIMER::pre_read_mtime(RegisterRange::ReadInfo t) {
+	// TODO - this is only copy paste from HiFive
+	sc_core::sc_time now = sc_core::sc_time_stamp() + t.delay;
+
+	mtime.write(now.value() / scaler);
+
+	return true;
 }
 
 uint64_t TIMER::update_and_get_mtime() {
+	// TODO
 	return 0;
 }
 
-void TIMER::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {}
+void TIMER::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+	vp::mm::route("TIMER", register_ranges, trans, delay);
+}
