@@ -13,6 +13,7 @@
 #include "rcu.h"
 #include "spi.h"
 #include "timer.h"
+#include "usart.h"
 
 using namespace rv32;
 namespace po = boost::program_options;
@@ -29,6 +30,9 @@ class GD32Options : public Options {
 
 	addr_t rcu_start_addr = 0x40021000;
 	addr_t rcu_end_addr = 0x400213FF;
+
+	addr_t usart0_start_addr = 0x40013800;
+	addr_t usart0_end_addr = 0x40013BFF;
 
 	addr_t spi_start_addr = 0x40013000;
 	addr_t spi_end_addr = 0x400133FF;
@@ -67,12 +71,13 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 7> ahb("AHB");
+	SimpleBus<2, 8> ahb("AHB");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
 	RCU rcu("RCU");
 	TIMER timer("TIMER");
 	ECLIC<87, 15> eclic("ECLIC");
+	USART usart0("USART0");
 	GPIO gpioa("GPIOA");
 	SPI spi0("SPI0");
 
@@ -99,6 +104,7 @@ int sc_main(int argc, char **argv) {
 		ahb.ports[it++] = new PortMapping(opt.rcu_start_addr, opt.rcu_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.timer_start_addr, opt.timer_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.eclic_start_addr, opt.eclic_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.usart0_start_addr, opt.usart0_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.gpioa_start_addr, opt.gpioa_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.spi_start_addr, opt.spi_end_addr);
 	}
@@ -118,6 +124,7 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(rcu.tsock);
 		ahb.isocks[it++].bind(timer.tsock);
 		ahb.isocks[it++].bind(eclic.tsock);
+		ahb.isocks[it++].bind(usart0.tsock);
 		ahb.isocks[it++].bind(gpioa.tsock);
 		ahb.isocks[it++].bind(spi0.tsock);
 	}
