@@ -64,7 +64,22 @@ struct RCU : public sc_core::sc_module {
 		    .register_handler(this, &RCU::register_access_callback);
 	}
 
-	void register_access_callback(const vp::map::register_access_t &r) {}
+	void register_access_callback(const vp::map::register_access_t &r) {
+		/* Pretend that HXTAL oscillator and the PLL output clocks are always stable and ready for use */
+		if (r.read && r.vptr == &rcu_ctl) {
+			rcu_ctl |= 1 << 17;  // HXTAL oscillator
+			rcu_ctl |= 1 << 27;  // PLL1 output clock
+			rcu_ctl |= 1 << 29;  // PLL2 output clock
+			rcu_ctl |= 1 << 25;  // PLL output clock
+		}
+
+		/* select CK_PLL as the CK_SYS source */
+		if (r.read && r.vptr == &rcu_cfg0) {
+			rcu_cfg0 |= 2 << 2;  // CK_PLL
+		}
+
+		r.fn();
+	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		router.transport(trans, delay);
