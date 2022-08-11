@@ -1,6 +1,6 @@
 #include "cfactory.h"
 
-#include "devices/c/all_devices.hpp"
+#include "build/all_devices.hpp"
 
 void CFactory::printAvailableDevices() {
 	std::cout << "Available Devices: " << std::endl;

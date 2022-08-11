@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cdevice.h"
+#include "devices/interface/cdevice.h"
 
 
 const uint8_t COL_LOW= 0;

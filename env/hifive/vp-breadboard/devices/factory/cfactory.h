@@ -1,6 +1,6 @@
 #pragma once
 
-#include "devices/c/cdevice.h"
+#include "devices/interface/cdevice.h"
 
 class CFactory {
 

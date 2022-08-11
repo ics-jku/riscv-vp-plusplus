@@ -11,7 +11,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "devices/lua/luaDevice.hpp"
+#include "devices/interface/luaDevice.hpp"
 
 class LuaEngine {
 	const std::string builtin_scripts = ":/devices/lua/";

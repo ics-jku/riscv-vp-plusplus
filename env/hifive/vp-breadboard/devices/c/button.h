@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cdevice.h"
+#include "devices/interface/cdevice.h"
 
 class Button : public CDevice {
 	bool active = false;
