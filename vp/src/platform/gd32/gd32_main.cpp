@@ -1,8 +1,10 @@
 #include <boost/program_options.hpp>
 #include <systemc>
 
+#include "afio.h"
 #include "eclic.h"
 #include "elf_loader.h"
+#include "exti.h"
 #include "gdb-mc/gdb_runner.h"
 #include "gdb-mc/gdb_server.h"
 #include "gpio.h"
@@ -36,6 +38,12 @@ class GD32Options : public Options {
 
 	addr_t spi_start_addr = 0x40013000;
 	addr_t spi_end_addr = 0x400133FF;
+
+	addr_t afio_start_addr = 0x40010000;
+	addr_t afio_end_addr = 0x400103FF;
+
+	addr_t exti_start_addr = 0x40010400;
+	addr_t exti_end_addr = 0x400107FF;
 
 	addr_t gpioa_start_addr = 0x40010800;
 	addr_t gpioa_end_addr = 0x40010BFF;
@@ -71,14 +79,20 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 8> ahb("AHB");
+	SimpleBus<2, 14> ahb("AHB");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
 	RCU rcu("RCU");
 	TIMER timer("TIMER");
 	ECLIC<87, 15> eclic("ECLIC");
 	USART usart0("USART0");
+	AFIO afio("AFIO");
+	EXTI exti("EXTI");
 	GPIO gpioa("GPIOA");
+	GPIO gpiob("GPIOB");
+	GPIO gpioc("GPIOC");
+	GPIO gpiod("GPIOD");
+	GPIO gpioe("GPIOE");
 	SPI spi0("SPI0");
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -105,7 +119,13 @@ int sc_main(int argc, char **argv) {
 		ahb.ports[it++] = new PortMapping(opt.timer_start_addr, opt.timer_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.eclic_start_addr, opt.eclic_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.usart0_start_addr, opt.usart0_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.afio_start_addr, opt.afio_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.exti_start_addr, opt.exti_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.gpioa_start_addr, opt.gpioa_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.gpiob_start_addr, opt.gpiob_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.gpioc_start_addr, opt.gpioc_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.gpiod_start_addr, opt.gpiod_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.gpioe_start_addr, opt.gpioe_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.spi_start_addr, opt.spi_end_addr);
 	}
 
@@ -125,7 +145,13 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(timer.tsock);
 		ahb.isocks[it++].bind(eclic.tsock);
 		ahb.isocks[it++].bind(usart0.tsock);
+		ahb.isocks[it++].bind(afio.tsock);
+		ahb.isocks[it++].bind(exti.tsock);
 		ahb.isocks[it++].bind(gpioa.tsock);
+		ahb.isocks[it++].bind(gpiob.tsock);
+		ahb.isocks[it++].bind(gpioc.tsock);
+		ahb.isocks[it++].bind(gpiod.tsock);
+		ahb.isocks[it++].bind(gpioe.tsock);
 		ahb.isocks[it++].bind(spi0.tsock);
 	}
 
