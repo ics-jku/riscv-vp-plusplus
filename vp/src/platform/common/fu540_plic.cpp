@@ -189,7 +189,7 @@ unsigned int FU540_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl,
 			continue;
 
 		uint32_t prio = interrupt_priorities[irq - 1];
-		if (!ignth && prio < get_threshold(hart, lvl))
+		if (!ignth && prio <= get_threshold(hart, lvl))
 			continue;
 
 		if (prio > maxpri) {
