@@ -1,7 +1,5 @@
 #include "cfactory.h"
 
-#include "build/all_devices.hpp"
-
 bool CFactory::registerDeviceType(DeviceClass classname, Creator creator) {
 	return devices.insert(std::make_pair(classname, creator)).second;
 }

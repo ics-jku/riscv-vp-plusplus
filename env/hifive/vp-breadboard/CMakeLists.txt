@@ -94,7 +94,7 @@ add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
 add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})
 add_qt_resource(vp-breadboard images FILES ${IMAGES})
 
-createCDeviceHeader(CDEVICES ${DEVICEHEADERS})
+# createCDeviceHeader(CDEVICES ${DEVICEHEADERS})
 
 target_link_libraries(vp-breadboard Qt5::Widgets pthread LuaBridge ${LUA_LIB})
 
