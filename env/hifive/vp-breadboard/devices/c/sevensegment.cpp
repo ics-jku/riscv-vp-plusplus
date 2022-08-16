@@ -23,7 +23,7 @@ Sevensegment::Sevensegment(DeviceID id) : CDevice(id) {
 
 Sevensegment::~Sevensegment() {}
 
-const DeviceClass Sevensegment::getClass() const { return "sevensegment"; }
+const DeviceClass Sevensegment::getClass() const { return classname; }
 
 /* PIN Interface */
 

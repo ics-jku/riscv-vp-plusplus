@@ -2,29 +2,28 @@
 
 #include "build/all_devices.hpp"
 
+bool CFactory::registerDeviceType(DeviceClass classname, Creator creator) {
+	return devices.insert(std::make_pair(classname, creator)).second;
+}
+
 void CFactory::printAvailableDevices() {
 	std::cout << "Available Devices: " << std::endl;
-	std::cout << "sevensegment" << std::endl;
-	std::cout << "oled" << std::endl;
-	std::cout << "button" << std::endl;
+	for(std::pair<DeviceClass, Creator> device : devices) {
+		std::cout << device.first << std::endl;
+	}
 }
 
 bool CFactory::deviceExists(DeviceClass classname) {
-	return classname == "sevensegment" || classname == "oled" || classname == "button";
+	return devices.find(classname) != devices.end();
 }
 
 CDevice* CFactory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	if(!deviceExists(classname)) {
 		throw (std::runtime_error("Device " + classname + " does not exist"));
 	}
-	if(classname == "sevensegment") {
-		return new Sevensegment(id);
+	else {
+		return devices.find(classname)->second(id);
 	}
-	else if(classname == "oled") {
-		return new OLED(id);
-	}
-	else if(classname == "button") {
-		return new Button(id);
-	}
-	return nullptr;
 }
+
+CFactory& getCFactory() { static CFactory CF; return CF; }

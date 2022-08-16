@@ -1,12 +1,14 @@
 #pragma once
 
-#include "devices/interface/cdevice.h"
+#include "devices/factory/cfactory.h"
 
 class Sevensegment : public CDevice {
 
 public:
 	Sevensegment(DeviceID id);
 	~Sevensegment();
+
+	inline static DeviceClass classname = "sevensegment";
 	const DeviceClass getClass() const;
 	void draw_segment(PinNumber num, bool val);
 
@@ -22,3 +24,5 @@ public:
 		void initializeBufferMaybe();
 	};
 };
+
+static const bool registeredSevensegment = getCFactory().registerDeviceType(Sevensegment::classname, deviceCreator<Sevensegment>);

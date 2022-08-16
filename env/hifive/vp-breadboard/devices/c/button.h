@@ -1,12 +1,15 @@
 #pragma once
 
-#include "devices/interface/cdevice.h"
+#include "devices/factory/cfactory.h"
 
 class Button : public CDevice {
 	bool active = false;
+
 public:
 	Button(DeviceID id);
 	~Button();
+
+	inline static DeviceClass classname = "button";
 	const DeviceClass getClass() const;
 	void draw_area();
 
@@ -29,3 +32,5 @@ public:
 		void key(int key, bool active);
 	};
 };
+
+static const bool registeredButton = getCFactory().registerDeviceType(Button::classname, deviceCreator<Button>);

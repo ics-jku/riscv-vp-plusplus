@@ -19,7 +19,7 @@ OLED::OLED(DeviceID id) : CDevice(id) {
 }
 OLED::~OLED() {}
 
-const DeviceClass OLED::getClass() const { return "oled"; }
+const DeviceClass OLED::getClass() const { return classname; }
 
 /* PIN Interface */
 

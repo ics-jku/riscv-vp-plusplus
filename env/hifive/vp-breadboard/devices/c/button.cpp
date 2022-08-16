@@ -21,7 +21,7 @@ Button::Button(DeviceID id) : CDevice(id) {
 
 Button::~Button() {}
 
-const DeviceClass Button::getClass() const { return "button"; }
+const DeviceClass Button::getClass() const { return classname; }
 
 /* PIN Interface */
 

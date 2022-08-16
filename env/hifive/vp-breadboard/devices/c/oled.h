@@ -1,6 +1,6 @@
 #pragma once
 
-#include "devices/interface/cdevice.h"
+#include "devices/factory/cfactory.h"
 
 
 const uint8_t COL_LOW= 0;
@@ -22,6 +22,8 @@ class OLED : public CDevice {
 public:
 	OLED(DeviceID id);
 	~OLED();
+
+	inline static DeviceClass classname = "oled";
 	const DeviceClass getClass() const;
 
 	class OLED_PIN : public CDevice::PIN_Interface_C {
@@ -42,3 +44,5 @@ public:
 		void initializeBufferMaybe();
 	};
 };
+
+static const bool registeredOLED = getCFactory().registerDeviceType(OLED::classname, deviceCreator<OLED>);
