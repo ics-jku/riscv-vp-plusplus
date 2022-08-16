@@ -65,12 +65,14 @@ struct RCU : public sc_core::sc_module {
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
-		/* Pretend that HXTAL oscillator and the PLL output clocks are always stable and ready for use */
+		/* Pretend that the IRC8M oscillator, the HXTAL oscillator,
+		and the PLL output clocks are always stable and ready for use */
 		if (r.read && r.vptr == &rcu_ctl) {
+			rcu_ctl |= 1 << 1;   // IRC8M oscillator
 			rcu_ctl |= 1 << 17;  // HXTAL oscillator
+			rcu_ctl |= 1 << 25;  // PLL output clock
 			rcu_ctl |= 1 << 27;  // PLL1 output clock
 			rcu_ctl |= 1 << 29;  // PLL2 output clock
-			rcu_ctl |= 1 << 25;  // PLL output clock
 		}
 
 		/* select CK_PLL as the CK_SYS source */
