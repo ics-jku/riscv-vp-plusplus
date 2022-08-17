@@ -26,13 +26,13 @@ public:
 		virtual ~PIN_Interface();
 		virtual PinLayout getPinLayout() = 0;
 		virtual gpio::Tristate getPin(PinNumber num) = 0;
-		virtual void setPin(PinNumber num, gpio::Tristate val) = 0;	// TODO Tristate?
+		virtual void setPin(PinNumber num, gpio::Tristate val) = 0;
 	};
 
 	class SPI_Interface {
 	public:
 		virtual ~SPI_Interface();
-		virtual uint8_t send(uint8_t byte) = 0;
+		virtual gpio::SPI_Response send(gpio::SPI_Command byte) = 0;
 	};
 
 	class Config_Interface {

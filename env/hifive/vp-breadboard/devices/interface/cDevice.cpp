@@ -1,7 +1,6 @@
-#include "cdevice.h"
-
 #include <stdexcept>
 #include <iostream>
+#include "cDevice.h"
 
 CDevice::CDevice(DeviceID id) : Device(id) {}
 CDevice::~CDevice() {}
@@ -29,7 +28,7 @@ gpio::Tristate CDevice::PIN_Interface_C::getPin(PinNumber num) {
 CDevice::SPI_Interface_C::SPI_Interface_C(CDevice* device) : device(device) {}
 CDevice::SPI_Interface_C::~SPI_Interface_C() {}
 
-uint8_t CDevice::SPI_Interface_C::send(uint8_t byte) {
+gpio::SPI_Response CDevice::SPI_Interface_C::send(gpio::SPI_Command byte) {
 	return 0;
 }
 

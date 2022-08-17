@@ -27,7 +27,7 @@ public:
 	public:
 		SPI_Interface_C(CDevice* device);
 		~SPI_Interface_C();
-		uint8_t send(uint8_t byte); // implement this
+		gpio::SPI_Response send(gpio::SPI_Command byte); // implement this
 	};
 
 	class Config_Interface_C : public Device::Config_Interface {

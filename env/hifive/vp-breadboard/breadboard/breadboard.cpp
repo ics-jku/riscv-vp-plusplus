@@ -18,12 +18,12 @@ Breadboard::~Breadboard() {
 
 void Breadboard::timerUpdate(gpio::State state) {
 	lua_access.lock();
-	for (auto& c : reading_connections) {
+	for (PinMapping& c : reading_connections) {
 		// TODO: Only if pin changed?
 		c.dev->pin->setPin(c.device_pin, state.pins[c.gpio_offs] == gpio::Pinstate::HIGH ? gpio::Tristate::HIGH : gpio::Tristate::LOW);
 	}
 
-	for (auto& c : writing_connections) {
+	for (PinMapping& c : writing_connections) {
 		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin)));
 	}
 	lua_access.unlock();
@@ -107,12 +107,12 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				debugmode = true;
 				break;
 			default:
-				for(pair<DeviceID,Device*> dev_it : devices) {
-					if(dev_it.second->input) {
+				for(auto const& [id, device] : devices) {
+					if(device->input) {
 						lua_access.lock();
-						dev_it.second->input->key(e->key(), true);
+						device->input->key(e->key(), true);
 						lua_access.unlock();
-						writeDevice(dev_it.second->getID());
+						writeDevice(id);
 					}
 				}
 				break;
@@ -123,26 +123,26 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 
 void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
-	for(pair<DeviceID,Device*> dev_it : devices) {
-		if(dev_it.second->input) {
+	for(auto const& [id, device] : devices) {
+		if(device->input) {
 			lua_access.lock();
-			dev_it.second->input->key(e->key(), false);
+			device->input->key(e->key(), false);
 			lua_access.unlock();
-			writeDevice(dev_it.second->getID());
+			writeDevice(id);
 		}
 	}
 	update();
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
-	for(pair<DeviceID,DeviceGraphic> graph_it : device_graphics) {
-		if(graphicContainsPoint(graph_it.second, e->pos())) {
-			Device* dev = devices.at(graph_it.first);
+	for(auto const& [id, graph] : device_graphics) {
+		if(isInsideGraphic(graph, e->pos())) {
+			Device* dev = devices.at(id);
 			if(dev->input) {
 				lua_access.lock();
 				dev->input->mouse(true);
 				lua_access.unlock();
-				writeDevice(dev->getID());
+				writeDevice(id);
 			}
 		}
 	}
@@ -150,14 +150,14 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
-	for(pair<DeviceID,DeviceGraphic> graph_it : device_graphics) {
-		if(graphicContainsPoint(graph_it.second, e->pos())) {
-			Device* dev = devices.at(graph_it.first);
+	for(auto const& [id, graph] : device_graphics) {
+		if(isInsideGraphic(graph, e->pos())) {
+			Device* dev = devices.at(id);
 			if(dev->input) {
 				lua_access.lock();
 				dev->input->mouse(false);
 				lua_access.unlock();
-				writeDevice(dev->getID());
+				writeDevice(id);
 			}
 		}
 	}

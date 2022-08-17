@@ -2,4 +2,4 @@
 
 #include "configurations.h"
 
-bool graphicContainsPoint(DeviceGraphic graphic, QPoint point);
+bool isInsideGraphic(DeviceGraphic graphic, QPoint point);

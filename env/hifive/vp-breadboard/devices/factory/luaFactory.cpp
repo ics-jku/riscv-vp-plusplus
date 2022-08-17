@@ -6,11 +6,10 @@
  */
 
 
-#include "luaEngine.hpp"
-
 #include <filesystem>
 #include <exception>
 #include <QDirIterator>
+#include "luaFactory.hpp"
 
 extern "C"
 {

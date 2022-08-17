@@ -1,4 +1,4 @@
-#include "cfactory.h"
+#include "cFactory.h"
 
 bool CFactory::registerDeviceType(DeviceClass classname, Creator creator) {
 	return devices.insert(std::make_pair(classname, creator)).second;

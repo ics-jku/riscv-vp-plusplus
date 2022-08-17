@@ -58,7 +58,7 @@ std::pair<uint8_t, uint8_t> match(uint8_t cmd) {
 	return {NOP,0};
 }
 
-uint8_t OLED::OLED_SPI::send(uint8_t byte) {
+gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 	OLED* oled_device = static_cast<OLED*>(device);
 	if(oled_device->is_data) {
 		if (oled_device->state.column >= device->layout_graph.width) {

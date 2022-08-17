@@ -1,6 +1,6 @@
 #pragma once
 
-#include "devices/factory/cfactory.h"
+#include "devices/factory/cFactory.h"
 
 
 const uint8_t COL_LOW= 0;
@@ -35,7 +35,7 @@ public:
 	class OLED_SPI : public CDevice::SPI_Interface_C {
 	public:
 		OLED_SPI(CDevice* device);
-		uint8_t send(uint8_t byte);
+		gpio::SPI_Response send(gpio::SPI_Command byte);
 	};
 
 	class OLED_Graph : public CDevice::Graphbuf_Interface_C {

@@ -56,7 +56,7 @@ public:
 	public:
 		SPI_Interface_Lua(luabridge::LuaRef& ref);
 		~SPI_Interface_Lua();
-		uint8_t send(uint8_t byte);
+		gpio::SPI_Response send(gpio::SPI_Command byte);
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 

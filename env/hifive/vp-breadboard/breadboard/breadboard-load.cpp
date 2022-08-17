@@ -50,14 +50,14 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 	setFixedSize(bkgnd_size);
 
 	if(config_root.contains("devices") && config_root["devices"].isArray()) {
-		auto device_descriptions = config_root["devices"].toArray();
+		QJsonArray device_descriptions = config_root["devices"].toArray();
 		devices.reserve(device_descriptions.count());
 		if(debug_logging)
 			cout << "[config loader] reserving space for " << device_descriptions.count() << " devices." << endl;
-		for(const auto& device_description : device_descriptions) {
-			const auto device_desc = device_description.toObject();
-			const auto& classname = device_desc["class"].toString("undefined").toStdString();
-			const auto& id = device_desc["id"].toString("undefined").toStdString();
+		for(const QJsonValue& device_description : device_descriptions) {
+			QJsonObject device_desc = device_description.toObject();
+			const string& classname = device_desc["class"].toString("undefined").toStdString();
+			const string& id = device_desc["id"].toString("undefined").toStdString();
 
 			if(!factory.deviceExists(classname)) {
 				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
@@ -100,7 +100,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 							" an SPI interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto spi = device_desc["spi"].toObject();
+				const QJsonObject spi = device_desc["spi"].toObject();
 				if(!spi.contains("cs_pin")) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" an SPI interface, but does not set a cs_pin." << endl;
@@ -114,7 +114,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 							.noresponse = noresponse,
 							.fun = [this, device](gpio::SPI_Command cmd){
 						lua_access.lock();
-						const auto ret = device->spi->send(cmd);
+						const gpio::SPI_Response ret = device->spi->send(cmd);
 						lua_access.unlock();
 						return ret;
 					}
@@ -128,10 +128,10 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 							" an PIN interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto pinLayout = device->pin->getPinLayout();
-				auto pin_descriptions = device_desc["pins"].toArray();
-				for (const auto& pin_desc : pin_descriptions) {
-					const auto pin = pin_desc.toObject();
+				const PinLayout pinLayout = device->pin->getPinLayout();
+				QJsonArray pin_descriptions = device_desc["pins"].toArray();
+				for (const QJsonValue& pin_desc : pin_descriptions) {
+					const QJsonObject pin = pin_desc.toObject();
 					if(!pin.contains("device_pin") ||
 							!pin.contains("global_pin")) {
 						cerr << "[config loader] config for device '" << classname << "' is"
@@ -152,7 +152,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					//cout << "Mapping " << device.getID() << "'s pin " << (int)device_pin <<
 					//		" to global pin " << (int)global_pin << endl;
 
-					const auto& pin_l = pinLayout.at(device_pin);
+					const PinDesc& pin_l = pinLayout.at(device_pin);
 					if(synchronous) {
 						// TODO FIXME : Currently, only one synchronous pin seems to work!
 						if(pin_l.dir != PinDesc::Dir::input) {
@@ -196,7 +196,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 							" a graph buffer interface, but device does not implement it" << endl;
 					continue;
 				}
-				const auto layout = device->graph->getLayout();
+				const Layout layout = device->graph->getLayout();
 				//cout << "\t\t\tBuffer Layout: " << layout.width << "x" << layout.height << " pixel with type " << layout.data_type << endl;
 				if(layout.width == 0 || layout.height == 0) {
 					cerr << "Device " << id << " of class " << classname << " "
@@ -209,13 +209,13 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					continue;
 				}
 
-				const auto graphics_desc = device_desc["graphics"].toObject();
+				const QJsonObject graphics_desc = device_desc["graphics"].toObject();
 				if(!(graphics_desc.contains("offs") && graphics_desc["offs"].isArray())) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" a graph buffer interface, but no valid offset given" << endl;
 					continue;
 				}
-				const auto offs_desc = graphics_desc["offs"].toArray();
+				const QJsonArray offs_desc = graphics_desc["offs"].toArray();
 				if(offs_desc.size() != 2) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
 							" a graph buffer interface, but offset is malformed (needs x,y, is size " << offs_desc.size() << ")" << endl;
@@ -232,7 +232,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				});
 
 				// setting up the image buffer and its functions
-				auto& new_buffer = device_graphics.at(id).image;
+				QImage& new_buffer = device_graphics.at(id).image;
 				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
 
 				device->graph->registerBuffer(new_buffer);

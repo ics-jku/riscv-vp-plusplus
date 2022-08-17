@@ -118,7 +118,7 @@ LuaDevice::SPI_Interface_Lua::SPI_Interface_Lua(LuaRef& ref) :
 LuaDevice::SPI_Interface_Lua::~SPI_Interface_Lua() {}
 
 
-uint8_t LuaDevice::SPI_Interface_Lua::send(uint8_t byte) {
+gpio::SPI_Response LuaDevice::SPI_Interface_Lua::send(gpio::SPI_Command byte) {
 	LuaResult r = m_send(byte);
 	if(r.size() != 1) {
 		cerr << " send SPI function failed!" << endl;

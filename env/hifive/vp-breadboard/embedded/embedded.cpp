@@ -65,7 +65,9 @@ void Embedded::destroyConnection() {
 }
 
 void Embedded::setBit(gpio::PinNumber gpio_offs, gpio::Tristate state) {
-	gpio.setBit(gpio_offs, state);
+	if(connected) {
+		gpio.setBit(gpio_offs, state);
+	}
 }
 
 /* PAINT */

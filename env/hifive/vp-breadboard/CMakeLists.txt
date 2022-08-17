@@ -30,7 +30,6 @@ endif()
 
 include(CMake/AddGitSubmodule.cmake)
 include(CMake/GenerateResourceFiles.cmake)
-include(CMake/GenerateDevicesHeader.cmake)
 
 add_git_submodule(LuaBridge3)
 	
@@ -63,7 +62,6 @@ endif()
 set(SCRIPTS ${SCRIPTS} devices/factory/loadscript.lua)
 file(GLOB IMAGES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "./img/*.jpg" "./img/*.png")
 file(GLOB DEVICES ./devices/c/*.cpp)
-file(GLOB DEVICEHEADERS ./devices/c/*.h)
 
 set(SOURCES
     main.cpp
@@ -80,11 +78,11 @@ set(SOURCES
     ../../../vp/src/platform/hifive/oled/common.cpp
     ../../../vp/src/platform/hifive/oled/oled.cpp
     devices/interface/luaDevice.cpp
-    devices/factory/luaEngine.cpp
+    devices/factory/luaFactory.cpp
     devices/device.cpp
     devices/factory/factory.cpp
-    devices/interface/cdevice.cpp
-    devices/factory/cfactory.cpp
+    devices/interface/cDevice.cpp
+    devices/factory/cFactory.cpp
     ${DEVICES}
 )
 
@@ -93,8 +91,6 @@ add_executable(vp-breadboard ${SOURCES} ${HEADERS} ${UI})
 add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
 add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})
 add_qt_resource(vp-breadboard images FILES ${IMAGES})
-
-# createCDeviceHeader(CDEVICES ${DEVICEHEADERS})
 
 target_link_libraries(vp-breadboard Qt5::Widgets pthread LuaBridge ${LUA_LIB})
 
