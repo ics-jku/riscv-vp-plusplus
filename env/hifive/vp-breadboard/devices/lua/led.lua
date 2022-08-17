@@ -2,6 +2,24 @@ classname = "LED"
 
 -- no config functions
 
+colour_r = 255
+colour_g = 10
+colour_b = 10
+
+function getConfig()
+    return
+        {"colour_r", colour_r },
+        {"colour_g", colour_g},
+        {"colour_b", colour_b}
+		
+end
+
+function setConfig(conf)
+    colour_r = conf["colour_r"]
+    colour_g = conf["colour_g"]
+    colour_b = conf["colour_b"]
+end
+
 function getPinLayout ()
     -- number, [input | output | inout], name
     return  {1, "input", "led_on"}
@@ -36,7 +54,7 @@ function setPin(number, val)
 	-- print ( tostring(number) .. ": " .. tostring(val))
 	if number == 1 then
 		if val then
-			setLED(255, 10, 10)
+			setLED(colour_r, colour_g, colour_b)
 		else
 			setLED(50, 0, 0)
 		end

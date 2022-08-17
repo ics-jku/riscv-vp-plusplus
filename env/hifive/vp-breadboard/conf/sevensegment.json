@@ -2,6 +2,33 @@
   "devices": 
    [
     { 
+      "class" : "rgb",
+      "id" : "rgb",
+      "graphics" : 
+      {
+        "offs" : [170, 0],
+        "scale" : 2
+      },
+      "pins" : 
+      [
+        {
+          "device_pin" : 0,
+          "global_pin" : 6,
+          "name" : "r" 
+        },
+        {
+          "device_pin" : 1,
+          "global_pin" : 3,
+          "name" : "g" 
+        },
+        {
+          "device_pin" : 2,
+          "global_pin" : 5,
+          "name" : "b" 
+        }
+      ]
+    },
+    { 
       "class" : "button",
       "id" : "reverse_count",
       "graphics" : 
