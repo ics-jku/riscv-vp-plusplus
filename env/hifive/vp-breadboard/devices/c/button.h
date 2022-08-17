@@ -28,8 +28,8 @@ public:
 	class Button_Input : public CDevice::Input_Interface_C {
 	public:
 		Button_Input(CDevice* device);
-		void mouse(bool active);
-		void key(int key, bool active);
+		void onClick(bool active);
+		void onKeypress(int key, bool active);
 	};
 };
 

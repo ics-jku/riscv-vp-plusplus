@@ -110,7 +110,7 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				for(auto const& [id, device] : devices) {
 					if(device->input) {
 						lua_access.lock();
-						device->input->key(e->key(), true);
+						device->input->onKeypress(e->key(), true);
 						lua_access.unlock();
 						writeDevice(id);
 					}
@@ -126,7 +126,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 	for(auto const& [id, device] : devices) {
 		if(device->input) {
 			lua_access.lock();
-			device->input->key(e->key(), false);
+			device->input->onKeypress(e->key(), false);
 			lua_access.unlock();
 			writeDevice(id);
 		}
@@ -140,7 +140,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 			Device* dev = devices.at(id);
 			if(dev->input) {
 				lua_access.lock();
-				dev->input->mouse(true);
+				dev->input->onClick(true);
 				lua_access.unlock();
 				writeDevice(id);
 			}
@@ -155,7 +155,7 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 			Device* dev = devices.at(id);
 			if(dev->input) {
 				lua_access.lock();
-				dev->input->mouse(false);
+				dev->input->onClick(false);
 				lua_access.unlock();
 				writeDevice(id);
 			}

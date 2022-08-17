@@ -45,12 +45,12 @@ function initializeGraphBuffer()
 	drawArea()
 end
 
-function mouse(active)
+function onClick(active)
 	is_active = not active
 	draw_area()
 end
 
-function key(number, active)
+function onKeypress(number, active)
 	if number == keybinding then
 		is_active = not active
 		draw_area()

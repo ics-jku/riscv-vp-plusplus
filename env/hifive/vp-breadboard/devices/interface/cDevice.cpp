@@ -73,10 +73,10 @@ Pixel CDevice::getBuffer(const Xoffset x, const Yoffset y) {
 CDevice::Input_Interface_C::Input_Interface_C(CDevice* device) : device(device) {}
 CDevice::Input_Interface_C::~Input_Interface_C() {}
 
-void CDevice::Input_Interface_C::mouse(bool active) {
+void CDevice::Input_Interface_C::onClick(bool active) {
 	std::cout << "Warning: mouse was not implemented" << std::endl;
 }
 
-void CDevice::Input_Interface_C::key(int key, bool active) {
+void CDevice::Input_Interface_C::onKeypress(int key, bool active) {
 	std::cout << "Warning: key was not implemented" << std::endl;
 }

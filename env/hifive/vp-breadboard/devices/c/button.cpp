@@ -56,19 +56,19 @@ void Button::draw_area() {
 
 Button::Button_Input::Button_Input(CDevice* device) : CDevice::Input_Interface_C(device) {}
 
-void Button::Button_Input::mouse(bool active) {
+void Button::Button_Input::onClick(bool active) {
 	Button* button_device = static_cast<Button*>(device);
 	button_device->active = active;
 	button_device->draw_area();
 }
 
-void Button::Button_Input::key(int key, bool active) {
+void Button::Button_Input::onKeypress(int key, bool active) {
 	if(device->conf) {
 		Config::iterator keybinding_it = device->conf->getConfig().find("keybinding");
 		if(keybinding_it != device->conf->getConfig().end() &&
 				keybinding_it->second.type == ConfigElem::Type::integer &&
 				keybinding_it->second.value.integer == key) {
-			mouse(active);
+			onClick(active);
 		}
 	}
 }

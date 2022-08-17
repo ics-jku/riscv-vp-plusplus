@@ -57,8 +57,8 @@ public:
 	public:
 		Input_Interface_C(CDevice* device);
 		~Input_Interface_C();
-		void mouse(bool active);
-		void key(int key, bool active);
+		void onClick(bool active);
+		void onKeypress(int key, bool active);
 	};
 
 	CDevice(DeviceID id);
