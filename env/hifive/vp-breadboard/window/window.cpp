@@ -10,4 +10,8 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 	setCentralWidget(central);
 }
 
+void MainWindow::resizeEvent(QResizeEvent *e) {
+	setFixedSize(central->width(), central->height());
+}
+
 MainWindow::~MainWindow() { }
