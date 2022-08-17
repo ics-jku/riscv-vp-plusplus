@@ -28,11 +28,12 @@ struct ConfigElem {
 		invalid = 0,
 		integer,
 		boolean,
-		//string,
+		string,
 	} type;
 	union Value {
 		int64_t integer;
 		bool boolean;
+		char* string;
 	} value;
 
 	ConfigElem() : type(Type::invalid){};
@@ -44,6 +45,11 @@ struct ConfigElem {
 	ConfigElem(bool val) {
 		type = Type::boolean;
 		value.boolean = val;
+	};
+	ConfigElem(char* val){
+		type = Type::string;
+		value.string = (char*) malloc(strlen(val) + 1);
+		strcpy(value.string, val);
 	};
 };
 typedef std::string ConfigDescription;

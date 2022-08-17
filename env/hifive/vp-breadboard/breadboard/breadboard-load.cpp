@@ -87,6 +87,10 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					else if(conf_it.value().isDouble()) {
 						conf.emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
 					}
+					else if(conf_it.value().isString()) {
+						QByteArray value_bytes = conf_it.value().toString().toLocal8Bit();
+						conf.emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
+					}
 					else {
 						cerr << "Invalid conf element type" << endl;
 					}

@@ -15,7 +15,7 @@
       },
       "conf" : 
       {
-        "keybinding" : 66
+        "keybinding" : "B"
       },
       "pins" :
       [
@@ -37,7 +37,7 @@
       },
       "conf" : 
       {
-        "keybinding" : 65
+        "keybinding" : "A"
       },
       "pins" :
       [
@@ -59,7 +59,7 @@
       },
       "conf" : 
       {
-        "keybinding" : 16777236
+        "keybinding" : "RIGHT"
       },
       "pins" :
       [
@@ -81,7 +81,7 @@
       },
       "conf" : 
       {
-        "keybinding" : 16777234
+        "keybinding" : "LEFT"
       },
       "pins" :
       [
@@ -103,7 +103,7 @@
       },
       "conf" : 
       {
-        "keybinding" : 16777235 
+        "keybinding" : "UP"
       },
       "pins" :
       [
@@ -125,7 +125,7 @@
       },
       "conf" : 
       {
-        "keybinding" : 16777237
+        "keybinding" : "DOWN"
       },
       "pins" :
       [
