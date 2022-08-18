@@ -48,7 +48,7 @@ struct ConfigElem {
 	};
 	ConfigElem(char* val){
 		type = Type::string;
-		value.string = (char*) malloc(strlen(val) + 1);
+		value.string = new char[strlen(val)+1];
 		strcpy(value.string, val);
 	};
 };

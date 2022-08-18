@@ -40,18 +40,7 @@ include_directories(
 
 set(HEADERS 
 	window/window.h
-	window/central.h
-	embedded/embedded.h
-	embedded/gpio-helpers.h
-	breadboard/breadboard.h
-	breadboard/configurations.h
-	breadboard/raster.h
-	devices/device.hpp
-	devices/configurations.h
-	devices/factory/factory.h
 )
-
-set(UI window/mainwindow.ui)
 
 if(NOT DONT_INCLUDE_CONFIGS)
 	file(GLOB CONFIGS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./conf/*.json)
@@ -86,7 +75,7 @@ set(SOURCES
     ${DEVICES}
 )
 
-add_executable(vp-breadboard ${SOURCES} ${HEADERS} ${UI})
+add_executable(vp-breadboard ${SOURCES} ${HEADERS})
 
 add_qt_resource(vp-breadboard configs FILES ${CONFIGS})
 add_qt_resource(vp-breadboard scripts FILES ${SCRIPTS})

@@ -11,6 +11,7 @@ class Central : public QWidget {
 
 public:
 	Central(QString configfile, std::string additional_device_dir, const char* host, const char* port, bool overwrite_integrated_devices, QWidget *parent);
+	~Central();
 
 private slots:
 	void timerUpdate();

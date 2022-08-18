@@ -29,7 +29,7 @@ function getGraphBufferLayout()
 	return {width, height, "rgba"}
 end
 
-function draw_area()
+function drawArea()
 	for x = 0, width-1 do
 		for y = 0, height-1 do
 			if is_active then
@@ -47,12 +47,12 @@ end
 
 function onClick(active)
 	is_active = not active
-	draw_area()
+	drawArea()
 end
 
-function onKeypress(number, active)
-	if number == keybinding then
+function onKeypress(key, active)
+	if key == keybinding then
 		is_active = not active
-		draw_area()
+		drawArea()
 	end
 end

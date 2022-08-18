@@ -7,6 +7,8 @@
 
 #include "luaDevice.hpp"
 
+#include <QKeySequence>
+
 using std::string;
 using std::cout;
 using std::cerr;
@@ -182,6 +184,11 @@ Config LuaDevice::Config_Interface_Lua::getConfig(){
 					name, ConfigElem{value.cast<bool>()}
 			);
 			break;
+		case LUA_TSTRING:
+			ret.emplace(
+					name, ConfigElem{(char*)value.cast<string>().c_str()}
+			);
+			break;
 		default:
 			cerr << "Config value of unknown type: " << value << endl;
 		}
@@ -192,13 +199,23 @@ Config LuaDevice::Config_Interface_Lua::getConfig(){
 bool LuaDevice::Config_Interface_Lua::setConfig(const Config conf) {
 	LuaRef c = luabridge::newTable(m_env.state());
 	for(auto& [name, elem] : conf) {
-		c[name] = elem.value.integer;
+		switch(elem.type) {
+		case ConfigElem::Type::boolean:
+			c[name] = elem.value.boolean;
+			break;
+		case ConfigElem::Type::integer:
+			c[name] = elem.value.integer;
+			break;
+		case ConfigElem::Type::string:
+			c[name] = string(elem.value.string);
+			break;
+		}
 	}
 	return m_setConf(c).wasOk();
 }
 
 LuaDevice::Graphbuf_Interface_Lua::Graphbuf_Interface_Lua(luabridge::LuaRef& ref,
-	                                           std::string device_id,
+	                                           DeviceID device_id,
 	                                           lua_State* l) :
 		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_initializeGraphBuffer(ref["initializeGraphBuffer"]),
 		m_env(ref), m_deviceId(device_id), L(l) {
@@ -324,7 +341,7 @@ void LuaDevice::Input_Interface_Lua::onClick(bool active) {
 }
 
 void LuaDevice::Input_Interface_Lua::onKeypress(int key, bool active) {
-	m_onKeypress(key, active);
+	m_onKeypress(QKeySequence(key).toString().toStdString(), active);
 }
 
 bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {

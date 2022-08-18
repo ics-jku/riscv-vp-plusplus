@@ -29,6 +29,11 @@ Central::Central(QString configfile, std::string additional_device_dir, const ch
 	connect(breadboard, &Breadboard::setBit, embedded, &Embedded::setBit);
 }
 
+Central::~Central() {
+	delete breadboard;
+	delete embedded;
+}
+
 /* Timer */
 
 void Central::timerUpdate() {

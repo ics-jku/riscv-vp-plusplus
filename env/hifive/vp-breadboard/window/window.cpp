@@ -14,4 +14,6 @@ void MainWindow::resizeEvent(QResizeEvent *e) {
 	setFixedSize(central->width(), central->height());
 }
 
-MainWindow::~MainWindow() { }
+MainWindow::~MainWindow() {
+	delete central;
+}
