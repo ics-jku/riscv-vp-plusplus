@@ -47,7 +47,7 @@
       ],
       "conf" : 
       { 
-        "keybinding" : 75
+        "keybinding" : "UP"
       }
     },
     {

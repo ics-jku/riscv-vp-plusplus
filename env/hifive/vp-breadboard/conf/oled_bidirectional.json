@@ -1,13 +1,17 @@
 {
+  "window" : {
+    "background" : ":/img/oled_shield.jpg",
+    "windowsize" : [470, 750]
+  },
   "devices" :
-   [
+  [
    { 
       "class" : "button",
       "id" : "button_b",
       "graphics" : 
       { 
-        "offs" : [390, 80],
-        "scale" : 1
+        "offs" : [77, 625],
+        "scale" : 2
       },
       "conf" : 
       {
@@ -28,8 +32,8 @@
       "id" : "button_a",
       "graphics" : 
       { 
-        "offs" : [310, 80],
-        "scale" : 1
+        "offs" : [77, 535],
+        "scale" : 2
       },
       "conf" : 
       {
@@ -50,8 +54,8 @@
       "id" : "button_right",
       "graphics" : 
       { 
-        "offs" : [390, 40],
-        "scale" : 1
+        "offs" : [293, 580],
+        "scale" : 2
       },
       "conf" : 
       {
@@ -72,8 +76,8 @@
       "id" : "button_left",
       "graphics" : 
       { 
-        "offs" : [310, 40],
-        "scale" : 1
+        "offs" : [148, 580],
+        "scale" : 2
       },
       "conf" : 
       {
@@ -94,8 +98,8 @@
       "id" : "button_up",
       "graphics" : 
       { 
-        "offs" : [350, 0],
-        "scale" : 1
+        "offs" : [220, 507],
+        "scale" : 2
       },
       "conf" : 
       {
@@ -116,8 +120,8 @@
       "id" : "button_down",
       "graphics" : 
       { 
-        "offs" : [350, 80],
-        "scale" : 1
+        "offs" : [220, 652],
+        "scale" : 2
       },
       "conf" : 
       {
@@ -138,8 +142,12 @@
       "id" : "button_center",
       "graphics" : 
       { 
-        "offs" : [350, 40],
-        "scale" : 1
+        "offs" : [220, 580],
+        "scale" : 2
+      },
+      "conf" :
+      { 
+        "keybinding" : "C"
       },
       "pins" :
       [
@@ -157,7 +165,7 @@
       "spi"   :
       { 
         "cs_pin" : 15,
-        "noresponse": true
+        "noresponse": false
       },
       "pins"  :
       [
@@ -170,7 +178,7 @@
       ],
      "graphics" :
      {
-       "offs" : [0, 0],
+       "offs" : [105, 308],
        "scale" : 2
      }
     }

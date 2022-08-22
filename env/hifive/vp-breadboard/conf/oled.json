@@ -1,33 +1,178 @@
 {
-  "background" : ":/img/oled_layout.jpg",
-  "original_img_size" : [3795, 2643],
-  "windowsize" : [750, 522],
-  "buttons" :
-  [
-    {
-      "pin" : 7,
-      "pos" : [302, 362],
-      "dim" : [56, 56]
+  "devices" :
+   [
+   { 
+      "class" : "button",
+      "id" : "button_b",
+      "graphics" : 
+      { 
+        "offs" : [390, 80],
+        "scale" : 1
+      },
+      "conf" : 
+      {
+        "keybinding" : "B"
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 19,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+   { 
+      "class" : "button",
+      "id" : "button_a",
+      "graphics" : 
+      { 
+        "offs" : [310, 80],
+        "scale" : 1
+      },
+      "conf" : 
+      {
+        "keybinding" : "A"
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 18,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+   { 
+      "class" : "button",
+      "id" : "button_right",
+      "graphics" : 
+      { 
+        "offs" : [390, 40],
+        "scale" : 1
+      },
+      "conf" : 
+      {
+        "keybinding" : "RIGHT"
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 5,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+   { 
+      "class" : "button",
+      "id" : "button_left",
+      "graphics" : 
+      { 
+        "offs" : [310, 40],
+        "scale" : 1
+      },
+      "conf" : 
+      {
+        "keybinding" : "LEFT"
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 6,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "button_up",
+      "graphics" : 
+      { 
+        "offs" : [350, 0],
+        "scale" : 1
+      },
+      "conf" : 
+      {
+        "keybinding" : "UP"
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 7,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "button_down",
+      "graphics" : 
+      { 
+        "offs" : [350, 80],
+        "scale" : 1
+      },
+      "conf" : 
+      {
+        "keybinding" : "DOWN"
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 3,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "button_center",
+      "graphics" : 
+      { 
+        "offs" : [350, 40],
+        "scale" : 1
+      },
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 4,
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
     },
     {
-      "pin" : 6,
-      "pos" : [360, 362],
-      "dim" : [56, 56]
-    },
-    {
-      "pin" : 5,
-      "pos" : [420, 363],
-      "dim" : [56, 58]
+      "class" : "oled",
+      "id"    : "display",
+      "spi"   :
+      { 
+        "cs_pin" : 15,
+        "noresponse": true
+      },
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "name": "dc_pin",
+          "synchronous" : true
+        }
+      ],
+     "graphics" :
+     {
+       "offs" : [0, 0],
+       "scale" : 2
+     }
     }
-  ],
-  "rgb" :
-  {
-    "offs" : [590, 128],
-    "linewidth" : 15
-  },
-  "oled-mmap" :
-  {
-    "offs" : [535, 395],
-    "margin" : 10
-  }
+  ]
 }
