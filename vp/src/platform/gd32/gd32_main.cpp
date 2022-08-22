@@ -88,11 +88,11 @@ int sc_main(int argc, char **argv) {
 	USART usart0("USART0");
 	AFIO afio("AFIO");
 	EXTI exti("EXTI");
-	GPIO gpioa("GPIOA");
-	GPIO gpiob("GPIOB");
-	GPIO gpioc("GPIOC");
-	GPIO gpiod("GPIOD");
-	GPIO gpioe("GPIOE");
+	GPIO gpioa("GPIOA", 1400);
+	GPIO gpiob("GPIOB", 1401);
+	GPIO gpioc("GPIOC", 1402);
+	GPIO gpiod("GPIOD", 1403);
+	GPIO gpioe("GPIOE", 1404);
 	SPI spi0("SPI0");
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");

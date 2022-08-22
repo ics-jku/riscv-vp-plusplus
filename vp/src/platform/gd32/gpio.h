@@ -3,7 +3,10 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include <systemc>
+#include <thread>
 
+#include "gpio/gpio-server.hpp"
+#include "platform/common/async_event.h"
 #include "util/tlm_map.h"
 
 struct GPIO : public sc_core::sc_module {
@@ -12,7 +15,7 @@ struct GPIO : public sc_core::sc_module {
 	uint32_t gpio_ctl0 = 0x44444444;
 	uint32_t gpio_ctl1 = 0x44444444;
 	uint32_t gpio_istat = 0x00000000;  // 0x0000XXXX Don't care?
-	uint32_t gpio_ostat = 0x00000000;
+	uint32_t gpio_octl = 0x00000000;
 	uint32_t gpio_bop = 0x00000000;
 	uint32_t gpio_bc = 0x00000000;
 	uint32_t gpio_lock = 0x00000000;
@@ -21,7 +24,7 @@ struct GPIO : public sc_core::sc_module {
 		GPIO_CTL0_REG_ADDR = 0x00,
 		GPIO_CTL1_REG_ADDR = 0x04,
 		GPIO_ISTAT_REG_ADDR = 0x08,
-		GPIO_OSTAT_REG_ADDR = 0x0C,
+		GPIO_OCTL_REG_ADDR = 0x0C,
 		GPIO_BOP_REG_ADDR = 0x10,
 		GPIO_BC_REG_ADDR = 0x14,
 		GPIO_LOCK_REG_ADDR = 0x18,
@@ -29,7 +32,17 @@ struct GPIO : public sc_core::sc_module {
 
 	vp::map::LocalRouter router = {"GPIO"};
 
-	GPIO(sc_core::sc_module_name);
+	static constexpr gpio::PinNumber available_pins = 16;
+	GpioServer server;
+	std::thread *serverThread;
+	AsyncEvent asyncEvent;
+
+	SC_HAS_PROCESS(GPIO);
+	GPIO(sc_core::sc_module_name, unsigned port);
+	~GPIO();
+
+	void asyncOnchange(gpio::PinNumber bit, gpio::Tristate val);
+	void synchronousChange();
 
 	void register_access_callback(const vp::map::register_access_t &r);
 
