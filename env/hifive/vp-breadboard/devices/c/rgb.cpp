@@ -49,13 +49,20 @@ void RGB::draw_rgb(PinNumber num, bool val) {
 	if(num == 0) cur.r = val?255:0;
 	else if(num == 1) cur.g = val?255:0;
 	else cur.b = val?255:0;
+
+	auto *img = image->bits();
 	for(int x=1; x<layout_graph.width; x++) {
 		for(int y=1; y<layout_graph.height; y++) {
 			float dist = sqrt(pow(extent_center - x, 2) + pow(extent_center - y, 2));
 			int norm_lumen = floor((1-dist/extent_center)*255);
 			if(norm_lumen < 0) norm_lumen = 0;
 			if(norm_lumen > 255) norm_lumen = 255;
-			setBuffer(x-1, y-1, Pixel{cur.r, cur.g, cur.b, (uint8_t)norm_lumen});
+
+			const auto offs = ((y-1) * layout_graph.width + (x-1)) * 4; // heavily depends on rgba8888
+			img[offs+0] = cur.r;
+			img[offs+1] = cur.g;
+			img[offs+2] = cur.b;
+			img[offs+3] = (uint8_t)norm_lumen;
 		}
 	}
 }

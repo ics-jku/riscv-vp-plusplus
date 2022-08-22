@@ -41,9 +41,14 @@ void Sevensegment::Segment_PIN::setPin(PinNumber num, gpio::Tristate val) {
 Sevensegment::Segment_Graph::Segment_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 
 void Sevensegment::Segment_Graph::initializeBufferMaybe() {
+	auto *img = device->image->bits();
 	for(unsigned x=0; x<device->layout_graph.width; x++) {
 		for(unsigned y=0; y<device->layout_graph.height; y++) {
-			device->setBuffer(x, y, Pixel{0, 0, 0, 128});
+			const auto offs = (y * device->layout_graph.width + x) * 4; // heavily depends on rgba8888
+			img[offs+0] = 0;
+			img[offs+1] = 0;
+			img[offs+2] = 0;
+			img[offs+3] = 128;
 		}
 	}
 	for(PinNumber num=0; num<=7; num++) {
@@ -88,9 +93,15 @@ void Sevensegment::draw_segment(PinNumber num, bool val) {
 		x1 = layout_graph.width - 4, y1 = yrow3 - 2;
 		x2 = layout_graph.width - 2, y2 = yrow3;
 	}
+
+	auto *img = image->bits();
 	for(unsigned x=x1; x<=x2+1; x++) {
 		for(unsigned y=y1; y<=y2+1; y++) {
-			setBuffer(x, y, Pixel{(val?(uint8_t)255:(uint8_t)0), 0, 0, 255});
+			const auto offs = (y * layout_graph.width + x) * 4; // heavily depends on rgba8888
+			img[offs+0] = val?(uint8_t)255:(uint8_t)0;
+			img[offs+1] = 0;
+			img[offs+2] = 0;
+			img[offs+3] = 255;
 		}
 	}
 }

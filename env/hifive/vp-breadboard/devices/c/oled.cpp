@@ -67,12 +67,17 @@ gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 		if (oled_device->state.page >= device->layout_graph.height/8) {
 			return 0;
 		}
+		auto *img = device->image->bits();
 		for(unsigned y=0; y<8; y++) {
 			uint8_t pix=0;
 			if(byte & 1<<y) {
 				pix = 255;
 			}
-			device->setBuffer(oled_device->state.column, (oled_device->state.page*8)+y, Pixel{pix, pix, pix, oled_device->state.contrast});
+			const auto offs = (((oled_device->state.page*8)+y) * device->layout_graph.width + oled_device->state.column) * 4; // heavily depends on rgba8888
+			img[offs+0] = pix;
+			img[offs+1] = pix;
+			img[offs+2] = pix;
+			img[offs+3] = oled_device->state.contrast;
 		}
 		oled_device->state.column += 1;
 	}
@@ -102,9 +107,14 @@ gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 
 void OLED::OLED_Graph::initializeBufferMaybe() {
+	auto *img = device->image->bits();
 	for(unsigned x=0; x<device->layout_graph.width; x++) {
 		for(unsigned y=0; y<device->layout_graph.height; y++) {
-			device->setBuffer(x, y, Pixel{0,0,0,255});
+			const auto offs = (y * device->layout_graph.width + x) * 4; // heavily depends on rgba8888
+			img[offs+0] = 0;
+			img[offs+1] = 0;
+			img[offs+2] = 0;
+			img[offs+3] = 255;
 		}
 	}
 }
