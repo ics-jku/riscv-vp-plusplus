@@ -5,7 +5,11 @@
 class CFactory {
 public:
 	typedef std::function<CDevice*(DeviceID id)> Creator;
-	bool registerDeviceType(DeviceClass classname, Creator creator);
+
+	template <typename Derived>
+	bool registerDeviceType() {
+		return devices.insert(std::make_pair(Derived::classname, [](DeviceID id) {return new Derived(id);})).second;
+	}
 
 	void printAvailableDevices();
 	bool deviceExists(DeviceClass classname);
@@ -15,5 +19,3 @@ private:
 };
 
 CFactory& getCFactory();
-template <typename Derived>
-CDevice* deviceCreator(DeviceID id) { return new Derived(id); }

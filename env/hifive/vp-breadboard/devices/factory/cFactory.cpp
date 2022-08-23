@@ -1,9 +1,5 @@
 #include "cFactory.h"
 
-bool CFactory::registerDeviceType(DeviceClass classname, Creator creator) {
-	return devices.insert(std::make_pair(classname, creator)).second;
-}
-
 void CFactory::printAvailableDevices() {
 	std::cout << "Available Devices: " << std::endl;
 	for(std::pair<DeviceClass, Creator> device : devices) {

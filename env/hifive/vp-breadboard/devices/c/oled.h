@@ -45,4 +45,4 @@ public:
 	};
 };
 
-static const bool registeredOLED = getCFactory().registerDeviceType(OLED::classname, deviceCreator<OLED>);
+static const bool registeredOLED = getCFactory().registerDeviceType<OLED>();

@@ -25,4 +25,4 @@ public:
 	};
 };
 
-static const bool registeredSevensegment = getCFactory().registerDeviceType(Sevensegment::classname, deviceCreator<Sevensegment>);
+static const bool registeredSevensegment = getCFactory().registerDeviceType<Sevensegment>();

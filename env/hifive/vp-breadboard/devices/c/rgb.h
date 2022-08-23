@@ -25,4 +25,4 @@ public:
 	};
 };
 
-static const bool registeredRGB = getCFactory().registerDeviceType(RGB::classname, deviceCreator<RGB>);
+static const bool registeredRGB = getCFactory().registerDeviceType<RGB>();

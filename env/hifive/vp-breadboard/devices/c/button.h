@@ -33,4 +33,4 @@ public:
 	};
 };
 
-static const bool registeredButton = getCFactory().registerDeviceType(Button::classname, deviceCreator<Button>);
+static const bool registeredButton = getCFactory().registerDeviceType<Button>();
