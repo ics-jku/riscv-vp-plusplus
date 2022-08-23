@@ -79,17 +79,17 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				}
 
 				QJsonObject conf_obj = device_desc["conf"].toObject();
-				Config conf = Config();
+				auto conf = new Config();
 				for(QJsonObject::iterator conf_it = conf_obj.begin(); conf_it != conf_obj.end(); conf_it++) {
 					if(conf_it.value().isBool()) {
-						conf.emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
+						conf->emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
 					}
 					else if(conf_it.value().isDouble()) {
-						conf.emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
+						conf->emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
 					}
 					else if(conf_it.value().isString()) {
 						QByteArray value_bytes = conf_it.value().toString().toLocal8Bit();
-						conf.emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
+						conf->emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
 					}
 					else {
 						cerr << "Invalid conf element type" << endl;

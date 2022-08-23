@@ -38,8 +38,8 @@ public:
 	class Config_Interface {
 	public:
 		virtual ~Config_Interface();
-		virtual Config getConfig() = 0;
-		virtual bool setConfig(const Config conf) = 0;
+		virtual Config* getConfig() = 0;
+		virtual bool setConfig(Config* conf) = 0;
 	};
 
 	class Graphbuf_Interface {

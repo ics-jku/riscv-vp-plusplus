@@ -37,6 +37,21 @@ struct ConfigElem {
 	} value;
 
 	ConfigElem() : type(Type::invalid){};
+	ConfigElem(const ConfigElem& e) {
+		type = e.type;
+		if(type == Type::string) {
+			value.string = new char[strlen(e.value.string)+1];
+			strcpy(value.string, e.value.string);
+		}
+		else {
+			value = e.value;
+		}
+	}
+	~ConfigElem() {
+		if(type == Type::string) {
+			delete value.string;
+		}
+	}
 
 	ConfigElem(int64_t val){
 		type = Type::integer;

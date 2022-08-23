@@ -37,11 +37,11 @@ gpio::SPI_Response CDevice::SPI_Interface_C::send(gpio::SPI_Command byte) {
 CDevice::Config_Interface_C::Config_Interface_C(CDevice* device) : device(device) {}
 CDevice::Config_Interface_C::~Config_Interface_C() {}
 
-Config CDevice::Config_Interface_C::getConfig() {
+Config* CDevice::Config_Interface_C::getConfig() {
 	return device->config;
 }
 
-bool CDevice::Config_Interface_C::setConfig(const Config conf) {
+bool CDevice::Config_Interface_C::setConfig(Config* conf) {
 	device->config = conf;
 	return true;
 }

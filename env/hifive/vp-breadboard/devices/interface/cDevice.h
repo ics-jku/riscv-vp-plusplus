@@ -8,7 +8,7 @@ public:
 	QImage* image;
 	Layout layout_graph;
 	PinLayout layout_pin;
-	Config config;
+	Config* config;
 
 	class PIN_Interface_C : public Device::PIN_Interface {
 	protected:
@@ -36,8 +36,8 @@ public:
 	public:
 		Config_Interface_C(CDevice *device);
 		~Config_Interface_C();
-		Config getConfig();
-		bool setConfig(const Config conf);
+		Config* getConfig();
+		bool setConfig(Config* conf);
 	};
 
 	class Graphbuf_Interface_C : public Device::Graphbuf_Interface {

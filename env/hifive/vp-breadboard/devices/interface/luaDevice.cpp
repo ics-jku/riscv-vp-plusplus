@@ -148,8 +148,8 @@ bool LuaDevice::Config_Interface_Lua::implementsInterface(const luabridge::LuaRe
 	return !ref["getConfig"].isNil() && !ref["setConfig"].isNil();
 }
 
-Config LuaDevice::Config_Interface_Lua::getConfig(){
-	Config ret;
+Config* LuaDevice::Config_Interface_Lua::getConfig(){
+	auto ret = new Config();
 	LuaResult r = m_getConf();
 	//cout << r.size() << " elements in config" << endl;
 
@@ -175,17 +175,17 @@ Config LuaDevice::Config_Interface_Lua::getConfig(){
 
 		switch(value.type()) {
 		case LUA_TNUMBER:
-			ret.emplace(
+			ret->emplace(
 					name, ConfigElem{value.cast<typeof(ConfigElem::Value::integer)>()}
 			);
 			break;
 		case LUA_TBOOLEAN:
-			ret.emplace(
+			ret->emplace(
 					name, ConfigElem{value.cast<bool>()}
 			);
 			break;
 		case LUA_TSTRING:
-			ret.emplace(
+			ret->emplace(
 					name, ConfigElem{(char*)value.cast<string>().c_str()}
 			);
 			break;
@@ -196,9 +196,9 @@ Config LuaDevice::Config_Interface_Lua::getConfig(){
 	return ret;
 }
 
-bool LuaDevice::Config_Interface_Lua::setConfig(const Config conf) {
+bool LuaDevice::Config_Interface_Lua::setConfig(Config* conf) {
 	LuaRef c = luabridge::newTable(m_env.state());
-	for(auto& [name, elem] : conf) {
+	for(auto& [name, elem] : (*conf)) {
 		switch(elem.type) {
 		case ConfigElem::Type::boolean:
 			c[name] = elem.value.boolean;

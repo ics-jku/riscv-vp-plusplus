@@ -16,12 +16,14 @@ Button::Button(DeviceID id) : CDevice(id) {
 		pin = std::make_unique<Button_PIN>(this);
 	}
 	if(!conf) {
-		config = Config();
+		config = new Config();
 		conf = std::make_unique<Config_Interface_C>(this);
 	}
 }
 
-Button::~Button() {}
+Button::~Button() {
+	delete config;
+}
 
 const DeviceClass Button::getClass() const { return classname; }
 
@@ -71,8 +73,8 @@ void Button::Button_Input::onClick(bool active) {
 
 void Button::Button_Input::onKeypress(int key, bool active) {
 	if(device->conf) {
-		Config::iterator keybinding_it = device->conf->getConfig().find("keybinding");
-		if(keybinding_it != device->conf->getConfig().end() && keybinding_it->second.type == ConfigElem::Type::string) {
+		Config::iterator keybinding_it = device->conf->getConfig()->find("keybinding");
+		if(keybinding_it != device->conf->getConfig()->end() && keybinding_it->second.type == ConfigElem::Type::string) {
 			QKeySequence keybinding = QKeySequence(QString::fromLocal8Bit(keybinding_it->second.value.string));
 			if(keybinding.count() && keybinding[0] == key) {
 				onClick(active);
