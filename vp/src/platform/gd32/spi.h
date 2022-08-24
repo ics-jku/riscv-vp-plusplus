@@ -7,19 +7,14 @@
 
 #include "util/tlm_map.h"
 
-class SpiInterface {
-   public:
-	virtual ~SpiInterface(){};
-	virtual uint8_t write(uint8_t byte) = 0;
-};
-
-typedef uint32_t Pin;
+typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
 
 struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
 	static constexpr uint_fast8_t buffer_size = 1;
 	std::queue<uint16_t> buffer;
+	SpiWriteFunction writeFunction;
 
 	// memory mapped configuration registers
 	uint32_t spi_ctl0 = 0x0000;
@@ -72,6 +67,7 @@ struct SPI : public sc_core::sc_module {
 					spi_data = buffer.front();
 					buffer.pop();
 				}
+				// TODO maybe also need to reset TBE flag here?
 				spi_stat = spi_stat & 0xFE;  // set RBNE flag to 0
 			}
 		}
@@ -81,7 +77,7 @@ struct SPI : public sc_core::sc_module {
 		if (r.write) {
 			if (r.vptr == &spi_data) {
 				buffer.push(spi_data);
-				// TODO write/transmit to spi device
+				writeFunction(spi_data);
 				spi_stat = spi_stat | 0x02;  // set TBE flag to 1
 			}
 		}
@@ -89,5 +85,9 @@ struct SPI : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		router.transport(trans, delay);
+	}
+
+	void connect(SpiWriteFunction interface) {
+		writeFunction = interface;
 	}
 };

@@ -1,6 +1,7 @@
 #include <boost/program_options.hpp>
 #include <systemc>
 
+#include "oled/oled.hpp"
 #include "afio.h"
 #include "eclic.h"
 #include "elf_loader.h"
@@ -94,6 +95,10 @@ int sc_main(int argc, char **argv) {
 	GPIO gpiod("GPIOD", 1403);
 	GPIO gpioe("GPIOE", 1404);
 	SPI spi0("SPI0");
+
+	std::shared_ptr<SS1106> oled = nullptr;
+	oled = std::make_shared<SS1106>([&gpioa] { return gpioa.gpio_octl & (1 << 2); });  // function to retrieve DC pin
+	spi0.connect(std::bind(&SS1106::write, oled, std::placeholders::_1));
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
