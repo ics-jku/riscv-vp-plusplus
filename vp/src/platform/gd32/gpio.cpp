@@ -1,6 +1,11 @@
 #include "gpio.h"
 
-GPIO::GPIO(sc_core::sc_module_name, unsigned port) {
+static gpio::Pinstate getAFIO(gpio::PinNumber pin) {
+	// TODO
+	return gpio::Pinstate::IOF_SPI;
+}
+
+GPIO::GPIO(sc_core::sc_module_name, Port port) : port{port} {
 	tsock.register_b_transport(this, &GPIO::transport);
 
 	router
@@ -19,7 +24,7 @@ GPIO::GPIO(sc_core::sc_module_name, unsigned port) {
 	sensitive << asyncEvent;
 	dont_initialize();
 
-	server.setupConnection(std::to_string(port).c_str());
+	server.setupConnection(std::to_string(static_cast<int>(port)).c_str());
 	server.registerOnChange(std::bind(&GPIO::asyncOnchange, this, std::placeholders::_1, std::placeholders::_2));
 	serverThread = new std::thread(std::bind(&GpioServer::startAccepting, &server));
 }
@@ -40,6 +45,7 @@ void GPIO::asyncOnchange(gpio::PinNumber bit, gpio::Tristate val) {
 
 void GPIO::synchronousChange() {
 	// TODO
+	// interrupts
 }
 
 void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -48,25 +54,44 @@ void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 
 void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.write) {
+		int offset = 0;
 		switch (r.addr) {
+			case GPIO_CTL1_REG_ADDR:
+				offset = 8;
+				[[fallthrough]];
+			case GPIO_CTL0_REG_ADDR: {
+				for (gpio::PinNumber i = 0; i < 8; i++) {
+					auto output_en = (((r.nv >> (4 * i)) & 0b11) > 0);
+					auto afio_en = (((r.nv >> ((4 * i) + 2)) & 0b11) > 1);
+					if (output_en & afio_en) {
+						const auto afio = getAFIO(i + offset);
+						if (afio == gpio::Pinstate::UNSET)
+							std::cerr << "[GPIO] Set invalid afio to pin " << (int)i << std::endl;
+						else
+							server.state.pins[i + offset] = afio;
+					}
+				}
+				break;
+			}
 			case GPIO_BOP_REG_ADDR: {
 				const uint16_t set = (uint16_t)r.nv;
 				const uint16_t clear = (uint16_t)(r.nv >> 16);
 
 				uint16_t output_en = 0;
 				for (int i = 0; i < 8; i++) {
-					output_en |= ((gpio_ctl0 & (0b11 << (4 * i))) > 0) << i;
-					output_en |= ((gpio_ctl1 & (0b11 << (4 * i))) > 0) << (i + 8);
+					auto md_mask = 0b11 << (4 * i);
+					output_en |= ((gpio_ctl0 & md_mask) > 0) << i;
+					output_en |= ((gpio_ctl1 & md_mask) > 0) << (i + 8);
 				}
 
 				gpio_octl &= ~(clear & output_en);
 				gpio_octl |= (set & output_en);
 
-				const uint16_t change = (set | clear) & output_en;
+				const uint16_t changed_bits = (set | clear) & output_en;
 
 				for (gpio::PinNumber i = 0; i < available_pins; i++) {
 					const auto bitoffs = (1l << i);
-					if (bitoffs & change) {
+					if (bitoffs & changed_bits) {
 						if (set & bitoffs)
 							server.state.pins[i] = gpio::Pinstate::HIGH;
 						else if (clear & bitoffs)
@@ -81,8 +106,9 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 
 				uint16_t output_en = 0;
 				for (int i = 0; i < 8; i++) {
-					output_en |= ((gpio_ctl0 & (0b11 << (4 * i))) > 0) << i;
-					output_en |= ((gpio_ctl1 & (0b11 << (4 * i))) > 0) << (i + 8);
+					auto md_mask = 0b11 << (4 * i);
+					output_en |= ((gpio_ctl0 & md_mask) > 0) << i;
+					output_en |= ((gpio_ctl1 & md_mask) > 0) << (i + 8);
 				}
 
 				gpio_octl &= ~(clear & output_en);

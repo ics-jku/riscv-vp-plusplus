@@ -12,6 +12,14 @@
 struct GPIO : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<GPIO> tsock;
 
+	enum class Port {
+		A = 1400,
+		B,
+		C,
+		D,
+		E,
+	};
+
 	uint32_t gpio_ctl0 = 0x44444444;
 	uint32_t gpio_ctl1 = 0x44444444;
 	uint32_t gpio_istat = 0x00000000;  // 0x0000XXXX Don't care?
@@ -37,8 +45,10 @@ struct GPIO : public sc_core::sc_module {
 	std::thread *serverThread;
 	AsyncEvent asyncEvent;
 
+	Port port;
+
 	SC_HAS_PROCESS(GPIO);
-	GPIO(sc_core::sc_module_name, unsigned port);
+	GPIO(sc_core::sc_module_name, Port port);
 	~GPIO();
 
 	void asyncOnchange(gpio::PinNumber bit, gpio::Tristate val);
