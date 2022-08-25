@@ -49,7 +49,7 @@ struct ConfigElem {
 	}
 	~ConfigElem() {
 		if(type == Type::string) {
-			delete value.string;
+			delete[] value.string;
 		}
 	}
 
