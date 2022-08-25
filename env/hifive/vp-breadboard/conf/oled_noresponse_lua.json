@@ -21,9 +21,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 19,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 19
         } 
       ]
     },
@@ -43,9 +41,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 18,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 18
         } 
       ]
     },
@@ -65,9 +61,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 5,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 5
         } 
       ]
     },
@@ -87,9 +81,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 6,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 6
         } 
       ]
     },
@@ -109,9 +101,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 7,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 7
         } 
       ]
     },
@@ -131,9 +121,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 3,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 3
         } 
       ]
     },
@@ -153,9 +141,7 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 4,
-          "name" : "output",
-          "synchronous" : false 
+          "global_pin" : 4
         } 
       ]
     },
@@ -207,8 +193,7 @@
         {
           "device_pin" : 1,
           "global_pin" : 16,
-          "name": "led_pin",
-          "synchronous" : false
+          "name": "led_pin"
         }
       ],
       "graphics" :
