@@ -1,7 +1,5 @@
 classname = "LED"
 
--- no config functions
-
 colour_r = 255
 colour_g = 10
 colour_b = 10
@@ -9,15 +7,15 @@ colour_b = 10
 function getConfig()
     return
         {"colour_r", colour_r },
-        {"colour_g", colour_g},
-        {"colour_b", colour_b}
+        {"colour_g", colour_g },
+        {"colour_b", colour_b }
 		
 end
 
 function setConfig(conf)
-    colour_r = conf["colour_r"]
-    colour_g = conf["colour_g"]
-    colour_b = conf["colour_b"]
+    colour_r = conf["colour_r"] or colour_r
+    colour_g = conf["colour_g"] or colour_g
+    colour_b = conf["colour_b"] or colour_b
 end
 
 function getPinLayout ()
@@ -33,6 +31,8 @@ function getGraphBufferLayout()
     return {extent, extent, "rgba"}
 end
 
+-- graphbuf.Pixel(r, g, b, a) Where values range from 0-255 where 255 is color/opaque
+-- setGraphbuffer(x, y, Pixel)
 local function setLED(r, g, b)
 	for x = 1, extent do
 		for y = 1, extent do
@@ -60,8 +60,3 @@ function setPin(number, val)
 		end
 	end
 end
-
-
--- graphbuf.Pixel(r, g, b, a) Where values range from 0-255 where 255 is color/opaque
--- setGraphbuffer(x, y, Pixel)
-
