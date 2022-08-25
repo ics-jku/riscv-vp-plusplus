@@ -104,7 +104,7 @@ bool isScriptValidDevice(LuaRef& chunk, std::string name = "") {
 	return true;
 }
 
-LuaEngine::LuaEngine(){
+LuaFactory::LuaFactory(){
 	L = luaL_newstate();
 	luaL_openlibs(L);
 
@@ -149,7 +149,7 @@ LuaEngine::LuaEngine(){
 }
 
 // TODO: Reduce code duplication for file/string load
-void LuaEngine::scanAdditionalDir(std::string dir, bool overwrite_existing) {
+void LuaFactory::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	cout << "[lua] Scanning additional devices at '" << dir << "'." << endl;
 
 	QDirIterator it(dir.c_str(),
@@ -177,18 +177,18 @@ void LuaEngine::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	}
 }
 
-void LuaEngine::printAvailableDevices(){
+void LuaFactory::printAvailableDevices(){
 	cout << "Available devices: " << endl;
 	for(const auto& [name, file] : available_devices) {
 		cout << "\t" << name << " from " << file << endl;
 	}
 }
 
-bool LuaEngine::deviceExists(DeviceClass classname) {
+bool LuaFactory::deviceExists(DeviceClass classname) {
 	return available_devices.find(classname) != available_devices.end();
 }
 
-LuaDevice* LuaEngine::instantiateDevice(DeviceID id, DeviceClass classname) {
+unique_ptr<LuaDevice> LuaFactory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	if(!deviceExists(classname)) {
 		throw (runtime_error("Device " + classname + " does not exist"));
 	}
@@ -198,6 +198,6 @@ LuaDevice* LuaEngine::instantiateDevice(DeviceID id, DeviceClass classname) {
 	}
 	QByteArray script = script_file.readAll();
 
-	return new LuaDevice(id, loadScriptFromString(L, script.toStdString(), classname), L);
+	return std::make_unique<LuaDevice>(id, loadScriptFromString(L, script.toStdString(), classname), L);
 }
 

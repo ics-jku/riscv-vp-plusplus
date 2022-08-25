@@ -11,7 +11,7 @@ bool CFactory::deviceExists(DeviceClass classname) {
 	return devices.find(classname) != devices.end();
 }
 
-CDevice* CFactory::instantiateDevice(DeviceID id, DeviceClass classname) {
+std::unique_ptr<CDevice> CFactory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	if(!deviceExists(classname)) {
 		throw (std::runtime_error("Device " + classname + " does not exist"));
 	}

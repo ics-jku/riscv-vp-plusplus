@@ -13,19 +13,19 @@
 
 #include "devices/interface/luaDevice.hpp"
 
-class LuaEngine {
+class LuaFactory {
 	const std::string builtin_scripts = ":/devices/lua/";
 	const std::string scriptloader = ":/devices/factory/loadscript.lua";
 
 	std::unordered_map<std::string,std::string> available_devices;
 public:
 
-	LuaEngine();
+	LuaFactory();
 
 	void scanAdditionalDir(std::string dir, bool overwrite_existing = false);
 	void printAvailableDevices();
 
 	bool deviceExists(DeviceClass classname);
-	LuaDevice* instantiateDevice(DeviceID id, DeviceClass classname);
+	std::unique_ptr<LuaDevice> instantiateDevice(DeviceID id, DeviceClass classname);
 };
 

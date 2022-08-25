@@ -69,7 +69,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				continue;
 			}
 			devices.emplace(id, factory.instantiateDevice(id, classname));
-			Device* device = devices.at(id);
+			Device* device = devices.at(id).get();
 
 			if(device_desc.contains("conf") && device_desc["conf"].isObject()) {
 				if(!device->conf) {

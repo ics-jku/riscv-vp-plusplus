@@ -17,7 +17,7 @@ bool Factory::deviceExists(DeviceClass classname) {
 	return lua_factory.deviceExists(classname) || c_factory.deviceExists(classname);
 }
 
-Device* Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
+std::unique_ptr<Device> Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	try {
 		return c_factory.instantiateDevice(id, classname);
 	}

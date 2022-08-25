@@ -5,7 +5,7 @@
 
 
 class Factory {
-	LuaEngine lua_factory;
+	LuaFactory lua_factory;
 	CFactory c_factory = getCFactory();
 
 public:
@@ -13,5 +13,5 @@ public:
 	void printAvailableDevices();
 
 	bool deviceExists(DeviceClass classname);
-	Device* instantiateDevice(DeviceID id, DeviceClass classname);
+	std::unique_ptr<Device> instantiateDevice(DeviceID id, DeviceClass classname);
 };
