@@ -61,7 +61,6 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 
 			if(!factory.deviceExists(classname)) {
 				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
-
 				continue;
 			}
 			if(devices.find(id) != devices.end()) {
