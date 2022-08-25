@@ -8,14 +8,14 @@ public:
 
 	template <typename Derived>
 	bool registerDeviceType() {
-		return devices.insert(std::make_pair(Derived::classname, [](DeviceID id) {return std::make_unique<Derived>(id);})).second;
+		return deviceCreators.insert(std::make_pair(Derived::classname, [](DeviceID id) {return std::make_unique<Derived>(id);})).second;
 	}
 
 	void printAvailableDevices();
 	bool deviceExists(DeviceClass classname);
 	std::unique_ptr<CDevice> instantiateDevice(DeviceID id, DeviceClass classname);
 private:
-	std::unordered_map<DeviceClass, Creator> devices;
+	std::unordered_map<DeviceClass, Creator> deviceCreators;
 };
 
 CFactory& getCFactory();

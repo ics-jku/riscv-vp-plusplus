@@ -18,10 +18,9 @@ bool Factory::deviceExists(DeviceClass classname) {
 }
 
 std::unique_ptr<Device> Factory::instantiateDevice(DeviceID id, DeviceClass classname) {
-	try {
+	if(c_factory.deviceExists(classname))
 		return c_factory.instantiateDevice(id, classname);
-	}
-	catch(const std::runtime_error e) {
+	else if (lua_factory.deviceExists(classname))
 		return lua_factory.instantiateDevice(id, classname);
-	}
+	else throw (std::runtime_error("Device " + classname + " does not exist"));
 }
