@@ -9,15 +9,15 @@ class Embedded : public QWidget {
 
 	GpioClient gpio;
 
-	const char* host;
-	const char* port;
+	const std::string host;
+	const std::string port;
 	bool connected = false;
 
 	void paintEvent(QPaintEvent*) override;
 
 
 public:
-	Embedded(const char* host, const char* port, bool visible, QWidget *parent);
+	Embedded(const std::string host, const std::string port, bool visible, QWidget *parent);
 	~Embedded();
 
 	bool timerUpdate();

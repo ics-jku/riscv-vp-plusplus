@@ -10,7 +10,7 @@ class Central : public QWidget {
 	Embedded *embedded;
 
 public:
-	Central(QString configfile, std::string additional_device_dir, const char* host, const char* port, bool overwrite_integrated_devices, QWidget *parent);
+	Central(QString configfile, std::string additional_device_dir, const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent);
 	~Central();
 
 private slots:

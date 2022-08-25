@@ -5,7 +5,8 @@
 using namespace gpio;
 using namespace std;
 
-Embedded::Embedded(const char* host, const char* port, bool visible, QWidget *parent) : QWidget(parent), host(host), port(port) {
+Embedded::Embedded(const std::string host, const std::string port, bool visible, QWidget *parent) :
+		QWidget(parent), host(host), port(port) {
 	if(visible) {
 		QSize bkgnd_size = QSize(417, 231);
 		QString bkgnd_path = ":/img/virtual_hifive.png";
@@ -31,7 +32,7 @@ bool Embedded::timerUpdate() { // return: new connection?
 		connected = false;
 	}
 	if(!connected) {
-		connected = gpio.setupConnection(host, port);
+		connected = gpio.setupConnection(host.c_str(), port.c_str());
 		if(connected) {
 			return true;
 		}
