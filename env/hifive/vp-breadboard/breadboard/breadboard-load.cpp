@@ -152,7 +152,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 						continue;
 					}
 
-					//cout << "Mapping " << device.getID() << "'s pin " << (int)device_pin <<
+					//cout << "Mapping " << device->getID() << "'s pin " << (int)device_pin <<
 					//		" to global pin " << (int)global_pin << endl;
 
 					const PinDesc& pin_l = pinLayout.at(device_pin);

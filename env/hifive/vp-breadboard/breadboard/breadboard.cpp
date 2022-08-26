@@ -137,7 +137,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 void Breadboard::mousePressEvent(QMouseEvent* e) {
 	for(auto const& [id, graph] : device_graphics) {
 		if(isInsideGraphic(graph, e->pos())) {
-			Device& dev = devices.at(id).get();
+			Device& dev = *devices.at(id).get();
 			if(dev.input) {
 				lua_access.lock();
 				dev.input->onClick(true);
@@ -152,7 +152,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	for(auto const& [id, graph] : device_graphics) {
 		if(isInsideGraphic(graph, e->pos())) {
-			Device& dev = devices.at(id).get();
+			Device& dev = *devices.at(id).get();
 			if(dev.input) {
 				lua_access.lock();
 				dev.input->onClick(false);
