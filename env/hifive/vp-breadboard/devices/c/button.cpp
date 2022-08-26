@@ -15,15 +15,9 @@ Button::Button(DeviceID id) : CDevice(id) {
 		layout_pin.emplace(1, PinDesc{PinDesc::Dir::output, "output"});
 		pin = std::make_unique<Button_PIN>(this);
 	}
-	if(!conf) {
-		config = new Config();
-		conf = std::make_unique<Config_Interface_C>(this);
-	}
 }
 
-Button::~Button() {
-	delete config;
-}
+Button::~Button() {}
 
 const DeviceClass Button::getClass() const { return classname; }
 

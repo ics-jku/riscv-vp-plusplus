@@ -12,16 +12,6 @@ function getPin(number)
 	end
 end
 
-keybinding = 0
-
-function getConfig()
-	return {"keybinding", keybinding}
-end
-
-function setConfig(conf)
-	keybinding = conf["keybinding"]
-end
-
 width = 35
 height = 35
 
@@ -51,8 +41,5 @@ function onClick(active)
 end
 
 function onKeypress(key, active)
-	if key == keybinding then
-		is_active = not active
-		drawArea()
-	end
+	onClick(active)
 end

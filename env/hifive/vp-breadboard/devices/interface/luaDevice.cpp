@@ -45,7 +45,7 @@ LuaDevice::PIN_Interface_Lua::PIN_Interface_Lua(LuaRef& ref) :
 		m_getPinLayout(ref["getPinLayout"]),
 		m_getPin(ref["getPin"]), m_setPin(ref["setPin"]) {
 	if(!implementsInterface(ref))
-		cerr << "[Device] [PIN_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+		cerr << "[LuaDevice] [PIN_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 }
 
 LuaDevice::PIN_Interface_Lua::~PIN_Interface_Lua() {}
@@ -220,7 +220,7 @@ LuaDevice::Graphbuf_Interface_Lua::Graphbuf_Interface_Lua(luabridge::LuaRef& ref
 		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_initializeGraphBuffer(ref["initializeGraphBuffer"]),
 		m_env(ref), m_deviceId(device_id), L(l) {
 	if(!implementsInterface(ref))
-		cerr << "[Device] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+		cerr << "[LuaDevice] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 
 	declarePixelFormat(L);
 }
@@ -231,14 +231,14 @@ Layout LuaDevice::Graphbuf_Interface_Lua::getLayout() {
 	Layout ret = {0,0,"invalid"};
 	LuaResult r = m_getGraphBufferLayout();
 	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
-		cerr << "[Device] [Graphbuf_Interface] Layout malformed" << endl;
+		cerr << "[LuaDevice] [Graphbuf_Interface] Layout malformed" << endl;
 		return ret;
 	}
 	ret.width = r[0][1].cast<unsigned>();
 	ret.height = r[0][2].cast<unsigned>();
 	const auto& type = r[0][3];
 	if(!type.isString() || type != string("rgba")) {
-		cerr << "[Device] [Graphbuf_Interface] Layout type may only be 'rgba' at the moment." << endl;
+		cerr << "[LuaDevice] [Graphbuf_Interface] Layout type may only be 'rgba' at the moment." << endl;
 		return ret;
 	}
 	ret.data_type = type.cast<string>();
@@ -332,7 +332,7 @@ bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::Lua
 LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_onClick(ref["onClick"]),
 		m_onKeypress(ref["onKeypress"]), m_env(ref) {
 	if(!implementsInterface(ref))
-		cerr << "[Device] [Input_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+		cerr << "[LuaDevice] [Input_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 }
 
 LuaDevice::Input_Interface_Lua::~Input_Interface_Lua() {}
@@ -341,21 +341,35 @@ void LuaDevice::Input_Interface_Lua::onClick(bool active) {
 	m_onClick(active);
 }
 
-void LuaDevice::Input_Interface_Lua::onKeypress(Key key, bool active) { // TODO
+void LuaDevice::Input_Interface_Lua::onKeypress(Key key, bool active) {
 	m_onKeypress(QKeySequence(key).toString().toStdString(), active);
 }
 
-void LuaDevice::Input_Interface_Lua::setKeys(Keys bindings) { // TODO
+void LuaDevice::Input_Interface_Lua::setKeys(Keys bindings) {
 	LuaRef luaKeys = luabridge::newTable(m_env.state());
-	int i = 0;
+	int i = 1;
 	for(auto key : bindings) {
-		luaKeys[i++] = key;
+		luaKeys[i++] = QKeySequence(key).toString().toStdString();
 	}
+	m_env["keybindings"] = luaKeys;
 }
 
-Keys LuaDevice::Input_Interface_Lua::getKeys() { // TODO
+Keys LuaDevice::Input_Interface_Lua::getKeys() {
 	auto ret = Keys();
-
+	LuaRef luaKeys = m_env["keybindings"];
+	if(!luaKeys.isTable()) {
+		cerr << "[LuaDevice] [Input_Interface] keybindings should be represented as table" << endl;
+	}
+	for(unsigned i=1; i<=luaKeys.length(); i++) {
+		LuaRef value = luaKeys[i];
+		if(!value.isString()) {
+			cerr << "[LuaDevice] [Input_Interface] keybinding should be string" << endl;
+		}
+		QKeySequence valueSequence = QKeySequence(QString::fromStdString(value.cast<string>()));
+		if(valueSequence.count()) {
+			ret.emplace(valueSequence[0]);
+		}
+	}
 	return ret;
 }
 
