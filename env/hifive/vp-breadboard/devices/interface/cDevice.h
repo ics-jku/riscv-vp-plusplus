@@ -9,6 +9,7 @@ public:
 	Layout layout_graph;
 	PinLayout layout_pin;
 	Config* config;
+	Keys keybindings;
 
 	class PIN_Interface_C : public Device::PIN_Interface {
 	protected:
@@ -58,7 +59,9 @@ public:
 		Input_Interface_C(CDevice* device);
 		~Input_Interface_C();
 		void onClick(bool active);
-		void onKeypress(int key, bool active);
+		void onKeypress(Key key, bool active);
+		void setKeys(Keys bindings);
+		Keys getKeys();
 	};
 
 	CDevice(DeviceID id);

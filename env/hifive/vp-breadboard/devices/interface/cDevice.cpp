@@ -77,6 +77,14 @@ void CDevice::Input_Interface_C::onClick(bool active) {
 	std::cout << "Warning: mouse was not implemented" << std::endl;
 }
 
-void CDevice::Input_Interface_C::onKeypress(int key, bool active) {
+void CDevice::Input_Interface_C::onKeypress(Key key, bool active) {
 	std::cout << "Warning: key was not implemented" << std::endl;
+}
+
+void CDevice::Input_Interface_C::setKeys(Keys bindings) {
+	device->keybindings = bindings;
+}
+
+Keys CDevice::Input_Interface_C::getKeys() {
+	return device->keybindings;
 }

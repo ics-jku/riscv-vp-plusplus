@@ -96,11 +96,14 @@ public:
 	class Input_Interface_Lua : public Device::Input_Interface {
 		luabridge::LuaRef m_onClick;
 		luabridge::LuaRef m_onKeypress;
+		luabridge::LuaRef& m_env; // for building table
 	public:
 		Input_Interface_Lua(luabridge::LuaRef& ref);
 		~Input_Interface_Lua();
 		void onClick(bool active);
-		void onKeypress(int key, bool active);
+		void onKeypress(Key key, bool active);
+		void setKeys(Keys bindings);
+		Keys getKeys();
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};

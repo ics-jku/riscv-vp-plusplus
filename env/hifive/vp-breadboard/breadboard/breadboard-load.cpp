@@ -97,6 +97,24 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				device->conf->setConfig(conf);
 			}
 
+			if(device_desc.contains("keybindings") && device_desc["keybindings"].isArray()) {
+				if(!device->input) {
+					cerr << "[config loader] config for device '" << classname << "' sets"
+							" keybindings, but device does not implement input interface" << endl;
+					continue;
+				}
+
+				QJsonArray bindings = device_desc["keybindings"].toArray();
+				Keys keys;
+				for(const QJsonValue& binding : bindings) {
+					QKeySequence binding_sequence = QKeySequence(binding.toString());
+					if(binding_sequence.count()) {
+						keys.emplace(binding_sequence[0]);
+					}
+				}
+				device->input->setKeys(keys);
+			}
+
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
 				if(!device->spi) {
 					cerr << "[config loader] config for device '" << classname << "' sets"

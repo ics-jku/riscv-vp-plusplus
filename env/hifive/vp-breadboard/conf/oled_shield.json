@@ -13,10 +13,7 @@
         "offs" : [77, 625],
         "scale" : 2
       },
-      "conf" : 
-      {
-        "keybinding" : "B"
-      },
+      "keybindings" : [ "B", "X", "Y", "Z"],
       "pins" :
       [
         {
@@ -35,10 +32,7 @@
         "offs" : [77, 535],
         "scale" : 2
       },
-      "conf" : 
-      {
-        "keybinding" : "A"
-      },
+      "keybindings" : [ "A" ],
       "pins" :
       [
         {
@@ -57,10 +51,7 @@
         "offs" : [293, 580],
         "scale" : 2
       },
-      "conf" : 
-      {
-        "keybinding" : "RIGHT"
-      },
+      "keybindings" : [ "Right" ],
       "pins" :
       [
         {
@@ -79,10 +70,7 @@
         "offs" : [148, 580],
         "scale" : 2
       },
-      "conf" : 
-      {
-        "keybinding" : "LEFT"
-      },
+      "keybindings" : [ "Left" ],
       "pins" :
       [
         {
@@ -101,10 +89,7 @@
         "offs" : [220, 507],
         "scale" : 2
       },
-      "conf" : 
-      {
-        "keybinding" : "UP"
-      },
+      "keybindings" : [ "Up" ],
       "pins" :
       [
         {
@@ -123,10 +108,7 @@
         "offs" : [220, 652],
         "scale" : 2
       },
-      "conf" : 
-      {
-        "keybinding" : "DOWN"
-      },
+      "keybindings" : [ "Down" ],
       "pins" :
       [
         {
@@ -145,10 +127,7 @@
         "offs" : [220, 580],
         "scale" : 2
       },
-      "conf" :
-      { 
-        "keybinding" : "C"
-      },
+      "keybindings" : [ "C" ],
       "pins" :
       [
         {

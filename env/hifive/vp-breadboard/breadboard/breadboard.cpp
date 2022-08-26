@@ -109,10 +109,13 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 			default:
 				for(auto const& [id, device] : devices) {
 					if(device->input) {
-						lua_access.lock();
-						device->input->onKeypress(e->key(), true);
-						lua_access.unlock();
-						writeDevice(id);
+						Keys device_keys = device->input->getKeys();
+						if(device_keys.find(e->key()) != device_keys.end()) {
+							lua_access.lock();
+							device->input->onKeypress(e->key(), true);
+							lua_access.unlock();
+							writeDevice(id);
+						}
 					}
 				}
 				break;
@@ -125,10 +128,13 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
 	for(auto const& [id, device] : devices) {
 		if(device->input) {
-			lua_access.lock();
-			device->input->onKeypress(e->key(), false);
-			lua_access.unlock();
-			writeDevice(id);
+			Keys device_keys = device->input->getKeys();
+			if(device_keys.find(e->key()) != device_keys.end()) {
+				lua_access.lock();
+				device->input->onKeypress(e->key(), false);
+				lua_access.unlock();
+				writeDevice(id);
+			}
 		}
 	}
 	update();

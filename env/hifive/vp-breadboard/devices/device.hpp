@@ -55,8 +55,10 @@ public:
 	class Input_Interface {
 	public:
 		virtual ~Input_Interface();
-		virtual void onClick(bool active) = 0; // requires graph
-		virtual void onKeypress(int key, bool active) = 0; // requires config
+		virtual void onClick(bool active) = 0;
+		virtual void onKeypress(Key key, bool active) = 0;
+		virtual void setKeys(Keys bindings) = 0;
+		virtual Keys getKeys() = 0;
 	};
 
 

@@ -3,6 +3,12 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include <set>
+
+// Input Interface
+
+typedef int Key;
+typedef std::set<Key> Keys;
 
 // PIN_Interface
 

@@ -45,10 +45,7 @@
           "synchronous": false 
         } 
       ],
-      "conf" : 
-      { 
-        "keybinding" : "UP"
-      }
+      "keybindings" : [ "UP" ]
     },
     {
       "class" : "sevensegment",

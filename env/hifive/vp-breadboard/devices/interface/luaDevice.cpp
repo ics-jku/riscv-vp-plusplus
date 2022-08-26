@@ -329,7 +329,8 @@ bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::Lua
 	return true;
 }
 
-LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_onClick(ref["onClick"]), m_onKeypress(ref["onKeypress"]) {
+LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_onClick(ref["onClick"]),
+		m_onKeypress(ref["onKeypress"]), m_env(ref) {
 	if(!implementsInterface(ref))
 		cerr << "[Device] [Input_Interface] WARN: Device " << ref << " not implementing interface" << endl;
 }
@@ -340,8 +341,22 @@ void LuaDevice::Input_Interface_Lua::onClick(bool active) {
 	m_onClick(active);
 }
 
-void LuaDevice::Input_Interface_Lua::onKeypress(int key, bool active) {
+void LuaDevice::Input_Interface_Lua::onKeypress(Key key, bool active) { // TODO
 	m_onKeypress(QKeySequence(key).toString().toStdString(), active);
+}
+
+void LuaDevice::Input_Interface_Lua::setKeys(Keys bindings) { // TODO
+	LuaRef luaKeys = luabridge::newTable(m_env.state());
+	int i = 0;
+	for(auto key : bindings) {
+		luaKeys[i++] = key;
+	}
+}
+
+Keys LuaDevice::Input_Interface_Lua::getKeys() { // TODO
+	auto ret = Keys();
+
+	return ret;
 }
 
 bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {
