@@ -1,4 +1,5 @@
 #include "factory.h"
+#include "configurations.h"
 #include <iostream>
 
 void Factory::scanAdditionalDir(std::string dir, bool overwrite_existing) {
@@ -22,5 +23,5 @@ std::unique_ptr<Device> Factory::instantiateDevice(DeviceID id, DeviceClass clas
 		return c_factory.instantiateDevice(id, classname);
 	else if (lua_factory.deviceExists(classname))
 		return lua_factory.instantiateDevice(id, classname);
-	else throw (std::runtime_error("Device " + classname + " does not exist"));
+	else throw (device_not_found_error(classname));
 }

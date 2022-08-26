@@ -28,6 +28,8 @@ extern "C"
 
 #include <LuaBridge/LuaBridge.h>
 
+#include "configurations.h"
+
 
 using namespace std;
 using namespace luabridge;
@@ -190,7 +192,7 @@ bool LuaFactory::deviceExists(DeviceClass classname) {
 
 unique_ptr<LuaDevice> LuaFactory::instantiateDevice(DeviceID id, DeviceClass classname) {
 	if(!deviceExists(classname)) {
-		throw (runtime_error("Device " + classname + " does not exist"));
+		throw (device_not_found_error(classname));
 	}
 	QFile script_file(available_devices[classname].c_str());
 	if (!script_file.open(QIODevice::ReadOnly)) {
