@@ -10,10 +10,10 @@
       "id" : "button_b",
       "graphics" : 
       { 
-        "offs" : [77, 625],
+        "offs" : [86, 630],
         "scale" : 2
       },
-      "keybindings" : [ "B" ],
+      "keybindings" : [ "B", "X", "Y", "Z"],
       "pins" :
       [
         {
@@ -29,7 +29,7 @@
       "id" : "button_a",
       "graphics" : 
       { 
-        "offs" : [77, 535],
+        "offs" : [86, 548],
         "scale" : 2
       },
       "keybindings" : [ "A" ],
@@ -48,10 +48,10 @@
       "id" : "button_right",
       "graphics" : 
       { 
-        "offs" : [293, 580],
+        "offs" : [297, 592],
         "scale" : 2
       },
-      "keybindings" : [ "RIGHT" ],
+      "keybindings" : [ "Right" ],
       "pins" :
       [
         {
@@ -67,10 +67,10 @@
       "id" : "button_left",
       "graphics" : 
       { 
-        "offs" : [148, 580],
+        "offs" : [155, 591],
         "scale" : 2
       },
-      "keybindings" : [ "left" ],
+      "keybindings" : [ "Left" ],
       "pins" :
       [
         {
@@ -86,10 +86,10 @@
       "id" : "button_up",
       "graphics" : 
       { 
-        "offs" : [220, 507],
+        "offs" : [226, 520],
         "scale" : 2
       },
-      "keybindings" : [ "uP" ],
+      "keybindings" : [ "Up" ],
       "pins" :
       [
         {
@@ -105,10 +105,10 @@
       "id" : "button_down",
       "graphics" : 
       { 
-        "offs" : [220, 652],
+        "offs" : [226, 659],
         "scale" : 2
       },
-      "keybindings" : [ "DOwn" ],
+      "keybindings" : [ "Down" ],
       "pins" :
       [
         {
@@ -124,10 +124,10 @@
       "id" : "button_center",
       "graphics" : 
       { 
-        "offs" : [220, 580],
+        "offs" : [226, 590],
         "scale" : 2
       },
-      "keybindings" : [ "c" ],
+      "keybindings" : [ "C" ],
       "pins" :
       [
         {

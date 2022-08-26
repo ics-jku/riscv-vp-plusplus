@@ -12,8 +12,8 @@ function getPin(number)
 	end
 end
 
-width = 35
-height = 35
+width = 25
+height = 25
 
 function getGraphBufferLayout()
 	return {width, height, "rgba"}

@@ -4,7 +4,7 @@
 
 Button::Button(DeviceID id) : CDevice(id) {
 	if(!graph) {
-		layout_graph = Layout{35, 35, "rgba"};
+		layout_graph = Layout{25, 25, "rgba"};
 		graph = std::make_unique<Button_Graph>(this);
 	}
 	if(!input) {

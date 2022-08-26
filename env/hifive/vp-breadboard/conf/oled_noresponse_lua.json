@@ -10,15 +10,17 @@
       "id" : "button_b",
       "graphics" : 
       { 
-        "offs" : [77, 625],
+        "offs" : [86, 630],
         "scale" : 2
       },
-      "keybindings" : [ "B" ],
+      "keybindings" : [ "B", "X", "Y", "Z"],
       "pins" :
       [
         {
           "device_pin" : 1,
-          "global_pin" : 19
+          "global_pin" : 19,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
@@ -27,7 +29,7 @@
       "id" : "button_a",
       "graphics" : 
       { 
-        "offs" : [77, 535],
+        "offs" : [86, 548],
         "scale" : 2
       },
       "keybindings" : [ "A" ],
@@ -35,7 +37,9 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 18
+          "global_pin" : 18,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
@@ -44,7 +48,7 @@
       "id" : "button_right",
       "graphics" : 
       { 
-        "offs" : [293, 580],
+        "offs" : [297, 592],
         "scale" : 2
       },
       "keybindings" : [ "Right" ],
@@ -52,7 +56,9 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 5
+          "global_pin" : 5,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
@@ -61,7 +67,7 @@
       "id" : "button_left",
       "graphics" : 
       { 
-        "offs" : [148, 580],
+        "offs" : [155, 591],
         "scale" : 2
       },
       "keybindings" : [ "Left" ],
@@ -69,7 +75,9 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 6
+          "global_pin" : 6,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
@@ -78,7 +86,7 @@
       "id" : "button_up",
       "graphics" : 
       { 
-        "offs" : [220, 507],
+        "offs" : [226, 520],
         "scale" : 2
       },
       "keybindings" : [ "Up" ],
@@ -86,7 +94,9 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 7
+          "global_pin" : 7,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
@@ -95,7 +105,7 @@
       "id" : "button_down",
       "graphics" : 
       { 
-        "offs" : [220, 652],
+        "offs" : [226, 659],
         "scale" : 2
       },
       "keybindings" : [ "Down" ],
@@ -103,7 +113,9 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 3
+          "global_pin" : 3,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
@@ -112,7 +124,7 @@
       "id" : "button_center",
       "graphics" : 
       { 
-        "offs" : [220, 580],
+        "offs" : [226, 590],
         "scale" : 2
       },
       "keybindings" : [ "C" ],
@@ -120,7 +132,9 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 4
+          "global_pin" : 4,
+          "name" : "output",
+          "synchronous" : false 
         } 
       ]
     },
