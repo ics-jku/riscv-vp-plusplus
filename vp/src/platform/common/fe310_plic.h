@@ -9,13 +9,14 @@
 
 /**
  * This class is supposed to implement the PLIC defined in Chapter 10
- * of the FE310-G000 manual. Currently, it still has various difference
+ * of the FE310-G000 manual. Currently, it still has various differences
  * from the version documented in the manual.
  */
 template <unsigned NumberCores, unsigned NumberInterrupts, unsigned NumberInterruptEntries, uint32_t MaxPriority>
 struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static_assert(NumberInterrupts <= 4096, "out of bound");
 	static_assert(NumberCores <= 15360, "out of bound");
+	static constexpr unsigned WORDS_FOR_INTERRUPT_ENTRIES = (NumberInterruptEntries+(32-1))/32;
 
 	tlm_utils::simple_target_socket<FE310_PLIC> tsock;
 
@@ -34,15 +35,17 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		uint32_t priority_threshold;
 		uint32_t claim_response;
 	};
-
-	RegisterRange regs_hart_enabled_interrupts{0x2000, 4 * NumberInterruptEntries *NumberCores};
+	RegisterRange regs_hart_enabled_interrupts{0x2000, 4 * WORDS_FOR_INTERRUPT_ENTRIES * NumberCores};
 	ArrayView<uint32_t> hart_enabled_interrupts{regs_hart_enabled_interrupts};
 
 	RegisterRange regs_hart_config{0x200000, sizeof(HartConfig) * NumberCores};
 	ArrayView<HartConfig> hart_config{regs_hart_config};
 
-	std::vector<RegisterRange *> register_ranges{&regs_interrupt_priorities, &regs_pending_interrupts,
-	                                             &regs_hart_enabled_interrupts, &regs_hart_config};
+	std::vector<RegisterRange *> register_ranges{&regs_interrupt_priorities,
+	                                             &regs_pending_interrupts,
+	                                             &regs_hart_enabled_interrupts,
+	                                             &regs_hart_config
+	};
 
 	PrivilegeLevel irq_level;
 	std::array<bool, NumberCores> hart_eip{};
@@ -63,16 +66,34 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		    std::bind(&FE310_PLIC::post_write_interrupt_priorities, this, std::placeholders::_1);
 		regs_hart_config.post_write_callback = std::bind(&FE310_PLIC::post_write_hart_config, this, std::placeholders::_1);
 		regs_hart_config.pre_read_callback = std::bind(&FE310_PLIC::pre_read_hart_config, this, std::placeholders::_1);
+		/*
+		regs_hart_enabled_interrupts.post_write_callback = [this](RegisterRange::WriteInfo t){
+			std::cout << "[vp::plic] Wrote enabled_interrupts at 0x" << t.addr << " value 0x" << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << std::hex << std::endl;
+			for (unsigned n = 0; n < NumberCores; ++n) {
+				for (unsigned i = 0; i < NumberInterruptEntries/4; ++i) {
+					const uint32_t itr_group = hart_enabled_interrupts(n, i);
+					if(itr_group) {
+						for(unsigned b = 0; b <= 31; b++) {
+							if((1 << b) & itr_group) {
+							std::cout << "[vp::plic]\t Hart " << n << " ITR " << std::dec << i*32 + b << " enabled." << std::endl;
+							}
+						}
+					}
+				}
+			}
+
+		};
+		*/
 
 		for (unsigned i = 0; i < NumberInterrupts; ++i) {
-			interrupt_priorities[i] = 1;
+			interrupt_priorities[i] = 0;
 		}
 
 		for (unsigned n = 0; n < NumberCores; ++n) {
 		    target_harts[n] = nullptr;
 			hart_eip[n] = false;
 			for (unsigned i = 0; i < NumberInterruptEntries; ++i) {
-				hart_enabled_interrupts(n, i) = 0x0;  // all interrupts disabled by default
+				hart_enabled_interrupts(n, i) = 0;  // all interrupts disabled by default
 			}
 		}
 
@@ -84,7 +105,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		// NOTE: can use different techniques for each gateway, in this case a
 		// simple non queued edge trigger
 		assert(irq_id > 0 && irq_id < NumberInterrupts);
-		// std::cout << "[vp::plic] incoming interrupt " << irq_id << std::endl;
+		//std::cout << "[vp::plic] incoming interrupt " << irq_id << std::endl;
 
 		unsigned idx = irq_id / 32;
 		unsigned off = irq_id % 32;
@@ -113,9 +134,12 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			unsigned off = i % 32;
 
 			if (hart_enabled_interrupts(hart_id, idx) & (1 << off)) {
+				//std::cout << "[vp::plic] hart " << hart_id << " has enabled ITR " << i << std::endl;
 				if (pending_interrupts[idx] & (1 << off)) {
 					auto prio = interrupt_priorities[i];
+					//std::cout << "[vp::plic] .. and it is pending with priority " << prio << std::endl;
 					if (prio > 0 && (!consider_threshold || (prio > hart_config[hart_id].priority_threshold))) {
+						//std::cout << "[vp::plic]   .. which is greater than the hart's threshold of " << hart_config[hart_id].priority_threshold << std::endl;
 						if (prio > max_priority) {
 							max_priority = prio;
 							min_id = i;
@@ -130,14 +154,18 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		delay += 4 * clock_cycle;
-
+		//std::cout << "[vp::plic] Writing at 0x" << trans.get_address() << " value 0x" << *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
 		vp::mm::route("FE310_PLIC", register_ranges, trans, delay);
 	}
 
-	void post_write_interrupt_priorities(RegisterRange::WriteInfo t) {
-		(void)t;
-
-		for (auto &x : interrupt_priorities) x = std::min(x, MaxPriority);
+	void post_write_interrupt_priorities(RegisterRange::WriteInfo) {
+		//std::cout << "[vp::plic] wrote ITR priority:" << std::endl;
+		unsigned i = 0;
+		for (auto &x : interrupt_priorities) {
+			x = std::min(x, MaxPriority);
+			//if(x) std::cout << "[vp::plic]\t Prio for ITR nr. " << i << ": " << x << std::endl;
+			i++;
+		}
 	}
 
 	bool pre_read_hart_config(RegisterRange::ReadInfo t) {
@@ -165,6 +193,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			// access is directed to claim response register
 			assert(t.size == 4);
 			--idx;
+			//std::cout << "[vp::plic] wrote ITR claim/response" << std::endl;
 
 			if (hart_has_pending_enabled_interrupts(idx)) {
 				assert(hart_eip[idx]);
@@ -175,6 +204,8 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 				target_harts[idx]->clear_external_interrupt(irq_level);
 				// std::cout << "[vp::plic] clear eip" << std::endl;
 			}
+		} else {
+			//std::cout << "[vp::plic] wrote ITR priority threshold 0x" << *reinterpret_cast<uint32_t*>(t.trans.get_data_ptr()) << std::hex << " for hart " << idx/2 << std::dec << std::endl;
 		}
 	}
 
@@ -189,7 +220,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			for (unsigned i = 0; i < NumberCores; ++i) {
 				if (!hart_eip[i]) {
 					if (hart_has_pending_enabled_interrupts(i)) {
-						// std::cout << "[vp::plic] trigger interrupt" << std::endl;
+						//std::cout << "[vp::plic] trigger interrupt " << hart_get_next_pending_interrupt(i, true) << std::hex << std::endl;
 						hart_eip[i] = true;
 						target_harts[i]->trigger_external_interrupt(irq_level);
 					}
