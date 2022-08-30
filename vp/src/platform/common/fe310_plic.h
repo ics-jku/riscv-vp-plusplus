@@ -92,7 +92,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		for (unsigned n = 0; n < NumberCores; ++n) {
 		    target_harts[n] = nullptr;
 			hart_eip[n] = false;
-			for (unsigned i = 0; i < NumberInterruptEntries; ++i) {
+			for (unsigned i = 0; i < WORDS_FOR_INTERRUPT_ENTRIES; ++i) {
 				hart_enabled_interrupts(n, i) = 0;  // all interrupts disabled by default
 			}
 		}
