@@ -166,7 +166,7 @@ int sc_main(int argc, char **argv) {
 	}
 	/*
 	 * The rv32 calling convention defaults to 32 bit, but as this Config is
-	 * mainly used togehter with the syscall handler, this helps for certain floats.
+	 * mainly used together with the syscall handler, this helps for certain floats.
 	 * https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
 	 */
 	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
