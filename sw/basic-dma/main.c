@@ -32,7 +32,7 @@ int main() {
 	dma_completed = 0;
 	*DMA_SRC_ADDR = (uint32_t)(&src[0]);
 	*DMA_DST_ADDR = (uint32_t)(&dst[0]);
-	*DMA_LEN_ADDR = 32;
+	*DMA_LEN_ADDR = sizeof(src);
 	*DMA_OP_ADDR  = DMA_OP_MEMCPY;
 	
 	while (!dma_completed) {
