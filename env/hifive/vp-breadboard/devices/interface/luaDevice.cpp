@@ -345,34 +345,6 @@ void LuaDevice::Input_Interface_Lua::onKeypress(Key key, bool active) {
 	m_onKeypress(QKeySequence(key).toString().toStdString(), active);
 }
 
-void LuaDevice::Input_Interface_Lua::setKeys(Keys bindings) {
-	LuaRef luaKeys = luabridge::newTable(m_env.state());
-	int i = 1;
-	for(auto key : bindings) {
-		luaKeys[i++] = QKeySequence(key).toString().toStdString();
-	}
-	m_env["keybindings"] = luaKeys;
-}
-
-Keys LuaDevice::Input_Interface_Lua::getKeys() {
-	auto ret = Keys();
-	LuaRef luaKeys = m_env["keybindings"];
-	if(!luaKeys.isTable()) {
-		cerr << "[LuaDevice] [Input_Interface] keybindings should be represented as table" << endl;
-	}
-	for(unsigned i=1; i<=luaKeys.length(); i++) {
-		LuaRef value = luaKeys[i];
-		if(!value.isString()) {
-			cerr << "[LuaDevice] [Input_Interface] keybinding should be string" << endl;
-		}
-		QKeySequence valueSequence = QKeySequence(QString::fromStdString(value.cast<string>()));
-		if(valueSequence.count()) {
-			ret.emplace(valueSequence[0]);
-		}
-	}
-	return ret;
-}
-
 bool LuaDevice::Input_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {
 	return !ref["onClick"].isNil() || !ref["onKeypress"].isNil();
 }

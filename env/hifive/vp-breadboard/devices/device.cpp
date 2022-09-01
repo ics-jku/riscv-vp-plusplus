@@ -41,3 +41,11 @@ Pixel Device::Graphbuf_Interface::getBuffer(QImage& image, Layout layout, const 
 				static_cast<uint8_t>(img[offs+3])
 	};
 }
+
+void Device::Input_Interface::setKeys(Keys bindings) {
+	keybindings = bindings;
+}
+
+Keys Device::Input_Interface::getKeys() {
+	return keybindings;
+}

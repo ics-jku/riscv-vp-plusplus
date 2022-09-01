@@ -102,8 +102,6 @@ public:
 		~Input_Interface_Lua();
 		void onClick(bool active);
 		void onKeypress(Key key, bool active);
-		void setKeys(Keys bindings);
-		Keys getKeys();
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
