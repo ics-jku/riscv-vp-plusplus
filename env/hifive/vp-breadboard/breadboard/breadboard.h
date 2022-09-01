@@ -6,7 +6,6 @@
 #include <mutex> // TODO: FIXME: Create one Lua state per device that uses asyncs like SPI and synchronous pins
 
 #include "configurations.h"
-#include "devices/c/all_devices.hpp"
 #include "embedded/gpio-helpers.h"
 
 class Breadboard : public QWidget {
