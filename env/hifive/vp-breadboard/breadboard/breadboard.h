@@ -24,8 +24,14 @@ class Breadboard : public QWidget {
 	bool debugmode = false;
 	bool breadboard = true;
 
+	// Connections
+	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);
+	void addSPI(gpio::PinNumber global, bool noresponse, Device* device);
+	void addGraphics(QPoint offset, unsigned scale, Device* device);
+
 	void writeDevice(DeviceID device);
 
+	// QT
 	void paintEvent(QPaintEvent*) override;
 	void keyPressEvent(QKeyEvent* e) override;
 	void keyReleaseEvent(QKeyEvent* e) override;
@@ -36,8 +42,12 @@ public:
 	Breadboard(QWidget *parent);
 	~Breadboard();
 
-	bool loadConfigFile(QString file, std::string additional_device_dir, bool overwrite_integrated_devices);
+	// JSON
+	bool loadConfigFile(QString file);
+	bool saveConfigFile(QString file);
+	void additionalLuaDir(std::string additional_device_dir, bool overwrite_integrated_devices);
 
+	// GPIO
 	void timerUpdate(gpio::State state);
 	void reconnected();
 	bool isBreadboard();

@@ -1,4 +1,6 @@
 #include "device.hpp"
+#include <QKeySequence>
+#include <QJsonArray>
 
 Device::Device(const DeviceID id) : m_id(id) {}
 
@@ -6,6 +8,58 @@ Device::~Device() {}
 
 const DeviceID& Device::getID() const {
 	return m_id;
+}
+
+void Device::fromJSON(QJsonObject json) {
+	if(json.contains("conf") && json["conf"].isObject()) {
+		if(!conf) {
+			std::cerr << "[Factory] config for device '" << getClass() << "' sets"
+					" a Config Interface, but device does no implement it" << std::endl;
+		}
+		else {
+			QJsonObject conf_obj = json["conf"].toObject();
+			auto config = new Config();
+			for(QJsonObject::iterator conf_it = conf_obj.begin(); conf_it != conf_obj.end(); conf_it++) {
+				if(conf_it.value().isBool()) {
+					config->emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
+				}
+				else if(conf_it.value().isDouble()) {
+					config->emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
+				}
+				else if(conf_it.value().isString()) {
+					QByteArray value_bytes = conf_it.value().toString().toLocal8Bit();
+					config->emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
+				}
+				else {
+					std::cerr << "Invalid conf element type" << std::endl;
+				}
+			}
+			conf->setConfig(config);
+		}
+	}
+
+	if(json.contains("keybindings") && json["keybindings"].isArray()) {
+		if(!input) {
+			std::cerr << "[Factory] config for device '" << getClass() << "' sets"
+					" keybindings, but device does not implement input interface" << std::endl;
+		}
+		else {
+			QJsonArray bindings = json["keybindings"].toArray();
+			Keys keys;
+			for(const QJsonValue& binding : bindings) {
+				QKeySequence binding_sequence = QKeySequence(binding.toString());
+				if(binding_sequence.count()) {
+					keys.emplace(binding_sequence[0]);
+				}
+			}
+			input->setKeys(keys);
+		}
+	}
+}
+
+QJsonObject Device::toJSON() {
+	QJsonObject json;
+	return json;
 }
 
 Device::PIN_Interface::~PIN_Interface() {}

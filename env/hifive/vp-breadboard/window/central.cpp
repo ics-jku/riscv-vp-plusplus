@@ -4,7 +4,8 @@
 
 Central::Central(QString configfile, std::string additional_device_dir, const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent) : QWidget(parent) {
 	breadboard = new Breadboard(this);
-	if(!breadboard->loadConfigFile(configfile, additional_device_dir, overwrite_integrated_devices)) {
+	breadboard->additionalLuaDir(additional_device_dir, overwrite_integrated_devices);
+	if(!breadboard->loadConfigFile(configfile)) {
 		exit(-4);
 	}
 

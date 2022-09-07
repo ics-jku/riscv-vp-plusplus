@@ -59,7 +59,7 @@ set(SOURCES
     embedded/embedded.cpp
     embedded/gpio-helpers.cpp
     breadboard/breadboard.cpp
-    breadboard/breadboard-load.cpp
+    breadboard/breadboard-json.cpp
     breadboard/raster.cpp
     ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp

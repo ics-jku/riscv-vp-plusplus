@@ -6,12 +6,13 @@ constexpr bool debug_logging = false;
 
 /* JSON */
 
-bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool overwrite_integrated_devices) {
-
-	if(additional_device_dir.size() != 0){
+void Breadboard::additionalLuaDir(string additional_device_dir, bool overwrite_integrated_devices) {
+	if(additional_device_dir.size() != 0) {
 		factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
 	}
+}
 
+bool Breadboard::loadConfigFile(QString file) {
 	QFile confFile(file);
 	if (!confFile.open(QIODevice::ReadOnly)) {
 		cerr << "Could not open config file " << endl;
@@ -67,60 +68,12 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				cerr << "[config loader] Another device with the ID '" << id << "' is already instatiated!" << endl;
 				continue;
 			}
+
 			devices.emplace(id, factory.instantiateDevice(id, classname));
 			Device* device = devices.at(id).get();
-
-			if(device_desc.contains("conf") && device_desc["conf"].isObject()) {
-				if(!device->conf) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
-							" a Config Interface, but device does no implement it" << endl;
-					continue;
-				}
-
-				QJsonObject conf_obj = device_desc["conf"].toObject();
-				auto conf = new Config();
-				for(QJsonObject::iterator conf_it = conf_obj.begin(); conf_it != conf_obj.end(); conf_it++) {
-					if(conf_it.value().isBool()) {
-						conf->emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
-					}
-					else if(conf_it.value().isDouble()) {
-						conf->emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
-					}
-					else if(conf_it.value().isString()) {
-						QByteArray value_bytes = conf_it.value().toString().toLocal8Bit();
-						conf->emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
-					}
-					else {
-						cerr << "Invalid conf element type" << endl;
-					}
-				}
-				device->conf->setConfig(conf);
-			}
-
-			if(device_desc.contains("keybindings") && device_desc["keybindings"].isArray()) {
-				if(!device->input) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
-							" keybindings, but device does not implement input interface" << endl;
-					continue;
-				}
-
-				QJsonArray bindings = device_desc["keybindings"].toArray();
-				Keys keys;
-				for(const QJsonValue& binding : bindings) {
-					QKeySequence binding_sequence = QKeySequence(binding.toString());
-					if(binding_sequence.count()) {
-						keys.emplace(binding_sequence[0]);
-					}
-				}
-				device->input->setKeys(keys);
-			}
+			device->fromJSON(device_desc);
 
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
-				if(!device->spi) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
-							" an SPI interface, but device does not implement it" << endl;
-					continue;
-				}
 				const QJsonObject spi = device_desc["spi"].toObject();
 				if(!spi.contains("cs_pin")) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
@@ -129,27 +82,10 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				}
 				const gpio::PinNumber cs = spi["cs_pin"].toInt();
 				const bool noresponse = spi["noresponse"].toBool(true);
-				spi_channels.emplace(id, SPI_IOF_Request{
-					.gpio_offs = translatePinToGpioOffs(cs),
-							.global_pin = cs,
-							.noresponse = noresponse,
-							.fun = [this, device](gpio::SPI_Command cmd){
-						lua_access.lock();
-						const gpio::SPI_Response ret = device->spi->send(cmd);
-						lua_access.unlock();
-						return ret;
-					}
-				}
-				);
+				addSPI(cs, noresponse, device);
 			}
 
 			if(device_desc.contains("pins") && device_desc["pins"].isArray()) {
-				if(!device->pin) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
-							" an PIN interface, but device does not implement it" << endl;
-					continue;
-				}
-				const PinLayout pinLayout = device->pin->getPinLayout();
 				QJsonArray pin_descriptions = device_desc["pins"].toArray();
 				for (const QJsonValue& pin_desc : pin_descriptions) {
 					const QJsonObject pin = pin_desc.toObject();
@@ -164,72 +100,11 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 					const bool synchronous = pin["synchronous"].toBool(false);
 					const string pin_name = pin["name"].toString("undef").toStdString();
 
-					if(pinLayout.find(device_pin) == pinLayout.end()) {
-						cerr << "[config loader] config for device '" << classname << "' names a pin " <<
-								(int)device_pin << " that is not offered by device" << endl;
-						continue;
-					}
-
-					//cout << "Mapping " << device->getID() << "'s pin " << (int)device_pin <<
-					//		" to global pin " << (int)global_pin << endl;
-
-					const PinDesc& pin_l = pinLayout.at(device_pin);
-					if(synchronous) {
-						// TODO FIXME : Currently, only one synchronous pin seems to work!
-						if(pin_l.dir != PinDesc::Dir::input) {
-							cerr << "[config loader] config for device '" << classname << "' maps pin " <<
-									(int)device_pin << " as syncronous, but device labels pin not as input."
-									" This is not supported for inout-pins and unnecessary for output pins." << endl;
-							continue;
-						}
-						pin_channels.emplace(id, PIN_IOF_Request{
-							.gpio_offs = translatePinToGpioOffs(global_pin),
-									.global_pin = global_pin,
-									.fun = [this, device, device_pin](gpio::Tristate pin) {
-								lua_access.lock();
-								device->pin->setPin(device_pin, pin);
-								lua_access.unlock();
-							}
-						});
-					} else {
-						PinMapping mapping = PinMapping{
-							.gpio_offs = translatePinToGpioOffs(global_pin),
-									.global_pin = global_pin,
-									.device_pin = device_pin,
-									.name = pin_name,
-									.dev = device
-						};
-						if(pin_l.dir == PinDesc::Dir::input
-								|| pin_l.dir == PinDesc::Dir::inout) {
-							reading_connections.push_back(mapping);
-						}
-						if(pin_l.dir == PinDesc::Dir::output
-								|| pin_l.dir == PinDesc::Dir::inout) {
-							writing_connections.push_back(mapping);
-						}
-					}
+					addPin(synchronous, device_pin, global_pin, pin_name, device);
 				}
 			}
 
 			if(device_desc.contains("graphics") && device_desc["graphics"].isObject()) {
-				if(!device->graph) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
-							" a graph buffer interface, but device does not implement it" << endl;
-					continue;
-				}
-				const Layout layout = device->graph->getLayout();
-				//cout << "\t\t\tBuffer Layout: " << layout.width << "x" << layout.height << " pixel with type " << layout.data_type << endl;
-				if(layout.width == 0 || layout.height == 0) {
-					cerr << "Device " << id << " of class " << classname << " "
-							"requests an invalid graphbuffer size '" << layout.width << "x" << layout.height << "'" << endl;
-					continue;
-				}
-				if(layout.data_type != "rgba") {
-					cerr << "Device " << id << " of class " << classname << " "
-							"requested a currently unsupported graph buffer data type '" << layout.data_type << "'" << endl;
-					continue;
-				}
-
 				const QJsonObject graphics_desc = device_desc["graphics"].toObject();
 				if(!(graphics_desc.contains("offs") && graphics_desc["offs"].isArray())) {
 					cerr << "[config loader] config for device '" << classname << "' sets"
@@ -246,11 +121,7 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 				QPoint offs(offs_desc[0].toInt(), offs_desc[1].toInt());
 				const unsigned scale = graphics_desc["scale"].toInt(1);
 
-				device_graphics.emplace(id, DeviceGraphic{
-					.image = QImage(layout.width, layout.height, QImage::Format_RGBA8888),
-							.offset = offs,
-							.scale = scale
-				});
+				addGraphics(offs, scale, device);
 
 				// setting up the image buffer and its functions
 				QImage& new_buffer = device_graphics.at(id).image;
@@ -299,5 +170,9 @@ bool Breadboard::loadConfigFile(QString file, string additional_device_dir, bool
 	if(debug_logging)
 		factory.printAvailableDevices();
 
+	return true;
+}
+
+bool Breadboard::saveConfigFile(QString file) {
 	return true;
 }

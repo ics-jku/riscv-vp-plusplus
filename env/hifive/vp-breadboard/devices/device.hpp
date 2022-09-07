@@ -7,10 +7,10 @@
 #include <memory>
 
 #include <QImage>
-
-#include <gpio/gpio-client.hpp>
+#include <QJsonObject>
 
 #include "configurations.h"
+#include <gpio/gpio-client.hpp>
 
 class Device {
 protected:
@@ -20,6 +20,9 @@ public:
 
 	const DeviceID& getID() const;
 	virtual const DeviceClass getClass() const = 0;
+
+	void fromJSON(QJsonObject json);
+	QJsonObject toJSON();
 
 	class PIN_Interface {
 	public:
