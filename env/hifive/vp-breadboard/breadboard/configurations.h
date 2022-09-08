@@ -16,6 +16,7 @@ struct SPI_IOF_Request {
 struct PIN_IOF_Request {
 	gpio::PinNumber gpio_offs;	// calculated from "global pin"
 	gpio::PinNumber global_pin;
+	gpio::PinNumber device_pin;
 	GpioClient::OnChange_PIN fun;
 };
 

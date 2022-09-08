@@ -8,6 +8,8 @@
 #include "configurations.h"
 #include "embedded/gpio-helpers.h"
 
+const static QString default_bkgnd = ":/img/virtual_breadboard.png";
+
 class Breadboard : public QWidget {
 	Q_OBJECT
 
@@ -22,7 +24,7 @@ class Breadboard : public QWidget {
 	std::list<PinMapping> writing_connections;
 
 	bool debugmode = false;
-	bool breadboard = true;
+	QString bkgnd_path = default_bkgnd;
 
 	// Connections
 	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);

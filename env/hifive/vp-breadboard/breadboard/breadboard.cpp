@@ -73,6 +73,7 @@ void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinN
 		pin_channels.emplace(device->getID(), PIN_IOF_Request{
 			.gpio_offs = translatePinToGpioOffs(global),
 					.global_pin = global,
+					.device_pin = device_pin,
 					.fun = [this, device, device_pin](gpio::Tristate pin) {
 				lua_access.lock();
 				device->pin->setPin(device_pin, pin);
@@ -268,5 +269,5 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	update();
 }
 
-bool Breadboard::isBreadboard() { return breadboard; }
+bool Breadboard::isBreadboard() { return bkgnd_path == default_bkgnd; }
 

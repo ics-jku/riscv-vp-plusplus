@@ -30,10 +30,8 @@ bool Breadboard::loadConfigFile(QString file) {
 	}
 	QJsonObject config_root = json_doc.object();
 
-	QString bkgnd_path = ":/img/virtual_breadboard.png";
 	QSize bkgnd_size = QSize(486, 233);
 	if(config_root.contains("window") && config_root["window"].isObject()) {
-		breadboard = false;
 		QJsonObject window = config_root["window"].toObject();
 		bkgnd_path = window["background"].toString(bkgnd_path);
 		unsigned windowsize_x = window["windowsize"].toArray().at(0).toInt();
@@ -174,5 +172,76 @@ bool Breadboard::loadConfigFile(QString file) {
 }
 
 bool Breadboard::saveConfigFile(QString file) {
+	QFile confFile(file);
+	if(!confFile.open(QIODevice::WriteOnly)) {
+		cerr << "Could not open config file" << endl;
+		cerr << confFile.errorString().toStdString() << endl;
+		return false;
+	}
+	QJsonObject current_state;
+	if(!isBreadboard()) {
+		QJsonObject window;
+		window["background"] = bkgnd_path;
+		QJsonArray windowsize;
+		windowsize.append(size().width());
+		windowsize.append(size().height());
+		window["windowsize"] = windowsize;
+		current_state["window"] = window;
+	}
+	QJsonArray devices_json;
+	for(auto const& [id, device] : devices) {
+		QJsonObject dev_json = device->toJSON();
+		auto spi = spi_channels.find(id);
+		if(spi != spi_channels.end()) {
+			QJsonObject spi_json;
+			spi_json["cs_pin"] = (int) spi->second.global_pin;
+			spi_json["noresponse"] = spi->second.noresponse;
+			dev_json["spi"] = spi_json;
+		}
+		QJsonArray pins_json;
+		for(PinMapping w : writing_connections) {
+			if(w.dev->getID() == id) {
+				QJsonObject pin_json;
+				pin_json["device_pin"] = (int) w.device_pin;
+				pin_json["global_pin"] = (int) w.global_pin;
+				pin_json["name"] = QString::fromStdString(w.name);
+				pins_json.append(pin_json);
+			}
+		}
+		for(PinMapping w : reading_connections) {
+			if(w.dev->getID() == id) {
+				QJsonObject pin_json;
+				pin_json["device_pin"] = (int) w.device_pin;
+				pin_json["global_pin"] = (int) w.global_pin;
+				pin_json["name"] = QString::fromStdString(w.name);
+				pins_json.append(pin_json);
+			}
+		}
+		auto pin = pin_channels.find(id);
+		if(pin != pin_channels.end()) {
+			QJsonObject pin_json;
+			pin_json["synchronous"] = true;
+			pin_json["device_pin"] = pin->second.device_pin;
+			pin_json["global_pin"] = pin->second.global_pin;
+			pins_json.append(pin_json);
+		}
+		if(pins_json.size()) {
+			dev_json["pins"] = pins_json;
+		}
+		auto graph = device_graphics.find(id);
+		if(graph != device_graphics.end()) {
+			QJsonObject graph_json;
+			QJsonArray offs_json;
+			offs_json.append(graph->second.offset.x());
+			offs_json.append(graph->second.offset.y());
+			graph_json["offs"] = offs_json;
+			graph_json["scale"] = (int) graph->second.scale;
+			dev_json["graphics"] = graph_json;
+		}
+		devices_json.append(dev_json);
+	}
+	current_state["devices"] = devices_json;
+	QJsonDocument doc(current_state);
+	confFile.write(doc.toJson());
 	return true;
 }

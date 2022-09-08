@@ -59,6 +59,33 @@ void Device::fromJSON(QJsonObject json) {
 
 QJsonObject Device::toJSON() {
 	QJsonObject json;
+	json["class"] = QString::fromStdString(getClass());
+	json["id"] = QString::fromStdString(getID());
+	if(conf) {
+		QJsonObject conf_json;
+		for(auto const& [desc, elem] : *conf->getConfig()) {
+			if(elem.type == ConfigElem::Type::integer) {
+				conf_json[QString::fromStdString(desc)] = (int) elem.value.integer;
+			}
+			else if(elem.type == ConfigElem::Type::boolean) {
+				conf_json[QString::fromStdString(desc)] = elem.value.boolean;
+			}
+			else if(elem.type == ConfigElem::Type::string) {
+				conf_json[QString::fromStdString(desc)] = QString::fromLocal8Bit(elem.value.string);
+			}
+		}
+		json["conf"] = conf_json;
+	}
+	if(input) {
+		Keys keys = input->getKeys();
+		if(keys.size()) {
+			QJsonArray keybindings_json;
+			for(const Key& key : keys) {
+				keybindings_json.append(QJsonValue(QKeySequence(key).toString()));
+			}
+			json["keybindings"] = keybindings_json;
+		}
+	}
 	return json;
 }
 
