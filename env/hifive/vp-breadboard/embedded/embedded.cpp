@@ -5,22 +5,18 @@
 using namespace gpio;
 using namespace std;
 
-Embedded::Embedded(const std::string host, const std::string port, bool visible, QWidget *parent) :
+Embedded::Embedded(const std::string host, const std::string port, QWidget *parent) :
 		QWidget(parent), host(host), port(port) {
-	if(visible) {
-		QSize bkgnd_size = QSize(417, 231);
-		QString bkgnd_path = ":/img/virtual_hifive.png";
-		QPixmap bkgnd(bkgnd_path);
-		bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
-		QPalette palette;
-		palette.setBrush(QPalette::Window, bkgnd);
-		this->setPalette(palette);
-		this->setAutoFillBackground(true);
-		setFixedSize(bkgnd_size);
-	}
-	else {
-		setAttribute(Qt::WA_TransparentForMouseEvents);
-	}
+	QSize bkgnd_size = QSize(417, 231);
+	QString bkgnd_path = ":/img/virtual_hifive.png";
+	QPixmap bkgnd(bkgnd_path);
+	bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
+	QPalette palette;
+	palette.setBrush(QPalette::Window, bkgnd);
+	this->setPalette(palette);
+	this->setAutoFillBackground(true);
+	setFixedSize(bkgnd_size);
+	setAttribute(Qt::WA_TransparentForMouseEvents);
 }
 
 Embedded::~Embedded() {}
@@ -37,7 +33,6 @@ bool Embedded::timerUpdate() { // return: new connection?
 			return true;
 		}
 	}
-	this->update();
 	return false;
 }
 
@@ -59,6 +54,10 @@ void Embedded::registerIOF_SPI(PinNumber gpio_offs, GpioClient::OnChange_SPI fun
 	if(!gpio.isIOFactive(gpio_offs)) {
 		const bool success = gpio.registerSPIOnChange(gpio_offs, fun, no_response);
 	}
+}
+
+void Embedded::closeIOF(PinNumber gpio_offs) {
+	gpio.closeIOFunction(gpio_offs);
 }
 
 void Embedded::destroyConnection() {

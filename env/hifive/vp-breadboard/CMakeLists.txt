@@ -56,6 +56,7 @@ set(SOURCES
     main.cpp
     window/window.cpp
     window/central.cpp
+    window/actions/json.cpp
     embedded/embedded.cpp
     embedded/gpio-helpers.cpp
     breadboard/breadboard.cpp

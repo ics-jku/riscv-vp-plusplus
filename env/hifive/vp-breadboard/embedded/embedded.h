@@ -15,9 +15,8 @@ class Embedded : public QWidget {
 
 	void paintEvent(QPaintEvent*) override;
 
-
 public:
-	Embedded(const std::string host, const std::string port, bool visible, QWidget *parent);
+	Embedded(const std::string host, const std::string port, QWidget *parent);
 	~Embedded();
 
 	bool timerUpdate();
@@ -27,6 +26,7 @@ public:
 public slots:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
+	void closeIOF(gpio::PinNumber gpio_offs);
 	void destroyConnection();
 	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
 };

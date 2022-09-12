@@ -6,12 +6,18 @@
 #include "breadboard/breadboard.h"
 
 class Central : public QWidget {
+	Q_OBJECT
+
 	Breadboard *breadboard;
 	Embedded *embedded;
 
 public:
-	Central(QString configfile, std::string additional_device_dir, const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent);
+	Central(const std::string host, const std::string port, QWidget *parent);
 	~Central();
+
+public slots:
+	void loadJSON(QString file);
+	void loadLUA(std::string dir, bool overwrite_integrated_devices);
 
 private slots:
 	void timerUpdate();

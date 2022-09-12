@@ -1,23 +1,15 @@
 #include "central.h"
 
+#include <iostream>
+
 /* Constructor */
 
-Central::Central(QString configfile, std::string additional_device_dir, const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent) : QWidget(parent) {
+Central::Central(const std::string host, const std::string port, QWidget *parent) : QWidget(parent) {
 	breadboard = new Breadboard(this);
-	breadboard->additionalLuaDir(additional_device_dir, overwrite_integrated_devices);
-	if(!breadboard->loadConfigFile(configfile)) {
-		exit(-4);
-	}
-
-	embedded = new Embedded(host, port, breadboard->isBreadboard(), this);
+	embedded = new Embedded(host, port, this);
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
-	if(breadboard->isBreadboard()) {
-		layout->addWidget(embedded);
-	}
-	else {
-		embedded->setFixedSize(breadboard->size());
-	}
+	layout->addWidget(embedded);
 	layout->addWidget(breadboard);
 
 	QTimer *timer = new QTimer(this);
@@ -26,6 +18,7 @@ Central::Central(QString configfile, std::string additional_device_dir, const st
 
 	connect(breadboard, &Breadboard::registerIOF_PIN, embedded, &Embedded::registerIOF_PIN);
 	connect(breadboard, &Breadboard::registerIOF_SPI, embedded, &Embedded::registerIOF_SPI);
+	connect(breadboard, &Breadboard::closeIOF, embedded, &Embedded::closeIOF);
 	connect(breadboard, &Breadboard::destroyConnection, embedded, &Embedded::destroyConnection);
 	connect(breadboard, &Breadboard::setBit, embedded, &Embedded::setBit);
 }
@@ -35,10 +28,28 @@ Central::~Central() {
 	delete embedded;
 }
 
+/* LOAD */
+
+void Central::loadJSON(QString file) {
+	breadboard->clear();
+	breadboard->loadConfigFile(file);
+	if(breadboard->isBreadboard()) {
+		embedded->show();
+	}
+	else {
+		embedded->hide();
+	}
+	// TODO resize layout, central, window
+}
+
+void Central::loadLUA(std::string dir, bool overwrite_integrated_devices) {
+	breadboard->additionalLuaDir(dir, overwrite_integrated_devices);
+}
+
 /* Timer */
 
 void Central::timerUpdate() {
-	bool reconnect = embedded->timerUpdate();
+ 	bool reconnect = embedded->timerUpdate();
 	if(reconnect) {
 		breadboard->reconnected();
 	}

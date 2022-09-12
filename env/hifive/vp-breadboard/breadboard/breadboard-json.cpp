@@ -6,6 +6,21 @@ constexpr bool debug_logging = false;
 
 /* JSON */
 
+void Breadboard::clear() {
+	for(auto const& [id,spi] : spi_channels) {
+		emit(closeIOF(spi.gpio_offs));
+	}
+	for(auto const& [id,pin] : pin_channels) {
+		emit(closeIOF(pin.gpio_offs));
+	}
+	devices.clear();
+	spi_channels.clear();
+	pin_channels.clear();
+	device_graphics.clear();
+	writing_connections.clear();
+	reading_connections.clear();
+}
+
 void Breadboard::additionalLuaDir(string additional_device_dir, bool overwrite_integrated_devices) {
 	if(additional_device_dir.size() != 0) {
 		factory.scanAdditionalDir(additional_device_dir, overwrite_integrated_devices);
@@ -37,6 +52,9 @@ bool Breadboard::loadConfigFile(QString file) {
 		unsigned windowsize_x = window["windowsize"].toArray().at(0).toInt();
 		unsigned windowsize_y = window["windowsize"].toArray().at(1).toInt();
 		bkgnd_size = QSize(windowsize_x, windowsize_y);
+	}
+	else {
+		bkgnd_path = default_bkgnd;
 	}
 
 	QPixmap bkgnd(bkgnd_path);
