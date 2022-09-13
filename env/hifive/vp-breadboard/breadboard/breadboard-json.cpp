@@ -1,5 +1,8 @@
 #include "breadboard.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+
 using namespace std;
 
 constexpr bool debug_logging = false;

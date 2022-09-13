@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QtWidgets>
+#include <QWidget>
 
 #include "embedded/embedded.h"
 #include "breadboard/breadboard.h"
@@ -15,12 +15,16 @@ public:
 	Central(const std::string host, const std::string port, QWidget *parent);
 	~Central();
 	void destroyConnection();
+	bool toggleDebug();
 
 public slots:
 	void loadJSON(QString file);
 	void loadLUA(std::string dir, bool overwrite_integrated_devices);
-	void toggleDebug();
 
 private slots:
 	void timerUpdate();
+	void connectionLost();
+
+signals:
+	void connectionUpdate(bool active);
 };

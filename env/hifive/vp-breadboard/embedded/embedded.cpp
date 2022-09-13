@@ -24,6 +24,7 @@ Embedded::~Embedded() {}
 
 bool Embedded::timerUpdate() { // return: new connection?
 	if(connected && !gpio.update()) {
+		emit(connectionLost());
 		connected = false;
 	}
 	if(!connected) {
@@ -66,32 +67,5 @@ void Embedded::destroyConnection() {
 void Embedded::setBit(gpio::PinNumber gpio_offs, gpio::Tristate state) {
 	if(connected) {
 		gpio.setBit(gpio_offs, state);
-	}
-}
-
-/* PAINT */
-
-void Embedded::paintEvent(QPaintEvent*) {
-	if(!connected) {
-		QPainter painter(this);
-		painter.setRenderHint(QPainter::Antialiasing);
-		painter.setBrush(QBrush(QColor("black")));
-		QRect sign;
-		if(this->size().width() > this->size().height())
-		{
-			sign = QRect (QPoint(this->size().width()/4, this->size().height()/4), this->size()/2);
-		}
-		else
-		{
-			sign = QRect (QPoint(this->size().width()/10, this->size().height()/4),
-					QSize(4*this->size().width()/5, this->size().height()/4));
-		}
-		painter.drawRect(sign);
-		painter.setFont(QFont("Arial", 25, QFont::Bold));
-		QPen penHText(QColor("red"));
-		painter.setPen(penHText);
-		painter.drawText(sign, QString("No connection"), Qt::AlignHCenter | Qt::AlignVCenter);
-
-		painter.end();
 	}
 }

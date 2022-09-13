@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QLabel>
+#include <QMenu>
 
 #include "central.h"
 
@@ -12,6 +14,9 @@ class MainWindow : public QMainWindow {
 	QMenu *config;
 	std::vector<QMenu*> json_dirs;
 //	QMenu *devices;
+
+	QLabel *debug_label;
+	QLabel *connection_label;
 
 	void createDropdown();
 	void addJsonDir(QString dir);
@@ -25,4 +30,8 @@ public:
 
 public slots:
 	void quit();
+
+private slots:
+	void toggleDebug();
+	void connectionUpdate(bool active);
 };

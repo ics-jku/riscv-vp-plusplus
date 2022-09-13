@@ -1,5 +1,8 @@
 #include "central.h"
 
+#include <QVBoxLayout>
+#include <QTimer>
+
 /* Constructor */
 
 Central::Central(const std::string host, const std::string port, QWidget *parent) : QWidget(parent) {
@@ -18,17 +21,23 @@ Central::Central(const std::string host, const std::string port, QWidget *parent
 	connect(breadboard, &Breadboard::registerIOF_SPI, embedded, &Embedded::registerIOF_SPI);
 	connect(breadboard, &Breadboard::closeIOF, embedded, &Embedded::closeIOF);
 	connect(breadboard, &Breadboard::setBit, embedded, &Embedded::setBit);
+	connect(embedded, &Embedded::connectionLost, this, &Central::connectionLost);
+	connect(this, &Central::connectionUpdate, breadboard, &Breadboard::connectionUpdate);
 }
 
 Central::~Central() {
+}
+
+void Central::connectionLost() {
+	emit(connectionUpdate(false));
 }
 
 void Central::destroyConnection() {
 	embedded->destroyConnection();
 }
 
-void Central::toggleDebug() {
-	breadboard->toggleDebug();
+bool Central::toggleDebug() {
+	return breadboard->toggleDebug();
 }
 
 /* LOAD */
@@ -53,7 +62,7 @@ void Central::loadLUA(std::string dir, bool overwrite_integrated_devices) {
 void Central::timerUpdate() {
  	bool reconnect = embedded->timerUpdate();
 	if(reconnect) {
-		breadboard->reconnected();
+		emit(connectionUpdate(true));
 	}
 	if(embedded->gpioConnected()) {
 		breadboard->timerUpdate(embedded->getState());

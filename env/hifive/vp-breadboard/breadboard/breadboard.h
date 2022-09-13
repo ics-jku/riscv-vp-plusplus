@@ -1,6 +1,10 @@
 #pragma once
 
-#include <QtWidgets>
+#include <QWidget>
+#include <QMouseEvent>
+#include <QKeyEvent>
+#include <QPaintEvent>
+
 #include <unordered_map>
 #include <list>
 #include <mutex> // TODO: FIXME: Create one Lua state per device that uses asyncs like SPI and synchronous pins
@@ -44,7 +48,7 @@ public:
 	Breadboard(QWidget *parent);
 	~Breadboard();
 
-	void toggleDebug();
+	bool toggleDebug();
 
 	// JSON
 	bool loadConfigFile(QString file);
@@ -54,8 +58,10 @@ public:
 
 	// GPIO
 	void timerUpdate(gpio::State state);
-	void reconnected();
 	bool isBreadboard();
+
+public slots:
+	void connectionUpdate(bool active);
 
 signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);

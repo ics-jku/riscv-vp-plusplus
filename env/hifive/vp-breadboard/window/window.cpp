@@ -4,6 +4,11 @@
 #include "actions/json_file.h"
 #include "actions/load.h"
 
+#include <QApplication>
+#include <QDirIterator>
+#include <QMenuBar>
+#include <QStatusBar>
+
 MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 		const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle("MainWindow");
@@ -12,6 +17,7 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 	central->loadLUA(additional_device_dir, overwrite_integrated_devices);
 	central->loadJSON(configfile);
 	setCentralWidget(central);
+	connect(central, &Central::connectionUpdate, this, &MainWindow::connectionUpdate);
 
 	createDropdown();
 }
@@ -26,6 +32,14 @@ void MainWindow::quit() {
 
 void MainWindow::resizeEvent(QResizeEvent *e) {
 	setFixedSize(sizeHint());
+}
+
+void MainWindow::toggleDebug() {
+	debug_label->setText(central->toggleDebug() ? "" : "Debug");
+}
+
+void MainWindow::connectionUpdate(bool active) {
+	connection_label->setText(active ? "Connected" : "Disconnected");
 }
 
 void MainWindow::addJsonDir(QString dir) {
@@ -69,13 +83,18 @@ void MainWindow::createDropdown() {
 	QMenu* window = menuBar()->addMenu("Window");
 	QAction* debug = new QAction("Debug Mode");
 	debug->setShortcut(QKeySequence(Qt::Key_Space));
-	connect(debug, &QAction::triggered, central, &Central::toggleDebug);
+	connect(debug, &QAction::triggered, this, &MainWindow::toggleDebug);
 	window->addAction(debug);
 	window->addSeparator();
 	QAction* quit = new QAction("Quit");
 	quit->setShortcut(QKeySequence(Qt::Key_Q));
 	connect(quit, &QAction::triggered, this, &MainWindow::quit);
 	window->addAction(quit);
+
+	debug_label = new QLabel();
+	statusBar()->addPermanentWidget(debug_label);
+	connection_label = new QLabel("Disconnected");
+	statusBar()->addPermanentWidget(connection_label);
 
 //	devices = menuBar()->addMenu("&Devices");
 //	Load *load_lua_dir = new Load("&LUA");

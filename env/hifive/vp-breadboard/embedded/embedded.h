@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QtWidgets>
+#include <QWidget>
 
 #include <gpio/gpio-client.hpp>
 
@@ -12,8 +12,6 @@ class Embedded : public QWidget {
 	const std::string host;
 	const std::string port;
 	bool connected = false;
-
-	void paintEvent(QPaintEvent*) override;
 
 public:
 	Embedded(const std::string host, const std::string port, QWidget *parent);
@@ -29,4 +27,7 @@ public slots:
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
 	void closeIOF(gpio::PinNumber gpio_offs);
 	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
+
+signals:
+	void connectionLost();
 };

@@ -1,6 +1,9 @@
 #include "breadboard.h"
 #include "raster.h"
 
+#include <QTimer>
+#include <QPainter>
+
 using namespace std;
 
 Breadboard::Breadboard(QWidget* parent) : QWidget(parent) {
@@ -29,13 +32,16 @@ void Breadboard::timerUpdate(gpio::State state) {
 	lua_access.unlock();
 }
 
-void Breadboard::reconnected() { // new gpio connection
-	for(const auto& [id, req] : spi_channels) {
-		emit(registerIOF_SPI(req.gpio_offs, req.fun, req.noresponse));
+void Breadboard::connectionUpdate(bool active) {
+	if(active) {
+		for(const auto& [id, req] : spi_channels) {
+			emit(registerIOF_SPI(req.gpio_offs, req.fun, req.noresponse));
+		}
+		for(const auto& [id, req] : pin_channels) {
+			emit(registerIOF_PIN(req.gpio_offs, req.fun));
+		}
 	}
-	for(const auto& [id, req] : pin_channels) {
-		emit(registerIOF_PIN(req.gpio_offs, req.fun));
-	}
+	// else connection lost
 }
 
 void Breadboard::writeDevice(DeviceID device) {
@@ -247,5 +253,8 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 }
 
 bool Breadboard::isBreadboard() { return bkgnd_path == default_bkgnd; }
-void Breadboard::toggleDebug() { debugmode = !debugmode; }
+bool Breadboard::toggleDebug() {
+	debugmode = !debugmode;
+	return debugmode;
+}
 
