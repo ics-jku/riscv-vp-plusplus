@@ -16,14 +16,16 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 	createDropdown();
 }
 
-void MainWindow::resizeEvent(QResizeEvent *e) {
-	setFixedSize(central->width(), central->height());
+MainWindow::~MainWindow() {
 }
 
-MainWindow::~MainWindow() {
-	delete central;
-	delete config;
-//	delete devices;
+void MainWindow::quit() {
+	central->destroyConnection();
+	QApplication::quit();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *e) {
+	setFixedSize(sizeHint());
 }
 
 void MainWindow::addJsonDir(QString dir) {
@@ -56,14 +58,26 @@ void MainWindow::removeJsonDir(int index) {
 }
 
 void MainWindow::createDropdown() {
-	config = menuBar()->addMenu(tr("&Config"));
-	Load* load_config_dir = new Load("&JSON");
+	config = menuBar()->addMenu("Config");
+	Load* load_config_dir = new Load("JSON");
+	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_J));
 	connect(load_config_dir, &Load::triggered, this, &MainWindow::addJsonDir);
 	config->addAction(load_config_dir);
 	config->addSeparator();
 	addJsonDir(":/conf");
 
-//	devices = menuBar()->addMenu(tr("&Devices"));
+	QMenu* window = menuBar()->addMenu("Window");
+	QAction* debug = new QAction("Debug Mode");
+	debug->setShortcut(QKeySequence(Qt::Key_Space));
+	connect(debug, &QAction::triggered, central, &Central::toggleDebug);
+	window->addAction(debug);
+	window->addSeparator();
+	QAction* quit = new QAction("Quit");
+	quit->setShortcut(QKeySequence(Qt::Key_Q));
+	connect(quit, &QAction::triggered, this, &MainWindow::quit);
+	window->addAction(quit);
+
+//	devices = menuBar()->addMenu("&Devices");
 //	Load *load_lua_dir = new Load("&LUA");
 //	connect(load_lua_dir, &Load::triggered, central, &Central::loadLUA);
 //	devices->addAction(load_lua_dir);

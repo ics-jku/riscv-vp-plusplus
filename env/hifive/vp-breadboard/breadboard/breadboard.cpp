@@ -167,27 +167,8 @@ void Breadboard::paintEvent(QPaintEvent*) {
 /* User input */
 
 void Breadboard::keyPressEvent(QKeyEvent* e) {
-	if(debugmode)
-	{
-		switch(e->key())
-		{
-		case Qt::Key_Space:
-			cout << "Debug mode off" << endl;
-			debugmode = 0;
-			break;
-		default:
-			break;
-		}
-	}
-	else
-	{
-		//normal mode
+	if(!debugmode) {
 		switch (e->key()) {
-			case Qt::Key_Escape:
-			case Qt::Key_Q:
-				emit(destroyConnection());
-				QApplication::quit();
-				break;
 			case Qt::Key_0: {
 				uint8_t until = 6;
 				for (uint8_t i = 0; i < 8; i++) {
@@ -201,10 +182,6 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				}
 				break;
 			}
-			case Qt::Key_Space:
-				cout << "Set Debug mode" << endl;
-				debugmode = true;
-				break;
 			default:
 				for(auto const& [id, device] : devices) {
 					if(device->input) {
@@ -270,4 +247,5 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 }
 
 bool Breadboard::isBreadboard() { return bkgnd_path == default_bkgnd; }
+void Breadboard::toggleDebug() { debugmode = !debugmode; }
 

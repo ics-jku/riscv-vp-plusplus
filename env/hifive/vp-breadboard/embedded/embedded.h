@@ -22,11 +22,11 @@ public:
 	bool timerUpdate();
 	gpio::State getState();
 	bool gpioConnected();
+	void destroyConnection();
 
 public slots:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
 	void closeIOF(gpio::PinNumber gpio_offs);
-	void destroyConnection();
 	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
 };

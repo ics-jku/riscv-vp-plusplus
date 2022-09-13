@@ -14,10 +14,12 @@ class Central : public QWidget {
 public:
 	Central(const std::string host, const std::string port, QWidget *parent);
 	~Central();
+	void destroyConnection();
 
 public slots:
 	void loadJSON(QString file);
 	void loadLUA(std::string dir, bool overwrite_integrated_devices);
+	void toggleDebug();
 
 private slots:
 	void timerUpdate();

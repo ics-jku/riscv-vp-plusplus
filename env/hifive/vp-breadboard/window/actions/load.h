@@ -9,7 +9,7 @@ class Load : public QAction {
 public:
 	Load(QString name);
 
-public slots:
+private slots:
 	void getDirName();
 
 signals:

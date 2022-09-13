@@ -11,7 +11,7 @@ class JsonFile : public QAction {
 public:
 	JsonFile(QString file, int dir_length);
 
-public slots:
+private slots:
 	void JsonFileSelected();
 
 signals:

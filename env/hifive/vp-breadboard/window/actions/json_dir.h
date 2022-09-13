@@ -11,7 +11,7 @@ class JsonDir : public QAction {
 public:
 	JsonDir(int index);
 
-public slots:
+private slots:
 	void removeJsonDir();
 
 signals:
