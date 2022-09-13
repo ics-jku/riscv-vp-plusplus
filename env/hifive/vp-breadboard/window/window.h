@@ -3,7 +3,6 @@
 #include <QMainWindow>
 
 #include "central.h"
-#include "actions/json.h"
 
 class MainWindow : public QMainWindow {
 	Q_OBJECT
@@ -11,13 +10,12 @@ class MainWindow : public QMainWindow {
 	Central *central;
 
 	QMenu *config;
-	QAction *load_config_dir;
-	QMenu *devices;
-	QAction *load_lua_dir;
+	std::vector<QMenu*> json_dirs;
+//	QMenu *devices;
 
 	void createDropdown();
-	void createJsonActions(QString dir);
-	void createActions();
+	void addJsonDir(QString dir);
+	void removeJsonDir(int index);
 
 	void resizeEvent(QResizeEvent* e);
 

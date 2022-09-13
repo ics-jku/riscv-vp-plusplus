@@ -1,7 +1,5 @@
 #include "central.h"
 
-#include <iostream>
-
 /* Constructor */
 
 Central::Central(const std::string host, const std::string port, QWidget *parent) : QWidget(parent) {
