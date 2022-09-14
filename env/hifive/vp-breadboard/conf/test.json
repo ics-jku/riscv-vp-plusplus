@@ -1,0 +1,165 @@
+{
+    "devices": [
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 255,
+                "colour_g": 255,
+                "colour_r": 10
+            },
+            "graphics": {
+                "offs": [
+                    260,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_turquoise",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 7,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 255,
+                "colour_g": 10,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    210,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_purple",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 19,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 255,
+                "colour_g": 10,
+                "colour_r": 10
+            },
+            "graphics": {
+                "offs": [
+                    110,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_blue",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 17,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 255,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    160,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_yellow",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 18,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 255,
+                "colour_r": 10
+            },
+            "graphics": {
+                "offs": [
+                    60,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_green",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 100,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    310,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_orange",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 6,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 10,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    10,
+                    60
+                ],
+                "scale": 2
+            },
+            "id": "led_red",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 15,
+                    "name": "led_pin"
+                }
+            ]
+        }
+    ]
+}

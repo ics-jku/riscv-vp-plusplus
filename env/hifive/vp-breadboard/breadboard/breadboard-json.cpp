@@ -22,6 +22,17 @@ void Breadboard::clear() {
 	device_graphics.clear();
 	writing_connections.clear();
 	reading_connections.clear();
+
+	bkgnd_path = default_bkgnd;
+	QSize bkgnd_size = QSize(486, 233);
+	QPixmap bkgnd(bkgnd_path);
+	bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
+	QPalette palette;
+	palette.setBrush(QPalette::Window, bkgnd);
+	this->setPalette(palette);
+	this->setAutoFillBackground(true);
+
+	setFixedSize(bkgnd_size);
 }
 
 void Breadboard::additionalLuaDir(string additional_device_dir, bool overwrite_integrated_devices) {
@@ -48,26 +59,21 @@ bool Breadboard::loadConfigFile(QString file) {
 	}
 	QJsonObject config_root = json_doc.object();
 
-	QSize bkgnd_size = QSize(486, 233);
 	if(config_root.contains("window") && config_root["window"].isObject()) {
 		QJsonObject window = config_root["window"].toObject();
-		bkgnd_path = window["background"].toString(bkgnd_path);
+		bkgnd_path = window["background"].toString();
 		unsigned windowsize_x = window["windowsize"].toArray().at(0).toInt();
 		unsigned windowsize_y = window["windowsize"].toArray().at(1).toInt();
-		bkgnd_size = QSize(windowsize_x, windowsize_y);
-	}
-	else {
-		bkgnd_path = default_bkgnd;
-	}
+		QSize bkgnd_size = QSize(windowsize_x, windowsize_y);
 
-	QPixmap bkgnd(bkgnd_path);
-	bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
-	QPalette palette;
-	palette.setBrush(QPalette::Window, bkgnd);
-	this->setPalette(palette);
-	this->setAutoFillBackground(true);
-
-	setFixedSize(bkgnd_size);
+		QPixmap bkgnd(bkgnd_path);
+		bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
+		QPalette palette;
+		palette.setBrush(QPalette::Window, bkgnd);
+		this->setPalette(palette);
+		this->setAutoFillBackground(true);
+		setFixedSize(bkgnd_size);
+	}
 
 	if(config_root.contains("devices") && config_root["devices"].isArray()) {
 		QJsonArray device_descriptions = config_root["devices"].toArray();

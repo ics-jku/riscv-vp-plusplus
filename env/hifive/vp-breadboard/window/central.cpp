@@ -56,6 +56,17 @@ void Central::loadJSON(QString file) {
 	}
 }
 
+void Central::saveJSON(QString file) {
+	emit(sendStatus("Saving breadboard status to config file " + file, 10000));
+	breadboard->saveConfigFile(file);
+}
+
+void Central::clearBreadboard() {
+	emit(sendStatus("Clearing breadboard", 10000));
+	breadboard->clear();
+	embedded->show();
+}
+
 void Central::loadLUA(std::string dir, bool overwrite_integrated_devices) {
 	breadboard->additionalLuaDir(dir, overwrite_integrated_devices);
 }

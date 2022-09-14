@@ -19,6 +19,8 @@ public:
 
 public slots:
 	void loadJSON(QString file);
+	void saveJSON(QString file);
+	void clearBreadboard();
 	void loadLUA(std::string dir, bool overwrite_integrated_devices);
 
 private slots:

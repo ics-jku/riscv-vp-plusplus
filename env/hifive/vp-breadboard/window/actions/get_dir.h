@@ -3,15 +3,17 @@
 #include <QAction>
 #include <QString>
 
-class Load : public QAction {
+class GetDir : public QAction {
 	Q_OBJECT
 
+	bool dir;
+
 public:
-	Load(QString name);
+	GetDir(QString name, bool dir);
 
 private slots:
 	void getDirName();
 
 signals:
-	void triggered(QString dir);
+	void triggered(QString path);
 };

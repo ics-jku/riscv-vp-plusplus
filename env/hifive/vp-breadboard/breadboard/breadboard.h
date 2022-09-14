@@ -28,7 +28,7 @@ class Breadboard : public QWidget {
 	std::list<PinMapping> writing_connections;
 
 	bool debugmode = false;
-	QString bkgnd_path = default_bkgnd;
+	QString bkgnd_path;
 
 	// Connections
 	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);

@@ -2,7 +2,7 @@
 
 #include "actions/json_dir.h"
 #include "actions/json_file.h"
-#include "actions/load.h"
+#include "actions/get_dir.h"
 
 #include <QApplication>
 #include <QDirIterator>
@@ -76,10 +76,18 @@ void MainWindow::removeJsonDir(int index) {
 
 void MainWindow::createDropdown() {
 	config = menuBar()->addMenu("Config");
-	Load* load_config_dir = new Load("JSON");
-	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_J));
-	connect(load_config_dir, &Load::triggered, this, &MainWindow::addJsonDir);
+	GetDir* load_config_dir = new GetDir("Add JSON directory", true);
+	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+	connect(load_config_dir, &GetDir::triggered, this, &MainWindow::addJsonDir);
 	config->addAction(load_config_dir);
+	GetDir* save_config = new GetDir("Save to JSON file", false);
+	save_config->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+	connect(save_config, &GetDir::triggered, central, &Central::saveJSON);
+	config->addAction(save_config);
+	QAction* clear_breadboard = new QAction("Clear breadboard");
+	clear_breadboard->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
+	connect(clear_breadboard, &QAction::triggered, central, &Central::clearBreadboard);
+	config->addAction(clear_breadboard);
 	config->addSeparator();
 	addJsonDir(":/conf");
 
