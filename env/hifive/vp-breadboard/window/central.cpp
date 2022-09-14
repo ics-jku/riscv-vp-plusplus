@@ -62,6 +62,9 @@ void Central::loadJSON(QString file) {
 	else {
 		embedded->hide();
 	}
+	if(embedded->gpioConnected()) {
+		breadboard->connectionUpdate(true);
+	}
 }
 
 void Central::saveJSON(QString file) {
