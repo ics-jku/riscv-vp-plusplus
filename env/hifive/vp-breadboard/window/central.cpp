@@ -43,8 +43,11 @@ bool Central::toggleDebug() {
 /* LOAD */
 
 void Central::loadJSON(QString file) {
+	emit(sendStatus("Loading config file " + file, 10000));
 	breadboard->clear();
-	breadboard->loadConfigFile(file);
+	if(!breadboard->loadConfigFile(file)) {
+		emit(sendStatus("Config file " + file + " invalid.", 10000));
+	}
 	if(breadboard->isBreadboard()) {
 		embedded->show();
 	}

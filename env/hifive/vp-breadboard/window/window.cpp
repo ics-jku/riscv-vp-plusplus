@@ -18,6 +18,7 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 	central->loadJSON(configfile);
 	setCentralWidget(central);
 	connect(central, &Central::connectionUpdate, this, &MainWindow::connectionUpdate);
+	connect(central, &Central::sendStatus, this->statusBar(), &QStatusBar::showMessage);
 
 	createDropdown();
 }
@@ -35,7 +36,7 @@ void MainWindow::resizeEvent(QResizeEvent *e) {
 }
 
 void MainWindow::toggleDebug() {
-	debug_label->setText(central->toggleDebug() ? "" : "Debug");
+	debug_label->setText(central->toggleDebug() ? "Debug" : "");
 }
 
 void MainWindow::connectionUpdate(bool active) {
@@ -43,6 +44,7 @@ void MainWindow::connectionUpdate(bool active) {
 }
 
 void MainWindow::addJsonDir(QString dir) {
+	statusBar()->showMessage("Add JSON directory " + dir, 10000);
 	QDirIterator it(dir, {"*.json"}, QDir::Files);
 	if(!it.hasNext()) {
 		return;
@@ -62,6 +64,7 @@ void MainWindow::addJsonDir(QString dir) {
 }
 
 void MainWindow::removeJsonDir(int index) {
+	statusBar()->showMessage("Remove JSON directory", 10000);
 	if(index >= json_dirs.size()) {
 		return;
 	}

@@ -27,4 +27,5 @@ private slots:
 
 signals:
 	void connectionUpdate(bool active);
+	void sendStatus(QString message, int ms);
 };
