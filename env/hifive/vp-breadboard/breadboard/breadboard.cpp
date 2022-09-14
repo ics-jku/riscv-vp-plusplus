@@ -202,54 +202,60 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 				}
 				break;
 		}
+		update();
 	}
-	update();
 }
 
 void Breadboard::keyReleaseEvent(QKeyEvent* e)
 {
-	for(auto const& [id, device] : devices) {
-		if(device->input) {
-			Keys device_keys = device->input->getKeys();
-			if(device_keys.find(e->key()) != device_keys.end()) {
-				lua_access.lock();
-				device->input->onKeypress(e->key(), false);
-				lua_access.unlock();
-				writeDevice(id);
+	if(!debugmode) {
+		for(auto const& [id, device] : devices) {
+			if(device->input) {
+				Keys device_keys = device->input->getKeys();
+				if(device_keys.find(e->key()) != device_keys.end()) {
+					lua_access.lock();
+					device->input->onKeypress(e->key(), false);
+					lua_access.unlock();
+					writeDevice(id);
+				}
 			}
 		}
+		update();
 	}
-	update();
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
-	for(auto const& [id, graph] : device_graphics) {
-		if(isInsideGraphic(graph, e->pos())) {
-			Device& dev = *devices.at(id).get();
-			if(dev.input) {
-				lua_access.lock();
-				dev.input->onClick(true);
-				lua_access.unlock();
-				writeDevice(id);
+	if(!debugmode) {
+		for(auto const& [id, graph] : device_graphics) {
+			if(isInsideGraphic(graph, e->pos())) {
+				Device& dev = *devices.at(id).get();
+				if(dev.input) {
+					lua_access.lock();
+					dev.input->onClick(true);
+					lua_access.unlock();
+					writeDevice(id);
+				}
 			}
 		}
+		update();
 	}
-	update();
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
-	for(auto const& [id, graph] : device_graphics) {
-		if(isInsideGraphic(graph, e->pos())) {
-			Device& dev = *devices.at(id).get();
-			if(dev.input) {
-				lua_access.lock();
-				dev.input->onClick(false);
-				lua_access.unlock();
-				writeDevice(id);
+	if(!debugmode) {
+		for(auto const& [id, graph] : device_graphics) {
+			if(isInsideGraphic(graph, e->pos())) {
+				Device& dev = *devices.at(id).get();
+				if(dev.input) {
+					lua_access.lock();
+					dev.input->onClick(false);
+					lua_access.unlock();
+					writeDevice(id);
+				}
 			}
 		}
+		update();
 	}
-	update();
 }
 
 bool Breadboard::isBreadboard() { return bkgnd_path == default_bkgnd; }

@@ -20,6 +20,7 @@ Central::Central(const std::string host, const std::string port, QWidget *parent
 	connect(breadboard, &Breadboard::registerIOF_PIN, embedded, &Embedded::registerIOF_PIN);
 	connect(breadboard, &Breadboard::registerIOF_SPI, embedded, &Embedded::registerIOF_SPI);
 	connect(breadboard, &Breadboard::closeIOF, embedded, &Embedded::closeIOF);
+	connect(breadboard, &Breadboard::closeIOFs, this, &Central::closeIOFs);
 	connect(breadboard, &Breadboard::setBit, embedded, &Embedded::setBit);
 	connect(embedded, &Embedded::connectionLost, this, &Central::connectionLost);
 	connect(this, &Central::connectionUpdate, breadboard, &Breadboard::connectionUpdate);
@@ -38,6 +39,13 @@ void Central::destroyConnection() {
 
 bool Central::toggleDebug() {
 	return breadboard->toggleDebug();
+}
+
+void Central::closeIOFs(std::vector<gpio::PinNumber> gpio_offs) {
+	for(gpio::PinNumber gpio : gpio_offs) {
+		embedded->closeIOF(gpio);
+	}
+	breadboard->clearConnections();
 }
 
 /* LOAD */

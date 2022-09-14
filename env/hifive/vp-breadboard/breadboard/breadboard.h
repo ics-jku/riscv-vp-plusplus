@@ -55,6 +55,7 @@ public:
 	bool saveConfigFile(QString file);
 	void additionalLuaDir(std::string additional_device_dir, bool overwrite_integrated_devices);
 	void clear();
+	void clearConnections();
 
 	// GPIO
 	void timerUpdate(gpio::State state);
@@ -67,5 +68,6 @@ signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
 	void closeIOF(gpio::PinNumber gpio_offs);
+	void closeIOFs(std::vector<gpio::PinNumber> gpio_offs);
 	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
 };

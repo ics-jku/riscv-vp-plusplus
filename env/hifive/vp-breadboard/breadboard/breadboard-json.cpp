@@ -10,18 +10,14 @@ constexpr bool debug_logging = false;
 /* JSON */
 
 void Breadboard::clear() {
+	std::vector<gpio::PinNumber> iofs;
 	for(auto const& [id,spi] : spi_channels) {
-		emit(closeIOF(spi.gpio_offs));
+		iofs.push_back(spi.gpio_offs);
 	}
 	for(auto const& [id,pin] : pin_channels) {
-		emit(closeIOF(pin.gpio_offs));
+		iofs.push_back(pin.gpio_offs);
 	}
-	devices.clear();
-	spi_channels.clear();
-	pin_channels.clear();
-	device_graphics.clear();
-	writing_connections.clear();
-	reading_connections.clear();
+	emit(closeIOFs(iofs));
 
 	bkgnd_path = default_bkgnd;
 	QSize bkgnd_size = QSize(486, 233);
@@ -33,6 +29,15 @@ void Breadboard::clear() {
 	this->setAutoFillBackground(true);
 
 	setFixedSize(bkgnd_size);
+}
+
+void Breadboard::clearConnections() {
+	spi_channels.clear();
+	pin_channels.clear();
+	device_graphics.clear();
+	writing_connections.clear();
+	reading_connections.clear();
+	devices.clear();
 }
 
 void Breadboard::additionalLuaDir(string additional_device_dir, bool overwrite_integrated_devices) {
