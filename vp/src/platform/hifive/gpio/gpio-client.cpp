@@ -136,7 +136,7 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 }
 
 bool GpioClient::isIOFactive(gpio::PinNumber pin) {
-	return dataChannels.find(pin) != dataChannels.end();
+	return activeIOFs.find(pin) != activeIOFs.end();
 }
 
 void GpioClient::closeIOFunction(gpio::PinNumber pin) {
@@ -145,10 +145,8 @@ void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 
 	if(item == activeIOFs.end())
 		return;
-
 	if(control_channel > 0)
 		notifyEndIOFchannel(pin);
-
 	dataChannels.erase(item->second);
 	activeIOFs.erase(item);
 }
@@ -201,11 +199,13 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 		data_channel = connectToHost(currentHost, port_c);
 
 		dataChannels.emplace(response.id, desc);
+		activeIOFs.emplace(desc.pin, response.id);
 
 		//start handler thread
 		iof_dispatcher = std::thread(bind(&GpioClient::handleDataChannel, this));
 	} else {
 		dataChannels.emplace(response.id, desc);
+		activeIOFs.emplace(desc.pin, response.id);
 	}
 	//cout << "pin " << (int) desc.pin << " got ID " << (int)response.id << endl;
 	return true;
@@ -214,6 +214,8 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 void GpioClient::handleDataChannel() {
 	IOF_Update update;
 	while(readStruct(data_channel, &update)) {
+		cout << "HANDLE DATA CHANNEL" << endl;
+		cout << dataChannels.size() << endl;
 		lock_guard<std::mutex> guard(dataChannel_m);
 		auto channel = dataChannels.find(update.id);
 		if(channel == dataChannels.end()) {
