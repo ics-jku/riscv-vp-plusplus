@@ -11,7 +11,7 @@ void GetDir::getDirName() {
 		path = QFileDialog::getExistingDirectory(parentWidget(), "Open Directory", "/home",
 				QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 	} else {
-		path = QFileDialog::getSaveFileName(parentWidget(), "Select JSON file", "", "JSON files (*.json");
+		path = QFileDialog::getSaveFileName(parentWidget(), "Select JSON file", QDir::currentPath(), "JSON files (*.json)");
 	}
 	emit(triggered(path));
 }

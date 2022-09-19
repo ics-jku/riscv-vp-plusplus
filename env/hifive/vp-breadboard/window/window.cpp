@@ -50,39 +50,6 @@ void MainWindow::saveJSON(QString file) {
 	loadJsonDirEntries(dir.absolutePath());
 }
 
-void MainWindow::loadJsonDirEntries(QString dir) {
-	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){ return menu->title() == dir; });
-	if(dir_menu == json_dirs.end()) return;
-	QDirIterator it(dir, {"*.json"}, QDir::Files);
-	if(!it.hasNext()) {
-		removeJsonDir(dir);
-		return;
-	}
-	(*dir_menu)->clear();
-	while(it.hasNext()) {
-		QString file = it.next();
-		JsonEntry *cur = new JsonEntry(file, file.right(file.size()-(dir.size() + 1)));
-		connect(cur, &JsonEntry::triggered, central, &Central::loadJSON);
-		(*dir_menu)->addAction(cur);
-	}
-	(*dir_menu)->addSeparator();
-	JsonEntry *remove_dir = new JsonEntry(dir, "Remove Directory");
-	connect(remove_dir, &JsonEntry::triggered, this, &MainWindow::removeJsonDir);
-	(*dir_menu)->addAction(remove_dir);
-	JsonEntry *reload_dir = new JsonEntry(dir, "Reload Directory");
-	connect(reload_dir, &JsonEntry::triggered, this, &MainWindow::loadJsonDirEntries);
-	(*dir_menu)->addAction(reload_dir);
-}
-
-void MainWindow::addJsonDir(QString dir) {
-	if(std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;}) != json_dirs.end()) return;
-	statusBar()->showMessage("Add JSON directory " + dir, 10000);
-	QMenu* dir_menu = new QMenu(dir);
-	json_dirs.push_back(dir_menu);
-	config->addMenu(dir_menu);
-	loadJsonDirEntries(dir);
-}
-
 void MainWindow::removeJsonDir(QString dir) {
 	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;});
 	if(dir_menu == json_dirs.end()) return;
@@ -90,6 +57,46 @@ void MainWindow::removeJsonDir(QString dir) {
 	QAction* json_dir_action = (*dir_menu)->menuAction();
 	config->removeAction(json_dir_action);
 	json_dirs.erase(dir_menu);
+}
+
+void MainWindow::loadJsonDirEntries(QString dir) {
+	QString title = dir.startsWith(":") ? "Integrated" : dir;
+	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [title](QMenu* menu){ return menu->title() == title; });
+	if(dir_menu == json_dirs.end()) return;
+	QDirIterator it(dir, {"*.json"}, QDir::Files);
+	if(!it.hasNext()) {
+		removeJsonDir(dir);
+		return;
+	}
+	for(QAction* action : (*dir_menu)->actions()) {
+		if(action->text().endsWith(".json")) {
+			(*dir_menu)->removeAction(action);
+		}
+	}
+	while(it.hasNext()) {
+		QString file = it.next();
+		JsonEntry *cur = new JsonEntry(file, file.right(file.size()-(dir.size() + 1)));
+		connect(cur, &JsonEntry::triggered, central, &Central::loadJSON);
+		(*dir_menu)->addAction(cur);
+	}
+}
+
+void MainWindow::addJsonDir(QString dir) {
+	if(std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;}) != json_dirs.end()) return;
+	statusBar()->showMessage("Add JSON directory " + dir, 10000);
+	QMenu* dir_menu = new QMenu(dir.startsWith(":") ? "Integrated" : dir);
+	json_dirs.push_back(dir_menu);
+	config->addMenu(dir_menu);
+	if(!dir.startsWith(":")) {
+		JsonEntry *remove_dir = new JsonEntry(dir, "Remove Directory");
+		connect(remove_dir, &JsonEntry::triggered, this, &MainWindow::removeJsonDir);
+		dir_menu->addAction(remove_dir);
+		JsonEntry *reload_dir = new JsonEntry(dir, "Reload Directory");
+		connect(reload_dir, &JsonEntry::triggered, this, &MainWindow::loadJsonDirEntries);
+		dir_menu->addAction(reload_dir);
+		dir_menu->addSeparator();
+	}
+	loadJsonDirEntries(dir);
 }
 
 void MainWindow::createDropdown() {

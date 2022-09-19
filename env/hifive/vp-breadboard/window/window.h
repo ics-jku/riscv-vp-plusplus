@@ -19,8 +19,6 @@ class MainWindow : public QMainWindow {
 	QLabel *connection_label;
 
 	void createDropdown();
-	void addJsonDir(QString dir);
-	void removeJsonDir(QString dir);
 
 	void resizeEvent(QResizeEvent* e);
 
@@ -34,6 +32,8 @@ public slots:
 private slots:
 	void toggleDebug();
 	void connectionUpdate(bool active);
-	void loadJsonDirEntries(QString dir);
 	void saveJSON(QString file);
+	void loadJsonDirEntries(QString dir);
+	void addJsonDir(QString dir);
+	void removeJsonDir(QString dir);
 };
