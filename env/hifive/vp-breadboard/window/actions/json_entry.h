@@ -3,16 +3,16 @@
 #include <QAction>
 #include <QString>
 
-class JsonFile : public QAction {
+class JsonEntry : public QAction {
 	Q_OBJECT
 
 	QString file;
 
 public:
-	JsonFile(QString file, int dir_length);
+	JsonEntry(QString file, QString title);
 
 private slots:
-	void JsonFileSelected();
+	void JsonEntrySelected();
 
 signals:
 	void triggered(QString file);

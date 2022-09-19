@@ -16,10 +16,10 @@ public:
 	~Central();
 	void destroyConnection();
 	bool toggleDebug();
+	void saveJSON(QString file);
 
 public slots:
 	void loadJSON(QString file);
-	void saveJSON(QString file);
 	void clearBreadboard();
 	void loadLUA(std::string dir, bool overwrite_integrated_devices);
 

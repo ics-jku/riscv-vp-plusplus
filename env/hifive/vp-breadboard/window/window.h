@@ -20,7 +20,7 @@ class MainWindow : public QMainWindow {
 
 	void createDropdown();
 	void addJsonDir(QString dir);
-	void removeJsonDir(int index);
+	void removeJsonDir(QString dir);
 
 	void resizeEvent(QResizeEvent* e);
 
@@ -34,4 +34,6 @@ public slots:
 private slots:
 	void toggleDebug();
 	void connectionUpdate(bool active);
+	void loadJsonDirEntries(QString dir);
+	void saveJSON(QString file);
 };
