@@ -6,10 +6,8 @@
 class GetDir : public QAction {
 	Q_OBJECT
 
-	bool dir;
-
 public:
-	GetDir(QString name, bool dir);
+	GetDir(QString name);
 
 private slots:
 	void getDirName();

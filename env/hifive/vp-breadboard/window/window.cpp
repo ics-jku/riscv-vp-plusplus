@@ -101,11 +101,11 @@ void MainWindow::addJsonDir(QString dir) {
 
 void MainWindow::createDropdown() {
 	config = menuBar()->addMenu("Config");
-	GetDir* load_config_dir = new GetDir("Add JSON directory", true);
-	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
-	connect(load_config_dir, &GetDir::triggered, this, &MainWindow::addJsonDir);
-	config->addAction(load_config_dir);
-	GetDir* save_config = new GetDir("Save to JSON file", false);
+	GetDir* load_config_file = new GetDir("Load JSON file");
+	load_config_file->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+	connect(load_config_file, &GetDir::triggered, central, &Central::loadJSON);
+	config->addAction(load_config_file);
+	GetDir* save_config = new GetDir("Save to JSON file");
 	save_config->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
 	connect(save_config, &GetDir::triggered, this, &MainWindow::saveJSON);
 	config->addAction(save_config);
@@ -113,6 +113,10 @@ void MainWindow::createDropdown() {
 	clear_breadboard->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
 	connect(clear_breadboard, &QAction::triggered, central, &Central::clearBreadboard);
 	config->addAction(clear_breadboard);
+	GetDir* load_config_dir = new GetDir("Add JSON directory");
+	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
+	connect(load_config_dir, &GetDir::triggered, this, &MainWindow::addJsonDir);
+	config->addAction(load_config_dir);
 	config->addSeparator();
 	addJsonDir(":/conf");
 
