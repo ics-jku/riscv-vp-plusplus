@@ -39,7 +39,6 @@ private:
 	};
 	std::unordered_map<gpio::IOF_Channel_ID, DataChannelDescription> dataChannels;
 	std::mutex dataChannel_m;
-	std::unordered_map<gpio::PinNumber, gpio::IOF_Channel_ID> activeIOFs;
 
 	static void closeAndInvalidate(Socket& fd);
 

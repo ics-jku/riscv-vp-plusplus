@@ -136,19 +136,27 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 }
 
 bool GpioClient::isIOFactive(gpio::PinNumber pin) {
-	return activeIOFs.find(pin) != activeIOFs.end();
+	// FIXME: Is this faster possible?
+	for(const auto& [id, description] : dataChannels) {
+		if(description.pin == pin)
+			return true;
+	}
+
+	return false;
 }
 
 void GpioClient::closeIOFunction(gpio::PinNumber pin) {
-	auto item = activeIOFs.find(pin);
-	cout << "Closing iof of pin " << (int)pin << endl;
-
-	if(item == activeIOFs.end())
-		return;
-	if(control_channel > 0)
-		notifyEndIOFchannel(pin);
-	dataChannels.erase(item->second);
-	activeIOFs.erase(item);
+	// FIXME: Search in dataChannels by pin O(n)
+	for(const auto& [id, description] : dataChannels) {
+		if(description.pin == pin) {
+			cout << "Closing iof of pin " << (int)pin << endl;
+			if(control_channel > 0) {
+				notifyEndIOFchannel(pin);
+			}
+			dataChannels.erase(id);
+			break;
+		}
+	}
 }
 
 bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun, bool noResponse){
@@ -199,13 +207,11 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 		data_channel = connectToHost(currentHost, port_c);
 
 		dataChannels.emplace(response.id, desc);
-		activeIOFs.emplace(desc.pin, response.id);
 
 		//start handler thread
 		iof_dispatcher = std::thread(bind(&GpioClient::handleDataChannel, this));
 	} else {
 		dataChannels.emplace(response.id, desc);
-		activeIOFs.emplace(desc.pin, response.id);
 	}
 	//cout << "pin " << (int) desc.pin << " got ID " << (int)response.id << endl;
 	return true;
@@ -214,8 +220,6 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 void GpioClient::handleDataChannel() {
 	IOF_Update update;
 	while(readStruct(data_channel, &update)) {
-		cout << "HANDLE DATA CHANNEL" << endl;
-		cout << dataChannels.size() << endl;
 		lock_guard<std::mutex> guard(dataChannel_m);
 		auto channel = dataChannels.find(update.id);
 		if(channel == dataChannels.end()) {
