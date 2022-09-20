@@ -137,7 +137,7 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 
 bool GpioClient::isIOFactive(gpio::PinNumber pin) {
 	// FIXME: Is this faster possible?
-	for(const auto& [id, description] : dataChannels) {
+	for(const auto& [id, description] : activeIOFs) {
 		if(description.pin == pin)
 			return true;
 	}
@@ -147,13 +147,13 @@ bool GpioClient::isIOFactive(gpio::PinNumber pin) {
 
 void GpioClient::closeIOFunction(gpio::PinNumber pin) {
 	// FIXME: Search in dataChannels by pin O(n)
-	for(const auto& [id, description] : dataChannels) {
+	for(const auto& [id, description] : activeIOFs) {
 		if(description.pin == pin) {
 			cout << "Closing iof of pin " << (int)pin << endl;
 			if(control_channel > 0) {
 				notifyEndIOFchannel(pin);
 			}
-			dataChannels.erase(id);
+			activeIOFs.erase(id);
 			break;
 		}
 	}
@@ -164,7 +164,7 @@ bool GpioClient::registerSPIOnChange(PinNumber pin, OnChange_SPI fun, bool noRes
 		cerr << "[gpio-client] WARN: Register SPI onchange on pin " << (int)pin << " with no SPI io-function (yet)" << endl;
 	}
 
-	DataChannelDescription desc;
+	IOFChannelDescription desc;
 	if(!noResponse)
 		desc.iof = IOFunction::SPI;
 	else
@@ -181,7 +181,7 @@ bool GpioClient::registerPINOnChange(PinNumber pin, OnChange_PIN fun){
 		cerr << "[gpio-client] WARN: Register PIN onchange on pin " << (int)pin << " with an io-function" << endl;
 	}
 
-	DataChannelDescription desc;
+	IOFChannelDescription desc;
 	desc.iof = IOFunction::BITSYNC;
 	desc.pin = pin;
 	desc.onchange.pin = fun;
@@ -189,10 +189,10 @@ bool GpioClient::registerPINOnChange(PinNumber pin, OnChange_PIN fun){
 	return addIOFchannel(desc);
 }
 
-bool GpioClient::addIOFchannel(DataChannelDescription desc){
+bool GpioClient::addIOFchannel(IOFChannelDescription desc){
 	//cout << "Requesting IOF " << (int)desc.iof << " for pin " << (int)desc.pin << endl;
 
-	lock_guard<std::mutex> guard(dataChannel_m);
+	lock_guard<std::mutex> guard(activeIOFs_m);
 	const auto response = requestIOFchannel(desc.pin, desc.iof);
 
 	if(response.port < 1024) {
@@ -201,17 +201,18 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 	}
 
 	if(data_channel < 0) {
+		// no active data channel socket yet
 		char port_c[10]; // may or may not be enough, but we are not planning for failure!
 		sprintf(port_c, "%6d", response.port);
 		//cout << "Got offered new port " << port_c << " for pin " << (int) desc.pin << endl;
 		data_channel = connectToHost(currentHost, port_c);
 
-		dataChannels.emplace(response.id, desc);
+		activeIOFs.emplace(response.id, desc);
 
 		//start handler thread
 		iof_dispatcher = std::thread(bind(&GpioClient::handleDataChannel, this));
 	} else {
-		dataChannels.emplace(response.id, desc);
+		activeIOFs.emplace(response.id, desc);
 	}
 	//cout << "pin " << (int) desc.pin << " got ID " << (int)response.id << endl;
 	return true;
@@ -220,14 +221,14 @@ bool GpioClient::addIOFchannel(DataChannelDescription desc){
 void GpioClient::handleDataChannel() {
 	IOF_Update update;
 	while(readStruct(data_channel, &update)) {
-		lock_guard<std::mutex> guard(dataChannel_m);
-		auto channel = dataChannels.find(update.id);
-		if(channel == dataChannels.end()) {
+		lock_guard<std::mutex> guard(activeIOFs_m);
+		auto channelID = activeIOFs.find(update.id);
+		if(channelID == activeIOFs.end()) {
 			cerr << "[gpio-client] [data channel] got non-registered IOF-ID " << (int)update.id << endl;
 			// TODO Decide if this is an error condition that resets everything, as we may have lost Sync
 			break;
 		}
-		auto& desc = channel->second;
+		const auto& desc = channelID->second;
 		switch(desc.iof) {
 		case IOFunction::SPI:
 		{
@@ -259,6 +260,7 @@ void GpioClient::handleDataChannel() {
 			break;
 		}
 	}
+	// TODO: Decide whether this was intentional and supress the error message then
 	cerr << "[gpio-client] [data channel] Error or closed socket" << endl;
 	closeAndInvalidate(data_channel);
 }
@@ -283,13 +285,13 @@ GpioClient::Socket GpioClient::connectToHost(const char *host, const char *port)
 	// loop through all the results and connect to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) {
 		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			cerr << "[gpio-client] opening of socket unsuccessful " << strerror(errno) << endl;
+			cerr << "[gpio-client] opening of socket " << p->ai_canonname << " unsuccessful " << strerror(errno) << endl;
 			continue;
 		}
 
 		if (connect(fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(fd);
-			//perror("client: connect");
+			DEBUG("client: failed to connect to %s\n", p->ai_canonname);
 			continue;
 		}
 
@@ -303,7 +305,7 @@ GpioClient::Socket GpioClient::connectToHost(const char *host, const char *port)
 	freeaddrinfo(servinfo);
 
 	if (p == NULL) {
-		//fprintf(stderr, "client: failed to connect\n");
+		DEBUG("client: failed to connect\n");
 		return -1;
 	}
 
@@ -328,7 +330,7 @@ bool GpioClient::setupConnection(const char *host, const char *port) {
 }
 
 void GpioClient::destroyConnection(){
-	dataChannels.clear();
+	activeIOFs.clear();
 	closeAndInvalidate(data_channel);
 	closeAndInvalidate(control_channel);
 	if(iof_dispatcher.joinable())
