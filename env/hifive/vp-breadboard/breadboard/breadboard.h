@@ -45,7 +45,7 @@ class Breadboard : public QWidget {
 	void mouseReleaseEvent(QMouseEvent* e) override;
 
 public:
-	Breadboard(QWidget *parent);
+	Breadboard();
 	~Breadboard();
 
 	bool toggleDebug();

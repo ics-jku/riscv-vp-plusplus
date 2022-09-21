@@ -14,7 +14,7 @@ class Embedded : public QWidget {
 	bool connected = false;
 
 public:
-	Embedded(const std::string host, const std::string port, QWidget *parent);
+	Embedded(const std::string host, const std::string port);
 	~Embedded();
 
 	bool timerUpdate();

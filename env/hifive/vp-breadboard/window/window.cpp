@@ -8,6 +8,8 @@
 #include <QMenuBar>
 #include <QStatusBar>
 
+#include <QLayout>
+
 MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 		const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle("MainWindow");
@@ -20,6 +22,8 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 	connect(central, &Central::sendStatus, this->statusBar(), &QStatusBar::showMessage);
 
 	createDropdown();
+
+	layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
 MainWindow::~MainWindow() {
@@ -28,10 +32,6 @@ MainWindow::~MainWindow() {
 void MainWindow::quit() {
 	central->destroyConnection();
 	QApplication::quit();
-}
-
-void MainWindow::resizeEvent(QResizeEvent *e) {
-	setFixedSize(sizeHint());
 }
 
 void MainWindow::toggleDebug() {

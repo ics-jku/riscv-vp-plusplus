@@ -6,12 +6,13 @@
 /* Constructor */
 
 Central::Central(const std::string host, const std::string port, QWidget *parent) : QWidget(parent) {
-	breadboard = new Breadboard(this);
-	embedded = new Embedded(host, port, this);
+	breadboard = new Breadboard();
+	embedded = new Embedded(host, port);
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	layout->addWidget(embedded);
 	layout->addWidget(breadboard);
+	layout->setSizeConstraint(QLayout::SetFixedSize);
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, &Central::timerUpdate);

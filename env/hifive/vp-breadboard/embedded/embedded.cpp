@@ -5,8 +5,7 @@
 using namespace gpio;
 using namespace std;
 
-Embedded::Embedded(const std::string host, const std::string port, QWidget *parent) :
-		QWidget(parent), host(host), port(port) {
+Embedded::Embedded(const std::string host, const std::string port) : QWidget(), host(host), port(port) {
 	QSize bkgnd_size = QSize(417, 231);
 	QString bkgnd_path = ":/img/virtual_hifive.png";
 	QPixmap bkgnd(bkgnd_path);

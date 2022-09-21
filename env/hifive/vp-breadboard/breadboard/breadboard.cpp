@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Breadboard::Breadboard(QWidget* parent) : QWidget(parent) {
+Breadboard::Breadboard() : QWidget() {
 	setFocusPolicy(Qt::StrongFocus);
 
 	QTimer *timer = new QTimer(this);
