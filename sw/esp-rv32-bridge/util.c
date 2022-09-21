@@ -51,6 +51,11 @@ char* itoa(int value, char* buffer, int base) {
     return reverse(buffer, 0, i - 1);
 }
 
+void delay(uint32_t cnt){
+    for(uint32_t i = 0; i < cnt; i++);
+    return;
+}
+
 /*
 enum {
 	US_PER_SEC = 1000000

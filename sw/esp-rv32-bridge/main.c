@@ -8,25 +8,9 @@
 #include <stdlib.h>
 
 #include "types.h"
+#include "packet_processors.h"
 
 unsigned long *led_peripheral = (unsigned long *)0x81000000;
-
-#define PAYLOAD_SIZE 2
-#define CHECKSUM_SIZE 1
-#define VIRTUAL_MEM_SIZE 32
-#define MAGIC_NUMBER_BYTE_REPEATS (4)
-
-#define PACKET_SIZE (MAGIC_NUMBER_BYTE_REPEATS + sizeof(header_meta_t) + PAYLOAD_SIZE + sizeof(char))
-
-typedef struct __attribute__((packed)){
-  union {
-    unsigned char magic[MAGIC_NUMBER_BYTE_REPEATS]; // 4
-    header_meta_t header;                           // 1
-    unsigned char payload[PAYLOAD_SIZE];            // 2
-    unsigned char checksum[CHECKSUM_SIZE];          // 1
-  };
-  unsigned char __bytes__[PACKET_SIZE];
-} magic_prefixed_packet_t;
 
 const unsigned char MAGIC_NUMBER_BYTE = 0x5A;
 
@@ -40,143 +24,91 @@ magic_prefixed_packet_t magic_prefixed_packet;
 rw_packet_t rw_packet;
 program_leds_packet_t program_leds_packet;
 
-void knight_rider(){
-	unsigned int state = 0;
-	bool reverse = false;
-	unsigned char index = 0;
-
-	for(size_t i=0; i<16; i++){
-		if (reverse){
-			index--;
-			if (index == 0) reverse = false;
-		} else{
-			index++;
-			if (index >= 7) reverse = true;
-		}
-		state |= 0 << index;
-		*led_peripheral = state;
-		state = 0;
-		//usleep(100); TODO: sleep
-	}
-	*led_peripheral = 0;
+void process_packet(const char *buf, const unsigned char id){
+    if (id == 0) rw_packet_processor(buf, rw_packet, virtual_memory);
+    if (id == 1) program_leds_packet_processor(buf, program_leds_packet, led_peripheral);
 }
 
-void (*programs[])() = {knight_rider};
-
-void rw_packet_processor(const char *buf){
-	memcpy(&rw_packet, buf, sizeof(rw_packet_t));
-
-	// no limit check necessary, bit size automatically restricts
-
-	const unsigned char addr = rw_packet.addr;
-
-	if (rw_packet.WE){
-		virtual_memory[addr] = rw_packet.v;
-	} else{
-		// read and send back
-		const int v = virtual_memory[addr];
+wifi_bridge_fsm_state on_idle(char c){
+    putChr('I');
+	magic_number_bytes_read = 0;
+	payload_bytes_read = 0;
+	checksum_bytes_read = 0;
+	if (c == MAGIC_NUMBER_BYTE){
+	    magic_number_bytes_read++;
+		return LISTENING;
 	}
+    return IDLE;
 }
 
-void program_leds_packet_processor(const char *buf){
-	memcpy(&program_leds_packet, buf, sizeof(program_leds_packet_t));
-	if (program_leds_packet.led_manual_mode){
-		*led_peripheral = program_leds_packet.leds;
-	} else {
-		unsigned char program_addr = program_leds_packet.program_addr;
-		if(program_addr < 1) (*programs[program_addr])();
-	}
+wifi_bridge_fsm_state on_listening(char c){
+	putChr('L');
+	if (c != MAGIC_NUMBER_BYTE) return IDLE;
+	if (c == MAGIC_NUMBER_BYTE && ++magic_number_bytes_read == MAGIC_NUMBER_BYTE_REPEATS) return HEADER_START;
+    return LISTENING;
 }
 
-void (*packet_processors[2])(const char *) = {
-	rw_packet_processor,
-	program_leds_packet_processor
+wifi_bridge_fsm_state on_header(char c){
+	putChr('H');
+	header_meta_t header;
+	header.meta = c;
+							
+	packet_identifier = header.meta_bitfield.packet_identifier;
+	versioning = header.meta_bitfield.versioning;
+
+	magic_prefixed_packet.header = header;
+
+    if (packet_identifier == NULL || (versioning == 1 && packet_identifer > 2)){
+        return IDLE;
+    }
+
+    return PAYLOAD_START;
+}
+
+wifi_bridge_fsm_state on_payload(char c){
+    putChr('P');
+	payload_buffer[payload_bytes_read] = c;
+	if (versioning == 1 && ++payload_bytes_read == PAYLOAD_SIZE){
+	    memcpy(payload_buffer, &magic_prefixed_packet.payload, payload_bytes_read);
+		return CHECKSUM_START;
+	}
+    return PAYLOAD_START;
+}
+
+wifi_bridge_fsm_state on_checksum(char c){
+    putChr('C');
+	checksum_buffer[checksum_bytes_read] = c;
+	if (versioning == 1 && ++checksum_bytes_read == CHECKSUM_SIZE){
+	    memcpy(checksum_buffer, &magic_prefixed_packet.checksum, checksum_bytes_read);
+		return PROCESSING;
+	}
+    return PAYLOAD_START;
+}
+
+wifi_bridge_fsm_state on_processing(char c){
+    unsigned char crc = crc8(payload_buffer, PAYLOAD_SIZE);
+
+	if (versioning == 1 && magic_prefixed_packet.checksum[0] != crc){
+	    return IDLE;
+	}
+
+	process_packet(payload_buffer, packet_identifier);
+				
+	return IDLE;
+}
+
+wifi_bridge_fsm_state (*fsm_state_handlers[])(char) = {
+    on_idle,
+    on_listening,
+    on_header,
+    on_payload,
+    on_checksum,
+    on_processing
 };
 
-void process_packet(const char *buf, const unsigned char id){
-	if (id < 2) (*packet_processors[id])(buf);
-}
 
 wifi_bridge_fsm_state fsm(wifi_bridge_fsm_state s, char c){
-	wifi_bridge_fsm_state state = s;
-	switch(state){
-		case IDLE:
-			{
-				putChr('I');
-				magic_number_bytes_read = 0;
-				payload_bytes_read = 0;
-				checksum_bytes_read = 0;
-				if (c == MAGIC_NUMBER_BYTE){
-					magic_number_bytes_read++;
-					state = LISTENING;
-				}
-			}
-			break;
-		case LISTENING: 
-			{
-				putChr('L');
-				if (c != MAGIC_NUMBER_BYTE) state = IDLE;
-				if (c == MAGIC_NUMBER_BYTE && ++magic_number_bytes_read == MAGIC_NUMBER_BYTE_REPEATS) state = HEADER_START;
-			}
-			break;
-		case HEADER_START:
-			{
-				putChr('H');
-				header_meta_t header;
-				header.meta = c;
-							
-				packet_identifier = header.meta_bitfield.packet_identifier;
-				versioning = header.meta_bitfield.versioning;
-
-				magic_prefixed_packet.header = header;
-
-				if (packet_identifier == NULL || packet_identifier > 2) state = IDLE;
-				state = PAYLOAD_START;
-			}
-			break;
-		case PAYLOAD_START:
-			{
-				putChr('P');
-				payload_buffer[payload_bytes_read] = c;
-				if (versioning == 1 && ++payload_bytes_read == PAYLOAD_SIZE){
-					memcpy(payload_buffer, &magic_prefixed_packet.payload, payload_bytes_read);
-					state = CHECKSUM_START;
-				}
-			}
-			break;
-		case CHECKSUM_START:
-			{
-				putChr('C');
-				checksum_buffer[checksum_bytes_read] = c;
-				if (versioning == 1 && ++checksum_bytes_read == CHECKSUM_SIZE){
-					memcpy(checksum_buffer, &magic_prefixed_packet.checksum, checksum_bytes_read);
-					state = PROCESSING;
-				}
-			}
-			break;
-		case PROCESSING:
-			{
-				unsigned char crc = crc8(payload_buffer, PAYLOAD_SIZE);
-
-				if (versioning == 1 && magic_prefixed_packet.checksum[0] != crc){
-					state = IDLE;
-					break;
-				}
-
-				process_packet(payload_buffer, packet_identifier);
-				
-				state = IDLE;
-			}
-			break;
-		default:
-			break;
-	}
-	return state;
-}
-
-void delay(uint32_t cnt){
-        for(uint32_t i = 0; i < cnt; i++);
-        return;
+    return fsm_state_handlers[state](c);
 }
 
 int main(int argc, char **argv) {
@@ -188,7 +120,7 @@ int main(int argc, char **argv) {
 			putChr(c);
 			state = fsm(state, c);
 		} 
-                delay(1000);
+        delay(1000);
 	}
 	return 0;
 }

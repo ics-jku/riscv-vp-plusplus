@@ -1,6 +1,13 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#define PAYLOAD_SIZE 2
+#define CHECKSUM_SIZE 1
+#define VIRTUAL_MEM_SIZE 32
+#define MAGIC_NUMBER_BYTE_REPEATS (4)
+
+#define PACKET_SIZE (MAGIC_NUMBER_BYTE_REPEATS + sizeof(header_meta_t) + PAYLOAD_SIZE + sizeof(char))
+
 typedef enum {
 	IDLE,
 	LISTENING,
@@ -32,5 +39,15 @@ typedef struct __attribute__((packed)){
 	unsigned char leds : 8;
 	unsigned char __padding__ : 2;
 } program_leds_packet_t;
+
+typedef struct __attribute__((packed)){
+  union {
+    unsigned char magic[MAGIC_NUMBER_BYTE_REPEATS]; // 4
+    header_meta_t header;                           // 1
+    unsigned char payload[PAYLOAD_SIZE];            // 2
+    unsigned char checksum[CHECKSUM_SIZE];          // 1
+  };
+  unsigned char __bytes__[PACKET_SIZE];
+} magic_prefixed_packet_t;
 
 #endif
