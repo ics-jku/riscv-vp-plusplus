@@ -19,8 +19,8 @@ void Breadboard::clear() {
 	}
 	emit(closeIOFs(iofs));
 
-	bkgnd_path = default_bkgnd;
-	QSize bkgnd_size = QSize(486, 233);
+	bkgnd_path = DEFAULT_PATH;
+	QSize bkgnd_size = DEFAULT_SIZE;
 	QPixmap bkgnd(bkgnd_path);
 	bkgnd = bkgnd.scaled(bkgnd_size, Qt::IgnoreAspectRatio);
 	QPalette palette;

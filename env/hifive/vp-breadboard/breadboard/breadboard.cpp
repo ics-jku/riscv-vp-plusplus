@@ -3,11 +3,14 @@
 
 #include <QTimer>
 #include <QPainter>
+#include <QMimeData>
+#include <QDrag>
 
 using namespace std;
 
 Breadboard::Breadboard() : QWidget() {
 	setFocusPolicy(Qt::StrongFocus);
+	setAcceptDrops(true);
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, [this]{update();});
@@ -159,12 +162,24 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
+	if(isBreadboard()) {
+		QColor dark("#101010");
+		dark.setAlphaF(0.5);
+		painter.setBrush(QBrush(dark));
+		for(RowID row=0; row<BB_ROWS; row++) {
+			for(IndexID index=0; index<BB_INDEXES; index++) {
+				QPoint top_left = bb_getAbsolutePosition(row, index);
+				painter.drawRect(top_left.x(), top_left.y(), BB_ICON_WIDTH, BB_ICON_WIDTH);
+			}
+		}
+	}
+
 	// Graph Buffers
 	for (auto& [id, graphic] : device_graphics) {
 		const auto& image = graphic.image;
 		painter.drawImage(graphic.offset,
-				image.scaled(image.size().width()*graphic.scale,
-				image.size().height()*graphic.scale));
+				image.scaled(image.width()*graphic.scale,
+				image.height()*graphic.scale));
 	}
 
 	painter.end();
@@ -225,15 +240,32 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
-	if(!debugmode) {
+	if(e->button() == Qt::LeftButton) {
 		for(auto const& [id, graph] : device_graphics) {
 			if(isInsideGraphic(graph, e->pos())) {
-				Device& dev = *devices.at(id).get();
-				if(dev.input) {
-					lua_access.lock();
-					dev.input->onClick(true);
-					lua_access.unlock();
-					writeDevice(id);
+				if(debugmode) { // Move
+					QByteArray itemData;
+					QDataStream dataStream(&itemData, QIODevice::WriteOnly);
+					dataStream << QString::fromStdString(id);
+
+					QMimeData *mimeData = new QMimeData;
+					mimeData->setData(DEVICE_DRAG_TYPE, itemData);
+					QDrag *drag = new QDrag(this);
+					drag->setMimeData(mimeData);
+					drag->setPixmap(QPixmap::fromImage(graph.image).scaled(graph.scale*graph.image.width(),
+							graph.scale*graph.image.height()));
+					drag->setHotSpot(QPoint(0,0));
+
+					drag->exec(Qt::MoveAction);
+				}
+				else {
+					Device& dev = *devices.at(id).get();
+					if(dev.input) {
+						lua_access.lock();
+						dev.input->onClick(true);
+						lua_access.unlock();
+						writeDevice(id);
+					}
 				}
 			}
 		}
@@ -242,15 +274,17 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
-	if(!debugmode) {
+	if(e->button() == Qt::LeftButton) {
 		for(auto const& [id, graph] : device_graphics) {
 			if(isInsideGraphic(graph, e->pos())) {
-				Device& dev = *devices.at(id).get();
-				if(dev.input) {
-					lua_access.lock();
-					dev.input->onClick(false);
-					lua_access.unlock();
-					writeDevice(id);
+				if(!debugmode) {
+					Device& dev = *devices.at(id).get();
+					if(dev.input) {
+						lua_access.lock();
+						dev.input->onClick(false);
+						lua_access.unlock();
+						writeDevice(id);
+					}
 				}
 			}
 		}
@@ -258,7 +292,68 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	}
 }
 
-bool Breadboard::isBreadboard() { return bkgnd_path == default_bkgnd; }
+/* Drag and Drop */
+
+void Breadboard::dragMoveEvent(QDragMoveEvent* e) {
+	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE) && (isBreadboard()?bb_isOnRaster(e->pos()):true)) {
+		e->acceptProposedAction();
+	} else {
+		e->ignore();
+	}
+}
+
+void Breadboard::dragEnterEvent(QDragEnterEvent* e)  {
+	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE)) {
+		e->acceptProposedAction();
+	} else {
+		e->ignore();
+	}
+}
+
+void Breadboard::dropEvent(QDropEvent* e) {
+	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE)) {
+		QByteArray itemData = e->mimeData()->data(DEVICE_DRAG_TYPE);
+		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
+
+		QString q_id;
+		dataStream >> q_id;
+
+		DeviceID device_id = q_id.toStdString();
+		DeviceGraphic& device_graphic = device_graphics.at(device_id);
+
+		if(!isInsideWindow(device_graphic, e->pos(), size())) {
+			e->ignore();
+			return;
+		}
+
+		for(const auto& [id, graphic] : device_graphics) {
+			if(id == device_id) continue;
+			if(isInsideGraphic(graphic, device_graphic, e->pos())) {
+				e->ignore();
+				return;
+			}
+		}
+
+		QPoint newOffset = e->pos();
+
+		if(isBreadboard()) {
+			if(!bb_isWithinRaster(device_graphic, e->pos())) {
+				e->ignore();
+				return;
+			} else {
+				newOffset = bb_getAbsolutePosition(bb_getRow(e->pos()), bb_getIndex(e->pos()));
+			}
+		}
+
+		device_graphic.offset = newOffset;
+
+		e->acceptProposedAction();
+	} else {
+		e->ignore();
+	}
+}
+
+bool Breadboard::isBreadboard() { return bkgnd_path == DEFAULT_PATH; }
 bool Breadboard::toggleDebug() {
 	debugmode = !debugmode;
 	return debugmode;

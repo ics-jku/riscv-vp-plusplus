@@ -12,8 +12,6 @@
 #include "configurations.h"
 #include "embedded/gpio-helpers.h"
 
-const static QString default_bkgnd = ":/img/virtual_breadboard.png";
-
 class Breadboard : public QWidget {
 	Q_OBJECT
 
@@ -37,8 +35,13 @@ class Breadboard : public QWidget {
 
 	void writeDevice(DeviceID device);
 
+	// Drag and Drop
+	void dropEvent(QDropEvent* e) override;
+	void dragEnterEvent(QDragEnterEvent* e) override;
+	void dragMoveEvent(QDragMoveEvent* e) override;
+
 	// QT
-	void paintEvent(QPaintEvent*) override;
+	void paintEvent(QPaintEvent* e) override;
 	void keyPressEvent(QKeyEvent* e) override;
 	void keyReleaseEvent(QKeyEvent* e) override;
 	void mousePressEvent(QMouseEvent* e) override;
