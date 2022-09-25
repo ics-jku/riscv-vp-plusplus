@@ -2,7 +2,7 @@
 #include "platform.h"
 #include "uart.h"
 #include "util.h"
-#include "crc.h"
+#include "sae_j1850_crc8.h"
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
@@ -86,7 +86,7 @@ wifi_bridge_fsm_state on_checksum(char c){
 }
 
 wifi_bridge_fsm_state on_processing(char c){
-    unsigned char crc = crc8(payload_buffer, PAYLOAD_SIZE);
+    unsigned char crc = sae_j1850_crc8(payload_buffer, PAYLOAD_SIZE);
 
 	if (versioning == 1 && magic_prefixed_packet.checksum[0] != crc){
 	    return IDLE;

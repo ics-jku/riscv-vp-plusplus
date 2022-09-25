@@ -1,7 +1,7 @@
-#include "crc.h"
+#include "sae_j1850_crc8.h"
 
 // 8-bit SAE J1850 CRC
-unsigned char crc8(unsigned char *data ,int length) {
+unsigned char sae_j1850_crc8(unsigned char *data ,int length) {
 	/*
 	 * 8-bit CRC calculation
 	 * polynomial     : 0x1D

@@ -12,6 +12,17 @@ void rw_packet_processor(const char *buf, rw_packet_t *rw_packet, int *virtual_m
 	} else{
 		// read and send back
 		const int v = virtual_memory[addr];
+
+        rw_packet_t response_rw_packet;
+        response_rw_packet.addr = addr;
+        response_rw_packet.v = v;
+
+        memcpy(payload, &response_rw_packet, program_leds_packet_t_size);
+        magic_prefixed_packet_t *magic_prefixed_packet = init_magic_prefixed_packet(0, payload);
+
+        unsigned char *buf = magic_prefixed_packet->__bytes__;
+
+        send(buf, PACKET_SIZE);
 	}
 }
 

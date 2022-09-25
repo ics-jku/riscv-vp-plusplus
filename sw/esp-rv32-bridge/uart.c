@@ -13,6 +13,17 @@ int sendString(char* str, long len) {
     return len;
 }
 
+int send(unsigned char *buf, long len){
+    long cnt = len;
+    unsigned char *p = (unsigned char*)buf;
+    while(cnt > 0){
+        --cnt;
+        putChr(*p);
+        p++;
+    }
+    return len;
+}
+
 void putChr(char chr) {
     #ifdef MICRORV
         uint32_t tx_rdy = 0;

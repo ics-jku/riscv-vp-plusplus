@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+int send(unsigned char *, long);
 int sendString(char* str, long len);
 void putChr(char chr);
 
