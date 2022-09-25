@@ -1,3 +1,5 @@
+#include "util.h"
+
 /*
 * utility functions for embedded usage where c-libs are too big
 */

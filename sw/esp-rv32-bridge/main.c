@@ -15,7 +15,7 @@ unsigned long *led_peripheral = (unsigned long *)0x81000000;
 const unsigned char MAGIC_NUMBER_BYTE = 0x5A;
 
 unsigned char magic_number_bytes_read = 0, payload_bytes_read = 0, checksum_bytes_read = 0;
-unsigned char packet_identifier, versioning;
+unsigned char packet_identifier = 0, versioning = 0;
 unsigned char payload_buffer[PAYLOAD_SIZE], checksum_buffer[CHECKSUM_SIZE];
 
 int virtual_memory[VIRTUAL_MEM_SIZE];
@@ -25,8 +25,8 @@ rw_packet_t rw_packet;
 program_leds_packet_t program_leds_packet;
 
 void process_packet(const char *buf, const unsigned char id){
-    if (id == 0) rw_packet_processor(buf, rw_packet, virtual_memory);
-    if (id == 1) program_leds_packet_processor(buf, program_leds_packet, led_peripheral);
+    if (id == 0) rw_packet_processor(buf, &rw_packet, virtual_memory);
+    if (id == 1) program_leds_packet_processor(buf, &program_leds_packet, led_peripheral);
 }
 
 wifi_bridge_fsm_state on_idle(char c){
@@ -44,7 +44,7 @@ wifi_bridge_fsm_state on_idle(char c){
 wifi_bridge_fsm_state on_listening(char c){
 	putChr('L');
 	if (c != MAGIC_NUMBER_BYTE) return IDLE;
-	if (c == MAGIC_NUMBER_BYTE && ++magic_number_bytes_read == MAGIC_NUMBER_BYTE_REPEATS) return HEADER_START;
+	if (c == MAGIC_NUMBER_BYTE && ++magic_number_bytes_read == MAGIC_NUMBER_BYTE_REPEATS) return HEADER;
     return LISTENING;
 }
 
@@ -58,11 +58,11 @@ wifi_bridge_fsm_state on_header(char c){
 
 	magic_prefixed_packet.header = header;
 
-    if (packet_identifier == NULL || (versioning == 1 && packet_identifer > 2)){
+    if (packet_identifier == NULL || versioning == NULL || (versioning == 1 && packet_identifier > 2)){
         return IDLE;
     }
 
-    return PAYLOAD_START;
+    return PAYLOAD;
 }
 
 wifi_bridge_fsm_state on_payload(char c){
@@ -70,9 +70,9 @@ wifi_bridge_fsm_state on_payload(char c){
 	payload_buffer[payload_bytes_read] = c;
 	if (versioning == 1 && ++payload_bytes_read == PAYLOAD_SIZE){
 	    memcpy(payload_buffer, &magic_prefixed_packet.payload, payload_bytes_read);
-		return CHECKSUM_START;
+		return CHECKSUM;
 	}
-    return PAYLOAD_START;
+    return PAYLOAD;
 }
 
 wifi_bridge_fsm_state on_checksum(char c){
@@ -82,7 +82,7 @@ wifi_bridge_fsm_state on_checksum(char c){
 	    memcpy(checksum_buffer, &magic_prefixed_packet.checksum, checksum_bytes_read);
 		return PROCESSING;
 	}
-    return PAYLOAD_START;
+    return PAYLOAD;
 }
 
 wifi_bridge_fsm_state on_processing(char c){
@@ -107,20 +107,19 @@ wifi_bridge_fsm_state (*fsm_state_handlers[])(char) = {
 };
 
 
-wifi_bridge_fsm_state fsm(wifi_bridge_fsm_state s, char c){
+wifi_bridge_fsm_state fsm(wifi_bridge_fsm_state state, char c){
     return fsm_state_handlers[state](c);
 }
 
 int main(int argc, char **argv) {
 	wifi_bridge_fsm_state state = IDLE;
+    char c;
 	while(1){
-		char c;
 		if (!UART_is_RX_empty()) {
 			c = *UART_RX_DATA_ADDR;
 			putChr(c);
 			state = fsm(state, c);
 		} 
-        delay(1000);
 	}
 	return 0;
 }

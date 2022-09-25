@@ -85,14 +85,6 @@ struct MicroRV32UART : public sc_core::sc_module {
 		(void)delay;  // zero delay
 	}
 
-	//~ void event_loop(std::function<void(void)> f){
-	//~ while (true) {
-	//~ run_event.notify(sc_core::sc_time(200, sc_core::SC_NS));
-	//~ sc_core::wait(run_event);  // 40 times per second by default
-	//~ f();
-	//~ }
-	//~ }
-
 	void run_rx() {
 		std::cout << "[UART-TLM] RX run_rx called" << std::endl;
 		if (serial.is_open()) {

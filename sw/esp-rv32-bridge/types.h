@@ -11,9 +11,9 @@
 typedef enum {
 	IDLE,
 	LISTENING,
-	HEADER_START,
-	PAYLOAD_START,
-	CHECKSUM_START,
+	HEADER,
+	PAYLOAD,
+	CHECKSUM,
 	PROCESSING
 } wifi_bridge_fsm_state;
 
