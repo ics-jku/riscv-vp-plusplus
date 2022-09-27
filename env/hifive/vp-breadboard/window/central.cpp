@@ -53,9 +53,9 @@ void Central::closeIOFs(std::vector<gpio::PinNumber> gpio_offs) {
 
 void Central::loadJSON(QString file) {
 	emit(sendStatus("Loading config file " + file, 10000));
-	breadboard->clear();
 	if(!breadboard->loadConfigFile(file)) {
 		emit(sendStatus("Config file " + file + " invalid.", 10000));
+		return;
 	}
 	if(breadboard->isBreadboard()) {
 		embedded->show();

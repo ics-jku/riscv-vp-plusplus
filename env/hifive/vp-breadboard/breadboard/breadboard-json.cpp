@@ -64,6 +64,8 @@ bool Breadboard::loadConfigFile(QString file) {
 	}
 	QJsonObject config_root = json_doc.object();
 
+	clear();
+
 	if(config_root.contains("window") && config_root["window"].isObject()) {
 		QJsonObject window = config_root["window"].toObject();
 		bkgnd_path = window["background"].toString();

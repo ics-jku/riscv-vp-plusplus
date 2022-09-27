@@ -163,6 +163,7 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	painter.setRenderHint(QPainter::Antialiasing);
 
 	if(isBreadboard()) {
+		painter.save();
 		QColor dark("#101010");
 		dark.setAlphaF(0.5);
 		painter.setBrush(QBrush(dark));
@@ -172,6 +173,13 @@ void Breadboard::paintEvent(QPaintEvent*) {
 				painter.drawRect(top_left.x(), top_left.y(), BB_ICON_WIDTH, BB_ICON_WIDTH);
 			}
 		}
+		painter.restore();
+	}
+
+	if(debugmode) {
+		QColor red("red");
+		red.setAlphaF(0.5);
+		painter.setBrush(QBrush(red));
 	}
 
 	// Graph Buffers
@@ -180,6 +188,9 @@ void Breadboard::paintEvent(QPaintEvent*) {
 		painter.drawImage(graphic.offset,
 				image.scaled(image.width()*graphic.scale,
 				image.height()*graphic.scale));
+		if(debugmode) {
+			painter.drawRect(getGraphicBounds(graphic));
+		}
 	}
 
 	painter.end();
