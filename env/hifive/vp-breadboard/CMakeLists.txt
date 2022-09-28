@@ -74,6 +74,7 @@ set(SOURCES
     devices/factory/factory.cpp
     devices/interface/cDevice.cpp
     devices/factory/cFactory.cpp
+    devices/raster.cpp
     ${DEVICES}
 )
 

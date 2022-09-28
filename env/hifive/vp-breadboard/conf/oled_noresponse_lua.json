@@ -1,199 +1,229 @@
 {
-  "window" : {
-    "background" : ":/img/oled_shield.jpg",
-    "windowsize" : [470, 750]
-  },
-  "devices" :
-  [
-   { 
-      "class" : "button_lua",
-      "id" : "button_b",
-      "graphics" : 
-      { 
-        "offs" : [86, 630],
-        "scale" : 2
-      },
-      "keybindings" : [ "B", "X", "Y", "Z"],
-      "pins" :
-      [
+    "devices": [
         {
-          "device_pin" : 1,
-          "global_pin" : 19,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-   { 
-      "class" : "button_lua",
-      "id" : "button_a",
-      "graphics" : 
-      { 
-        "offs" : [86, 548],
-        "scale" : 2
-      },
-      "keybindings" : [ "A" ],
-      "pins" :
-      [
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    226,
+                    590
+                ],
+                "scale": 2
+            },
+            "id": "button_center",
+            "keybindings": [
+                "C"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 4,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 18,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-   { 
-      "class" : "button_lua",
-      "id" : "button_right",
-      "graphics" : 
-      { 
-        "offs" : [297, 592],
-        "scale" : 2
-      },
-      "keybindings" : [ "Right" ],
-      "pins" :
-      [
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    226,
+                    520
+                ],
+                "scale": 2
+            },
+            "id": "button_up",
+            "keybindings": [
+                "Up"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 7,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 5,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-   { 
-      "class" : "button_lua",
-      "id" : "button_left",
-      "graphics" : 
-      { 
-        "offs" : [155, 591],
-        "scale" : 2
-      },
-      "keybindings" : [ "Left" ],
-      "pins" :
-      [
+            "class": "SSD1106",
+            "graphics": {
+                "offs": [
+                    104,
+                    301
+                ],
+                "scale": 2
+            },
+            "id": "display",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "synchronous": true
+                }
+            ],
+            "spi": {
+                "cs_pin": 15,
+                "noresponse": true
+            }
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 6,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    { 
-      "class" : "button_lua",
-      "id" : "button_up",
-      "graphics" : 
-      { 
-        "offs" : [226, 520],
-        "scale" : 2
-      },
-      "keybindings" : [ "Up" ],
-      "pins" :
-      [
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    155,
+                    591
+                ],
+                "scale": 2
+            },
+            "id": "button_left",
+            "keybindings": [
+                "Left"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 6,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 7,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    { 
-      "class" : "button_lua",
-      "id" : "button_down",
-      "graphics" : 
-      { 
-        "offs" : [226, 659],
-        "scale" : 2
-      },
-      "keybindings" : [ "Down" ],
-      "pins" :
-      [
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    297,
+                    592
+                ],
+                "scale": 2
+            },
+            "id": "button_right",
+            "keybindings": [
+                "Right"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 5,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 3,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    { 
-      "class" : "button_lua",
-      "id" : "button_center",
-      "graphics" : 
-      { 
-        "offs" : [226, 590],
-        "scale" : 2
-      },
-      "keybindings" : [ "C" ],
-      "pins" :
-      [
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 10,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    188,
+                    458
+                ],
+                "scale": 2
+            },
+            "id": "led1_down",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 3,
+                    "name": "led_pin"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 4,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    {
-      "class" : "SSD1106",
-      "id"    : "display",
-      "spi"   :
-      { 
-        "cs_pin" : 15,
-        "noresponse": true
-      },
-      "pins"  :
-      [
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    226,
+                    659
+                ],
+                "scale": 2
+            },
+            "id": "button_down",
+            "keybindings": [
+                "Down"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 3,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 16,
-          "name": "dc_pin",
-          "synchronous" : true
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    86,
+                    548
+                ],
+                "scale": 2
+            },
+            "id": "button_a",
+            "keybindings": [
+                "A"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 18,
+                    "name": "output"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 10,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    162,
+                    458
+                ],
+                "scale": 2
+            },
+            "id": "led2_dc",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "button_lua",
+            "graphics": {
+                "offs": [
+                    86,
+                    630
+                ],
+                "scale": 2
+            },
+            "id": "button_b",
+            "keybindings": [
+                "B",
+                "X",
+                "Y",
+                "Z"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 19,
+                    "name": "output"
+                }
+            ]
         }
-      ],
-     "graphics" :
-     {
-       "offs" : [105, 308],
-       "scale" : 2
-     }
-    },
-    {
-      "class" : "LED",
-      "id"    : "led1_down",
-      "pins"  :
-      [
-        {
-          "device_pin" : 1,
-          "global_pin" : 3,
-          "name": "led_pin"
-        }
-      ],
-      "graphics" :
-      {
-        "offs" : [435, 655],
-        "scale" : 2
-      }
-    },
-    {
-      "class" : "LED",
-      "id"    : "led2_dc",
-      "pins"  :
-      [
-        {
-          "device_pin" : 1,
-          "global_pin" : 16,
-          "name": "led_pin"
-        }
-      ],
-      "graphics" :
-      {
-        "offs" : [195, 495],
-        "scale" : 2
-      }
+    ],
+    "window": {
+        "background": ":/img/oled_shield.jpg",
+        "windowsize": [
+            470,
+            750
+        ]
     }
-  ]
 }

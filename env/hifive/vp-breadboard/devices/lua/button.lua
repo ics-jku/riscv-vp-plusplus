@@ -12,16 +12,13 @@ function getPin(number)
 	end
 end
 
-width = 25
-height = 25
-
 function getGraphBufferLayout()
-	return {width, height, "rgba"}
+	return {2, 2, "rgba"}
 end
 
 function drawArea()
-	for x = 0, width-1 do
-		for y = 0, height-1 do
+	for x = 0, buffer_width-1 do
+		for y = 0, buffer_height-1 do
 			if is_active then
 				setGraphbuffer(x, y, graphbuf.Pixel(0,0,0,128))
 			else 

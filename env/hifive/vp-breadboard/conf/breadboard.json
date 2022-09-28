@@ -6,7 +6,7 @@
       "id" : "rgb",
       "graphics" : 
       {
-        "offs" : [170, 0],
+        "offs" : [137, 62],
         "scale" : 2
       },
       "pins" : 
@@ -33,7 +33,7 @@
       "id" : "reverse_count",
       "graphics" : 
       { 
-        "offs" : [100, 0],
+        "offs" : [89, 62],
         "scale" : 1
       },
       "pins" : 
@@ -103,8 +103,8 @@
       ],
      "graphics" :
      {
-       "offs" : [0, 0],
-       "scale" : 2
+       "offs" : [5, 50],
+       "scale" : 1
      }
     },
     {

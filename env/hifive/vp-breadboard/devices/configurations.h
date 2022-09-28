@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <unordered_map>
 #include <functional>
 #include <set>
@@ -79,6 +80,9 @@ typedef std::string ConfigDescription;
 typedef std::unordered_map<ConfigDescription,ConfigElem> Config;
 
 // GraphBufInterface
+
+typedef unsigned DeviceRow;
+typedef unsigned DeviceIndex;
 
 struct Layout {
 	unsigned width;

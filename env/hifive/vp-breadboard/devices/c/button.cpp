@@ -4,7 +4,7 @@
 
 Button::Button(DeviceID id) : CDevice(id) {
 	if(!graph) {
-		layout_graph = Layout{25, 25, "rgba"};
+		layout_graph = Layout{2, 2, "rgba"};
 		graph = std::make_unique<Button_Graph>(this);
 	}
 	if(!input) {
@@ -44,9 +44,9 @@ void Button::Button_Graph::initializeBufferMaybe() {
 
 void Button::draw_area() {
 	auto *img = image->bits();
-	for(unsigned x=0; x<layout_graph.width; x++) {
-		for(unsigned y=0; y<layout_graph.height; y++) {
-			const auto offs = (y * layout_graph.width + x) * 4; // heavily depends on rgba8888
+	for(unsigned x=0; x<image->width(); x++) {
+		for(unsigned y=0; y<image->height(); y++) {
+			const auto offs = (y * image->width() + x) * 4; // heavily depends on rgba8888
 			img[offs+0] = active?(uint8_t)255:(uint8_t)0;
 			img[offs+1] = 0;
 			img[offs+2] = 0;

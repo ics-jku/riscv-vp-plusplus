@@ -51,8 +51,8 @@ public:
 		virtual Layout getLayout() = 0;
 		virtual void initializeBufferMaybe() = 0;
 		virtual void registerBuffer(QImage& image) = 0;
-		static void setBuffer(QImage&, Layout, const Xoffset, const Yoffset, Pixel);
-		static Pixel getBuffer(QImage&, Layout, const Xoffset, const Yoffset);
+		static void setBuffer(QImage&, const Xoffset, const Yoffset, Pixel);
+		static Pixel getBuffer(QImage&, const Xoffset, const Yoffset);
 	};
 
 	class Input_Interface {

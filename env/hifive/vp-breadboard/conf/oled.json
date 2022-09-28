@@ -1,161 +1,173 @@
 {
-  "devices" :
-   [
-   { 
-      "class" : "button",
-      "id" : "button_b",
-      "graphics" : 
-      { 
-        "offs" : [390, 80],
-        "scale" : 1
-      },
-      "keybindings" : [ "B" ],
-      "pins" :
-      [
+    "devices": [
         {
-          "device_pin" : 1,
-          "global_pin" : 19,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-   { 
-      "class" : "button",
-      "id" : "button_a",
-      "graphics" : 
-      { 
-        "offs" : [310, 80],
-        "scale" : 1
-      },
-      "keybindings" : [ "A" ],
-      "pins" :
-      [
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    329,
+                    86
+                ],
+                "scale": 1
+            },
+            "id": "button_center",
+            "keybindings": [
+                "C"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 4,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 18,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-   { 
-      "class" : "button",
-      "id" : "button_right",
-      "graphics" : 
-      { 
-        "offs" : [390, 40],
-        "scale" : 1
-      },
-      "keybindings" : [ "Right" ],
-      "pins" :
-      [
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    305,
+                    62
+                ],
+                "scale": 1
+            },
+            "id": "button_up",
+            "keybindings": [
+                "Up"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 7,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 5,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-   { 
-      "class" : "button",
-      "id" : "button_left",
-      "graphics" : 
-      { 
-        "offs" : [310, 40],
-        "scale" : 1
-      },
-      "keybindings" : [ "LEFT" ],
-      "pins" :
-      [
+            "class": "oled",
+            "graphics": {
+                "offs": [
+                    0,
+                    0
+                ],
+                "scale": 2
+            },
+            "id": "display",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "synchronous": true
+                }
+            ],
+            "spi": {
+                "cs_pin": 15,
+                "noresponse": true
+            }
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 6,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    { 
-      "class" : "button",
-      "id" : "button_up",
-      "graphics" : 
-      { 
-        "offs" : [350, 0],
-        "scale" : 1
-      },
-      "keybindings" : [ "up" ],
-      "pins" :
-      [
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    281,
+                    86
+                ],
+                "scale": 1
+            },
+            "id": "button_left",
+            "keybindings": [
+                "Left"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 6,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 7,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    { 
-      "class" : "button",
-      "id" : "button_down",
-      "graphics" : 
-      { 
-        "offs" : [350, 80],
-        "scale" : 1
-      },
-      "keybindings" : [ "DoWn" ],
-      "pins" :
-      [
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    353,
+                    62
+                ],
+                "scale": 1
+            },
+            "id": "button_right",
+            "keybindings": [
+                "Right"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 5,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 3,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    { 
-      "class" : "button",
-      "id" : "button_center",
-      "graphics" : 
-      { 
-        "offs" : [350, 40],
-        "scale" : 1
-      },
-      "keybindings" : [ "c" ],
-      "pins" :
-      [
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    305,
+                    122
+                ],
+                "scale": 1
+            },
+            "id": "button_down",
+            "keybindings": [
+                "Down"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 3,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 4,
-          "name" : "output",
-          "synchronous" : false 
-        } 
-      ]
-    },
-    {
-      "class" : "oled",
-      "id"    : "display",
-      "spi"   :
-      { 
-        "cs_pin" : 15,
-        "noresponse": true
-      },
-      "pins"  :
-      [
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    269,
+                    146
+                ],
+                "scale": 1
+            },
+            "id": "button_a",
+            "keybindings": [
+                "A"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 18,
+                    "name": "output"
+                }
+            ]
+        },
         {
-          "device_pin" : 1,
-          "global_pin" : 16,
-          "name": "dc_pin",
-          "synchronous" : true
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    341,
+                    146
+                ],
+                "scale": 1
+            },
+            "id": "button_b",
+            "keybindings": [
+                "B"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 19,
+                    "name": "output"
+                }
+            ]
         }
-      ],
-     "graphics" :
-     {
-       "offs" : [0, 0],
-       "scale" : 2
-     }
-    }
-  ]
+    ]
 }

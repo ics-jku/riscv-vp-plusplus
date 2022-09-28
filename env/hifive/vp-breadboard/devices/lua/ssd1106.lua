@@ -7,12 +7,9 @@ function getPinLayout ()
 	return  {1, "input", "data_command"}
 end
 
-local width = 132
-local height = 64
-
 function getGraphBufferLayout()
-	-- x width, y width, data type (currently only rgba)
-	return {width, height, "rgba"}
+	-- raster width, raster height, data type (currently only rgba)
+	return {11, 6, "rgba"}
 end
 
 local isData
@@ -25,8 +22,8 @@ end
 
 -- optional
 function initializeGraphBuffer()
-	for x = 0, width-1 do
-		for y = 0, height-1 do
+	for x = 0, buffer_width-1 do
+		for y = 0, buffer_height-1 do
 			setGraphbuffer(x, y, graphbuf.Pixel(0,0,0, 255))
 		end
 	end
@@ -81,11 +78,11 @@ local state = {
 function receiveSPI(byte_in)
 	if isData then
 		-- print( " data at " .. tostring(state.column))
-		if state.column >= width then
+		if state.column >= buffer_width then
 			--print ( "LUA_OLED: Warning, exceeding column width")
 			return 0
 		end
-		if state.page >= height/8 then
+		if state.page >= buffer_height/8 then
 			print ( "LUA_OLED: Warning, exceeding page")
 			return 0
 		end

@@ -1,5 +1,6 @@
 #include "breadboard.h"
 #include "raster.h"
+#include "devices/raster.h"
 
 #include <QTimer>
 #include <QPainter>
@@ -147,9 +148,11 @@ void Breadboard::addGraphics(QPoint offset, unsigned scale, Device* device) {
 				"requested a currently unsupported graph buffer data type '" << layout.data_type << "'" << endl;
 		return;
 	}
+	unsigned absolute_width = layout.width*BB_ICON_SIZE;
+	unsigned absolute_height = layout.height*BB_ICON_SIZE;
 
 	device_graphics.emplace(device->getID(), DeviceGraphic{
-		.image = QImage(layout.width, layout.height, QImage::Format_RGBA8888),
+		.image = QImage(absolute_width, absolute_height, QImage::Format_RGBA8888),
 				.offset = offset,
 				.scale = scale
 	});
@@ -167,10 +170,10 @@ void Breadboard::paintEvent(QPaintEvent*) {
 		QColor dark("#101010");
 		dark.setAlphaF(0.5);
 		painter.setBrush(QBrush(dark));
-		for(RowID row=0; row<BB_ROWS; row++) {
-			for(IndexID index=0; index<BB_INDEXES; index++) {
+		for(Row row=0; row<BB_ROWS; row++) {
+			for(Index index=0; index<BB_INDEXES; index++) {
 				QPoint top_left = bb_getAbsolutePosition(row, index);
-				painter.drawRect(top_left.x(), top_left.y(), BB_ICON_WIDTH, BB_ICON_WIDTH);
+				painter.drawRect(top_left.x(), top_left.y(), BB_ICON_SIZE, BB_ICON_SIZE);
 			}
 		}
 		painter.restore();
@@ -255,9 +258,11 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 		for(auto const& [id, graph] : device_graphics) {
 			if(isInsideGraphic(graph, e->pos())) {
 				if(debugmode) { // Move
+					QPoint hotspot = e->pos() - graph.offset;
+
 					QByteArray itemData;
 					QDataStream dataStream(&itemData, QIODevice::WriteOnly);
-					dataStream << QString::fromStdString(id);
+					dataStream << QString::fromStdString(id) << hotspot;
 
 					QMimeData *mimeData = new QMimeData;
 					mimeData->setData(DEVICE_DRAG_TYPE, itemData);
@@ -265,11 +270,11 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 					drag->setMimeData(mimeData);
 					drag->setPixmap(QPixmap::fromImage(graph.image).scaled(graph.scale*graph.image.width(),
 							graph.scale*graph.image.height()));
-					drag->setHotSpot(QPoint(0,0));
+					drag->setHotSpot(hotspot);
 
 					drag->exec(Qt::MoveAction);
 				}
-				else {
+				else { // Input
 					Device& dev = *devices.at(id).get();
 					if(dev.input) {
 						lua_access.lock();
@@ -327,39 +332,45 @@ void Breadboard::dropEvent(QDropEvent* e) {
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 
 		QString q_id;
-		dataStream >> q_id;
+		QPoint hotspot;
+		dataStream >> q_id >> hotspot;
 
 		DeviceID device_id = q_id.toStdString();
 		DeviceGraphic& device_graphic = device_graphics.at(device_id);
 
-		if(!isInsideWindow(device_graphic, e->pos(), size())) {
+		QPoint upper_left = e->pos() - hotspot;
+
+		if(!isInsideWindow(device_graphic, upper_left, size())) {
+			cerr << "[Breadboard] New device position invalid: Device may not leave window view." << endl;
 			e->ignore();
 			return;
 		}
 
 		for(const auto& [id, graphic] : device_graphics) {
 			if(id == device_id) continue;
-			if(isInsideGraphic(graphic, device_graphic, e->pos())) {
+			if(isInsideGraphic(graphic, device_graphic, upper_left)) {
+				cerr << "[Breadboard] New device position invalid: Overlaps with other device." << endl;
 				e->ignore();
 				return;
 			}
 		}
-
-		QPoint newOffset = e->pos();
 
 		if(isBreadboard()) {
-			if(!bb_isWithinRaster(device_graphic, e->pos())) {
+			if(bb_isWithinRaster(device_graphic, upper_left)) {
+				QPoint dropPositionRaster = bb_getAbsolutePosition(bb_getRow(e->pos()), bb_getIndex(e->pos()));
+				upper_left = dropPositionRaster - device_getAbsolutePosition(device_getRow(hotspot), device_getIndex(hotspot));
+			} else {
+				cerr << "[Breadboard] New device position invalid: Device should be at least partially on raster." << endl;
 				e->ignore();
 				return;
-			} else {
-				newOffset = bb_getAbsolutePosition(bb_getRow(e->pos()), bb_getIndex(e->pos()));
 			}
 		}
 
-		device_graphic.offset = newOffset;
+		device_graphic.offset = upper_left;
 
 		e->acceptProposedAction();
 	} else {
+		cerr << "[Breadboard] New device position invalid: Invalid Mime data type." << endl;
 		e->ignore();
 	}
 }

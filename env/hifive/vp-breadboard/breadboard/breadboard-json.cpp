@@ -49,7 +49,7 @@ void Breadboard::additionalLuaDir(string additional_device_dir, bool overwrite_i
 bool Breadboard::loadConfigFile(QString file) {
 	QFile confFile(file);
 	if (!confFile.open(QIODevice::ReadOnly)) {
-		cerr << "Could not open config file " << endl;
+		cerr << "[Breadboard] Could not open config file " << endl;
 		return false;
 	}
 
@@ -58,7 +58,7 @@ bool Breadboard::loadConfigFile(QString file) {
 	QJsonDocument json_doc = QJsonDocument::fromJson(raw_file, &error);
 	if(json_doc.isNull())
 	{
-		cerr << "Config seems to be invalid: ";
+		cerr << "[Breadboard] Config seems to be invalid: ";
 		cerr << error.errorString().toStdString() << endl;
 		return false;
 	}
@@ -208,7 +208,7 @@ bool Breadboard::loadConfigFile(QString file) {
 bool Breadboard::saveConfigFile(QString file) {
 	QFile confFile(file);
 	if(!confFile.open(QIODevice::WriteOnly)) {
-		cerr << "Could not open config file" << endl;
+		cerr << "[Breadboard] Could not open config file" << endl;
 		cerr << confFile.errorString().toStdString() << endl;
 		return false;
 	}

@@ -11,7 +11,7 @@ RGB::RGB(DeviceID id) : CDevice(id) {
 		pin = std::make_unique<RGB_Pin>(this);
 	}
 	if(!graph) {
-		layout_graph = Layout{11, 11, "rgba"};
+		layout_graph = Layout{1, 1, "rgba"};
 		graph = std::make_unique<RGB_Graph>(this);
 	}
 }
@@ -44,21 +44,21 @@ void RGB::RGB_Graph::initializeBufferMaybe() {
 
 void RGB::draw_rgb(PinNumber num, bool val) {
 	if(num > 2) { return; }
-	int extent_center = ceil(layout_graph.width/(float)2);
+	int extent_center = ceil(image->width()/(float)2);
 	Pixel cur = getBuffer(extent_center, extent_center);
 	if(num == 0) cur.r = val?255:0;
 	else if(num == 1) cur.g = val?255:0;
 	else cur.b = val?255:0;
 
 	auto *img = image->bits();
-	for(int x=1; x<layout_graph.width; x++) {
-		for(int y=1; y<layout_graph.height; y++) {
+	for(int x=1; x<image->width(); x++) {
+		for(int y=1; y<image->height(); y++) {
 			float dist = sqrt(pow(extent_center - x, 2) + pow(extent_center - y, 2));
 			int norm_lumen = floor((1-dist/extent_center)*255);
 			if(norm_lumen < 0) norm_lumen = 0;
 			if(norm_lumen > 255) norm_lumen = 255;
 
-			const auto offs = ((y-1) * layout_graph.width + (x-1)) * 4; // heavily depends on rgba8888
+			const auto offs = ((y-1) * image->width() + (x-1)) * 4; // heavily depends on rgba8888
 			img[offs+0] = cur.r;
 			img[offs+1] = cur.g;
 			img[offs+2] = cur.b;

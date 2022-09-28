@@ -13,7 +13,7 @@ OLED::OLED(DeviceID id) : CDevice(id) {
 	}
 	// Graph
 	if(!graph) {
-		layout_graph = Layout{132, 64, "rgba"};
+		layout_graph = Layout{11, 6, "rgba"};
 		graph = std::make_unique<OLED_Graph>(this);
 	}
 }
@@ -61,10 +61,10 @@ std::pair<uint8_t, uint8_t> match(uint8_t cmd) {
 gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 	OLED* oled_device = static_cast<OLED*>(device);
 	if(oled_device->is_data) {
-		if (oled_device->state.column >= device->layout_graph.width) {
+		if (oled_device->state.column >= device->image->width()) {
 			return 0;
 		}
-		if (oled_device->state.page >= device->layout_graph.height/8) {
+		if (oled_device->state.page >= device->image->height()/8) {
 			return 0;
 		}
 		auto *img = device->image->bits();
@@ -73,7 +73,7 @@ gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 			if(byte & 1<<y) {
 				pix = 255;
 			}
-			const auto offs = (((oled_device->state.page*8)+y) * device->layout_graph.width + oled_device->state.column) * 4; // heavily depends on rgba8888
+			const auto offs = (((oled_device->state.page*8)+y) * device->image->width() + oled_device->state.column) * 4; // heavily depends on rgba8888
 			img[offs+0] = pix;
 			img[offs+1] = pix;
 			img[offs+2] = pix;
@@ -108,9 +108,9 @@ OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(de
 
 void OLED::OLED_Graph::initializeBufferMaybe() {
 	auto *img = device->image->bits();
-	for(unsigned x=0; x<device->layout_graph.width; x++) {
-		for(unsigned y=0; y<device->layout_graph.height; y++) {
-			const auto offs = (y * device->layout_graph.width + x) * 4; // heavily depends on rgba8888
+	for(unsigned x=0; x<device->image->width(); x++) {
+		for(unsigned y=0; y<device->image->height(); y++) {
+			const auto offs = (y * device->image->width() + x) * 4; // heavily depends on rgba8888
 			img[offs+0] = 0;
 			img[offs+1] = 0;
 			img[offs+2] = 0;

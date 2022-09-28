@@ -245,7 +245,6 @@ Layout LuaDevice::Graphbuf_Interface_Lua::getLayout() {
 	return ret;
 }
 
-
 void LuaDevice::Graphbuf_Interface_Lua::initializeBufferMaybe(){
 	if(m_initializeGraphBuffer.isFunction()) {
 		m_initializeGraphBuffer();
@@ -300,15 +299,16 @@ void LuaDevice::Graphbuf_Interface_Lua::registerGlobalFunctionAndInsertLocalAlia
 };
 
 void LuaDevice::Graphbuf_Interface_Lua::registerBuffer(QImage& image) {
-	Layout layout = getLayout();
-	std::function<Pixel(const Xoffset, const Yoffset)> getBuf = [&image, layout](const Xoffset x, const Yoffset y){
-		return getBuffer(image, layout, x, y);
+	std::function<Pixel(const Xoffset, const Yoffset)> getBuf = [&image](const Xoffset x, const Yoffset y){
+		return getBuffer(image, x, y);
 	};
 	registerGlobalFunctionAndInsertLocalAlias("getGraphbuffer", getBuf);
-	std::function<void(const Xoffset, const Yoffset, Pixel)> setBuf = [&image, layout](const Xoffset x, const Yoffset y, Pixel p) {
-		setBuffer(image, layout, x, y, p);
+	std::function<void(const Xoffset, const Yoffset, Pixel)> setBuf = [&image](const Xoffset x, const Yoffset y, Pixel p) {
+		setBuffer(image, x, y, p);
 	};
 	registerGlobalFunctionAndInsertLocalAlias<>("setGraphbuffer", setBuf);
+	m_env["buffer_width"] = image.width();
+	m_env["buffer_height"] = image.height();
 }
 
 bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::LuaRef& ref) {

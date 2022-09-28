@@ -13,9 +13,9 @@ bool bb_isOnRaster(QPoint pos); // has to be on actual raster position, not over
 bool bb_isWithinRaster(QPoint pos); // within general raster bounds (including middle)
 bool bb_isWithinRaster(DeviceGraphic graphic, QPoint newPos); // within general raster bounds
 
-RowID bb_getRow(QPoint pos);
-IndexID bb_getIndex(QPoint pos);
-QPoint bb_getAbsolutePosition(RowID row, IndexID index=0);
+Row bb_getRow(QPoint pos);
+Index bb_getIndex(QPoint pos);
+QPoint bb_getAbsolutePosition(Row row, Index index=0);
 
-std::pair<RowID, IndexID> bb_getRasterPosition(QPoint pos);
+std::pair<Row, Index> bb_getRasterPosition(QPoint pos);
 

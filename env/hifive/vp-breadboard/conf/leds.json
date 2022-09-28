@@ -1,166 +1,165 @@
-{ 
-	"devices" :
-	[ 
-	{ 
-		"class" : "LED",
-		"id" : "led_red",
-      	"conf" :
-      	{ 
-      		"colour_r": 255,
-      		"colour_g": 10,
-      		"colour_b": 10
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 15,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [10, 60],
-      		"scale" : 2
-      	}
-	}, 
-	{ 
-		"class" : "LED",
-		"id" : "led_green",
-      	"conf" :
-      	{ 
-      		"colour_r": 10,
-      		"colour_g": 255,
-      		"colour_b": 10
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 16,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [60, 60],
-      		"scale" : 2
-      	}
-	}, 
-	{ 
-		"class" : "LED",
-		"id" : "led_blue",
-      	"conf" :
-      	{ 
-      		"colour_r": 10,
-      		"colour_g": 10,
-      		"colour_b": 255
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 17,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [110, 60],
-      		"scale" : 2
-      	}
-	}, 
-	{ 
-		"class" : "LED",
-		"id" : "led_yellow",
-      	"conf" :
-      	{ 
-      		"colour_r": 255,
-      		"colour_g": 255,
-      		"colour_b": 10
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 18,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [160, 60],
-      		"scale" : 2
-      	}
-	}, 
-	{ 
-		"class" : "LED",
-		"id" : "led_purple",
-      	"conf" :
-      	{ 
-      		"colour_r": 255,
-      		"colour_g": 10,
-      		"colour_b": 255
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 19,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [210, 60],
-      		"scale" : 2
-      	}
-	}, 
-	{ 
-		"class" : "LED",
-		"id" : "led_turquoise",
-      	"conf" :
-      	{ 
-      		"colour_r": 10,
-      		"colour_g": 255,
-      		"colour_b": 255
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 7,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [260, 60],
-      		"scale" : 2
-      	}
-	}, 
-	{ 
-		"class" : "LED",
-		"id" : "led_orange",
-      	"conf" :
-      	{ 
-      		"colour_r": 255,
-      		"colour_g": 100,
-      		"colour_b": 10
-      	},
-      	"pins" :
-      	[
-      		{ 
-      			"device_pin" : 1,
-      			"global_pin" : 6,
-      			"name" : "led_pin"
-      		} 
-      	],
-      	"graphics" :
-      	{ 
-      		"offs" : [310, 60],
-      		"scale" : 2
-      	}
-	}
-	]
+{
+    "devices": [
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 255,
+                "colour_g": 255,
+                "colour_r": 10
+            },
+            "graphics": {
+                "offs": [
+                    185,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_turquoise",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 7,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 255,
+                "colour_g": 10,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    149,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_purple",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 19,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 255,
+                "colour_g": 10,
+                "colour_r": 10
+            },
+            "graphics": {
+                "offs": [
+                    77,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_blue",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 17,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 255,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    113,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_yellow",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 18,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 255,
+                "colour_r": 10
+            },
+            "graphics": {
+                "offs": [
+                    41,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_green",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 100,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    221,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_orange",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 6,
+                    "name": "led_pin"
+                }
+            ]
+        },
+        {
+            "class": "LED",
+            "conf": {
+                "colour_b": 10,
+                "colour_g": 10,
+                "colour_r": 255
+            },
+            "graphics": {
+                "offs": [
+                    5,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "led_red",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 15,
+                    "name": "led_pin"
+                }
+            ]
+        }
+    ]
 }
