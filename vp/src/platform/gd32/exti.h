@@ -22,7 +22,7 @@ struct EXTI : public sc_core::sc_module {
 		EXTI_EVEN_REG_ADDR = 0x04,
 		EXTI_RTEN_REG_ADDR = 0x08,
 		EXTI_FTEN_REG_ADDR = 0x0C,
-		EXTI_SWIEVEN_REG_ADDR = 0x10,
+		EXTI_SWIEV_REG_ADDR = 0x10,
 		EXTI_PD_REG_ADDR = 0x14,
 	};
 
@@ -37,7 +37,7 @@ struct EXTI : public sc_core::sc_module {
 		        {EXTI_EVEN_REG_ADDR, &exti_even},
 		        {EXTI_RTEN_REG_ADDR, &exti_rten},
 		        {EXTI_FTEN_REG_ADDR, &exti_ften},
-		        {EXTI_SWIEVEN_REG_ADDR, &exti_swiev},
+		        {EXTI_SWIEV_REG_ADDR, &exti_swiev},
 		        {EXTI_PD_REG_ADDR, &exti_pd},
 		    })
 		    .register_handler(this, &EXTI::register_access_callback);

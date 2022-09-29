@@ -40,6 +40,7 @@ GPIO::~GPIO() {
 }
 
 void GPIO::asyncOnchange(gpio::PinNumber bit, gpio::Tristate val) {
+	std::cout << "gpio pin " << (int)bit << " val " << (int)val << std::endl;
 	// TODO
 }
 

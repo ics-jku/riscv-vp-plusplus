@@ -42,7 +42,9 @@ class ECLIC : public sc_core::sc_module {
 		tsock.register_b_transport(this, &ECLIC::transport);
 
 		regs_clicinfo.readonly = true;
-		clicinfo.write(clicinfo.read() | NumberInterrupts);
+		// fill clicinfo register with following information
+		// CLICINTCTLBITS = 8, VERSION = 1, NUM_INTERRUPT = NumberInterrupts
+		clicinfo.write(1 << 24 | 1 << 13 | NumberInterrupts);
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {

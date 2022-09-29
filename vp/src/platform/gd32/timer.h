@@ -16,7 +16,7 @@ class TIMER : public clint_if, public sc_core::sc_module {
 	TIMER(sc_core::sc_module_name);
 
 	// TODO - what is the right value here? how to calculate?
-	static constexpr uint64_t scaler = 4000;
+	static constexpr uint64_t scaler = 1214;  // = 1000000/(27000000/32768)
 
 	tlm_utils::simple_target_socket<TIMER> tsock;
 
