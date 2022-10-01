@@ -26,7 +26,8 @@ public slots:
 private slots:
 	void timerUpdate();
 	void connectionLost();
-	void closeIOFs(std::vector<gpio::PinNumber> gpio_offs);
+	void closeAllIOFs(std::vector<gpio::PinNumber> gpio_offs);
+	void closeDeviceIOFs(std::vector<gpio::PinNumber> gpio_offs, DeviceID device);
 
 signals:
 	void connectionUpdate(bool active);

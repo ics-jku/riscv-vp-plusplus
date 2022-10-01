@@ -58,6 +58,57 @@ void Breadboard::writeDevice(DeviceID device) {
 	lua_access.unlock();
 }
 
+/* DEVICE */
+
+bool Breadboard::addDevice(DeviceClass classname) {
+	DeviceID id = "ID"; // TODO
+	if(!addDevice(classname, id)) {
+		return false;
+	}
+	Device* device = devices.at(id).get();
+	addGraphics(QPoint(0,0), 1, device);
+	DeviceGraphic graphic = device_graphics.at(id);
+	if(startDrag(id, graphic, QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
+		return true;
+	}
+	return false;
+}
+
+void Breadboard::removeDevice(DeviceID device) {
+	vector<gpio::PinNumber> iofs;
+	auto pin = pin_channels.find(device);
+	if(pin!=pin_channels.end()) {
+		iofs.push_back(pin->second.gpio_offs);
+	}
+	auto spi = spi_channels.find(device);
+	if(spi!=spi_channels.end()) {
+		iofs.push_back(spi->second.gpio_offs);
+	}
+	emit(closeDeviceIOFs(iofs, device));
+}
+
+void Breadboard::removeDeviceObjects(DeviceID device) {
+	pin_channels.erase(device);
+	spi_channels.erase(device);
+	device_graphics.erase(device);
+	devices.erase(device);
+	writing_connections.remove_if([device](PinMapping map){return map.dev->getID() == device;});
+	reading_connections.remove_if([device](PinMapping map){return map.dev->getID() == device;});
+}
+
+bool Breadboard::addDevice(DeviceClass classname, DeviceID id) {
+	if(!factory.deviceExists(classname)) {
+		cerr << "[Breadboard] Add device: class name invalid." << endl;
+		return false;
+	}
+	if(devices.find(id) != devices.end()) {
+		cerr << "[Breadboard] Another device with the ID '" << id << "' is already instatiated!" << endl;
+		return false;
+	}
+	devices.emplace(id, factory.instantiateDevice(id, classname));
+	return true;
+}
+
 /* CONNECTIONS */
 
 void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device) {
@@ -156,6 +207,14 @@ void Breadboard::addGraphics(QPoint offset, unsigned scale, Device* device) {
 				.offset = offset,
 				.scale = scale
 	});
+
+	// setting up the image buffer and its functions
+	QImage& new_buffer = device_graphics.at(device->getID()).image;
+	memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
+
+	device->graph->registerBuffer(new_buffer);
+	// only called if lua implements the function
+	device->graph->initializeBufferMaybe();
 }
 
 
@@ -254,25 +313,13 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 }
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
-	if(e->button() == Qt::LeftButton) {
-		for(auto const& [id, graph] : device_graphics) {
-			if(isInsideGraphic(graph, e->pos())) {
+	for(auto const& [id, graph] : device_graphics) {
+		if(isInsideGraphic(graph, e->pos())) {
+			switch(e->button()) {
+			case Qt::LeftButton:  {
 				if(debugmode) { // Move
 					QPoint hotspot = e->pos() - graph.offset;
-
-					QByteArray itemData;
-					QDataStream dataStream(&itemData, QIODevice::WriteOnly);
-					dataStream << QString::fromStdString(id) << hotspot;
-
-					QMimeData *mimeData = new QMimeData;
-					mimeData->setData(DEVICE_DRAG_TYPE, itemData);
-					QDrag *drag = new QDrag(this);
-					drag->setMimeData(mimeData);
-					drag->setPixmap(QPixmap::fromImage(graph.image).scaled(graph.scale*graph.image.width(),
-							graph.scale*graph.image.height()));
-					drag->setHotSpot(hotspot);
-
-					drag->exec(Qt::MoveAction);
+					startDrag(id, graph, hotspot, Qt::MoveAction);
 				}
 				else { // Input
 					Device& dev = *devices.at(id).get();
@@ -283,10 +330,18 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 						writeDevice(id);
 					}
 				}
+				break;
+			}
+			case Qt::RightButton: {
+				if(debugmode) {
+					removeDevice(id);
+				}
+				break;
+			}
 			}
 		}
-		update();
 	}
+	update();
 }
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
@@ -309,6 +364,22 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 }
 
 /* Drag and Drop */
+
+Qt::DropAction Breadboard::startDrag(DeviceID device, DeviceGraphic graphic, QPoint hotspot, Qt::DropAction action) {
+	QByteArray itemData;
+	QDataStream dataStream(&itemData, QIODevice::WriteOnly);
+	dataStream << QString::fromStdString(device) << hotspot;
+
+	QMimeData *mimeData = new QMimeData;
+	mimeData->setData(DEVICE_DRAG_TYPE, itemData);
+	QDrag *drag = new QDrag(this);
+	drag->setMimeData(mimeData);
+	drag->setPixmap(QPixmap::fromImage(graphic.image).scaled(graphic.scale*graphic.image.width(),
+			graphic.scale*graphic.image.height()));
+	drag->setHotSpot(hotspot);
+
+	return drag->exec(action);
+}
 
 void Breadboard::dragMoveEvent(QDragMoveEvent* e) {
 	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE) && (isBreadboard()?bb_isOnRaster(e->pos()):true)) {

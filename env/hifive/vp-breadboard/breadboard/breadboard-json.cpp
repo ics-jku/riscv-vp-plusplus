@@ -10,14 +10,14 @@ constexpr bool debug_logging = false;
 /* JSON */
 
 void Breadboard::clear() {
-	std::vector<gpio::PinNumber> iofs;
+	vector<gpio::PinNumber> iofs;
 	for(auto const& [id,spi] : spi_channels) {
 		iofs.push_back(spi.gpio_offs);
 	}
 	for(auto const& [id,pin] : pin_channels) {
 		iofs.push_back(pin.gpio_offs);
 	}
-	emit(closeIOFs(iofs));
+	emit(closeAllIOFs(iofs));
 
 	bkgnd_path = DEFAULT_PATH;
 	QSize bkgnd_size = DEFAULT_SIZE;
@@ -86,29 +86,23 @@ bool Breadboard::loadConfigFile(QString file) {
 		QJsonArray device_descriptions = config_root["devices"].toArray();
 		devices.reserve(device_descriptions.count());
 		if(debug_logging)
-			cout << "[config loader] reserving space for " << device_descriptions.count() << " devices." << endl;
+			cout << "[Breadboard] reserving space for " << device_descriptions.count() << " devices." << endl;
 		for(const QJsonValue& device_description : device_descriptions) {
 			QJsonObject device_desc = device_description.toObject();
 			const string& classname = device_desc["class"].toString("undefined").toStdString();
 			const string& id = device_desc["id"].toString("undefined").toStdString();
 
-			if(!factory.deviceExists(classname)) {
-				cerr << "[config loader] device '" << classname << "' does not exist" << endl;
+			if(!addDevice(classname, id)) {
+				cerr << "[config loader] could not create device '" << classname << "'." << endl;
 				continue;
 			}
-			if(devices.find(id) != devices.end()) {
-				cerr << "[config loader] Another device with the ID '" << id << "' is already instatiated!" << endl;
-				continue;
-			}
-
-			devices.emplace(id, factory.instantiateDevice(id, classname));
 			Device* device = devices.at(id).get();
 			device->fromJSON(device_desc);
 
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
 				const QJsonObject spi = device_desc["spi"].toObject();
 				if(!spi.contains("cs_pin")) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
+					cerr << "[Breadboard] config for device '" << classname << "' sets"
 							" an SPI interface, but does not set a cs_pin." << endl;
 					continue;
 				}
@@ -123,7 +117,7 @@ bool Breadboard::loadConfigFile(QString file) {
 					const QJsonObject pin = pin_desc.toObject();
 					if(!pin.contains("device_pin") ||
 							!pin.contains("global_pin")) {
-						cerr << "[config loader] config for device '" << classname << "' is"
+						cerr << "[Breadboard] config for device '" << classname << "' is"
 								" missing device_pin or global_pin mappings" << endl;
 						continue;
 					}
@@ -139,13 +133,13 @@ bool Breadboard::loadConfigFile(QString file) {
 			if(device_desc.contains("graphics") && device_desc["graphics"].isObject()) {
 				const QJsonObject graphics_desc = device_desc["graphics"].toObject();
 				if(!(graphics_desc.contains("offs") && graphics_desc["offs"].isArray())) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
+					cerr << "[Breadboard] config for device '" << classname << "' sets"
 							" a graph buffer interface, but no valid offset given" << endl;
 					continue;
 				}
 				const QJsonArray offs_desc = graphics_desc["offs"].toArray();
 				if(offs_desc.size() != 2) {
-					cerr << "[config loader] config for device '" << classname << "' sets"
+					cerr << "[Breadboard] config for device '" << classname << "' sets"
 							" a graph buffer interface, but offset is malformed (needs x,y, is size " << offs_desc.size() << ")" << endl;
 					continue;
 				}
@@ -154,14 +148,6 @@ bool Breadboard::loadConfigFile(QString file) {
 				const unsigned scale = graphics_desc["scale"].toInt(1);
 
 				addGraphics(offs, scale, device);
-
-				// setting up the image buffer and its functions
-				QImage& new_buffer = device_graphics.at(id).image;
-				memset(new_buffer.bits(), 0x8F, new_buffer.sizeInBytes());
-
-				device->graph->registerBuffer(new_buffer);
-				// only called if lua implements the function
-				device->graph->initializeBufferMaybe();
 			}
 		}
 
