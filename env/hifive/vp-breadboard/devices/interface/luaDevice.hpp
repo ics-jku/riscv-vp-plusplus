@@ -84,8 +84,8 @@ public:
 		Graphbuf_Interface_Lua(luabridge::LuaRef& ref, DeviceID device_id, lua_State* L);
 		~Graphbuf_Interface_Lua();
 		Layout getLayout();
-		void initializeBufferMaybe();
-		void registerBuffer(QImage& image);
+		void initializeBuffer();
+		void registerBuffer(QImage* image);
 
 		template<typename FunctionFootprint>
 		void registerGlobalFunctionAndInsertLocalAlias(const std::string name, FunctionFootprint fun);

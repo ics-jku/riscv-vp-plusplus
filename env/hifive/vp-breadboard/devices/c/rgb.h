@@ -21,7 +21,7 @@ public:
 	class RGB_Graph : public CDevice::Graphbuf_Interface_C {
 	public:
 		RGB_Graph(CDevice* device);
-		void initializeBufferMaybe();
+		void initializeBuffer();
 	};
 };
 

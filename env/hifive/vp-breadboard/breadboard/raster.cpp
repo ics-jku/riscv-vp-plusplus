@@ -1,38 +1,23 @@
 #include "raster.h"
 
-bool isInsideWindow(DeviceGraphic graphic, QPoint newPos, QSize windowSize) {
-	graphic.offset = newPos;
-	QRect bounds = getGraphicBounds(graphic);
-	QRect window = QRect(QPoint(0,0), windowSize);
-	return window.contains(bounds);
+#include "configurations.h"
+
+#include <iostream>
+
+QRect getGraphicBounds(QImage* buffer) {
+	QRect rect = buffer->rect();
+	rect.setTopLeft(buffer->offset());
+	std::cout << rect.x() << ", " << rect.y() << ", " << rect.width() << ", " << rect.height() << std::endl;
+	return rect;
 }
 
-QRect getGraphicBounds(DeviceGraphic graphic) {
-	return QRect(graphic.offset.x(), graphic.offset.y(), graphic.image.width() * graphic.scale, graphic.image.height() * graphic.scale);
-}
-
-bool isInsideGraphic(DeviceGraphic graphic, QPoint point) {
-	return getGraphicBounds(graphic).contains(point);
-}
-
-bool isInsideGraphic(DeviceGraphic graphic, DeviceGraphic newGraphic, QPoint newPos) {
-	newGraphic.offset = newPos;
-	return getGraphicBounds(graphic).intersects(getGraphicBounds(newGraphic));
+QRect bb_getRasterBounds() {
+	return QRect(BB_ROW_X, BB_ROW_Y, BB_ONE_ROW*BB_ICON_SIZE, ((BB_INDEXES*2)+1)*BB_ICON_SIZE);
 }
 
 bool bb_isOnRaster(QPoint pos) {
 	return QRect(BB_ROW_X, BB_ROW_Y, BB_ONE_ROW*BB_ICON_SIZE, BB_INDEXES*BB_ICON_SIZE).contains(pos) ||
 			QRect(BB_ROW_X, BB_ROW_Y + (BB_INDEXES+1)*BB_ICON_SIZE, BB_ONE_ROW*BB_ICON_SIZE, BB_INDEXES*BB_ICON_SIZE).contains(pos);
-}
-
-bool bb_isWithinRaster(QPoint pos) {
-	return QRect(BB_ROW_X, BB_ROW_Y, BB_ONE_ROW*BB_ICON_SIZE, ((BB_INDEXES*2)+1)*BB_ICON_SIZE).contains(pos);
-}
-
-bool bb_isWithinRaster(DeviceGraphic graphic, QPoint newPos) {
-	graphic.offset = newPos;
-	QRect bounds = getGraphicBounds(graphic);
-	return bb_isWithinRaster(bounds.topLeft()) || bb_isWithinRaster(bounds.bottomRight());
 }
 
 Row bb_getRow(QPoint pos) {

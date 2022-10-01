@@ -40,11 +40,11 @@ void Sevensegment::Segment_PIN::setPin(PinNumber num, gpio::Tristate val) {
 
 Sevensegment::Segment_Graph::Segment_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 
-void Sevensegment::Segment_Graph::initializeBufferMaybe() {
-	auto *img = device->image->bits();
-	for(unsigned x=0; x<device->image->width(); x++) {
-		for(unsigned y=0; y<device->image->height(); y++) {
-			const auto offs = (y * device->image->width() + x) * 4; // heavily depends on rgba8888
+void Sevensegment::Segment_Graph::initializeBuffer() {
+	auto *img = buffer->bits();
+	for(unsigned x=0; x<buffer->width(); x++) {
+		for(unsigned y=0; y<buffer->height(); y++) {
+			const auto offs = (y * buffer->width() + x) * 4; // heavily depends on rgba8888
 			img[offs+0] = 0;
 			img[offs+1] = 0;
 			img[offs+2] = 0;
@@ -61,10 +61,10 @@ void Sevensegment::draw_segment(PinNumber num, bool val) {
 	if(num > 7) { return; }
 	// general display stuff
 	unsigned xcol1 = 0;
-	unsigned xcol2 = 3 * (image->width() / 4);
+	unsigned xcol2 = 3 * (graph->buffer->width() / 4);
 	unsigned yrow1 = 0;
-	unsigned yrow2 = (image->height() - 2) / 2;
-	unsigned yrow3 = image->height() - 2;
+	unsigned yrow2 = (graph->buffer->height() - 2) / 2;
+	unsigned yrow3 = graph->buffer->height() - 2;
 	unsigned x1=0, y1=0;
 	unsigned x2=0, y2=0;
 	// assign start and end point of line
@@ -90,14 +90,14 @@ void Sevensegment::draw_segment(PinNumber num, bool val) {
 		x1 = xcol1, y1 = yrow2;
 		x2 = xcol2, y2 = yrow2;
 	} else if(num == 7) {
-		x1 = image->width() - 4, y1 = yrow3 - 2;
-		x2 = image->width() - 2, y2 = yrow3;
+		x1 = graph->buffer->width() - 4, y1 = yrow3 - 2;
+		x2 = graph->buffer->width() - 2, y2 = yrow3;
 	}
 
-	auto *img = image->bits();
+	auto *img = graph->buffer->bits();
 	for(unsigned x=x1; x<=x2+1; x++) {
 		for(unsigned y=y1; y<=y2+1; y++) {
-			const auto offs = (y * image->width() + x) * 4; // heavily depends on rgba8888
+			const auto offs = (y * graph->buffer->width() + x) * 4; // heavily depends on rgba8888
 			img[offs+0] = val?(uint8_t)255:(uint8_t)0;
 			img[offs+1] = 0;
 			img[offs+2] = 0;

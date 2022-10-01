@@ -1,4 +1,6 @@
 #include "device.hpp"
+#include "breadboard/configurations.h"
+
 #include <QKeySequence>
 #include <QJsonArray>
 
@@ -55,6 +57,26 @@ void Device::fromJSON(QJsonObject json) {
 			input->setKeys(keys);
 		}
 	}
+
+	if(json.contains("graphics") && json["graphics"].isObject()) {
+		if(!graph) {
+			std::cerr << "[Device] Config for device '" << getClass() << "' contains graph info, "
+					"but device does not implement graph interface" << std::endl;
+		}
+		else {
+			QJsonObject graphics = json["graphics"].toObject();
+			const QJsonArray offs_desc = graphics["offs"].toArray();
+			unsigned scale = graphics["scale"].toInt();
+
+			QPoint offs(offs_desc[0].toInt(), offs_desc[1].toInt());
+
+			Layout layout = graph->getLayout();
+			graph->registerBuffer(new QImage(layout.width*BB_ICON_SIZE*scale, layout.height*BB_ICON_SIZE*scale, QImage::Format_RGBA8888));
+			memset(graph->buffer->bits(), 0x8F, graph->buffer->sizeInBytes());
+			graph->buffer->setOffset(offs);
+			graph->initializeBuffer();
+		}
+	}
 }
 
 QJsonObject Device::toJSON() {
@@ -86,6 +108,14 @@ QJsonObject Device::toJSON() {
 			json["keybindings"] = keybindings_json;
 		}
 	}
+	if(graph) {
+		QJsonObject graph_json;
+		QJsonArray offs_json;
+		offs_json.append(graph->getBuffer()->offset().x());
+		offs_json.append(graph->getBuffer()->offset().y());
+		graph_json["offs"] = offs_json;
+		json["graphics"] = graph_json;
+	}
 	return json;
 }
 
@@ -95,26 +125,34 @@ Device::Config_Interface::~Config_Interface() {}
 Device::Graphbuf_Interface::~Graphbuf_Interface() {}
 Device::Input_Interface::~Input_Interface() {}
 
-void Device::Graphbuf_Interface::setBuffer(QImage& image, const Xoffset x, const Yoffset y, Pixel p) {
-	auto* img = image.bits();
-	if(x >= image.width() || y >= image.height()) {
+void Device::Graphbuf_Interface::registerBuffer(QImage* buffer) {
+	this->buffer = buffer;
+}
+
+QImage* Device::Graphbuf_Interface::getBuffer() {
+	return buffer;
+}
+
+void Device::Graphbuf_Interface::setPixel(const Xoffset x, const Yoffset y, Pixel p) {
+	auto* img = buffer->bits();
+	if(x >= buffer->width() || y >= buffer->height()) {
 		std::cerr << "[Graphbuf] WARN: device write accessing graphbuffer out of bounds!" << std::endl;
 		return;
 	}
-	const auto offs = (y * image.width() + x) * 4; // heavily depends on rgba8888
+	const auto offs = (y * buffer->width() + x) * 4; // heavily depends on rgba8888
 	img[offs+0] = p.r;
 	img[offs+1] = p.g;
 	img[offs+2] = p.b;
 	img[offs+3] = p.a;
 }
 
-Pixel Device::Graphbuf_Interface::getBuffer(QImage& image, const Xoffset x, const Yoffset y) {
-	auto* img = image.bits();
-	if(x >= image.width() || y >= image.height()) {
+Pixel Device::Graphbuf_Interface::getPixel(const Xoffset x, const Yoffset y) {
+	auto* img = buffer->bits();
+	if(x >= buffer->width() || y >= buffer->height()) {
 		std::cerr << "[Graphbuf] WARN: device read accessing graphbuffer out of bounds!" << std::endl;
 		return Pixel{0,0,0,0};
 	}
-	const auto& offs = (y * image.width() + x) * 4; // heavily depends on rgba8888
+	const auto& offs = (y * buffer->width() + x) * 4; // heavily depends on rgba8888
 	return Pixel{
 		static_cast<uint8_t>(img[offs+0]),
 				static_cast<uint8_t>(img[offs+1]),

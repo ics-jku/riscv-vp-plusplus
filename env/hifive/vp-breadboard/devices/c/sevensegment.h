@@ -21,7 +21,7 @@ public:
 	class Segment_Graph : public CDevice::Graphbuf_Interface_C {
 	public:
 		Segment_Graph(CDevice* device);
-		void initializeBufferMaybe();
+		void initializeBuffer();
 	};
 };
 

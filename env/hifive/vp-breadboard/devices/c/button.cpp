@@ -37,16 +37,16 @@ gpio::Tristate Button::Button_PIN::getPin(PinNumber num) {
 
 Button::Button_Graph::Button_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
 
-void Button::Button_Graph::initializeBufferMaybe() {
+void Button::Button_Graph::initializeBuffer() {
 	Button* button_device = static_cast<Button*>(device);
-	button_device->draw_area();
+	button_device->draw();
 }
 
-void Button::draw_area() {
-	auto *img = image->bits();
-	for(unsigned x=0; x<image->width(); x++) {
-		for(unsigned y=0; y<image->height(); y++) {
-			const auto offs = (y * image->width() + x) * 4; // heavily depends on rgba8888
+void Button::draw() {
+	auto *img = graph->buffer->bits();
+	for(unsigned x=0; x<graph->buffer->width(); x++) {
+		for(unsigned y=0; y<graph->buffer->height(); y++) {
+			const auto offs = (y * graph->buffer->width() + x) * 4; // heavily depends on rgba8888
 			img[offs+0] = active?(uint8_t)255:(uint8_t)0;
 			img[offs+1] = 0;
 			img[offs+2] = 0;
@@ -62,7 +62,7 @@ Button::Button_Input::Button_Input(CDevice* device) : CDevice::Input_Interface_C
 void Button::Button_Input::onClick(bool active) {
 	Button* button_device = static_cast<Button*>(device);
 	button_device->active = active;
-	button_device->draw_area();
+	button_device->draw();
 }
 
 void Button::Button_Input::onKeypress(int key, bool active) {

@@ -10,7 +10,9 @@
 #include <mutex> // TODO: FIXME: Create one Lua state per device that uses asyncs like SPI and synchronous pins
 
 #include "configurations.h"
+#include "types.h"
 #include "embedded/gpio-helpers.h"
+#include "devices/factory/factory.h"
 
 class Breadboard : public QWidget {
 	Q_OBJECT
@@ -20,7 +22,6 @@ class Breadboard : public QWidget {
 	std::unordered_map<DeviceID,std::unique_ptr<Device>> devices;
 	std::unordered_map<DeviceID,SPI_IOF_Request> spi_channels;
 	std::unordered_map<DeviceID,PIN_IOF_Request> pin_channels;
-	std::unordered_map<DeviceID,DeviceGraphic> device_graphics;
 
 	std::list<PinMapping> reading_connections;		// Semantic subject to change
 	std::list<PinMapping> writing_connections;
@@ -40,7 +41,7 @@ class Breadboard : public QWidget {
 	void writeDevice(DeviceID device);
 
 	// Drag and Drop
-	Qt::DropAction startDrag(DeviceID device, DeviceGraphic graphic, QPoint hotspot, Qt::DropAction action);
+//	Qt::DropAction startDrag(DeviceID device, DeviceGraphic graphic, QPoint hotspot, Qt::DropAction action);
 	void dropEvent(QDropEvent* e) override;
 	void dragEnterEvent(QDragEnterEvent* e) override;
 	void dragMoveEvent(QDragMoveEvent* e) override;

@@ -41,7 +41,7 @@ public:
 	class OLED_Graph : public CDevice::Graphbuf_Interface_C {
 	public:
 		OLED_Graph(CDevice* device);
-		void initializeBufferMaybe();
+		void initializeBuffer();
 	};
 };
 

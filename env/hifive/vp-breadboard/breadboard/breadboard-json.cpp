@@ -34,7 +34,6 @@ void Breadboard::clear() {
 void Breadboard::clearConnections() {
 	spi_channels.clear();
 	pin_channels.clear();
-	device_graphics.clear();
 	writing_connections.clear();
 	reading_connections.clear();
 	devices.clear();
@@ -128,26 +127,6 @@ bool Breadboard::loadConfigFile(QString file) {
 
 					addPin(synchronous, device_pin, global_pin, pin_name, device);
 				}
-			}
-
-			if(device_desc.contains("graphics") && device_desc["graphics"].isObject()) {
-				const QJsonObject graphics_desc = device_desc["graphics"].toObject();
-				if(!(graphics_desc.contains("offs") && graphics_desc["offs"].isArray())) {
-					cerr << "[Breadboard] config for device '" << classname << "' sets"
-							" a graph buffer interface, but no valid offset given" << endl;
-					continue;
-				}
-				const QJsonArray offs_desc = graphics_desc["offs"].toArray();
-				if(offs_desc.size() != 2) {
-					cerr << "[Breadboard] config for device '" << classname << "' sets"
-							" a graph buffer interface, but offset is malformed (needs x,y, is size " << offs_desc.size() << ")" << endl;
-					continue;
-				}
-
-				QPoint offs(offs_desc[0].toInt(), offs_desc[1].toInt());
-				const unsigned scale = graphics_desc["scale"].toInt(1);
-
-				addGraphics(offs, scale, device);
 			}
 		}
 
@@ -247,16 +226,6 @@ bool Breadboard::saveConfigFile(QString file) {
 		}
 		if(pins_json.size()) {
 			dev_json["pins"] = pins_json;
-		}
-		auto graph = device_graphics.find(id);
-		if(graph != device_graphics.end()) {
-			QJsonObject graph_json;
-			QJsonArray offs_json;
-			offs_json.append(graph->second.offset.x());
-			offs_json.append(graph->second.offset.y());
-			graph_json["offs"] = offs_json;
-			graph_json["scale"] = (int) graph->second.scale;
-			dev_json["graphics"] = graph_json;
 		}
 		devices_json.append(dev_json);
 	}
