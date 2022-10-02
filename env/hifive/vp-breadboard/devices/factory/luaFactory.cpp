@@ -179,11 +179,12 @@ void LuaFactory::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	}
 }
 
-void LuaFactory::printAvailableDevices(){
-	cout << "Available devices: " << endl;
+std::list<DeviceClass> LuaFactory::getAvailableDevices() {
+	std::list<DeviceClass> devices;
 	for(const auto& [name, file] : available_devices) {
-		cout << "\t" << name << " from " << file << endl;
+		devices.push_back(name);
 	}
+	return devices;
 }
 
 bool LuaFactory::deviceExists(DeviceClass classname) {

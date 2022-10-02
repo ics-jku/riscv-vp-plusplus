@@ -4,11 +4,8 @@
 
 #include <iostream>
 
-QRect getGraphicBounds(QImage* buffer) {
-	QRect rect = buffer->rect();
-	rect.setTopLeft(buffer->offset());
-	std::cout << rect.x() << ", " << rect.y() << ", " << rect.width() << ", " << rect.height() << std::endl;
-	return rect;
+QRect getGraphicBounds(QImage& buffer) {
+	return QRect(buffer.offset(), buffer.size());
 }
 
 QRect bb_getRasterBounds() {

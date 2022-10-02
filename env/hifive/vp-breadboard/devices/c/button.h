@@ -8,11 +8,9 @@ class Button : public CDevice {
 public:
 	Button(DeviceID id);
 	~Button();
-	void draw();
 
 	inline static DeviceClass classname = "button";
 	const DeviceClass getClass() const;
-	void draw_area();
 
 	class Button_PIN : public CDevice::PIN_Interface_C {
 	public:
@@ -24,6 +22,7 @@ public:
 	public:
 		Button_Graph(CDevice* device);
 		void initializeBuffer();
+		void draw();
 	};
 
 	class Button_Input : public CDevice::Input_Interface_C {

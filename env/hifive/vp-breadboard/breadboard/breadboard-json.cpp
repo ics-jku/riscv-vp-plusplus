@@ -164,9 +164,6 @@ bool Breadboard::loadConfigFile(QString file) {
 		}
 	}
 
-	if(debug_logging)
-		factory.printAvailableDevices();
-
 	return true;
 }
 

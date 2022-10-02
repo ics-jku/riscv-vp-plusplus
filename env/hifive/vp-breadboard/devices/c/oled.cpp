@@ -1,21 +1,9 @@
 #include "oled.h"
 
 OLED::OLED(DeviceID id) : CDevice(id) {
-	// Pin Layout
-	if(!pin) {
-		layout_pin = PinLayout();
-		layout_pin.emplace(1, PinDesc{PinDesc::Dir::input, "data_command"});
-		pin = std::make_unique<OLED_PIN>(this);
-	}
-	// SPI
-	if(!spi) {
-		spi = std::make_unique<OLED_SPI>(this);
-	}
-	// Graph
-	if(!graph) {
-		layout_graph = Layout{11, 6, "rgba"};
-		graph = std::make_unique<OLED_Graph>(this);
-	}
+	pin = std::make_unique<OLED_PIN>(this);
+	spi = std::make_unique<OLED_SPI>(this);
+	graph = std::make_unique<OLED_Graph>(this);
 }
 OLED::~OLED() {}
 
@@ -23,7 +11,10 @@ const DeviceClass OLED::getClass() const { return classname; }
 
 /* PIN Interface */
 
-OLED::OLED_PIN::OLED_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {}
+OLED::OLED_PIN::OLED_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {
+	layout = PinLayout();
+	layout.emplace(1, PinDesc{PinDesc::Dir::input, "data_command"});
+}
 
 void OLED::OLED_PIN::setPin(PinNumber num, gpio::Tristate val) {
 	if(num == 1) {
@@ -61,19 +52,19 @@ std::pair<uint8_t, uint8_t> match(uint8_t cmd) {
 gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 	OLED* oled_device = static_cast<OLED*>(device);
 	if(oled_device->is_data) {
-		if (oled_device->state.column >= device->graph->buffer->width()) {
+		if (oled_device->state.column >= device->graph->getBuffer().width()) {
 			return 0;
 		}
-		if (oled_device->state.page >= device->graph->buffer->height()/8) {
+		if (oled_device->state.page >= device->graph->getBuffer().height()/8) {
 			return 0;
 		}
-		auto *img = device->graph->buffer->bits();
+		auto *img = device->graph->getBuffer().bits();
 		for(unsigned y=0; y<8; y++) {
 			uint8_t pix=0;
 			if(byte & 1<<y) {
 				pix = 255;
 			}
-			const auto offs = (((oled_device->state.page*8)+y) * device->graph->buffer->width() + oled_device->state.column) * 4; // heavily depends on rgba8888
+			const auto offs = (((oled_device->state.page*8)+y) * device->graph->getBuffer().width() + oled_device->state.column) * 4; // heavily depends on rgba8888
 			img[offs+0] = pix;
 			img[offs+1] = pix;
 			img[offs+2] = pix;
@@ -104,13 +95,15 @@ gpio::SPI_Response OLED::OLED_SPI::send(gpio::SPI_Command byte) {
 
 /* Graphbuf Interface */
 
-OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
+OLED::OLED_Graph::OLED_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {
+	layout = Layout{11, 6, "rgba"};
+}
 
 void OLED::OLED_Graph::initializeBuffer() {
-	auto *img = buffer->bits();
-	for(unsigned x=0; x<buffer->width(); x++) {
-		for(unsigned y=0; y<buffer->height(); y++) {
-			const auto offs = (y * buffer->width() + x) * 4; // heavily depends on rgba8888
+	auto *img = buffer.bits();
+	for(unsigned x=0; x<buffer.width(); x++) {
+		for(unsigned y=0; y<buffer.height(); y++) {
+			const auto offs = (y * buffer.width() + x) * 4; // heavily depends on rgba8888
 			img[offs+0] = 0;
 			img[offs+1] = 0;
 			img[offs+2] = 0;

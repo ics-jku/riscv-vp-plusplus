@@ -2,6 +2,7 @@
 
 #include "actions/get_dir.h"
 #include "actions/json_entry.h"
+#include "actions/device.h"
 
 #include <QApplication>
 #include <QDirIterator>
@@ -120,6 +121,13 @@ void MainWindow::createDropdown() {
 	config->addSeparator();
 	addJsonDir(":/conf");
 
+	devices = menuBar()->addMenu("Devices");
+	for(DeviceClass device : central->getAvailableDevices()) {
+		DeviceEntry *device_entry = new DeviceEntry(device);
+		connect(device_entry, &DeviceEntry::triggered, central, &Central::addDevice);
+		devices->addAction(device_entry);
+	}
+
 	QMenu* window = menuBar()->addMenu("Window");
 	QAction* debug = new QAction("Debug Mode");
 	debug->setShortcut(QKeySequence(Qt::Key_Space));
@@ -135,9 +143,4 @@ void MainWindow::createDropdown() {
 	statusBar()->addPermanentWidget(debug_label);
 	connection_label = new QLabel("Disconnected");
 	statusBar()->addPermanentWidget(connection_label);
-
-//	devices = menuBar()->addMenu("&Devices");
-//	Load *load_lua_dir = new Load("&LUA");
-//	connect(load_lua_dir, &Load::triggered, central, &Central::loadLUA);
-//	devices->addAction(load_lua_dir);
 }

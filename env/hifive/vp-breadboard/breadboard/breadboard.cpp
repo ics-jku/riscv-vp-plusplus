@@ -60,6 +60,8 @@ void Breadboard::writeDevice(DeviceID device) {
 
 /* DEVICE */
 
+std::list<DeviceClass> Breadboard::getAvailableDevices() { return factory.getAvailableDevices(); }
+
 void Breadboard::removeDevice(DeviceID device) {
 	vector<gpio::PinNumber> iofs;
 	auto pin = pin_channels.find(device);
@@ -76,28 +78,28 @@ void Breadboard::removeDevice(DeviceID device) {
 void Breadboard::removeDeviceObjects(DeviceID device) {
 	pin_channels.erase(device);
 	spi_channels.erase(device);
-	devices.erase(device);
 	writing_connections.remove_if([device](PinMapping map){return map.dev->getID() == device;});
 	reading_connections.remove_if([device](PinMapping map){return map.dev->getID() == device;});
+	devices.erase(device);
 }
 
 bool Breadboard::addDevice(DeviceClass classname) {
-	//	DeviceID id = "ID"; // TODO
-	//	if(!addDevice(classname, id)) {
-	//		return false;
-	//	}
-	//	Device* device = devices.at(id).get();
-	//	addGraphics(QPoint(0,0), 1, device);
-	//	DeviceGraphic graphic = device_graphics.at(id);
-	//	if(startDrag(id, graphic, QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
-	//		return true;
-	//	}
+	DeviceID id = "ID"; // TODO
+	if(!addDevice(classname, id)) {
+		return false;
+	}
+	Device* device = devices.at(id).get();
+	if(!device->graph) return true;
+	device->graph->createBuffer(QPoint(0,0), 1);
+	if(startDrag(id, device->graph->getBuffer(), QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
+		return true;
+	}
 	return false;
 }
 
 bool Breadboard::addDevice(DeviceClass classname, DeviceID id) {
 	if(!factory.deviceExists(classname)) {
-		cerr << "[Breadboard] Add device: class name invalid." << endl;
+		cerr << "[Breadboard] Add device: class name '" << classname << "' invalid." << endl;
 		return false;
 	}
 	if(devices.find(id) != devices.end()) {
@@ -209,10 +211,10 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	// Graph Buffers
 	for (auto& [id, device] : devices) {
 		if(device->graph) {
-			QImage* buffer = device->graph->getBuffer();
-			painter.drawImage(buffer->offset(), *buffer);
+			QImage& buffer = device->graph->getBuffer();
+			painter.drawImage(buffer.offset(), buffer);
 			if(debugmode) {
-				painter.drawRect(buffer->offset().x(), buffer->offset().y(), buffer->width(), buffer->height());
+				painter.drawRect(getGraphicBounds(buffer));
 			}
 		}
 	}
@@ -236,6 +238,10 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 			for (uint8_t i = 0; i < 8; i++) {
 				emit(setBit(i, gpio::Tristate::LOW));
 			}
+			break;
+		}
+		case Qt::Key_O: {
+			addDevice("oled");
 			break;
 		}
 		default:
@@ -280,8 +286,8 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 			switch(e->button()) {
 			case Qt::LeftButton:  {
 				if(debugmode) { // Move
-					//					QPoint hotspot = e->pos() - graph.offset;
-					//					startDrag(id, graph, hotspot, Qt::MoveAction);
+					QPoint hotspot = e->pos() - device->graph->getBuffer().offset();
+					startDrag(id, device->graph->getBuffer(), hotspot, Qt::MoveAction);
 				}
 				else { // Input
 					if(device->input) {
@@ -297,7 +303,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 				if(debugmode) {
 					removeDevice(id);
 				}
-				break;
+				return;
 			}
 			}
 		}
@@ -321,29 +327,26 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 			}
 			}
 		}
-		update();
 	}
+	update();
 }
 
 /* Drag and Drop */
 
-//Qt::DropAction Breadboard::startDrag(DeviceID device, DeviceGraphic graphic, QPoint hotspot, Qt::DropAction action) {
-	//	QByteArray itemData;
-	//	QDataStream dataStream(&itemData, QIODevice::WriteOnly);
-	//	dataStream << QString::fromStdString(device) << hotspot;
-	//
-	//	QMimeData *mimeData = new QMimeData;
-	//	mimeData->setData(DEVICE_DRAG_TYPE, itemData);
-	//	QDrag *drag = new QDrag(this);
-	//	drag->setMimeData(mimeData);
-	//	drag->setPixmap(pixmap);
-	////	drag->setPixmap(QPixmap::fromImage(graphic.image).scaled(graphic.scale*graphic.image.width(),
-	////			graphic.scale*graphic.image.height()));
-	//	drag->setHotSpot(hotspot);
-	//
-	//	return drag->exec(action);
-//	return Qt::MoveAction;
-//}
+Qt::DropAction Breadboard::startDrag(DeviceID device, QImage& buffer, QPoint hotspot, Qt::DropAction action) {
+	QByteArray itemData;
+	QDataStream dataStream(&itemData, QIODevice::WriteOnly);
+	dataStream << QString::fromStdString(device) << hotspot;
+
+	QMimeData *mimeData = new QMimeData;
+	mimeData->setData(DEVICE_DRAG_TYPE, itemData);
+	QDrag *drag = new QDrag(this);
+	drag->setMimeData(mimeData);
+	drag->setPixmap(QPixmap::fromImage(buffer));
+	drag->setHotSpot(hotspot);
+
+	return drag->exec(action);
+}
 
 void Breadboard::dragMoveEvent(QDragMoveEvent* e) {
 	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE) && (isBreadboard()?bb_isOnRaster(e->pos()):true)) {
@@ -362,52 +365,53 @@ void Breadboard::dragEnterEvent(QDragEnterEvent* e)  {
 }
 
 void Breadboard::dropEvent(QDropEvent* e) {
-	//	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE)) {
-	//		QByteArray itemData = e->mimeData()->data(DEVICE_DRAG_TYPE);
-	//		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
-	//
-	//		QString q_id;
-	//		QPoint hotspot;
-	//		dataStream >> q_id >> hotspot;
-	//
-	//		DeviceID device_id = q_id.toStdString();
-	//		DeviceGraphic& device_graphic = device_graphics.at(device_id);
-	//
-	//		QPoint upper_left = e->pos() - hotspot;
-	//
-	//		if(!isInsideWindow(device_graphic, upper_left, size())) {
-	//			cerr << "[Breadboard] New device position invalid: Device may not leave window view." << endl;
-	//			e->ignore();
-	//			return;
-	//		}
-	//
-	//		for(const auto& [id, graphic] : device_graphics) {
-	//			if(id == device_id) continue;
-	//			if(isInsideGraphic(graphic, device_graphic, upper_left)) {
-	//				cerr << "[Breadboard] New device position invalid: Overlaps with other device." << endl;
-	//				e->ignore();
-	//				return;
-	//			}
-	//		}
-	//
-	//		if(isBreadboard()) {
-	//			if(bb_isWithinRaster(device_graphic, upper_left)) {
-	//				QPoint dropPositionRaster = bb_getAbsolutePosition(bb_getRow(e->pos()), bb_getIndex(e->pos()));
-	//				upper_left = dropPositionRaster - device_getAbsolutePosition(device_getRow(hotspot), device_getIndex(hotspot));
-	//			} else {
-	//				cerr << "[Breadboard] New device position invalid: Device should be at least partially on raster." << endl;
-	//				e->ignore();
-	//				return;
-	//			}
-	//		}
-	//
-	//		device_graphic.offset = upper_left;
-	//
-	//		e->acceptProposedAction();
-	//	} else {
-	//		cerr << "[Breadboard] New device position invalid: Invalid Mime data type." << endl;
-	//		e->ignore();
-	//	}
+	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE)) {
+		QByteArray itemData = e->mimeData()->data(DEVICE_DRAG_TYPE);
+		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
+
+		QString q_id;
+		QPoint hotspot;
+		dataStream >> q_id >> hotspot;
+
+		DeviceID device_id = q_id.toStdString();
+		QImage& device_buffer = devices.at(device_id)->graph->getBuffer();
+
+		QPoint upper_left = e->pos() - hotspot;
+		QRect device_bounds = QRect(upper_left, getGraphicBounds(device_buffer).size());
+
+		if(!rect().contains(device_bounds)) {
+			cerr << "[Breadboard] New device position invalid: Device may not leave window view." << endl;
+			e->ignore();
+			return;
+		}
+
+		for(const auto& [id, device] : devices) {
+			if(id == device_id) continue;
+			if(device->graph && getGraphicBounds(device->graph->getBuffer()).intersects(device_bounds)) {
+				cerr << "[Breadboard] New device position invalid: Overlaps with other device." << endl;
+				e->ignore();
+				return;
+			}
+		}
+
+		if(isBreadboard()) {
+			if(bb_getRasterBounds().intersects(device_bounds)) {
+				QPoint dropPositionRaster = bb_getAbsolutePosition(bb_getRow(e->pos()), bb_getIndex(e->pos()));
+				upper_left = dropPositionRaster - device_getAbsolutePosition(device_getRow(hotspot), device_getIndex(hotspot));
+			} else {
+				cerr << "[Breadboard] New device position invalid: Device should be at least partially on raster." << endl;
+				e->ignore();
+				return;
+			}
+		}
+
+		device_buffer.setOffset(upper_left);
+
+		e->acceptProposedAction();
+	} else {
+		cerr << "[Breadboard] New device position invalid: Invalid Mime data type." << endl;
+		e->ignore();
+	}
 }
 
 bool Breadboard::isBreadboard() { return bkgnd_path == DEFAULT_PATH; }

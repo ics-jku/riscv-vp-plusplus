@@ -46,14 +46,14 @@ public:
 	};
 
 	class Graphbuf_Interface {
-//	protected: TODO
+	protected:
+		QImage buffer;
 	public:
-		QImage* buffer;
 		virtual ~Graphbuf_Interface();
 		virtual Layout getLayout() = 0;
 		virtual void initializeBuffer() = 0;
-		virtual void registerBuffer(QImage* image);
-		QImage* getBuffer();
+		virtual void createBuffer(QPoint offset, unsigned scale);
+		QImage& getBuffer();
 		void setPixel(const Xoffset, const Yoffset, Pixel);
 		Pixel getPixel(const Xoffset, const Yoffset);
 	};

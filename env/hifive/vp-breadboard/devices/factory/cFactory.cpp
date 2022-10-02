@@ -2,11 +2,12 @@
 
 #include "configurations.h"
 
-void CFactory::printAvailableDevices() {
-	std::cout << "Available Devices: " << std::endl;
-	for(std::pair<DeviceClass, Creator> device : deviceCreators) {
-		std::cout << device.first << std::endl;
+std::list<DeviceClass> CFactory::getAvailableDevices() {
+	std::list<DeviceClass> devices;
+	for(auto const& [classname, creator] : deviceCreators) {
+		devices.push_back(classname);
 	}
+	return devices;
 }
 
 bool CFactory::deviceExists(DeviceClass classname) {

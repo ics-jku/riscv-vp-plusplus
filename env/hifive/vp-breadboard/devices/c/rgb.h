@@ -10,7 +10,6 @@ public:
 
 	inline static DeviceClass classname = "rgb";
 	const DeviceClass getClass() const;
-	void draw_rgb(PinNumber num, bool val);
 
 	class RGB_Pin : public CDevice::PIN_Interface_C {
 	public:
@@ -22,6 +21,7 @@ public:
 	public:
 		RGB_Graph(CDevice* device);
 		void initializeBuffer();
+		void draw(PinNumber num, bool val);
 	};
 };
 

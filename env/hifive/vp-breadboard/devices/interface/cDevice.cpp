@@ -11,7 +11,7 @@ CDevice::PIN_Interface_C::PIN_Interface_C(CDevice* device) : device(device) {}
 CDevice::PIN_Interface_C::~PIN_Interface_C() {}
 
 PinLayout CDevice::PIN_Interface_C::getPinLayout() {
-	return device->layout_pin;
+	return layout;
 }
 
 void CDevice::PIN_Interface_C::setPin(PinNumber num, gpio::Tristate val) {
@@ -38,11 +38,11 @@ CDevice::Config_Interface_C::Config_Interface_C(CDevice* device) : device(device
 CDevice::Config_Interface_C::~Config_Interface_C() {}
 
 Config* CDevice::Config_Interface_C::getConfig() {
-	return device->config;
+	return config;
 }
 
 bool CDevice::Config_Interface_C::setConfig(Config* conf) {
-	device->config = conf;
+	config = conf;
 	return true;
 }
 
@@ -51,7 +51,7 @@ bool CDevice::Config_Interface_C::setConfig(Config* conf) {
 CDevice::Graphbuf_Interface_C::Graphbuf_Interface_C(CDevice* device) : device(device) {}
 CDevice::Graphbuf_Interface_C::~Graphbuf_Interface_C() {}
 
-Layout CDevice::Graphbuf_Interface_C::getLayout() { return device->layout_graph; }
+Layout CDevice::Graphbuf_Interface_C::getLayout() { return layout; }
 void CDevice::Graphbuf_Interface_C::initializeBuffer() {
 	std::cout << "Warning: initialize graph buffer was not implemented" << std::endl;
 }

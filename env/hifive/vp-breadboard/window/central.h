@@ -17,11 +17,13 @@ public:
 	void destroyConnection();
 	bool toggleDebug();
 	void saveJSON(QString file);
+	std::list<DeviceClass> getAvailableDevices();
 
 public slots:
 	void loadJSON(QString file);
 	void clearBreadboard();
 	void loadLUA(std::string dir, bool overwrite_integrated_devices);
+	void addDevice(DeviceClass device);
 
 private slots:
 	void timerUpdate();

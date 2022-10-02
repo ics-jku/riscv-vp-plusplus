@@ -3,15 +3,11 @@
 #include "devices/device.hpp"
 
 class CDevice : public Device {
-
 public:
-	Layout layout_graph;
-	PinLayout layout_pin;
-	Config* config;
-
 	class PIN_Interface_C : public Device::PIN_Interface {
 	protected:
 		CDevice* device;
+		PinLayout layout;
 	public:
 		PIN_Interface_C(CDevice* device);
 		~PIN_Interface_C();
@@ -32,6 +28,7 @@ public:
 	class Config_Interface_C : public Device::Config_Interface {
 	protected:
 		CDevice* device;
+		Config* config;
 	public:
 		Config_Interface_C(CDevice *device);
 		~Config_Interface_C();
@@ -42,6 +39,7 @@ public:
 	class Graphbuf_Interface_C : public Device::Graphbuf_Interface {
 	protected:
 		CDevice* device;
+		Layout layout;
 	public:
 		Graphbuf_Interface_C(CDevice* device);
 		~Graphbuf_Interface_C();

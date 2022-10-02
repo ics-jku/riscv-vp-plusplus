@@ -10,7 +10,6 @@ public:
 
 	inline static DeviceClass classname = "sevensegment";
 	const DeviceClass getClass() const;
-	void draw_segment(PinNumber num, bool val);
 
 	class Segment_PIN : public CDevice::PIN_Interface_C {
 	public:
@@ -22,6 +21,7 @@ public:
 	public:
 		Segment_Graph(CDevice* device);
 		void initializeBuffer();
+		void draw(PinNumber num, bool val);
 	};
 };
 

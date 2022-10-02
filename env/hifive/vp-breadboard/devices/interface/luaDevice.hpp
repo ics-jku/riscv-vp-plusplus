@@ -85,7 +85,7 @@ public:
 		~Graphbuf_Interface_Lua();
 		Layout getLayout();
 		void initializeBuffer();
-		void registerBuffer(QImage* image);
+		void createBuffer(QPoint offset, unsigned scale);
 
 		template<typename FunctionFootprint>
 		void registerGlobalFunctionAndInsertLocalAlias(const std::string name, FunctionFootprint fun);

@@ -4,7 +4,7 @@
 
 #include <QPoint>
 
-QRect getGraphicBounds(QImage* buffer);
+QRect getGraphicBounds(QImage& buffer);
 QRect bb_getRasterBounds();
 
 bool bb_isOnRaster(QPoint pos); // has to be on actual raster position, not over the middle

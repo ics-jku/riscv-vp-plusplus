@@ -6,12 +6,10 @@ void Factory::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	lua_factory.scanAdditionalDir(dir, overwrite_existing);
 }
 
-void Factory::printAvailableDevices() {
-	std::cout << "All Available Devices: " << std::endl;
-	std::cout << "LUA: " << std::endl;
-	lua_factory.printAvailableDevices();
-	std::cout << "C: " << std::endl;
-	c_factory.printAvailableDevices();
+std::list<DeviceClass> Factory::getAvailableDevices() {
+	std::list<DeviceClass> devices = c_factory.getAvailableDevices();
+	devices.merge(lua_factory.getAvailableDevices());
+	return devices;
 }
 
 bool Factory::deviceExists(DeviceClass classname) {

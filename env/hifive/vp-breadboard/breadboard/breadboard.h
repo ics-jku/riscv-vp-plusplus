@@ -41,7 +41,7 @@ class Breadboard : public QWidget {
 	void writeDevice(DeviceID device);
 
 	// Drag and Drop
-//	Qt::DropAction startDrag(DeviceID device, DeviceGraphic graphic, QPoint hotspot, Qt::DropAction action);
+	Qt::DropAction startDrag(DeviceID device, QImage& buffer, QPoint hotspot, Qt::DropAction action);
 	void dropEvent(QDropEvent* e) override;
 	void dragEnterEvent(QDragEnterEvent* e) override;
 	void dragMoveEvent(QDragMoveEvent* e) override;
@@ -72,6 +72,7 @@ public:
 
 	// Devices
 	void removeDeviceObjects(DeviceID device);
+	std::list<DeviceClass> getAvailableDevices();
 
 public slots:
 	void connectionUpdate(bool active);

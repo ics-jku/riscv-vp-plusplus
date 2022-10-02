@@ -13,7 +13,7 @@ class MainWindow : public QMainWindow {
 
 	QMenu *config;
 	std::vector<QMenu*> json_dirs;
-//	QMenu *devices;
+	QMenu *devices;
 
 	QLabel *debug_label;
 	QLabel *connection_label;
