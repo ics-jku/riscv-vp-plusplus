@@ -19,7 +19,9 @@ template <unsigned NumberCores, unsigned NumberInterrupts, unsigned NumberInterr
 struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static_assert(NumberInterrupts <= 4096, "out of bound");
 	static_assert(NumberCores <= 15360, "out of bound");
-	static constexpr unsigned WORDS_FOR_INTERRUPT_ENTRIES = (NumberInterruptEntries + (32 - 1)) / 32;
+	static constexpr unsigned WORDS_FOR_INTERRUPT_ENTRIES = NumberInterruptEntries;
+	// this does not work for the snake example
+	// static constexpr unsigned WORDS_FOR_INTERRUPT_ENTRIES = (NumberInterruptEntries+(32))/32;
 
 	tlm_utils::simple_target_socket<FE310_PLIC> tsock;
 
