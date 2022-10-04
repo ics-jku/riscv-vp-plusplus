@@ -5,7 +5,7 @@ static gpio::Pinstate getAFIO(gpio::PinNumber pin) {
 	return gpio::Pinstate::IOF_SPI;
 }
 
-GPIO::GPIO(sc_core::sc_module_name, Port port) : port{port} {
+GPIO::GPIO(sc_core::sc_module_name, gpio::Port port) : port{port} {
 	tsock.register_b_transport(this, &GPIO::transport);
 
 	router

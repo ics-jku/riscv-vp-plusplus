@@ -18,7 +18,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 19,
+          "global_pin" : 15,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -37,7 +38,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 18,
+          "global_pin" : 14,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -56,7 +58,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 5,
+          "global_pin" : 11,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -75,7 +78,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 6,
+          "global_pin" : 12,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -94,7 +98,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 7,
+          "global_pin" : 13,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -113,7 +118,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 3,
+          "global_pin" : 9,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -132,7 +138,8 @@
       [
         {
           "device_pin" : 1,
-          "global_pin" : 4,
+          "global_pin" : 10,
+          "port": "E",
           "name" : "output",
           "synchronous" : false 
         } 
@@ -143,14 +150,16 @@
       "id"    : "display",
       "spi"   :
       { 
-        "cs_pin" : 15,
+        "cs_pin" : 4,
+        "port": "A",
         "noresponse": true
       },
       "pins"  :
       [
         {
           "device_pin" : 1,
-          "global_pin" : 16,
+          "global_pin" : 2,
+          "port": "A",
           "name": "dc_pin",
           "synchronous" : true
         }

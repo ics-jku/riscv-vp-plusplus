@@ -30,8 +30,9 @@ class Breadboard : public QWidget {
 	QString bkgnd_path;
 
 	// Connections
-	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);
-	void addSPI(gpio::PinNumber global, bool noresponse, Device* device);
+	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, gpio::Port port, std::string name,
+	            Device* device);
+	void addSPI(gpio::PinNumber global, gpio::Port port, bool noresponse, Device* device);
 	void addGraphics(QPoint offset, unsigned scale, Device* device);
 
 	void writeDevice(DeviceID device);

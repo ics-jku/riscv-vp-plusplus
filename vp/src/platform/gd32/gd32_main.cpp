@@ -89,11 +89,11 @@ int sc_main(int argc, char **argv) {
 	USART usart0("USART0");
 	AFIO afio("AFIO");
 	EXTI exti("EXTI");
-	GPIO gpioa("GPIOA", GPIO::Port::A);
-	GPIO gpiob("GPIOB", GPIO::Port::B);
-	GPIO gpioc("GPIOC", GPIO::Port::C);
-	GPIO gpiod("GPIOD", GPIO::Port::D);
-	GPIO gpioe("GPIOE", GPIO::Port::E);
+	GPIO gpioa("GPIOA", gpio::Port::A);
+	GPIO gpiob("GPIOB", gpio::Port::B);
+	GPIO gpioc("GPIOC", gpio::Port::C);
+	GPIO gpiod("GPIOD", gpio::Port::D);
+	GPIO gpioe("GPIOE", gpio::Port::E);
 	SPI spi0("SPI0");
 
 	std::shared_ptr<SS1106> oled = nullptr;

@@ -11,6 +11,8 @@
 #include <stddef.h>
 
 #include <limits>  // std::numeric_limits
+#include <map>
+#include <string>
 
 void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
@@ -108,6 +110,19 @@ struct IOF_Update {  // Server to Client
 		UART_Byte uart;
 		Tristate pin;
 	} payload;
+};
+
+enum class Port {
+	A = 1400,
+	B,
+	C,
+	D,
+	E,
+	UNDEF = 0,
+};
+
+static const std::map<std::string, Port> PORT_MAP{
+    {"A", Port::A}, {"B", Port::B}, {"C", Port::C}, {"D", Port::D}, {"E", Port::E}, {"undef", Port::UNDEF},
 };
 };  // namespace gpio
 

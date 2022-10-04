@@ -57,8 +57,8 @@ void Breadboard::writeDevice(DeviceID device) {
 
 /* CONNECTIONS */
 
-void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name,
-                        Device* device) {
+void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, gpio::Port port,
+                        std::string name, Device* device) {
 	if (!device->pin) {
 		cerr << "[Breadboard] Attempting to add pin connection for device '" << device->getClass()
 		     << "', but device does not implement PIN interface." << endl;
@@ -83,6 +83,7 @@ void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinN
 		pin_channels.emplace(device->getID(), PIN_IOF_Request{.gpio_offs = translatePinToGpioOffs(global),
 		                                                      .global_pin = global,
 		                                                      .device_pin = device_pin,
+		                                                      .port = port,
 		                                                      .fun = [this, device, device_pin](gpio::Tristate pin) {
 			                                                      lua_access.lock();
 			                                                      device->pin->setPin(device_pin, pin);
@@ -92,6 +93,7 @@ void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinN
 		PinMapping mapping = PinMapping{.gpio_offs = translatePinToGpioOffs(global),
 		                                .global_pin = global,
 		                                .device_pin = device_pin,
+		                                .port = port,
 		                                .name = name,
 		                                .dev = device};
 		if (desc.dir == PinDesc::Dir::input || desc.dir == PinDesc::Dir::inout) {
@@ -103,7 +105,7 @@ void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinN
 	}
 }
 
-void Breadboard::addSPI(gpio::PinNumber global, bool noresponse, Device* device) {
+void Breadboard::addSPI(gpio::PinNumber global, gpio::Port port, bool noresponse, Device* device) {
 	if (!device->spi) {
 		cerr << "[Breadboard] Attempting to add SPI connection for device '" << device->getClass()
 		     << "', but device does not implement SPI interface." << endl;
@@ -111,6 +113,7 @@ void Breadboard::addSPI(gpio::PinNumber global, bool noresponse, Device* device)
 	}
 	spi_channels.emplace(device->getID(), SPI_IOF_Request{.gpio_offs = translatePinToGpioOffs(global),
 	                                                      .global_pin = global,
+	                                                      .port = port,
 	                                                      .noresponse = noresponse,
 	                                                      .fun = [this, device](gpio::SPI_Command cmd) {
 		                                                      lua_access.lock();
