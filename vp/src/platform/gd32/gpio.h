@@ -7,6 +7,7 @@
 
 #include "gpio/gpio-server.hpp"
 #include "platform/common/async_event.h"
+#include "spi.h"
 #include "util/tlm_map.h"
 
 struct GPIO : public sc_core::sc_module {
@@ -49,4 +50,6 @@ struct GPIO : public sc_core::sc_module {
 	void register_access_callback(const vp::map::register_access_t &r);
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
+
+	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
 };
