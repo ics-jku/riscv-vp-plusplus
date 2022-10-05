@@ -12,9 +12,9 @@ class Central : public QWidget {
 	Embedded *embedded;
 
    public:
-	Central(const std::string host, const std::string port, QWidget *parent);
+	Central(const std::string host, QWidget *parent);
 	~Central();
-	void destroyConnection();
+	void destroyConnection(gpio::Port port);
 	bool toggleDebug();
 	void saveJSON(QString file);
 
@@ -26,9 +26,9 @@ class Central : public QWidget {
    private slots:
 	void timerUpdate();
 	void connectionLost();
-	void closeIOFs(std::vector<gpio::PinNumber> gpio_offs);
+	void closeIOFs(std::unordered_map<gpio::PinNumber, gpio::Port> iofs);
 
    signals:
-	void connectionUpdate(bool active);
+	void connectionUpdate(bool active, gpio::Port port);
 	void sendStatus(QString message, int ms);
 };

@@ -11,8 +11,8 @@
 #include <stddef.h>
 
 #include <limits>  // std::numeric_limits
-#include <map>
 #include <string>
+#include <unordered_map>
 
 void hexPrint(unsigned char* buf, size_t size);
 void bitPrint(unsigned char* buf, size_t size);
@@ -121,7 +121,7 @@ enum class Port {
 	UNDEF = 0,
 };
 
-static const std::map<std::string, Port> PORT_MAP{
+static const std::unordered_map<std::string, Port> PORT_MAP{
     {"A", Port::A}, {"B", Port::B}, {"C", Port::C}, {"D", Port::D}, {"E", Port::E}, {"undef", Port::UNDEF},
 };
 };  // namespace gpio

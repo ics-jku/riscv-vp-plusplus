@@ -23,23 +23,27 @@ void Breadboard::timerUpdate(gpio::State state) {
 	lua_access.lock();
 	for (PinMapping& c : reading_connections) {
 		// TODO: Only if pin changed?
-		c.dev->pin->setPin(
-		    c.device_pin, state.pins[c.gpio_offs] == gpio::Pinstate::HIGH ? gpio::Tristate::HIGH : gpio::Tristate::LOW);
+		c.dev->pin->setPin(c.device_pin, state.pins[c.global_pin] == gpio::Pinstate::HIGH ? gpio::Tristate::HIGH
+		                                                                                  : gpio::Tristate::LOW);
 	}
 
 	for (PinMapping& c : writing_connections) {
-		emit(setBit(c.gpio_offs, c.dev->pin->getPin(c.device_pin)));
+		emit(setBit(c.global_pin, c.port, c.dev->pin->getPin(c.device_pin)));
 	}
 	lua_access.unlock();
 }
 
-void Breadboard::connectionUpdate(bool active) {
+void Breadboard::connectionUpdate(bool active, gpio::Port port) {
 	if (active) {
 		for (const auto& [id, req] : spi_channels) {
-			emit(registerIOF_SPI(req.gpio_offs, req.fun, req.noresponse));
+			if (port == req.port) {
+				emit(registerIOF_SPI(req.global_pin, req.port, req.fun, req.noresponse));
+			}
 		}
 		for (const auto& [id, req] : pin_channels) {
-			emit(registerIOF_PIN(req.gpio_offs, req.fun));
+			if (port == req.port) {
+				emit(registerIOF_PIN(req.global_pin, req.port, req.fun));
+			}
 		}
 	}
 	// else connection lost
@@ -49,7 +53,7 @@ void Breadboard::writeDevice(DeviceID device) {
 	lua_access.lock();
 	for (PinMapping w : writing_connections) {
 		if (w.dev->getID() == device) {
-			emit(setBit(w.gpio_offs, w.dev->pin->getPin(w.device_pin)));
+			emit(setBit(w.global_pin, w.port, w.dev->pin->getPin(w.device_pin)));
 		}
 	}
 	lua_access.unlock();
@@ -80,8 +84,7 @@ void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinN
 			     << endl;
 			return;
 		}
-		pin_channels.emplace(device->getID(), PIN_IOF_Request{.gpio_offs = translatePinToGpioOffs(global),
-		                                                      .global_pin = global,
+		pin_channels.emplace(device->getID(), PIN_IOF_Request{.global_pin = global,
 		                                                      .device_pin = device_pin,
 		                                                      .port = port,
 		                                                      .fun = [this, device, device_pin](gpio::Tristate pin) {
@@ -90,12 +93,8 @@ void Breadboard::addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinN
 			                                                      lua_access.unlock();
 		                                                      }});
 	} else {
-		PinMapping mapping = PinMapping{.gpio_offs = translatePinToGpioOffs(global),
-		                                .global_pin = global,
-		                                .device_pin = device_pin,
-		                                .port = port,
-		                                .name = name,
-		                                .dev = device};
+		PinMapping mapping =
+		    PinMapping{.global_pin = global, .device_pin = device_pin, .port = port, .name = name, .dev = device};
 		if (desc.dir == PinDesc::Dir::input || desc.dir == PinDesc::Dir::inout) {
 			reading_connections.push_back(mapping);
 		}
@@ -111,16 +110,15 @@ void Breadboard::addSPI(gpio::PinNumber global, gpio::Port port, bool noresponse
 		     << "', but device does not implement SPI interface." << endl;
 		return;
 	}
-	spi_channels.emplace(device->getID(), SPI_IOF_Request{.gpio_offs = translatePinToGpioOffs(global),
-	                                                      .global_pin = global,
-	                                                      .port = port,
-	                                                      .noresponse = noresponse,
-	                                                      .fun = [this, device](gpio::SPI_Command cmd) {
-		                                                      lua_access.lock();
-		                                                      const gpio::SPI_Response ret = device->spi->send(cmd);
-		                                                      lua_access.unlock();
-		                                                      return ret;
-	                                                      }});
+	spi_channels.emplace(
+	    device->getID(),
+	    SPI_IOF_Request{
+	        .global_pin = global, .port = port, .noresponse = noresponse, .fun = [this, device](gpio::SPI_Command cmd) {
+		        lua_access.lock();
+		        const gpio::SPI_Response ret = device->spi->send(cmd);
+		        lua_access.unlock();
+		        return ret;
+	        }});
 }
 
 void Breadboard::addGraphics(QPoint offset, unsigned scale, Device* device) {
@@ -177,13 +175,23 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 			case Qt::Key_0: {
 				uint8_t until = 6;
 				for (uint8_t i = 0; i < 8; i++) {
-					emit(setBit(i, i < until ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
+					for (auto const& [_, port] : gpio::PORT_MAP) {
+						if (port == gpio::Port::UNDEF) {
+							continue;
+						}
+						emit(setBit(i, port, i < until ? gpio::Tristate::HIGH : gpio::Tristate::LOW));
+					}
 				}
 				break;
 			}
 			case Qt::Key_1: {
 				for (uint8_t i = 0; i < 8; i++) {
-					emit(setBit(i, gpio::Tristate::LOW));
+					for (auto const& [_, port] : gpio::PORT_MAP) {
+						if (port == gpio::Port::UNDEF) {
+							continue;
+						}
+						emit(setBit(i, port, gpio::Tristate::LOW));
+					}
 				}
 				break;
 			}

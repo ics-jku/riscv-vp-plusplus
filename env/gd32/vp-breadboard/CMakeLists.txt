@@ -59,7 +59,6 @@ set(SOURCES
     window/actions/json_entry.cpp
     window/actions/get_dir.cpp
     embedded/embedded.cpp
-    embedded/gpio-helpers.cpp
     breadboard/breadboard.cpp
     breadboard/breadboard-json.cpp
     breadboard/raster.cpp

@@ -10,12 +10,12 @@ constexpr bool debug_logging = false;
 /* JSON */
 
 void Breadboard::clear() {
-	std::vector<gpio::PinNumber> iofs;
+	std::unordered_map<gpio::PinNumber, gpio::Port> iofs;
 	for (auto const& [id, spi] : spi_channels) {
-		iofs.push_back(spi.gpio_offs);
+		iofs.insert({spi.global_pin, spi.port});
 	}
 	for (auto const& [id, pin] : pin_channels) {
-		iofs.push_back(pin.gpio_offs);
+		iofs.insert({pin.global_pin, pin.port});
 	}
 	emit(closeIOFs(iofs));
 

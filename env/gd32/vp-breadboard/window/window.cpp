@@ -10,11 +10,11 @@
 #include "actions/json_entry.h"
 
 MainWindow::MainWindow(QString configfile, std::string additional_device_dir, const std::string host,
-                       const std::string port, bool overwrite_integrated_devices, QWidget* parent)
+                       bool overwrite_integrated_devices, QWidget* parent)
     : QMainWindow(parent) {
 	setWindowTitle("MainWindow");
 
-	central = new Central(host, port, this);
+	central = new Central(host, this);
 	central->loadLUA(additional_device_dir, overwrite_integrated_devices);
 	central->loadJSON(configfile);
 	setCentralWidget(central);
@@ -29,7 +29,12 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir, co
 MainWindow::~MainWindow() {}
 
 void MainWindow::quit() {
-	central->destroyConnection();
+	for (auto const& [_, port] : gpio::PORT_MAP) {
+		if (port == gpio::Port::UNDEF) {
+			continue;
+		}
+		central->destroyConnection(port);
+	}
 	QApplication::quit();
 }
 

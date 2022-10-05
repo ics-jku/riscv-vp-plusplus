@@ -9,7 +9,6 @@
 #include <unordered_map>
 
 #include "configurations.h"
-#include "embedded/gpio-helpers.h"
 
 const static QString default_bkgnd = ":/img/virtual_breadboard.png";
 
@@ -62,12 +61,12 @@ class Breadboard : public QWidget {
 	bool isBreadboard();
 
    public slots:
-	void connectionUpdate(bool active);
+	void connectionUpdate(bool active, gpio::Port port);
 
    signals:
-	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
-	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
-	void closeIOF(gpio::PinNumber gpio_offs);
-	void closeIOFs(std::vector<gpio::PinNumber> gpio_offs);
-	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
+	void registerIOF_PIN(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_PIN fun);
+	void registerIOF_SPI(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_SPI fun, bool noresponse);
+	void closeIOF(gpio::PinNumber pin, gpio::Port port);
+	void closeIOFs(std::unordered_map<gpio::PinNumber, gpio::Port> pin);
+	void setBit(gpio::PinNumber pin, gpio::Port port, gpio::Tristate state);
 };

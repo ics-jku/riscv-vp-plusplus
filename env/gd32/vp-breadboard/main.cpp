@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
 	std::string configfile = ":/conf/oled_shield.json";
 	std::string scriptpath = "";
 	std::string host = "localhost";
-	std::string port = "1400";
 	bool overwrite_integrated_devices = false;
 
 	InputParser input(argc, argv);
@@ -66,7 +65,6 @@ int main(int argc, char *argv[]) {
 		}
 		std::cout << "\t--overwrite \tCustom scripts will take priority in registry" << std::endl;
 		std::cout << "\t-d <target_host> (default " << host << ")" << std::endl;
-		std::cout << "\t-p <portnumber>\t (default " << port << ")" << std::endl;
 		return 0;
 	}
 
@@ -87,12 +85,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	{
-		const std::string &port_c = input.getCmdOption("-p");
-		if (!port_c.empty()) {
-			port = port_c;
-		}
-	}
-	{
 		const std::string &scriptpath_c = input.getCmdOption("-s");
 		if (!scriptpath_c.empty()) {
 			scriptpath = scriptpath_c;
@@ -100,8 +92,7 @@ int main(int argc, char *argv[]) {
 	}
 	{ overwrite_integrated_devices = input.cmdOptionExists("--overwrite"); }
 
-	MainWindow w(QString(configfile.c_str()), scriptpath.c_str(), host.c_str(), port.c_str(),
-	             overwrite_integrated_devices);
+	MainWindow w(QString(configfile.c_str()), scriptpath.c_str(), host.c_str(), overwrite_integrated_devices);
 	w.show();
 
 	return a.exec();

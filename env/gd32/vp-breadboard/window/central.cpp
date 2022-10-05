@@ -5,9 +5,9 @@
 
 /* Constructor */
 
-Central::Central(const std::string host, const std::string port, QWidget *parent) : QWidget(parent) {
+Central::Central(const std::string host, QWidget *parent) : QWidget(parent) {
 	breadboard = new Breadboard();
-	embedded = new Embedded(host, port);
+	embedded = new Embedded(host);
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	layout->addWidget(embedded);
@@ -30,20 +30,25 @@ Central::Central(const std::string host, const std::string port, QWidget *parent
 Central::~Central() {}
 
 void Central::connectionLost() {
-	emit(connectionUpdate(false));
+	for (auto const &[_, port] : gpio::PORT_MAP) {
+		if (port == gpio::Port::UNDEF) {
+			continue;
+		}
+		emit(connectionUpdate(false, port));
+	}
 }
 
-void Central::destroyConnection() {
-	embedded->destroyConnection();
+void Central::destroyConnection(gpio::Port port) {
+	embedded->destroyConnection(port);
 }
 
 bool Central::toggleDebug() {
 	return breadboard->toggleDebug();
 }
 
-void Central::closeIOFs(std::vector<gpio::PinNumber> gpio_offs) {
-	for (gpio::PinNumber gpio : gpio_offs) {
-		embedded->closeIOF(gpio);
+void Central::closeIOFs(std::unordered_map<gpio::PinNumber, gpio::Port> iofs) {
+	for (auto const &[pin, port] : iofs) {
+		embedded->closeIOF(pin, port);
 	}
 	breadboard->clearConnections();
 }
@@ -61,8 +66,13 @@ void Central::loadJSON(QString file) {
 	} else {
 		embedded->hide();
 	}
-	if (embedded->gpioConnected()) {
-		breadboard->connectionUpdate(true);
+	for (auto const &[_, port] : gpio::PORT_MAP) {
+		if (port == gpio::Port::UNDEF) {
+			continue;
+		}
+		if (embedded->gpioConnected(port)) {
+			breadboard->connectionUpdate(true, port);
+		}
 	}
 }
 
@@ -83,11 +93,16 @@ void Central::loadLUA(std::string dir, bool overwrite_integrated_devices) {
 /* Timer */
 
 void Central::timerUpdate() {
-	bool reconnect = embedded->timerUpdate();
-	if (reconnect) {
-		emit(connectionUpdate(true));
-	}
-	if (embedded->gpioConnected()) {
-		breadboard->timerUpdate(embedded->getState());
+	for (auto const &[_, port] : gpio::PORT_MAP) {
+		if (port == gpio::Port::UNDEF) {
+			continue;
+		}
+		bool reconnect = embedded->timerUpdate(port);
+		if (reconnect) {
+			emit(connectionUpdate(true, port));
+		}
+		if (embedded->gpioConnected(port)) {
+			breadboard->timerUpdate(embedded->getState(port));
+		}
 	}
 }

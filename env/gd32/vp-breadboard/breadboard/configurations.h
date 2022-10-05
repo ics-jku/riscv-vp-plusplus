@@ -7,7 +7,6 @@
 #include "devices/factory/factory.h"
 
 struct SPI_IOF_Request {
-	gpio::PinNumber gpio_offs;  // calculated from "global pin"
 	gpio::PinNumber global_pin;
 	gpio::Port port;
 	bool noresponse;
@@ -15,7 +14,6 @@ struct SPI_IOF_Request {
 };
 
 struct PIN_IOF_Request {
-	gpio::PinNumber gpio_offs;  // calculated from "global pin"
 	gpio::PinNumber global_pin;
 	gpio::PinNumber device_pin;
 	gpio::Port port;
@@ -29,7 +27,6 @@ struct DeviceGraphic {
 };
 
 struct PinMapping {
-	gpio::PinNumber gpio_offs;  // calculated from "global pin"
 	gpio::PinNumber global_pin;
 	gpio::PinNumber device_pin;
 	gpio::Port port;

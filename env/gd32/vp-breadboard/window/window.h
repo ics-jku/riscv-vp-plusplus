@@ -21,7 +21,7 @@ class MainWindow : public QMainWindow {
 	void createDropdown();
 
    public:
-	MainWindow(QString configfile, std::string additional_device_dir, const std::string host, const std::string port,
+	MainWindow(QString configfile, std::string additional_device_dir, const std::string host,
 	           bool overwrite_integrated_devices = false, QWidget *parent = 0);
 	~MainWindow();
 
