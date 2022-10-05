@@ -20,7 +20,7 @@ Embedded::~Embedded() {}
 /* GPIO */
 
 bool Embedded::timerUpdate(gpio::Port port) {  // return: new connection?
-	GpioInfo* gpio = gpio_map.find(port)->second;
+	GpioObj* gpio = gpio_map.find(port)->second;
 
 	if (gpio->connected && !gpio->client.update()) {
 		emit(connectionLost());
@@ -44,14 +44,14 @@ bool Embedded::gpioConnected(gpio::Port port) {
 }
 
 void Embedded::registerIOF_PIN(PinNumber pin, gpio::Port port, GpioClient::OnChange_PIN fun) {
-	GpioInfo* gpio = gpio_map.find(port)->second;
+	GpioObj* gpio = gpio_map.find(port)->second;
 	if (!gpio->client.isIOFactive(pin)) {
 		const bool success = gpio->client.registerPINOnChange(pin, fun);
 	}
 }
 
 void Embedded::registerIOF_SPI(PinNumber pin, gpio::Port port, GpioClient::OnChange_SPI fun, bool no_response) {
-	GpioInfo* gpio = gpio_map.find(port)->second;
+	GpioObj* gpio = gpio_map.find(port)->second;
 	if (!gpio->client.isIOFactive(pin)) {
 		const bool success = gpio->client.registerSPIOnChange(pin, fun, no_response);
 	}
@@ -66,7 +66,7 @@ void Embedded::destroyConnection(gpio::Port port) {
 }
 
 void Embedded::setBit(gpio::PinNumber pin, gpio::Port port, gpio::Tristate state) {
-	GpioInfo* gpio = gpio_map.find(port)->second;
+	GpioObj* gpio = gpio_map.find(port)->second;
 	if (gpio->connected) {
 		gpio->client.setBit(pin, state);
 	}

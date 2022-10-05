@@ -3,7 +3,7 @@
 #include <QWidget>
 #include <gpio/gpio-client.hpp>
 
-struct GpioInfo {
+struct GpioObj {
 	GpioClient client;
 	bool connected = false;
 };
@@ -11,13 +11,13 @@ struct GpioInfo {
 class Embedded : public QWidget {
 	Q_OBJECT
 
-	GpioInfo gpioa;
-	GpioInfo gpiob;
-	GpioInfo gpioc;
-	GpioInfo gpiod;
-	GpioInfo gpioe;
+	GpioObj gpioa;
+	GpioObj gpiob;
+	GpioObj gpioc;
+	GpioObj gpiod;
+	GpioObj gpioe;
 
-	const std::unordered_map<gpio::Port, GpioInfo*> gpio_map{
+	const std::unordered_map<gpio::Port, GpioObj*> gpio_map{
 	    {gpio::Port::A, &gpioa}, {gpio::Port::B, &gpiob}, {gpio::Port::C, &gpioc},
 	    {gpio::Port::D, &gpiod}, {gpio::Port::E, &gpioe},
 	};
