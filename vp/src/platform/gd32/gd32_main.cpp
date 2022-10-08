@@ -88,12 +88,13 @@ int sc_main(int argc, char **argv) {
 	USART usart0("USART0");
 	AFIO afio("AFIO");
 	EXTI exti("EXTI");
+	SPI spi0("SPI0");
 	GPIO gpioa("GPIOA", gpio::Port::A);
 	GPIO gpiob("GPIOB", gpio::Port::B);
 	GPIO gpioc("GPIOC", gpio::Port::C);
 	GPIO gpiod("GPIOD", gpio::Port::D);
 	GPIO gpioe("GPIOE", gpio::Port::E);
-	SPI spi0("SPI0");
+	std::vector<GPIO *> gpioVec{&gpioa, &gpiob, &gpioc, &gpiod, &gpioe};
 
 	spi0.connect(gpioa.getSPIwriteFunction(4));  // pass spi write calls through to gpio server (port A)
 
@@ -155,6 +156,11 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(gpiod.tsock);
 		ahb.isocks[it++].bind(gpioe.tsock);
 		ahb.isocks[it++].bind(spi0.tsock);
+	}
+
+	for (auto &gpio : gpioVec) {
+		gpio->afio = &afio;
+		gpio->exti = &exti;
 	}
 
 	std::vector<debug_target_if *> threads;

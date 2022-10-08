@@ -40,13 +40,51 @@ GPIO::~GPIO() {
 }
 
 void GPIO::asyncOnchange(gpio::PinNumber bit, gpio::Tristate val) {
-	std::cout << "gpio pin " << (int)bit << " val " << (int)val << std::endl;
-	// TODO
+	const auto state_prev = server.state.pins[bit];
+
+	switch (val) {
+		case gpio::Tristate::UNSET:
+		case gpio::Tristate::LOW:
+		case gpio::Tristate::HIGH:
+			server.state.pins[bit] = toPinstate(val);
+			break;
+		default:
+			std::cout << "[GPIO] Invalid pin value " << (int)val << " on pin " << bit << std::endl;
+	}
+
+	if (state_prev != server.state.pins[bit]) {
+		asyncEvent.notify();
+	}
 }
 
 void GPIO::synchronousChange() {
-	// TODO
-	// interrupts
+	// TODO - not complete and has some bugs
+	gpio::State serverSnapshot = server.state;
+
+	for (gpio::PinNumber i = 0; i < available_pins; i++) {
+		const auto bitmask = 1l << i;
+		uint32_t reg;
+
+		if (i < 4) {
+			reg = afio->afio_extiss0;
+		} else if (i < 8) {
+			reg = afio->afio_extiss1;
+		} else if (i < 12) {
+			reg = afio->afio_extiss2;
+		} else {
+			reg = afio->afio_extiss3;
+		}
+
+		const auto portNum = static_cast<int>(port) - static_cast<int>(gpio::Port::A);
+		const auto afioMask = portNum << (4 * (i % 4));
+		const auto afioEnable = ~(reg ^ afioMask);
+
+		if ((exti->exti_inten & exti->exti_pd & bitmask) && afioEnable) {
+			// TODO
+			std::cout << "interrupt pending for pin " << static_cast<int>(i) << " port " << static_cast<int>(port)
+			          << std::endl;
+		}
+	}
 }
 
 void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
