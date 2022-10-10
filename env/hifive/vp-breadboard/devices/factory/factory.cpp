@@ -1,6 +1,5 @@
 #include "factory.h"
 #include "configurations.h"
-#include <iostream>
 
 void Factory::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	lua_factory.scanAdditionalDir(dir, overwrite_existing);

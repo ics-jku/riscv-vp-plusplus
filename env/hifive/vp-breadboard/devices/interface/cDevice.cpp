@@ -15,11 +15,13 @@ PinLayout CDevice::PIN_Interface_C::getPinLayout() {
 }
 
 void CDevice::PIN_Interface_C::setPin(PinNumber num, gpio::Tristate val) {
-	std::cout << "Warning: setPin was not implemented" << std::endl;
+	std::cerr << "[CDevice] Warning: setPin was not implemented "
+			"for device " << device->getClass() << "." << std::endl;
 }
 
 gpio::Tristate CDevice::PIN_Interface_C::getPin(PinNumber num) {
-	std::cout << "Warning: getPin was not implemented" << std::endl;
+	std::cerr << "[CDevice] Warning: getPin was not implemented "
+			"for device " << device->getClass() << "." << std::endl;
 	return gpio::Tristate::LOW;
 }
 
@@ -29,6 +31,8 @@ CDevice::SPI_Interface_C::SPI_Interface_C(CDevice* device) : device(device) {}
 CDevice::SPI_Interface_C::~SPI_Interface_C() {}
 
 gpio::SPI_Response CDevice::SPI_Interface_C::send(gpio::SPI_Command byte) {
+	std::cerr << "[CDevice] Warning: SPI::send was not implemented "
+			"for device " << device->getClass() << "." << std::endl;
 	return 0;
 }
 
@@ -53,7 +57,8 @@ CDevice::Graphbuf_Interface_C::~Graphbuf_Interface_C() {}
 
 Layout CDevice::Graphbuf_Interface_C::getLayout() { return layout; }
 void CDevice::Graphbuf_Interface_C::initializeBuffer() {
-	std::cout << "Warning: initialize graph buffer was not implemented" << std::endl;
+	std::cerr << "[CDevice] Warning: initialize graph buffer was not "
+			"implemented for device " << device->getClass() << "." << std::endl;
 }
 
 /* Input interface */
@@ -62,9 +67,11 @@ CDevice::Input_Interface_C::Input_Interface_C(CDevice* device) : device(device) 
 CDevice::Input_Interface_C::~Input_Interface_C() {}
 
 void CDevice::Input_Interface_C::onClick(bool active) {
-	std::cout << "Warning: mouse was not implemented" << std::endl;
+	std::cerr << "[CDevice] Warning: onClick was not implemented "
+			"for device " << device->getClass() << "." << std::endl;
 }
 
 void CDevice::Input_Interface_C::onKeypress(Key key, bool active) {
-	std::cout << "Warning: key was not implemented" << std::endl;
+	std::cerr << "[CDevice] Warning: onKeypress was not implemented "
+			"for device " << device->getClass() << "." << std::endl;
 }

@@ -92,7 +92,7 @@ bool Breadboard::loadConfigFile(QString file) {
 			const string& id = device_desc["id"].toString("undefined").toStdString();
 
 			if(!addDevice(classname, id)) {
-				cerr << "[config loader] could not create device '" << classname << "'." << endl;
+				cerr << "[Breadboard] could not create device '" << classname << "'." << endl;
 				continue;
 			}
 			Device* device = devices.at(id).get();

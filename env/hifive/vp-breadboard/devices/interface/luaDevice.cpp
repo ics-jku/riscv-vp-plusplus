@@ -45,7 +45,7 @@ LuaDevice::PIN_Interface_Lua::PIN_Interface_Lua(LuaRef& ref) :
 		m_getPinLayout(ref["getPinLayout"]),
 		m_getPin(ref["getPin"]), m_setPin(ref["setPin"]) {
 	if(!implementsInterface(ref))
-		cerr << "[LuaDevice] [PIN_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+		cerr << "[LuaDevice] WARN: Device " << ref << " not implementing interface" << endl;
 }
 
 LuaDevice::PIN_Interface_Lua::~PIN_Interface_Lua() {}
@@ -64,13 +64,13 @@ PinLayout LuaDevice::PIN_Interface_Lua::getPinLayout() {
 	ret.reserve(r.size());
 	for(unsigned i = 0; i < r.size(); i++) {
 		if(!r[i].isTable()){
-			cerr << "pinlayout return value malformed:" << endl;
-			cerr << i << "\t" << r[i] << endl;
+			cerr << "[LuaDevice] Pin layout return value malformed:" << endl;
+			cerr << "[LuaDevice] " << i << "\t" << r[i] << endl;
 			continue;
 		}
 		//cout << "\tElement " << i << ": " << r[i] << " with length " << r[i].length() << endl;
 		if(r[i].length() < 2 || r[i].length() > 3) {
-			cerr << "Pinlayout element " << i << " (" << r[i] << ") is malformed" << endl;
+			cerr << "[LuaDevice] Pin layout element " << i << " (" << r[i] << ") is malformed" << endl;
 			continue;
 		}
 		PinDesc desc;
@@ -88,7 +88,7 @@ PinLayout LuaDevice::PIN_Interface_Lua::getPinLayout() {
 			desc.dir = PinDesc::Dir::inout;
 		} else {
 			// TODO: Add PWM input here? Or better, lua script has to cope with ratios
-			cerr << "Pinlayout element " << i << " (" << r[i] << "), direction " << direction_raw << " is malformed" << endl;
+			cerr << "[LuaDevice] Pin layout element " << i << " (" << r[i] << "), direction " << direction_raw << " is malformed" << endl;
 			continue;
 		}
 		//cout << "Mapping Device's pin " << number << " (" << desc.name << ")" << endl;
@@ -101,7 +101,7 @@ PinLayout LuaDevice::PIN_Interface_Lua::getPinLayout() {
 gpio::Tristate LuaDevice::PIN_Interface_Lua::getPin(PinNumber num) {
 	const LuaResult r = m_getPin(num);
 	if(!r || !r[0].isBool()) {
-		cerr << "[lua] Device getPin returned malformed output" << endl;
+		cerr << "[LuaDevice] Device getPin returned malformed output" << endl;
 		return gpio::Tristate::LOW;
 	}
 	return r[0].cast<bool>() ? gpio::Tristate::HIGH : gpio::Tristate::LOW;
@@ -114,7 +114,7 @@ void LuaDevice::PIN_Interface_Lua::setPin(PinNumber num, gpio::Tristate val) {
 LuaDevice::SPI_Interface_Lua::SPI_Interface_Lua(LuaRef& ref) :
 		m_send(ref["receiveSPI"]) {
 	if(!implementsInterface(ref))
-		cerr << ref << "not implementing SPI interface" << endl;
+		cerr << "[LuaDevice] " << ref << " not implementing SPI interface" << endl;
 }
 
 LuaDevice::SPI_Interface_Lua::~SPI_Interface_Lua() {}
@@ -123,11 +123,11 @@ LuaDevice::SPI_Interface_Lua::~SPI_Interface_Lua() {}
 gpio::SPI_Response LuaDevice::SPI_Interface_Lua::send(gpio::SPI_Command byte) {
 	LuaResult r = m_send(byte);
 	if(r.size() != 1) {
-		cerr << " send SPI function failed!" << endl;
+		cerr << "[LuaDevice] send SPI function failed!" << endl;
 		return 0;
 	}
 	if(!r[0].isNumber()) {
-		cerr << " send SPI function returned invalid type " << r[0] << endl;
+		cerr << "[LuaDevice] send SPI function returned invalid type " << r[0] << endl;
 		return 0;
 	}
 	return r[0];
@@ -155,13 +155,13 @@ Config* LuaDevice::Config_Interface_Lua::getConfig(){
 
 	for(unsigned i = 0; i < r.size(); i++) {
 		if(!r[i].isTable()){
-			cerr << "config return value malformed:" << endl;
-			cerr << i << "\t" << r[i] << endl;
+			cerr << "[LuaDevice] config return value malformed:" << endl;
+			cerr << "[LuaDevice] " << i << "\t" << r[i] << endl;
 			continue;
 		}
 		//cout << "\tElement " << i << ": " << r[i] << " with length " << r[i].length() << endl;
 		if(r[i].length() != 2) {
-			cerr << "Config element " << i << " (" << r[i] << ") is not a pair" << endl;
+			cerr << "[LuaDevice] Config element " << i << " (" << r[i] << ") is not a pair" << endl;
 			continue;
 		}
 
@@ -169,7 +169,7 @@ Config* LuaDevice::Config_Interface_Lua::getConfig(){
 		LuaRef value = r[i][2];
 
 		if(!name.isString()) {
-			cerr << "Config name " << name << " is not a string" << endl;
+			cerr << "[LuaDevice] Config name " << name << " is not a string" << endl;
 			continue;
 		}
 
@@ -190,7 +190,7 @@ Config* LuaDevice::Config_Interface_Lua::getConfig(){
 			);
 			break;
 		default:
-			cerr << "Config value of unknown type: " << value << endl;
+			cerr << "[LuaDevice] Config value of unknown type: " << value << endl;
 		}
 	}
 	return ret;
@@ -220,7 +220,7 @@ LuaDevice::Graphbuf_Interface_Lua::Graphbuf_Interface_Lua(luabridge::LuaRef& ref
 		m_getGraphBufferLayout(ref["getGraphBufferLayout"]), m_initializeGraphBuffer(ref["initializeGraphBuffer"]),
 		m_env(ref), m_deviceId(device_id), L(l) {
 	if(!implementsInterface(ref))
-		cerr << "[LuaDevice] [Graphbuf_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+		cerr << "[LuaDevice] WARN: Device " << ref << " not implementing interface" << endl;
 
 	declarePixelFormat(L);
 }
@@ -231,14 +231,14 @@ Layout LuaDevice::Graphbuf_Interface_Lua::getLayout() {
 	Layout ret = {0,0,"invalid"};
 	LuaResult r = m_getGraphBufferLayout();
 	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
-		cerr << "[LuaDevice] [Graphbuf_Interface] Layout malformed" << endl;
+		cerr << "[LuaDevice] Graph Layout malformed" << endl;
 		return ret;
 	}
 	ret.width = r[0][1].cast<unsigned>();
 	ret.height = r[0][2].cast<unsigned>();
 	const auto& type = r[0][3];
 	if(!type.isString() || type != string("rgba")) {
-		cerr << "[LuaDevice] [Graphbuf_Interface] Layout type may only be 'rgba' at the moment." << endl;
+		cerr << "[LuaDevice] Graph Layout type may only be 'rgba' at the moment." << endl;
 		return ret;
 	}
 	ret.data_type = type.cast<string>();
@@ -277,7 +277,7 @@ template<typename FunctionFootprint>
 void LuaDevice::Graphbuf_Interface_Lua::registerGlobalFunctionAndInsertLocalAlias(
 		const std::string name, FunctionFootprint fun) {
 	if(m_deviceId.length() == 0 || name.length() == 0) {
-		cerr << "[Graphbuf] Error: Name '" << name << "' or prefix '"
+		cerr << "[LuaDevice] Error: Name '" << name << "' or prefix '"
 				<< m_deviceId << "' invalid!" << endl;
 		return;
 	}
@@ -290,7 +290,7 @@ void LuaDevice::Graphbuf_Interface_Lua::registerGlobalFunctionAndInsertLocalAlia
 
 	const auto global_lua_fun = luabridge::getGlobal(L, globalFunctionName.c_str());
 	if(!global_lua_fun.isFunction()) {
-		cerr << "[Graphbuf] Error: " << globalFunctionName  << " is not valid!" << endl;
+		cerr << "[LuaDevice] Error: " << globalFunctionName  << " is not valid!" << endl;
 		return;
 	}
 	m_env[name.c_str()] = global_lua_fun;
@@ -335,7 +335,7 @@ bool LuaDevice::Graphbuf_Interface_Lua::implementsInterface(const luabridge::Lua
 LuaDevice::Input_Interface_Lua::Input_Interface_Lua(luabridge::LuaRef& ref) : m_onClick(ref["onClick"]),
 		m_onKeypress(ref["onKeypress"]), m_env(ref) {
 	if(!implementsInterface(ref))
-		cerr << "[LuaDevice] [Input_Interface] WARN: Device " << ref << " not implementing interface" << endl;
+		cerr << "[LuaDevice] WARN: Device " << ref << " not implementing interface" << endl;
 }
 
 LuaDevice::Input_Interface_Lua::~Input_Interface_Lua() {}

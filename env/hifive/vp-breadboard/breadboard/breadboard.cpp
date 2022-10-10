@@ -103,6 +103,7 @@ bool Breadboard::addDevice(DeviceClass classname) {
 	}
 
 	if(!addDevice(classname, id)) {
+		cerr << "[Breadboard] Could not add new device " << classname << endl;
 		return false;
 	}
 	Device* device = devices.at(id).get();
@@ -112,6 +113,7 @@ bool Breadboard::addDevice(DeviceClass classname) {
 	if(startDrag(id, QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
 		return true;
 	}
+	cerr << "[Breadboard] Could not add new device " << classname << endl;
 	return false;
 }
 
@@ -316,7 +318,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 						writeDevice(id);
 					}
 				}
-				break;
+				return;
 			}
 			case Qt::RightButton: {
 				if(debugmode) {
@@ -343,6 +345,7 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 						writeDevice(id);
 					}
 				}
+				return;
 			}
 			}
 		}

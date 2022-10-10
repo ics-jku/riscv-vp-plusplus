@@ -15,8 +15,8 @@ const DeviceID& Device::getID() const {
 void Device::fromJSON(QJsonObject json) {
 	if(json.contains("conf") && json["conf"].isObject()) {
 		if(!conf) {
-			std::cerr << "[Factory] config for device '" << getClass() << "' sets"
-					" a Config Interface, but device does no implement it" << std::endl;
+			std::cerr << "[Device] config for device '" << getClass() << "' sets"
+					" a Config Interface, but device does not implement it" << std::endl;
 		}
 		else {
 			QJsonObject conf_obj = json["conf"].toObject();
@@ -33,7 +33,7 @@ void Device::fromJSON(QJsonObject json) {
 					config->emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
 				}
 				else {
-					std::cerr << "Invalid conf element type" << std::endl;
+					std::cerr << "[Device] Invalid conf element type" << std::endl;
 				}
 			}
 			conf->setConfig(config);
@@ -42,7 +42,7 @@ void Device::fromJSON(QJsonObject json) {
 
 	if(json.contains("keybindings") && json["keybindings"].isArray()) {
 		if(!input) {
-			std::cerr << "[Factory] config for device '" << getClass() << "' sets"
+			std::cerr << "[Device] config for device '" << getClass() << "' sets"
 					" keybindings, but device does not implement input interface" << std::endl;
 		}
 		else {
@@ -142,7 +142,7 @@ QImage& Device::Graphbuf_Interface::getBuffer() {
 void Device::Graphbuf_Interface::setPixel(const Xoffset x, const Yoffset y, Pixel p) {
 	auto* img = getBuffer().bits();
 	if(x >= buffer.width() || y >= buffer.height()) {
-		std::cerr << "[Graphbuf] WARN: device write accessing graphbuffer out of bounds!" << std::endl;
+		std::cerr << "[Device] WARN: device write accessing graphbuffer out of bounds!" << std::endl;
 		return;
 	}
 	const auto offs = (y * buffer.width() + x) * 4; // heavily depends on rgba8888
@@ -155,7 +155,7 @@ void Device::Graphbuf_Interface::setPixel(const Xoffset x, const Yoffset y, Pixe
 Pixel Device::Graphbuf_Interface::getPixel(const Xoffset x, const Yoffset y) {
 	auto* img = getBuffer().bits();
 	if(x >= buffer.width() || y >= buffer.height()) {
-		std::cerr << "[Graphbuf] WARN: device read accessing graphbuffer out of bounds!" << std::endl;
+		std::cerr << "[Device] WARN: device read accessing graphbuffer out of bounds!" << std::endl;
 		return Pixel{0,0,0,0};
 	}
 	const auto& offs = (y * buffer.width() + x) * 4; // heavily depends on rgba8888
