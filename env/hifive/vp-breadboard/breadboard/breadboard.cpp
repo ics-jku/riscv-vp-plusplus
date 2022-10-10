@@ -84,7 +84,24 @@ void Breadboard::removeDeviceObjects(DeviceID device) {
 }
 
 bool Breadboard::addDevice(DeviceClass classname) {
-	DeviceID id = "ID"; // TODO
+	DeviceID id;
+	if(devices.size() < std::numeric_limits<unsigned>::max()) {
+		id = std::to_string(devices.size());
+	}
+	else {
+		std::set<unsigned> used_ids;
+		for(auto const& [id_it, device_it] : devices) {
+			used_ids.insert(std::stoi(id_it));
+		}
+		unsigned id_int = 0;
+		for(unsigned used_id : used_ids) {
+			if(used_id > id_int)
+				break;
+			id_int++;
+		}
+		id = std::to_string(id_int);
+	}
+
 	if(!addDevice(classname, id)) {
 		return false;
 	}
@@ -374,6 +391,7 @@ void Breadboard::dropEvent(QDropEvent* e) {
 		dataStream >> q_id >> hotspot;
 
 		DeviceID device_id = q_id.toStdString();
+		if(!devices.at(device_id)->graph) return;
 		QImage& device_buffer = devices.at(device_id)->graph->getBuffer();
 
 		QPoint upper_left = e->pos() - hotspot;
