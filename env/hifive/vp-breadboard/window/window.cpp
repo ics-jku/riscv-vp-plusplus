@@ -100,10 +100,29 @@ void MainWindow::addJsonDir(QString dir) {
 	loadJsonDirEntries(dir);
 }
 
+void MainWindow::loadDevices() {
+	devices->clear();
+	for(DeviceClass device : central->getAvailableDevices()) {
+		DeviceEntry *device_entry = new DeviceEntry(device);
+		connect(device_entry, &DeviceEntry::triggered, central, &Central::addDevice);
+		devices->addAction(device_entry);
+	}
+}
+
+void MainWindow::addLUA(QString dir) {
+	central->loadLUA(dir.toStdString(), false);
+	loadDevices();
+}
+
+void MainWindow::overwriteLUA(QString dir) {
+	central->loadLUA(dir.toStdString(), true);
+	loadDevices();
+}
+
 void MainWindow::createDropdown() {
 	config = menuBar()->addMenu("Config");
 	GetDir* load_config_file = new GetDir("Load JSON file");
-	load_config_file->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+	load_config_file->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
 	connect(load_config_file, &GetDir::triggered, central, &Central::loadJSON);
 	config->addAction(load_config_file);
 	GetDir* save_config = new GetDir("Save to JSON file");
@@ -115,18 +134,26 @@ void MainWindow::createDropdown() {
 	connect(clear_breadboard, &QAction::triggered, central, &Central::clearBreadboard);
 	config->addAction(clear_breadboard);
 	GetDir* load_config_dir = new GetDir("Add JSON directory");
-	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
+	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
 	connect(load_config_dir, &GetDir::triggered, this, &MainWindow::addJsonDir);
 	config->addAction(load_config_dir);
 	config->addSeparator();
 	addJsonDir(":/conf");
 
-	devices = menuBar()->addMenu("Devices");
-	for(DeviceClass device : central->getAvailableDevices()) {
-		DeviceEntry *device_entry = new DeviceEntry(device);
-		connect(device_entry, &DeviceEntry::triggered, central, &Central::addDevice);
-		devices->addAction(device_entry);
-	}
+	devices = new QMenu("Classes");
+	loadDevices();
+	devices_options = menuBar()->addMenu("Devices");
+	devices_options->addMenu(devices);
+	devices_options->addSeparator();
+	GetDir* add_lua_dir = new GetDir("Add LUA directory");
+	connect(add_lua_dir, &GetDir::triggered, this, &MainWindow::addLUA);
+	devices_options->addAction(add_lua_dir);
+	GetDir* overwrite_luas = new GetDir("Overwrite LUA directory");
+	connect(overwrite_luas, &GetDir::triggered, this, &MainWindow::overwriteLUA);
+	devices_options->addAction(overwrite_luas);
+	QAction* reload_devices = new QAction("Reload Devices");
+	connect(reload_devices, &QAction::triggered, this, &MainWindow::loadDevices);
+	devices_options->addAction(reload_devices);
 
 	QMenu* window = menuBar()->addMenu("Window");
 	QAction* debug = new QAction("Debug Mode");

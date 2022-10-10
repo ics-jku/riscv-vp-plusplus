@@ -7,7 +7,7 @@ GetDir::GetDir(QString name) : QAction(name) {
 
 void GetDir::getDirName() {
 	QString path;
-	if(text().startsWith("Add")) {
+	if(text().startsWith("Add") || text().startsWith("Overwrite")) {
 		path = QFileDialog::getExistingDirectory(parentWidget(), "Open Directory", QDir::currentPath(),
 				QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 	} else if(text().startsWith("Save")){
