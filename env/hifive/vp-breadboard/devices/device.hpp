@@ -46,13 +46,16 @@ public:
 	};
 
 	class Graphbuf_Interface {
+		unsigned scale = 1;
 	protected:
 		QImage buffer;
 	public:
 		virtual ~Graphbuf_Interface();
 		virtual Layout getLayout() = 0;
 		virtual void initializeBuffer() = 0;
-		virtual void createBuffer(QPoint offset, unsigned scale);
+		virtual void createBuffer(QPoint offset);
+		void setScale(unsigned scale);
+		unsigned getScale();
 		QImage& getBuffer();
 		void setPixel(const Xoffset, const Yoffset, Pixel);
 		Pixel getPixel(const Xoffset, const Yoffset);

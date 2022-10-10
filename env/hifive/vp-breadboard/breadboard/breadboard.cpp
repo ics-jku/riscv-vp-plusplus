@@ -48,10 +48,10 @@ void Breadboard::connectionUpdate(bool active) {
 	// else connection lost
 }
 
-void Breadboard::writeDevice(DeviceID device) {
+void Breadboard::writeDevice(DeviceID id) {
 	lua_access.lock();
 	for(PinMapping w : writing_connections) {
-		if(w.dev->getID() == device) {
+		if(w.dev->getID() == id) {
 			emit(setBit(w.gpio_offs, w.dev->pin->getPin(w.device_pin)));
 		}
 	}
@@ -62,25 +62,25 @@ void Breadboard::writeDevice(DeviceID device) {
 
 std::list<DeviceClass> Breadboard::getAvailableDevices() { return factory.getAvailableDevices(); }
 
-void Breadboard::removeDevice(DeviceID device) {
+void Breadboard::removeDevice(DeviceID id) {
 	vector<gpio::PinNumber> iofs;
-	auto pin = pin_channels.find(device);
+	auto pin = pin_channels.find(id);
 	if(pin!=pin_channels.end()) {
 		iofs.push_back(pin->second.gpio_offs);
 	}
-	auto spi = spi_channels.find(device);
+	auto spi = spi_channels.find(id);
 	if(spi!=spi_channels.end()) {
 		iofs.push_back(spi->second.gpio_offs);
 	}
-	emit(closeDeviceIOFs(iofs, device));
+	emit(closeDeviceIOFs(iofs, id));
 }
 
-void Breadboard::removeDeviceObjects(DeviceID device) {
-	pin_channels.erase(device);
-	spi_channels.erase(device);
-	writing_connections.remove_if([device](PinMapping map){return map.dev->getID() == device;});
-	reading_connections.remove_if([device](PinMapping map){return map.dev->getID() == device;});
-	devices.erase(device);
+void Breadboard::removeDeviceObjects(DeviceID id) {
+	pin_channels.erase(id);
+	spi_channels.erase(id);
+	writing_connections.remove_if([id](PinMapping map){return map.dev->getID() == id;});
+	reading_connections.remove_if([id](PinMapping map){return map.dev->getID() == id;});
+	devices.erase(id);
 }
 
 bool Breadboard::addDevice(DeviceClass classname) {
@@ -107,8 +107,9 @@ bool Breadboard::addDevice(DeviceClass classname) {
 	}
 	Device* device = devices.at(id).get();
 	if(!device->graph) return true;
-	device->graph->createBuffer(QPoint(0,0), 1);
-	if(startDrag(id, device->graph->getBuffer(), QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
+	device->graph->createBuffer(QPoint(0,0));
+	device->graph->setScale(0);
+	if(startDrag(id, QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
 		return true;
 	}
 	return false;
@@ -228,10 +229,11 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	// Graph Buffers
 	for (auto& [id, device] : devices) {
 		if(device->graph) {
-			QImage& buffer = device->graph->getBuffer();
-			painter.drawImage(buffer.offset(), buffer);
+			QImage buffer = device->graph->getBuffer();
+			painter.drawImage(buffer.offset(), buffer.scaled(buffer.width()*device->graph->getScale(),
+					buffer.height()*device->graph->getScale()));
 			if(debugmode) {
-				painter.drawRect(getGraphicBounds(buffer));
+				painter.drawRect(getGraphicBounds(buffer, device->graph->getScale()));
 			}
 		}
 	}
@@ -299,12 +301,12 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 
 void Breadboard::mousePressEvent(QMouseEvent* e) {
 	for(auto const& [id, device] : devices) {
-		if(device->graph && getGraphicBounds(device->graph->getBuffer()).contains(e->pos())) {
+		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
 			switch(e->button()) {
 			case Qt::LeftButton:  {
 				if(debugmode) { // Move
 					QPoint hotspot = e->pos() - device->graph->getBuffer().offset();
-					startDrag(id, device->graph->getBuffer(), hotspot, Qt::MoveAction);
+					startDrag(id, hotspot, Qt::MoveAction);
 				}
 				else { // Input
 					if(device->input) {
@@ -330,7 +332,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	for(auto const& [id, device] : devices) {
-		if(device->graph && getGraphicBounds(device->graph->getBuffer()).contains(e->pos())) {
+		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
 			switch(e->button()) {
 			case Qt::LeftButton: {
 				if(!debugmode) {
@@ -350,10 +352,17 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 
 /* Drag and Drop */
 
-Qt::DropAction Breadboard::startDrag(DeviceID device, QImage& buffer, QPoint hotspot, Qt::DropAction action) {
+Qt::DropAction Breadboard::startDrag(DeviceID id, QPoint hotspot, Qt::DropAction action) {
+	Device* device = devices.at(id).get();
+	if(!device || !device->graph) return Qt::IgnoreAction;
 	QByteArray itemData;
 	QDataStream dataStream(&itemData, QIODevice::WriteOnly);
-	dataStream << QString::fromStdString(device) << hotspot;
+	dataStream << QString::fromStdString(id) << hotspot;
+
+	QImage buffer = device->graph->getBuffer();
+	unsigned scale = device->graph->getScale();
+	if(!scale) scale = 1;
+	buffer = buffer.scaled(buffer.width()*scale, buffer.height()*scale);
 
 	QMimeData *mimeData = new QMimeData;
 	mimeData->setData(DEVICE_DRAG_TYPE, itemData);
@@ -391,11 +400,14 @@ void Breadboard::dropEvent(QDropEvent* e) {
 		dataStream >> q_id >> hotspot;
 
 		DeviceID device_id = q_id.toStdString();
-		if(!devices.at(device_id)->graph) return;
-		QImage& device_buffer = devices.at(device_id)->graph->getBuffer();
+		Device* device = devices.at(device_id).get();
+		if(!device->graph) return;
+
+		unsigned scale = device->graph->getScale();
+		if(!scale) scale = 1;
 
 		QPoint upper_left = e->pos() - hotspot;
-		QRect device_bounds = QRect(upper_left, getGraphicBounds(device_buffer).size());
+		QRect device_bounds = QRect(upper_left, getGraphicBounds(device->graph->getBuffer(), scale).size());
 
 		if(!rect().contains(device_bounds)) {
 			cerr << "[Breadboard] New device position invalid: Device may not leave window view." << endl;
@@ -403,9 +415,9 @@ void Breadboard::dropEvent(QDropEvent* e) {
 			return;
 		}
 
-		for(const auto& [id, device] : devices) {
-			if(id == device_id) continue;
-			if(device->graph && getGraphicBounds(device->graph->getBuffer()).intersects(device_bounds)) {
+		for(const auto& [id_it, device_it] : devices) {
+			if(id_it == device_id) continue;
+			if(device_it->graph && getGraphicBounds(device_it->graph->getBuffer(), device_it->graph->getScale()).intersects(device_bounds)) {
 				cerr << "[Breadboard] New device position invalid: Overlaps with other device." << endl;
 				e->ignore();
 				return;
@@ -423,7 +435,8 @@ void Breadboard::dropEvent(QDropEvent* e) {
 			}
 		}
 
-		device_buffer.setOffset(upper_left);
+		device->graph->getBuffer().setOffset(upper_left);
+		device->graph->setScale(scale);
 
 		e->acceptProposedAction();
 	} else {

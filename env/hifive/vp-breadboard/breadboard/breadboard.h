@@ -30,18 +30,18 @@ class Breadboard : public QWidget {
 	QString bkgnd_path;
 
 	// Device
-	bool addDevice(DeviceClass classname, DeviceID id);
-	void removeDevice(DeviceID device);
+	bool addDevice(DeviceClass classname, DeviceID device_id);
+	void removeDevice(DeviceID id);
 
 	// Connections
 	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);
 	void addSPI(gpio::PinNumber global, bool noresponse, Device* device);
 	void addGraphics(QPoint offset, unsigned scale, Device* device);
 
-	void writeDevice(DeviceID device);
+	void writeDevice(DeviceID id);
 
 	// Drag and Drop
-	Qt::DropAction startDrag(DeviceID device, QImage& buffer, QPoint hotspot, Qt::DropAction action);
+	Qt::DropAction startDrag(DeviceID device_id, QPoint hotspot, Qt::DropAction action);
 	void dropEvent(QDropEvent* e) override;
 	void dragEnterEvent(QDragEnterEvent* e) override;
 	void dragMoveEvent(QDragMoveEvent* e) override;
@@ -71,7 +71,7 @@ public:
 	bool isBreadboard();
 
 	// Devices
-	void removeDeviceObjects(DeviceID device);
+	void removeDeviceObjects(DeviceID id);
 	std::list<DeviceClass> getAvailableDevices();
 
 public slots:
@@ -82,6 +82,6 @@ signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
 	void closeAllIOFs(std::vector<gpio::PinNumber> gpio_offs);
-	void closeDeviceIOFs(std::vector<gpio::PinNumber> gpio_offs, DeviceID device);
+	void closeDeviceIOFs(std::vector<gpio::PinNumber> gpio_offs, DeviceID device_id);
 	void setBit(gpio::PinNumber gpio_offs, gpio::Tristate state);
 };

@@ -298,8 +298,8 @@ void LuaDevice::Graphbuf_Interface_Lua::registerGlobalFunctionAndInsertLocalAlia
 	//cout << "Registered function " << globalFunctionName << " to " << name << endl;
 };
 
-void LuaDevice::Graphbuf_Interface_Lua::createBuffer(QPoint offset, unsigned scale) {
-	Device::Graphbuf_Interface::createBuffer(offset, scale);
+void LuaDevice::Graphbuf_Interface_Lua::createBuffer(QPoint offset) {
+	Device::Graphbuf_Interface::createBuffer(offset);
 	std::function<Pixel(const Xoffset, const Yoffset)> getBuf = [this](const Xoffset x, const Yoffset y){
 		return getPixel(x, y);
 	};

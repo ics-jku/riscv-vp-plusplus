@@ -85,8 +85,8 @@ typedef unsigned DeviceRow;
 typedef unsigned DeviceIndex;
 
 struct Layout {
-	unsigned width;
-	unsigned height;
+	unsigned width; // as raster rows
+	unsigned height; // as raster indexes
 	std::string data_type;	// Currently ignored and always RGBA8888
 };
 

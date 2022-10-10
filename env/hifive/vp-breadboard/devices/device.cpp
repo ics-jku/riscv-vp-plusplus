@@ -66,11 +66,10 @@ void Device::fromJSON(QJsonObject json) {
 		else {
 			QJsonObject graphics = json["graphics"].toObject();
 			const QJsonArray offs_desc = graphics["offs"].toArray();
-			unsigned scale = graphics["scale"].toInt();
-
 			QPoint offs(offs_desc[0].toInt(), offs_desc[1].toInt());
-
-			graph->createBuffer(offs, scale);
+			graph->createBuffer(offs);
+			unsigned scale = graphics["scale"].toInt();
+			graph->setScale(scale);
 		}
 	}
 }
@@ -110,6 +109,7 @@ QJsonObject Device::toJSON() {
 		offs_json.append(graph->getBuffer().offset().x());
 		offs_json.append(graph->getBuffer().offset().y());
 		graph_json["offs"] = offs_json;
+		graph_json["scale"] = (int) graph->getScale();
 		json["graphics"] = graph_json;
 	}
 	return json;
@@ -121,13 +121,19 @@ Device::Config_Interface::~Config_Interface() {}
 Device::Graphbuf_Interface::~Graphbuf_Interface() {}
 Device::Input_Interface::~Input_Interface() {}
 
-void Device::Graphbuf_Interface::createBuffer(QPoint offset, unsigned scale) {
+void Device::Graphbuf_Interface::createBuffer(QPoint offset) {
 	Layout layout = getLayout();
-	buffer = QImage(layout.width*BB_ICON_SIZE*scale, layout.height*BB_ICON_SIZE*scale, QImage::Format_RGBA8888);
+	buffer = QImage(layout.width*BB_ICON_SIZE, layout.height*BB_ICON_SIZE, QImage::Format_RGBA8888);
 	memset(buffer.bits(), 0x8F, buffer.sizeInBytes());
 	buffer.setOffset(offset);
 	initializeBuffer();
 }
+
+void Device::Graphbuf_Interface::setScale(unsigned scale) {
+	this->scale = scale;
+}
+
+unsigned Device::Graphbuf_Interface::getScale() { return scale; }
 
 QImage& Device::Graphbuf_Interface::getBuffer() {
 	return buffer;
