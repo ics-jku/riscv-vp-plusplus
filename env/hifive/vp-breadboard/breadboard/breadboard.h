@@ -4,6 +4,8 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QPaintEvent>
+#include <QMenu>
+#include <QErrorMessage>
 
 #include <unordered_map>
 #include <list>
@@ -13,6 +15,8 @@
 #include "types.h"
 #include "embedded/gpio-helpers.h"
 #include "devices/factory/factory.h"
+#include "dialog/keybinding.h"
+#include "dialog/config.h"
 
 class Breadboard : public QWidget {
 	Q_OBJECT
@@ -28,6 +32,12 @@ class Breadboard : public QWidget {
 
 	bool debugmode = false;
 	QString bkgnd_path;
+
+	DeviceID active_device_menu;
+	QMenu* device_menu;
+	KeybindingDialog* device_keys;
+	ConfigDialog* device_config;
+	QErrorMessage* error_dialog;
 
 	// Device
 	bool addDevice(DeviceClass classname, DeviceID device_id);
@@ -77,6 +87,13 @@ public:
 public slots:
 	void connectionUpdate(bool active);
 	bool addDevice(DeviceClass classname);
+
+private slots:
+	void openDeviceMenu(QPoint pos);
+	void removeActiveDevice();
+	void scaleActiveDevice();
+	void keybindingActiveDevice();
+	void configActiveDevice();
 
 signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);

@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QMimeData>
 #include <QDrag>
+#include <QInputDialog>
 
 using namespace std;
 
@@ -16,6 +17,26 @@ Breadboard::Breadboard() : QWidget() {
 	QTimer *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, [this]{update();});
 	timer->start(1000/30);
+
+	setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(this, &QWidget::customContextMenuRequested, this, &Breadboard::openDeviceMenu);
+	device_menu = new QMenu(this);
+	QAction* delete_device = new QAction("Delete");
+	connect(delete_device, &QAction::triggered, this, &Breadboard::removeActiveDevice);
+	device_menu->addAction(delete_device);
+	QAction* scale_device = new QAction("Scale");
+	connect(scale_device, &QAction::triggered, this, &Breadboard::scaleActiveDevice);
+	device_menu->addAction(scale_device);
+	QAction* keybinding_device = new QAction("Edit Keybindings");
+	connect(keybinding_device, &QAction::triggered, this, &Breadboard::keybindingActiveDevice);
+	device_menu->addAction(keybinding_device);
+	QAction* config_device = new QAction("Edit configurations");
+	connect(config_device, &QAction::triggered, this, &Breadboard::configActiveDevice);
+	device_menu->addAction(config_device);
+
+	device_keys = new KeybindingDialog(this);
+	device_config = new ConfigDialog(this);
+	error_dialog = new QErrorMessage(this);
 }
 
 Breadboard::~Breadboard() {
@@ -118,6 +139,9 @@ bool Breadboard::addDevice(DeviceClass classname) {
 }
 
 bool Breadboard::addDevice(DeviceClass classname, DeviceID id) {
+	if(!id.size()) {
+		cerr << "[Breadboard] Device ID cannot be empty string!" << endl;
+	}
 	if(!factory.deviceExists(classname)) {
 		cerr << "[Breadboard] Add device: class name '" << classname << "' invalid." << endl;
 		return false;
@@ -243,6 +267,60 @@ void Breadboard::paintEvent(QPaintEvent*) {
 	painter.end();
 }
 
+/* Context Menu */
+
+void Breadboard::openDeviceMenu(QPoint pos) {
+	for(auto const& [id, device] : devices) {
+		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(pos)) {
+			active_device_menu = id;
+			device_menu->popup(mapToGlobal(pos));
+			return;
+		}
+	}
+}
+
+void Breadboard::removeActiveDevice() {
+	if(!active_device_menu.size()) return;
+	removeDevice(active_device_menu);
+	active_device_menu = "";
+}
+
+void Breadboard::scaleActiveDevice() {
+	auto device = devices.find(active_device_menu);
+	if(device == devices.end() || !device->second->graph) {
+		error_dialog->showMessage("Device does not implement graph interface.");
+		return;
+	}
+	bool ok;
+	int scale = QInputDialog::getInt(this, "Input new scale value", "Scale", 1, 1, 10, 1, &ok);
+	if(ok) {
+		device->second->graph->setScale(scale);
+	}
+	active_device_menu = "";
+}
+
+void Breadboard::keybindingActiveDevice() {
+	auto device = devices.find(active_device_menu);
+	if(device == devices.end() || !device->second->input) {
+		error_dialog->showMessage("Device does not implement input interface.");
+		return;
+	}
+	device_keys->setKeys(device->second->input->getKeys());
+	device_keys->exec();
+	active_device_menu = "";
+}
+
+void Breadboard::configActiveDevice() {
+	auto device = devices.find(active_device_menu);
+	if(device == devices.end() || !device->second->conf) {
+		error_dialog->showMessage("Device does not implement config interface.");
+		return;
+	}
+	device_config->setConfig(device->second->conf->getConfig());
+	device_config->exec();
+	active_device_menu = "";
+}
+
 /* User input */
 
 void Breadboard::keyPressEvent(QKeyEvent* e) {
@@ -304,8 +382,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 void Breadboard::mousePressEvent(QMouseEvent* e) {
 	for(auto const& [id, device] : devices) {
 		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
-			switch(e->button()) {
-			case Qt::LeftButton:  {
+			if(e->button() == Qt::LeftButton)  {
 				if(debugmode) { // Move
 					QPoint hotspot = e->pos() - device->graph->getBuffer().offset();
 					startDrag(id, hotspot, Qt::MoveAction);
@@ -320,13 +397,6 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 				}
 				return;
 			}
-			case Qt::RightButton: {
-				if(debugmode) {
-					removeDevice(id);
-				}
-				return;
-			}
-			}
 		}
 	}
 	update();
@@ -335,8 +405,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	for(auto const& [id, device] : devices) {
 		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
-			switch(e->button()) {
-			case Qt::LeftButton: {
+			if(e->button() == Qt::LeftButton) {
 				if(!debugmode) {
 					if(device->input) {
 						lua_access.lock();
@@ -346,7 +415,6 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 					}
 				}
 				return;
-			}
 			}
 		}
 	}
