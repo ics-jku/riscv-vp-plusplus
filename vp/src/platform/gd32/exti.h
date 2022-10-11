@@ -44,6 +44,12 @@ struct EXTI : public sc_core::sc_module {
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
+		if (r.write) {
+			if (r.vptr == &exti_pd) {
+				exti_pd &= ~r.nv;  // writting 1 to a bit in the pd registers, clears the interrupt
+				return;
+			}
+		}
 		r.fn();
 	}
 
