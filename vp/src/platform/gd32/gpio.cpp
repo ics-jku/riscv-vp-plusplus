@@ -100,8 +100,8 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 				[[fallthrough]];
 			case GPIO_CTL0_REG_ADDR: {
 				for (gpio::PinNumber i = 0; i < 8; i++) {
-					auto output_en = (((r.nv >> (4 * i)) & 0b11) > 0);
-					auto afio_en = (((r.nv >> ((4 * i) + 2)) & 0b11) > 1);
+					const auto output_en = (((r.nv >> (4 * i)) & 0b11) > 0);
+					const auto afio_en = (((r.nv >> ((4 * i) + 2)) & 0b11) > 1);
 					if (output_en & afio_en) {
 						const auto afio = getAFIO(i + offset);
 						if (afio == gpio::Pinstate::UNSET)
@@ -115,18 +115,10 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 			case GPIO_BOP_REG_ADDR: {
 				const uint16_t set = (uint16_t)r.nv;
 				const uint16_t clear = (uint16_t)(r.nv >> 16);
+				const uint16_t changed_bits = set | clear;
 
-				uint16_t output_en = 0;
-				for (int i = 0; i < 8; i++) {
-					auto md_mask = 0b11 << (4 * i);
-					output_en |= ((gpio_ctl0 & md_mask) > 0) << i;
-					output_en |= ((gpio_ctl1 & md_mask) > 0) << (i + 8);
-				}
-
-				gpio_octl &= ~(clear & output_en);
-				gpio_octl |= (set & output_en);
-
-				const uint16_t changed_bits = (set | clear) & output_en;
+				gpio_octl &= ~clear;
+				gpio_octl |= set;
 
 				for (gpio::PinNumber i = 0; i < available_pins; i++) {
 					const auto bitoffs = (1l << i);
@@ -141,20 +133,13 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 				break;
 			}
 			case GPIO_BC_REG_ADDR: {
-				uint16_t clear = (uint16_t)r.nv;
+				const uint16_t clear = (uint16_t)r.nv;
 
-				uint16_t output_en = 0;
-				for (int i = 0; i < 8; i++) {
-					auto md_mask = 0b11 << (4 * i);
-					output_en |= ((gpio_ctl0 & md_mask) > 0) << i;
-					output_en |= ((gpio_ctl1 & md_mask) > 0) << (i + 8);
-				}
-
-				gpio_octl &= ~(clear & output_en);
+				gpio_octl &= ~clear;
 
 				for (gpio::PinNumber i = 0; i < available_pins; i++) {
 					const auto bitoffs = (1l << i);
-					if (bitoffs & clear & output_en) {
+					if (bitoffs & clear) {
 						server.state.pins[i] = gpio::Pinstate::LOW;
 						server.pushPin(i, gpio::toTristate(server.state.pins[i]));
 					}
