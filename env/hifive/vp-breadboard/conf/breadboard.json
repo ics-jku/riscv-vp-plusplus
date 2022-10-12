@@ -1,137 +1,159 @@
 {
- "devices" :
-   [
-    { 
-      "class" : "rgb",
-      "id" : "rgb",
-      "graphics" : 
-      {
-        "offs" : [137, 62],
-        "scale" : 2
-      },
-      "pins" : 
-      [
+    "devices": [
         {
-          "device_pin" : 0,
-          "global_pin" : 6,
-          "name" : "r" 
+            "class": "rgb",
+            "graphics": {
+                "offs": [
+                    137,
+                    62
+                ],
+                "scale": 2
+            },
+            "id": "rgb",
+            "pins": [
+                {
+                    "device_pin": 0,
+                    "global_pin": 6,
+                    "name": "r"
+                },
+                {
+                    "device_pin": 1,
+                    "global_pin": 3,
+                    "name": "g"
+                },
+                {
+                    "device_pin": 2,
+                    "global_pin": 5,
+                    "name": "b"
+                }
+            ]
         },
         {
-          "device_pin" : 1,
-          "global_pin" : 3,
-          "name" : "g" 
+            "class": "button",
+            "graphics": {
+                "offs": [
+                    89,
+                    62
+                ],
+                "scale": 1
+            },
+            "id": "reverse_count",
+            "keybindings": [
+                "D",
+                "Up"
+            ],
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 3,
+                    "name": "output"
+                }
+            ]
         },
         {
-          "device_pin" : 2,
-          "global_pin" : 5,
-          "name" : "b" 
+            "class": "sevensegment",
+            "graphics": {
+                "offs": [
+                    5,
+                    50
+                ],
+                "scale": 1
+            },
+            "id": "sevensegment",
+            "pins": [
+                {
+                    "device_pin": 0,
+                    "global_pin": 15,
+                    "name": "top"
+                },
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "name": "top_right"
+                },
+                {
+                    "device_pin": 2,
+                    "global_pin": 17,
+                    "name": "bottom_right"
+                },
+                {
+                    "device_pin": 3,
+                    "global_pin": 18,
+                    "name": "bottom"
+                },
+                {
+                    "device_pin": 4,
+                    "global_pin": 19,
+                    "name": "bottom_left"
+                },
+                {
+                    "device_pin": 5,
+                    "global_pin": 7,
+                    "name": "top_left"
+                },
+                {
+                    "device_pin": 6,
+                    "global_pin": 6,
+                    "name": "center"
+                },
+                {
+                    "device_pin": 7,
+                    "global_pin": 5,
+                    "name": "dot"
+                }
+            ]
+        },
+        {
+            "class": "DHT22",
+            "conf": {
+                "humidity": 70,
+                "temperature": 22
+            },
+            "graphics": {
+                "offs": [
+                    257,
+                    50
+                ],
+                "scale": 1
+            },
+            "id": "tempsens1"
+        },
+        {
+            "class": "SSD1106",
+            "graphics": {
+                "offs": [
+                    245,
+                    98
+                ],
+                "scale": 1
+            },
+            "id": "display",
+            "pins": [
+                {
+                    "device_pin": 1,
+                    "global_pin": 16,
+                    "synchronous": true
+                }
+            ],
+            "spi": {
+                "cs_pin": 15,
+                "noresponse": true
+            }
+        },
+        {
+            "class": "DHT22",
+            "conf": {
+                "humidity": 70,
+                "temperature": 22
+            },
+            "graphics": {
+                "offs": [
+                    245,
+                    50
+                ],
+                "scale": 1
+            },
+            "id": "tempsens2"
         }
-      ]
-    },
-    { 
-      "class" : "button",
-      "id" : "reverse_count",
-      "graphics" : 
-      { 
-        "offs" : [89, 62],
-        "scale" : 1
-      },
-      "pins" : 
-      [
-        {
-          "device_pin" : 1,
-          "global_pin" : 3,
-          "name" : "output",
-          "synchronous": false 
-        } 
-      ],
-      "keybindings" : [ "UP", "D" ]
-    },
-    {
-      "class" : "sevensegment",
-      "id"    : "sevensegment",
-      "pins"  :
-      [
-        {
-          "device_pin" : 0,
-          "global_pin" : 15,
-          "name": "top",
-          "synchronous" : false
-        },
-        {
-          "device_pin" : 1,
-          "global_pin" : 16,
-          "name": "top_right",
-          "synchronous" : false
-        },
-        {
-          "device_pin" : 2,
-          "global_pin" : 17,
-          "name": "bottom_right",
-          "synchronous" : false
-        },
-        {
-          "device_pin" : 3,
-          "global_pin" : 18,
-          "name": "bottom",
-          "synchronous" : false
-        },
-        {
-          "device_pin" : 4,
-          "global_pin" : 19,
-          "name": "bottom_left",
-          "synchronous" : false
-        },
-        {
-          "device_pin" : 5,
-          "global_pin" : 7,
-          "name": "top_left",
-          "synchronous" : false
-        },
-        {
-          "device_pin" : 6,
-          "global_pin" : 6,
-          "name": "center",
-          "synchronous" : false
-        },
-        { 
-          "device_pin" : 7,
-          "global_pin" : 5,
-          "name" : "dot",
-          "synchronous" : false
-        }
-      ],
-     "graphics" :
-     {
-       "offs" : [5, 50],
-       "scale" : 1
-     }
-    },
-    {
-      "class" : "DHT22",
-      "id"    : "tempsens1"
-    },
-    {
-      "class" : "DHT22",
-      "id"    : "tempsens2"
-    },
-    {
-      "class" : "SSD1106",
-      "id"    : "display",
-      "spi"   :
-      { 
-        "cs_pin" : 15,
-        "noresponse": true
-      },
-      "pins"  :
-      [
-        {
-          "device_pin" : 1,
-          "global_pin" : 16,
-          "synchronous" : true,
-          "name": "dc_pin"
-        }
-      ]
-    }
-   ]
+    ]
 }

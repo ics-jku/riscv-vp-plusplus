@@ -240,7 +240,7 @@ LuaDevice::Graphbuf_Interface_Lua::Graphbuf_Interface_Lua(luabridge::LuaRef& ref
 LuaDevice::Graphbuf_Interface_Lua::~Graphbuf_Interface_Lua() {}
 
 Layout LuaDevice::Graphbuf_Interface_Lua::getLayout() {
-	Layout ret = {0,0,"invalid"};
+	Layout ret;
 	LuaResult r = m_getGraphBufferLayout();
 	if(!r || r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
 		cerr << "[LuaDevice] Graph Layout malformed " << r.errorMessage() << endl;

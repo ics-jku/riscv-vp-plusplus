@@ -50,9 +50,10 @@ public:
 	protected:
 		QImage buffer;
 	public:
+		Graphbuf_Interface();
 		virtual ~Graphbuf_Interface();
-		virtual Layout getLayout() = 0;
-		virtual void initializeBuffer() = 0;
+		virtual Layout getLayout();
+		virtual void initializeBuffer();
 		virtual void createBuffer(QPoint offset);
 		void setScale(unsigned scale);
 		unsigned getScale();

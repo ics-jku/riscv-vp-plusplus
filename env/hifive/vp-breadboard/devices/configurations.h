@@ -85,9 +85,9 @@ typedef unsigned DeviceRow;
 typedef unsigned DeviceIndex;
 
 struct Layout {
-	unsigned width; // as raster rows
-	unsigned height; // as raster indexes
-	std::string data_type;	// Currently ignored and always RGBA8888
+	unsigned width = 1; // as raster rows
+	unsigned height = 1; // as raster indexes
+	std::string data_type = "rgba";	// Currently ignored and always RGBA8888
 };
 
 // TODO: Add a scheme that only alpha channel is changed?

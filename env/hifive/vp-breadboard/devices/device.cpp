@@ -4,7 +4,9 @@
 #include <QKeySequence>
 #include <QJsonArray>
 
-Device::Device(const DeviceID id) : m_id(id) {}
+Device::Device(const DeviceID id) : m_id(id) {
+	if(!graph) graph = std::make_unique<Graphbuf_Interface>();
+}
 
 Device::~Device() {}
 
@@ -120,6 +122,28 @@ Device::SPI_Interface::~SPI_Interface() {}
 Device::Config_Interface::~Config_Interface() {}
 Device::Graphbuf_Interface::~Graphbuf_Interface() {}
 Device::Input_Interface::~Input_Interface() {}
+
+Device::Graphbuf_Interface::Graphbuf_Interface() {
+       createBuffer(QPoint(0,0));
+       initializeBuffer();
+}
+
+Layout Device::Graphbuf_Interface::getLayout() {
+       return Layout();
+}
+
+void Device::Graphbuf_Interface::initializeBuffer() {
+       auto *img = buffer.bits();
+       for(unsigned x=0; x<buffer.width(); x++) {
+               for(unsigned y=0; y<buffer.height(); y++) {
+                       const auto offs = (y * buffer.width() + x) * 4; // heavily depends on rgba8888
+                       img[offs+0] = 0;
+                       img[offs+1] = 0;
+                       img[offs+2] = 255;
+                       img[offs+3] = 255;
+               }
+       }
+}
 
 void Device::Graphbuf_Interface::createBuffer(QPoint offset) {
 	Layout layout = getLayout();

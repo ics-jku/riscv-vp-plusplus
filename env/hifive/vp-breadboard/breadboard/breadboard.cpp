@@ -132,7 +132,6 @@ bool Breadboard::addDevice(DeviceClass classname) {
 	}
 	Device* device = devices.at(id).get();
 	if(!device->graph) return true;
-	device->graph->createBuffer(QPoint(0,0));
 	device->graph->setScale(0);
 	if(startDrag(id, QPoint(0,0), Qt::CopyAction) == Qt::CopyAction) {
 		return true;
