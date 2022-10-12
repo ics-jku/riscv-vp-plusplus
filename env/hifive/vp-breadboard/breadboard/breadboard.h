@@ -40,7 +40,7 @@ class Breadboard : public QWidget {
 	QErrorMessage* error_dialog;
 
 	// Device
-	bool addDevice(DeviceClass classname, DeviceID device_id);
+	bool registerDevice(DeviceClass classname, DeviceID device_id);
 	void removeDevice(DeviceID id);
 
 	// Connections

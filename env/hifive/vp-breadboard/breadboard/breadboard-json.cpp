@@ -91,7 +91,7 @@ bool Breadboard::loadConfigFile(QString file) {
 			const string& classname = device_desc["class"].toString("undefined").toStdString();
 			const string& id = device_desc["id"].toString("undefined").toStdString();
 
-			if(!addDevice(classname, id)) {
+			if(!registerDevice(classname, id)) {
 				cerr << "[Breadboard] could not create device '" << classname << "'." << endl;
 				continue;
 			}

@@ -125,8 +125,8 @@ bool Breadboard::addDevice(DeviceClass classname) {
 		id = std::to_string(id_int);
 	}
 
-	if(!addDevice(classname, id)) {
-		cerr << "[Breadboard] Could not add new device " << classname << endl;
+	if(!registerDevice(classname, id)) {
+		cerr << "[Breadboard] Could not register new device " << classname << endl;
 		return false;
 	}
 	Device* device = devices.at(id).get();
@@ -140,7 +140,7 @@ bool Breadboard::addDevice(DeviceClass classname) {
 	return false;
 }
 
-bool Breadboard::addDevice(DeviceClass classname, DeviceID id) {
+bool Breadboard::registerDevice(DeviceClass classname, DeviceID id) {
 	if(!id.size()) {
 		cerr << "[Breadboard] Device ID cannot be empty string!" << endl;
 	}

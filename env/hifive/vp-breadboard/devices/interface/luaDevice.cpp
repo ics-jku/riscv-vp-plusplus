@@ -61,6 +61,9 @@ PinLayout LuaDevice::PIN_Interface_Lua::getPinLayout() {
 	PinLayout ret;
 	LuaResult r = m_getPinLayout();
 	//cout << r.size() << " elements in pinlayout" << endl;
+
+	// TODO: check r
+
 	ret.reserve(r.size());
 	for(unsigned i = 0; i < r.size(); i++) {
 		if(!r[i].isTable()){
@@ -101,14 +104,17 @@ PinLayout LuaDevice::PIN_Interface_Lua::getPinLayout() {
 gpio::Tristate LuaDevice::PIN_Interface_Lua::getPin(PinNumber num) {
 	const LuaResult r = m_getPin(num);
 	if(!r || !r[0].isBool()) {
-		cerr << "[LuaDevice] Device getPin returned malformed output" << endl;
+		cerr << "[LuaDevice] Device getPin returned malformed output: " << r.errorMessage() << endl;
 		return gpio::Tristate::LOW;
 	}
 	return r[0].cast<bool>() ? gpio::Tristate::HIGH : gpio::Tristate::LOW;
 }
 
 void LuaDevice::PIN_Interface_Lua::setPin(PinNumber num, gpio::Tristate val) {
-	m_setPin(num, val == gpio::Tristate::HIGH ? true : false);
+	const LuaResult r = m_setPin(num, val == gpio::Tristate::HIGH ? true : false);
+	if(!r) {
+		cerr << "[LuaDevice] Device setPin error: " << r.errorMessage() << endl;
+	}
 }
 
 LuaDevice::SPI_Interface_Lua::SPI_Interface_Lua(LuaRef& ref) :
@@ -123,7 +129,7 @@ LuaDevice::SPI_Interface_Lua::~SPI_Interface_Lua() {}
 gpio::SPI_Response LuaDevice::SPI_Interface_Lua::send(gpio::SPI_Command byte) {
 	LuaResult r = m_send(byte);
 	if(r.size() != 1) {
-		cerr << "[LuaDevice] send SPI function failed!" << endl;
+		cerr << "[LuaDevice] send SPI function failed! " << r.errorMessage() << endl;
 		return 0;
 	}
 	if(!r[0].isNumber()) {
@@ -151,7 +157,8 @@ bool LuaDevice::Config_Interface_Lua::implementsInterface(const luabridge::LuaRe
 Config* LuaDevice::Config_Interface_Lua::getConfig(){
 	auto ret = new Config();
 	LuaResult r = m_getConf();
-	//cout << r.size() << " elements in config" << endl;
+
+	// TODO: Check success and print result
 
 	for(unsigned i = 0; i < r.size(); i++) {
 		if(!r[i].isTable()){
@@ -211,7 +218,12 @@ bool LuaDevice::Config_Interface_Lua::setConfig(Config* conf) {
 			break;
 		}
 	}
-	return m_setConf(c).wasOk();
+
+	LuaResult r = m_setConf(c);
+	if(!r) {
+		std::cerr << "[LuaDevice] Error setting config of [some] device: : " << r.errorMessage() << std::endl;
+	}
+	return r.wasOk();
 }
 
 LuaDevice::Graphbuf_Interface_Lua::Graphbuf_Interface_Lua(luabridge::LuaRef& ref,
@@ -230,8 +242,8 @@ LuaDevice::Graphbuf_Interface_Lua::~Graphbuf_Interface_Lua() {}
 Layout LuaDevice::Graphbuf_Interface_Lua::getLayout() {
 	Layout ret = {0,0,"invalid"};
 	LuaResult r = m_getGraphBufferLayout();
-	if(r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
-		cerr << "[LuaDevice] Graph Layout malformed" << endl;
+	if(!r || r.size() != 1 || !r[0].isTable() || r[0].length() != 3) {
+		cerr << "[LuaDevice] Graph Layout malformed " << r.errorMessage() << endl;
 		return ret;
 	}
 	ret.width = r[0][1].cast<unsigned>();
