@@ -16,6 +16,7 @@ function setConfig(conf)
     colour_r = conf["colour_r"] or colour_r
     colour_g = conf["colour_g"] or colour_g
     colour_b = conf["colour_b"] or colour_b
+    setLED(colour_r, colour_g, colour_b)
 end
 
 function getPinLayout ()
@@ -41,14 +42,14 @@ local function setLED(r, g, b)
 			local norm_lumen = math.floor((1-dist/extent_center)*255)
 			if norm_lumen < 0 then norm_lumen = 0 end
 			if norm_lumen > 255 then norm_lumen = 255 end
-			setGraphbuffer(x-1, y-1, graphbuf.Pixel(r, g, b, norm_lumen))
+			setGraphbuffer(x-1, y-1, graphbuf.Pixel(math.floor(r), math.floor(g), math.floor(b), norm_lumen))
 		end
 	end
 end
 
 -- optional
 function initializeGraphBuffer()
-	setLED(50, 0, 0)
+	setLED(colour_r * 0.05, colour_g * 0.05, colour_b * 0.05)
 end
 
 function setPin(number, val)
@@ -57,7 +58,7 @@ function setPin(number, val)
 		if val then
 			setLED(colour_r, colour_g, colour_b)
 		else
-			setLED(50, 0, 0)
+			initializeGraphBuffer()
 		end
 	end
 end
