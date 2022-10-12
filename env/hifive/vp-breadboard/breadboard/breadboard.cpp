@@ -13,6 +13,7 @@ using namespace std;
 Breadboard::Breadboard() : QWidget() {
 	setFocusPolicy(Qt::StrongFocus);
 	setAcceptDrops(true);
+	setMouseTracking(true);
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, [this]{update();});
@@ -294,7 +295,7 @@ void Breadboard::scaleActiveDevice() {
 		return;
 	}
 	bool ok;
-	int scale = QInputDialog::getInt(this, "Input new scale value", "Scale", 1, 1, 10, 1, &ok);
+	int scale = QInputDialog::getInt(this, "Input new scale value", "Scale", device->second->graph->getScale(), 1, 10, 1, &ok);
 	if(ok) {
 		device->second->graph->setScale(scale);
 	}
@@ -359,10 +360,6 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 			}
 			break;
 		}
-		case Qt::Key_O: {
-			addDevice("oled");
-			break;
-		}
 		default:
 			for(auto const& [id, device] : devices) {
 				if(device->input) {
@@ -424,21 +421,35 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	for(auto const& [id, device] : devices) {
-		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
-			if(e->button() == Qt::LeftButton) {
-				if(!debugmode) {
-					if(device->input) {
-						lua_access.lock();
-						device->input->onClick(false);
-						lua_access.unlock();
-						writeDevice(id);
-					}
+		if(e->button() == Qt::LeftButton) {
+			if(!debugmode) {
+				if(device->input) {
+					lua_access.lock();
+					device->input->onClick(false);
+					lua_access.unlock();
+					writeDevice(id);
 				}
-				return;
 			}
 		}
 	}
 	update();
+}
+
+void Breadboard::mouseMoveEvent(QMouseEvent* e) {
+	bool device_hit = false;
+	for(auto const& [id, device] : devices) {
+		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
+			QCursor current_cursor = cursor();
+			current_cursor.setShape(Qt::PointingHandCursor);
+			setCursor(current_cursor);
+			device_hit = true;
+		}
+	}
+	if(!device_hit) {
+		QCursor current_cursor = cursor();
+		current_cursor.setShape(Qt::ArrowCursor);
+		setCursor(current_cursor);
+	}
 }
 
 /* Drag and Drop */

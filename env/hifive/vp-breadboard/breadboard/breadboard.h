@@ -62,6 +62,7 @@ class Breadboard : public QWidget {
 	void keyReleaseEvent(QKeyEvent* e) override;
 	void mousePressEvent(QMouseEvent* e) override;
 	void mouseReleaseEvent(QMouseEvent* e) override;
+	void mouseMoveEvent(QMouseEvent* e) override;
 
 public:
 	Breadboard();

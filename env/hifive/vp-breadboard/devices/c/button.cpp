@@ -6,7 +6,6 @@ Button::Button(DeviceID id) : CDevice(id) {
 	graph = std::make_unique<Button_Graph>(this);
 	input = std::make_unique<Button_Input>(this);
 	pin = std::make_unique<Button_PIN>(this);
-	conf = std::make_unique<CDevice::Config_Interface_C>(this);
 }
 
 Button::~Button() {}

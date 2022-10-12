@@ -23,9 +23,6 @@ public slots:
 	void accept() override;
 	void reject() override;
 
-private slots:
-	void removeElement(QLayout *layout);
-
 signals:
 	void configChanged(Config* config);
 };
