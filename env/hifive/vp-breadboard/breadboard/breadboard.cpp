@@ -35,6 +35,7 @@ Breadboard::Breadboard() : QWidget() {
 	device_menu->addAction(config_device);
 
 	device_keys = new KeybindingDialog(this);
+	connect(device_keys, &KeybindingDialog::keysChanged, this, &Breadboard::changeKeybindingActiveDevice);
 	device_config = new ConfigDialog(this);
 	connect(device_config, &ConfigDialog::configChanged, this, &Breadboard::changeConfigActiveDevice);
 	error_dialog = new QErrorMessage(this);
@@ -309,6 +310,15 @@ void Breadboard::keybindingActiveDevice() {
 	device_keys->setKeys(device->second->input->getKeys());
 	device_keys->exec();
 	active_device_menu = "";
+}
+
+void Breadboard::changeKeybindingActiveDevice(Keys keys) {
+	auto device = devices.find(active_device_menu);
+	if(device == devices.end() || !device->second->input) {
+		error_dialog->showMessage("Device does not implement input interface.");
+		return;
+	}
+	device->second->input->setKeys(keys);
 }
 
 void Breadboard::configActiveDevice() {

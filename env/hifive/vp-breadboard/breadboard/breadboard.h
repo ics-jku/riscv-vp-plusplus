@@ -93,6 +93,7 @@ private slots:
 	void removeActiveDevice();
 	void scaleActiveDevice();
 	void keybindingActiveDevice();
+	void changeKeybindingActiveDevice(Keys keys);
 	void configActiveDevice();
 	void changeConfigActiveDevice(Config* config);
 

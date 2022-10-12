@@ -11,6 +11,9 @@ class ConfigDialog : public QDialog {
 	Config *config;
 
 	void addValue(ConfigDescription name, QWidget* value);
+	void addInt(ConfigDescription name, int value);
+	void addBool(ConfigDescription name, bool value);
+	void addString(ConfigDescription name, QString value);
 
 public:
 	ConfigDialog(QWidget* parent);
@@ -22,9 +25,6 @@ public slots:
 
 private slots:
 	void removeElement(QLayout *layout);
-	void addInt(ConfigDescription name, int value);
-	void addBool(ConfigDescription name, bool value);
-	void addString(ConfigDescription name, QString value);
 
 signals:
 	void configChanged(Config* config);
