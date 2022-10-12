@@ -1,6 +1,6 @@
 #include "delete.h"
 
-DeleteButton::DeleteButton(QString text, QWidget *parent) : QPushButton(text, parent) {
+DeleteButton::DeleteButton(QWidget *parent) : QPushButton("Delete", parent) {
 	connect(this, &QPushButton::pressed, this, &DeleteButton::deleteElement);
 }
 

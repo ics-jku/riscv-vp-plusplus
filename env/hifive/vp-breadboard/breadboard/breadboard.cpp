@@ -36,6 +36,7 @@ Breadboard::Breadboard() : QWidget() {
 
 	device_keys = new KeybindingDialog(this);
 	device_config = new ConfigDialog(this);
+	connect(device_config, &ConfigDialog::configChanged, this, &Breadboard::changeConfigActiveDevice);
 	error_dialog = new QErrorMessage(this);
 }
 
@@ -319,6 +320,15 @@ void Breadboard::configActiveDevice() {
 	device_config->setConfig(device->second->conf->getConfig());
 	device_config->exec();
 	active_device_menu = "";
+}
+
+void Breadboard::changeConfigActiveDevice(Config* config) {
+	auto device = devices.find(active_device_menu);
+	if(device == devices.end() || !device->second->conf) {
+		error_dialog->showMessage("Device does not implement config interface.");
+		return;
+	}
+	device->second->conf->setConfig(config);
 }
 
 /* User input */
