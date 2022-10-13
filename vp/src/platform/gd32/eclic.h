@@ -5,14 +5,17 @@
 
 #include <systemc>
 
+#include "core/common/irq_if.h"
 #include "util/memory_map.h"
 #include "util/nuclei_memory_map.h"
 #include "util/tlm_map.h"
 
 template <unsigned NumberInterrupts, uint32_t MaxPriority>
-class ECLIC : public sc_core::sc_module {
+class ECLIC : public sc_core::sc_module, public interrupt_gateway {
    public:
 	tlm_utils::simple_target_socket<ECLIC> tsock;
+
+	external_interrupt_target *target_hart = nullptr;
 
 	RegisterRange regs_cliccfg{0x0, 1};
 	IntegerView<uint8_t> cliccfg{regs_cliccfg};
@@ -49,6 +52,11 @@ class ECLIC : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		vp::mm::route("ECLIC", register_ranges, trans, delay);
+	}
+
+	void gateway_trigger_interrupt(uint32_t irq_id) {
+		// TODO
+		target_hart->trigger_external_interrupt(MachineMode);
 	}
 };
 

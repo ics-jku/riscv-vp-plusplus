@@ -158,3 +158,7 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			ISS::set_csr_value(addr, value);
 	}
 }
+
+void NUCLEI_ISS::trigger_external_interrupt(PrivilegeLevel level) {
+	std::cout << "[vp::nuclei_iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
+}

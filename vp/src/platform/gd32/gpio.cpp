@@ -96,18 +96,26 @@ void GPIO::synchronousChange() {
 			}
 
 			if ((exti->exti_inten & bitmask) && afio_en && ((~exti->exti_pd) & bitmask)) {
+				int intr_id = 0;
+				if (i < 5) {
+					intr_id = i + 25;
+				} else if (i < 10) {
+					intr_id = i + 37;
+				} else {
+					intr_id = i + 49;
+				}
 				if (!(gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::HIGH) {
 					if ((exti->exti_rten & bitmask)) {
 						std::cout << "interrupt (rise) for pin " << static_cast<int>(i) << std::endl;
-						exti->exti_pd |= bitmask;  // set interrupt pending
-						                           // TODO - trigger interrupt
+						exti->exti_pd |= bitmask;                   // set interrupt pending
+						eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
 					}
 					gpio_istat |= bitmask;
 				} else if ((gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::LOW) {
 					if ((exti->exti_ften & bitmask)) {
 						std::cout << "interrupt (fall) for pin " << static_cast<int>(i) << std::endl;
-						exti->exti_pd |= bitmask;  // set interrupt pending
-						                           // TODO - trigger interrupt
+						exti->exti_pd |= bitmask;                   // set interrupt pending
+						eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
 					}
 					gpio_istat &= ~bitmask;
 				}

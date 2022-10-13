@@ -158,9 +158,11 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(spi0.tsock);
 	}
 
+	eclic.target_hart = &core;
 	for (auto &gpio : gpioVec) {
 		gpio->afio = &afio;
 		gpio->exti = &exti;
+		gpio->eclic = &eclic;
 	}
 
 	std::vector<debug_target_if *> threads;
