@@ -149,6 +149,7 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		case MSAVEEPC2_ADDR:
 		case MSAVECAUSE2_ADDR:
 		case JALMNXTI_ADDR:
+			// TODO - Non-Vectored Interrupt
 		case PUSHMCAUSE_ADDR:
 		case PUSHMEPC_ADDR:
 		case PUSHMSUBM_ADDR:
@@ -159,6 +160,54 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 	}
 }
 
-void NUCLEI_ISS::trigger_external_interrupt(PrivilegeLevel level) {
-	std::cout << "[vp::nuclei_iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
+void NUCLEI_ISS::trigger_external_interrupt(uint32_t irq_id) {
+	clic_irq = true;
+}
+
+void NUCLEI_ISS::clear_external_interrupt(uint32_t irq_id) {
+	// TODO
+}
+
+void NUCLEI_ISS::switch_to_trap_handler() {
+	// TODO
+}
+
+void NUCLEI_ISS::run_step() {
+	assert(regs.read(0) == 0);
+
+	// speeds up the execution performance (non debug mode) significantly by
+	// checking the additional flag first
+	if (debug_mode && (breakpoints.find(pc) != breakpoints.end())) {
+		status = CoreExecStatus::HitBreakpoint;
+		return;
+	}
+
+	last_pc = pc;
+	try {
+		exec_step();
+
+		if (clic_irq) {
+			clic_irq = false;
+			switch_to_trap_handler();
+		}
+	} catch (SimulationTrap &e) {
+		// TODO
+		if (trace)
+			std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
+		auto target_mode = prepare_trap(e);
+		ISS::switch_to_trap_handler(target_mode);
+	}
+
+	// NOTE: writes to zero register are supposedly allowed but must be ignored
+	// (reset it after every instruction, instead of checking *rd != zero*
+	// before every register write)
+	regs.regs[regs.zero] = 0;
+
+	// Do not use a check *pc == last_pc* here. The reason is that due to
+	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
+	// to *mepc*).
+	if (shall_exit)
+		status = CoreExecStatus::Terminated;
+
+	performance_and_sync_update(op);
 }

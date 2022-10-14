@@ -84,7 +84,7 @@ int sc_main(int argc, char **argv) {
 
 	RCU rcu("RCU");
 	TIMER timer("TIMER");
-	ECLIC<87, 15> eclic("ECLIC");
+	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY> eclic("ECLIC");
 	USART usart0("USART0");
 	AFIO afio("AFIO");
 	EXTI exti("EXTI");
@@ -159,6 +159,7 @@ int sc_main(int argc, char **argv) {
 	}
 
 	eclic.target_hart = &core;
+	core.eclic = &eclic;
 	for (auto &gpio : gpioVec) {
 		gpio->afio = &afio;
 		gpio->exti = &exti;

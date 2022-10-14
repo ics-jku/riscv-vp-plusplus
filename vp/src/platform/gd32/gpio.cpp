@@ -100,9 +100,9 @@ void GPIO::synchronousChange() {
 				if (i < 5) {
 					intr_id = i + 25;
 				} else if (i < 10) {
-					intr_id = i + 37;
+					intr_id = 42;
 				} else {
-					intr_id = i + 49;
+					intr_id = 59;
 				}
 				if (!(gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::HIGH) {
 					if ((exti->exti_rten & bitmask)) {
