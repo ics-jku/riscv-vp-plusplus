@@ -13,8 +13,8 @@ struct nuclei_csr_mtvec {
 	union {
 		uint32_t reg = 0;
 		struct {
-			unsigned mode : 5;
-			unsigned addr : 27;
+			unsigned mode : 6;
+			unsigned addr : 26;
 		} fields;
 	};
 
@@ -74,6 +74,8 @@ struct nuclei_csr_msubm {
 			unsigned reserved2 : 22;
 		} fields;
 	};
+
+	enum Mode { Normal = 0, Interrupt = 1, Exception = 2, NMI = 3 };
 };
 
 struct nuclei_csr_mdcause {

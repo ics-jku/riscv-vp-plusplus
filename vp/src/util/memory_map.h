@@ -163,7 +163,7 @@ struct IntegerView {
 
 template <typename T, unsigned RowSize = 1>
 struct ArrayView {
-	static_assert(std::is_integral<T>::value || std::is_pod<T>::value, "integer or POD type required");
+	static_assert((std::is_trivial_v<T> || std::is_integral_v<T>), "integral or trivial type required");
 
 	RegisterRange &regs;
 	T *ptr;
