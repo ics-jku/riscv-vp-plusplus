@@ -10,6 +10,7 @@ namespace rv32 {
 struct NUCLEI_ISS : public nuclei_external_interrupt_target, public ISS {
 	nuclei_csr_table csrs;
 	bool clic_irq = false;
+	uint32_t irq_id = 0;
 	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY>* eclic = nullptr;
 
 	NUCLEI_ISS(uint32_t hart_id, bool use_E_base_isa = false) : ISS(hart_id, use_E_base_isa){};
@@ -20,6 +21,8 @@ struct NUCLEI_ISS : public nuclei_external_interrupt_target, public ISS {
 
 	void trigger_external_interrupt(uint32_t irq_id) override;
 	void clear_external_interrupt(uint32_t irq_id) override;
+
+	void return_from_trap_handler(PrivilegeLevel return_mode) override;
 
 	void switch_to_trap_handler();
 
