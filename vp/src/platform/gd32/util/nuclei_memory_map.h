@@ -7,11 +7,15 @@ struct ModRegisterRange : public RegisterRange {
 		assert(end >= start);
 	}
 
-	bool contains(uint64_t addr) {
+	uint64_t to_local(uint64_t addr) override {
+		return ((addr - start) / 4);
+	}
+
+	bool contains(uint64_t addr) override {
 		return addr >= start && addr <= end && (addr - start) % Modulo == 0;
 	}
 
-	void assert_range(size_t len, uint64_t local_addr) {
+	void assert_range(size_t len, uint64_t local_addr) override {
 		assert(len == 1);
 	}
 };

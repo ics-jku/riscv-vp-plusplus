@@ -67,7 +67,7 @@ struct RegisterRange {
 		return addr >= start && addr <= end;
 	}
 
-	uint64_t to_local(uint64_t addr) {
+	virtual uint64_t to_local(uint64_t addr) {
 		return addr - start;
 	}
 
