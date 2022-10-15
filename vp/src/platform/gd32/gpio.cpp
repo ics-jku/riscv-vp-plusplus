@@ -43,7 +43,23 @@ void GPIO::asyncOnchange(gpio::PinNumber bit, gpio::Tristate val) {
 	const auto state_prev = server.state.pins[bit];
 
 	switch (val) {
-		case gpio::Tristate::UNSET:
+		case gpio::Tristate::UNSET: {
+			uint32_t gpio_ctl_reg;
+
+			if (bit < 8) {
+				gpio_ctl_reg = gpio_ctl0;
+			} else {
+				gpio_ctl_reg = gpio_ctl1;
+			}
+
+			const auto pullup_en = ((gpio_ctl_reg >> ((4 * bit) + 2)) & 0b10) && (gpio_octl & (1 << bit));
+
+			if (pullup_en)
+				server.state.pins[bit] = gpio::Pinstate::HIGH;
+			else
+				server.state.pins[bit] = gpio::Pinstate::LOW;
+			break;
+		}
 		case gpio::Tristate::LOW:
 		case gpio::Tristate::HIGH:
 			server.state.pins[bit] = toPinstate(val);
@@ -83,44 +99,32 @@ void GPIO::synchronousChange() {
 		const auto afio_mask = port_num << (4 * (i % 4));
 		const auto afio_en = ~(afio_extiss_reg ^ afio_mask);
 		const auto input_en = ~(gpio_ctl_reg >> (4 * i)) & 0b11;
-		const auto pullup_en = ((gpio_ctl_reg >> ((4 * i) + 2)) & 0b10) && (gpio_octl & bitmask);
 
-		if (input_en) {
-			// TODO
-			// Small optimization: If not set as input, unset will stay unset even if not pullup enabled.
-			if (serverSnapshot.pins[i] == gpio::Pinstate::UNSET) {
-				if (pullup_en)
-					serverSnapshot.pins[i] = gpio::Pinstate::HIGH;
-				else
-					serverSnapshot.pins[i] = gpio::Pinstate::LOW;
+		if (input_en && afio_en && ((exti->exti_inten & ~exti->exti_pd) & bitmask)) {
+			int intr_id = 0;
+			if (i < 5) {
+				intr_id = i + 25;
+			} else if (i < 10) {
+				intr_id = 42;
+			} else {
+				intr_id = 59;
 			}
 
-			if ((exti->exti_inten & bitmask) && afio_en && ((~exti->exti_pd) & bitmask)) {
-				int intr_id = 0;
-				if (i < 5) {
-					intr_id = i + 25;
-				} else if (i < 10) {
-					intr_id = 42;
-				} else {
-					intr_id = 59;
+			if (!(gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::HIGH) {
+				if ((exti->exti_rten & bitmask)) {
+					exti->exti_pd |= bitmask;                   // set interrupt pending
+					eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
 				}
-				if (!(gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::HIGH) {
-					if ((exti->exti_rten & bitmask)) {
-						std::cout << "interrupt (rise) for pin " << static_cast<int>(i) << std::endl;
-						exti->exti_pd |= bitmask;                   // set interrupt pending
-						eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
-					}
-					gpio_istat |= bitmask;
-				} else if ((gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::LOW) {
-					if ((exti->exti_ften & bitmask)) {
-						std::cout << "interrupt (fall) for pin " << static_cast<int>(i) << std::endl;
-						exti->exti_pd |= bitmask;                   // set interrupt pending
-						eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
-					}
-					gpio_istat &= ~bitmask;
+				gpio_istat |= bitmask;
+			} else if ((gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::LOW) {
+				if ((exti->exti_ften & bitmask)) {
+					exti->exti_pd |= bitmask;                   // set interrupt pending
+					eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
 				}
+				gpio_istat &= ~bitmask;
 			}
 		}
+
 		server.state = serverSnapshot;
 	}
 }

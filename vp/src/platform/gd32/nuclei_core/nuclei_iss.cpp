@@ -139,8 +139,30 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		case MTLBCFG_INFO_ADDR:
 			return write(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
 
-		case MTVT_ADDR:
+		case PUSHMCAUSE_ADDR: {
+			uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			trap_check_addr_alignment<4, false>(mem_addr);
+			mem->store_word(mem_addr, get_csr_table()->nuclei_mcause.reg);
+			break;
+		}
+		case PUSHMEPC_ADDR: {
+			uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			trap_check_addr_alignment<4, false>(mem_addr);
+			mem->store_word(mem_addr, get_csr_table()->mepc.reg);
+			break;
+		}
+		case PUSHMSUBM_ADDR: {
+			uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			trap_check_addr_alignment<4, false>(mem_addr);
+			mem->store_word(mem_addr, get_csr_table()->msubm.reg);
+			break;
+		}
+		case JALMNXTI_ADDR:
+			// TODO - Non-Vectored Interrupt
 		case MNXTI_ADDR:
+			// TODO
+
+		case MTVT_ADDR:
 		case MNVEC_ADDR:
 		case MSCRATCHCSW_ADDR:
 		case MSCRATCHCSWL_ADDR:
@@ -148,14 +170,6 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		case MSAVECAUSE1_ADDR:
 		case MSAVEEPC2_ADDR:
 		case MSAVECAUSE2_ADDR:
-		case JALMNXTI_ADDR:
-			// TODO - Non-Vectored Interrupt
-		case PUSHMCAUSE_ADDR:
-			// TODO - Non-Vectored Interrupt
-		case PUSHMEPC_ADDR:
-			// TODO - Non-Vectored Interrupt
-		case PUSHMSUBM_ADDR:
-			// TODO - Non-Vectored Interrupt
 			get_csr_table()->default_write32(addr, value);
 			break;
 		default:
@@ -174,6 +188,7 @@ void NUCLEI_ISS::clear_external_interrupt(uint32_t irq_id) {
 
 void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	// TODO - still a few things missing
+	// TODO updates of mcause, mstatus & mintstatus
 
 	get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.fields.ptyp;
 
@@ -187,7 +202,8 @@ void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 }
 
 void NUCLEI_ISS::switch_to_trap_handler() {
-	// TODO - still a few things missing
+	// TODO updates of mcause, mstatus & mintstatus
+	// they also need to be mirrored -> adapt get/set csr
 
 	// update privlege mode
 	auto pp = prv;
@@ -207,20 +223,23 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 
 	// update mcause
 	get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
+	get_csr_table()->nuclei_mcause.fields.exccode = irq_id;
 
 	auto mode = eclic->clicintattr[irq_id] & 1;
 	if (mode == 0) {
 		// non-vectored
 		if (get_csr_table()->mtvt2.fields.mtvt2en) {
 			// use mtvt2
-			std::cout << "use mtvt2: " << (get_csr_table()->mtvt2.fields.cmmon_code_entry << 2) << std::endl;
 			pc = get_csr_table()->mtvt2.fields.cmmon_code_entry << 2;
 		} else {
 			// use mtvec
-			// pc = get_csr_table()->nuclei_mtvec.fields.addr; // not sure if right. docu is conflicting
+			pc = get_csr_table()->nuclei_mtvec.fields.addr;  // not sure if right. documentation is conflicting
 		}
 	} else {
 		// vectored
+		get_csr_table()->nuclei_mcause.fields.minhv = 1;
+		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + irq_id * 4);
+		get_csr_table()->nuclei_mcause.fields.minhv = 0;
 	}
 
 	if (pc == 0) {
@@ -247,6 +266,7 @@ void NUCLEI_ISS::run_step() {
 		exec_step();
 
 		if (clic_irq) {
+			// TODO check mstatus.mie > 0 (here or somewhere else)
 			clic_irq = false;
 			switch_to_trap_handler();
 		}

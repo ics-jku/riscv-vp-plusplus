@@ -18,7 +18,7 @@ struct GPIO : public sc_core::sc_module {
 
 	uint32_t gpio_ctl0 = 0x44444444;
 	uint32_t gpio_ctl1 = 0x44444444;
-	uint32_t gpio_istat = 0x00000000;  // 0x0000XXXX Don't care?
+	uint32_t gpio_istat = 0x0000FFFF;  // 0x0000XXXX Don't care?
 	uint32_t gpio_octl = 0x00000000;
 	uint32_t gpio_bop = 0x00000000;
 	uint32_t gpio_bc = 0x00000000;
