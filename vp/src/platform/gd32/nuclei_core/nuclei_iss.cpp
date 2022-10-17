@@ -64,8 +64,28 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 		case MTLBCFG_INFO_ADDR:
 			return read(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
 
-		case MTVT_ADDR:
+		case JALMNXTI_ADDR: {
+			if (eclic->clicintip[irq_id]) {
+				pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + irq_id * 4);
+				eclic->clicintip[irq_id] = 0;
+				get_csr_table()->mstatus.fields.mie = 1;
+				return last_pc;
+			} else {
+				get_csr_table()->mstatus.fields.mie = 0;
+				return 0;
+			}
+		}
+
 		case MNXTI_ADDR:
+			/* A read of the mnxti CSR returns either zero,
+			indicating there is no suitable interrupt to service
+			or that the highest ranked interrupt is SHV
+			or that the system is not in a CLIC mode,
+			or returns a non-zero address
+			of the entry in the trap handler table for software trap vectoring. */
+			// TODO
+
+		case MTVT_ADDR:
 		case MNVEC_ADDR:
 		case MSCRATCHCSW_ADDR:
 		case MSCRATCHCSWL_ADDR:
@@ -73,7 +93,6 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 		case MSAVECAUSE1_ADDR:
 		case MSAVEEPC2_ADDR:
 		case MSAVECAUSE2_ADDR:
-		case JALMNXTI_ADDR:
 		case PUSHMCAUSE_ADDR:
 		case PUSHMEPC_ADDR:
 		case PUSHMSUBM_ADDR:
@@ -157,8 +176,10 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			mem->store_word(mem_addr, get_csr_table()->msubm.reg);
 			break;
 		}
+
 		case JALMNXTI_ADDR:
-			// TODO - Non-Vectored Interrupt
+			return;
+
 		case MNXTI_ADDR:
 			// TODO
 
@@ -280,8 +301,9 @@ void NUCLEI_ISS::run_step() {
 	try {
 		exec_step();
 
-		if (clic_irq) {
-			// TODO check mstatus.mie > 0 (here or somewhere else)
+		auto pending =
+		    clic_irq && (get_csr_table()->mstatus.fields.mie & eclic->clicintip[irq_id] & eclic->clicintie[irq_id]);
+		if (pending) {
 			clic_irq = false;
 			get_csr_table()->nuclei_mcause.fields.interrupt = 1;
 			switch_to_trap_handler();

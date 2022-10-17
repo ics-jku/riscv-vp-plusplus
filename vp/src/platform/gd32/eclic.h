@@ -60,6 +60,7 @@ class ECLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	void gateway_trigger_interrupt(uint32_t irq_id) {
 		// TODO
+		clicintip[irq_id] = 1;
 		target_hart->trigger_external_interrupt(irq_id);
 	}
 };
