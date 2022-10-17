@@ -10,7 +10,7 @@ class KeybindingDialog : public QDialog {
 	QFormLayout *layout;
 	Keys keys;
 
-	void add(QKeySequence);
+	void add(int key);
 
 public:
 	KeybindingDialog(QWidget* parent);
@@ -18,6 +18,7 @@ public:
 
 public slots:
 	void accept() override;
+	void reject() override;
 
 signals:
 	void keysChanged(Keys keys);

@@ -66,7 +66,7 @@ set(SOURCES
     breadboard/raster.cpp
     breadboard/dialog/keybinding.cpp
     breadboard/dialog/config.cpp
-    breadboard/dialog/delete.cpp
+    breadboard/dialog/keyedit.cpp
     ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp
     ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
     ../../../vp/src/util/elegantEnums.cpp

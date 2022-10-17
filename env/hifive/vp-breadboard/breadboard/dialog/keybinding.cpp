@@ -2,7 +2,8 @@
 
 #include <QHBoxLayout>
 #include <QPushButton>
-#include <QKeySequenceEdit>
+
+#include "keyedit.h"
 
 KeybindingDialog::KeybindingDialog(QWidget *parent) : QDialog(parent) {
 	layout = new QFormLayout(this);
@@ -14,20 +15,31 @@ KeybindingDialog::KeybindingDialog(QWidget *parent) : QDialog(parent) {
 	buttons->addWidget(closeButton);
 	buttons->addWidget(saveButton);
 	QPushButton *addButton = new QPushButton("Add");
-	connect(addButton, &QPushButton::pressed, [this](){add(QKeySequence());});
+	connect(addButton, &QPushButton::pressed, [this](){add(0);});
 	layout->addRow(addButton);
 	layout->addRow(buttons);
 
 	setWindowTitle("Edit keybindings");
 }
 
-void KeybindingDialog::add(QKeySequence sequence) {
-	keys.emplace(sequence[0]); // TODO intern tatsächlich Tastenkombinationen
-	QKeySequenceEdit *box = new QKeySequenceEdit(sequence);
-	connect(box, &QKeySequenceEdit::keySequenceChanged, [this](QKeySequence newSequence) {
-		add(newSequence); // TODO remove/edit old one
+void KeybindingDialog::add(int key) {
+	keys.emplace(key);
+	QHBoxLayout *value_layout = new QHBoxLayout;
+	KeyEdit *box = new KeyEdit(key);
+	connect(box, &KeyEdit::removeKey, [this](int old_key) {
+		keys.erase(old_key);
 	});
-	layout->insertRow(0, box); // TODO delete
+	connect(box, &KeyEdit::newKey, [this](int new_key) {
+		keys.emplace(new_key);
+	});
+	value_layout->addWidget(box);
+	QPushButton *delete_value = new QPushButton("Delete");
+	connect(delete_value, &QPushButton::pressed, [this, value_layout, box](){
+		keys.erase(box->keySequence()[0]);
+		layout->removeRow(value_layout);
+	});
+	value_layout->addWidget(delete_value);
+	layout->insertRow(0, value_layout);
 }
 
 void KeybindingDialog::accept() {
@@ -35,11 +47,21 @@ void KeybindingDialog::accept() {
 	while(layout->rowCount() > 2) {
 		layout->removeRow(0);
 	}
+	keys.clear();
 	QDialog::accept();
 }
 
+void KeybindingDialog::reject() {
+	while(layout->rowCount() > 2) {
+		layout->removeRow(0);
+	}
+	keys.clear();
+	QDialog::reject();
+}
+
 void KeybindingDialog::setKeys(Keys keys) {
+	this->keys.clear();
 	for(const Key& key : keys) {
-		add(QKeySequence(key));
+		add(key);
 	}
 }
