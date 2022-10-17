@@ -187,24 +187,27 @@ void NUCLEI_ISS::clear_external_interrupt(uint32_t irq_id) {
 }
 
 void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
-	// TODO - still a few things missing
-	// TODO updates of mcause, mstatus & mintstatus
+	// update privlege mode
+	prv = get_csr_table()->mstatus.fields.mpp;
 
+	// update machine sub-mode
 	get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.fields.ptyp;
 
-	get_csr_table()->mintstatus.fields.mil = get_csr_table()->nuclei_mcause.fields.mpil;
-
-	prv = get_csr_table()->mstatus.fields.mpp;
+	// update mstatus
 	get_csr_table()->mstatus.fields.mie = get_csr_table()->mstatus.fields.mpie;
 	get_csr_table()->mstatus.fields.mpie = 1;
 
+	get_csr_table()->mintstatus.fields.mil = get_csr_table()->nuclei_mcause.fields.mpil;
+
+	// mirror mcause/mstatus MPIE & MPP fields
+	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
+	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
+
+	// update pc
 	pc = get_csr_table()->mepc.reg;
 }
 
 void NUCLEI_ISS::switch_to_trap_handler() {
-	// TODO updates of mcause, mstatus & mintstatus
-	// they also need to be mirrored -> adapt get/set csr
-
 	// update privlege mode
 	auto pp = prv;
 	prv = MachineMode;
@@ -225,6 +228,10 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
 	get_csr_table()->nuclei_mcause.fields.exccode = irq_id;
 
+	// mirror mcause/mstatus MPIE & MPP fields
+	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
+	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
+
 	auto mode = eclic->clicintattr[irq_id] & 1;
 	if (mode == 0) {
 		// non-vectored
@@ -240,6 +247,14 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 		get_csr_table()->nuclei_mcause.fields.minhv = 1;
 		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + irq_id * 4);
 		get_csr_table()->nuclei_mcause.fields.minhv = 0;
+	}
+
+	if (pc == 0) {
+		static bool once = true;
+		if (once)
+			std::cout << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error."
+			          << std::endl;
+		once = false;
 	}
 
 	if (pc == 0) {
@@ -268,12 +283,15 @@ void NUCLEI_ISS::run_step() {
 		if (clic_irq) {
 			// TODO check mstatus.mie > 0 (here or somewhere else)
 			clic_irq = false;
+			get_csr_table()->nuclei_mcause.fields.interrupt = 1;
 			switch_to_trap_handler();
 		}
 	} catch (SimulationTrap &e) {
 		// TODO
 		if (trace)
 			std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
+		get_csr_table()->nuclei_mcause.fields.interrupt = 0;
+		// switch_to_trap_handler();
 	}
 
 	// NOTE: writes to zero register are supposedly allowed but must be ignored

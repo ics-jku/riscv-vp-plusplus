@@ -330,7 +330,7 @@ struct nuclei_csr_mtlb_ctl {
 };
 
 namespace csr {
-constexpr uint32_t MCAUSE_MASK = 0b11111000111111111111000000000000;
+constexpr uint32_t MCAUSE_MASK = 0b11111000111111110000111111111111;
 constexpr uint32_t MILM_CTL_MASK = 0b11111111111111111111110000000001;
 constexpr uint32_t MDLM_CTL_MASK = MILM_CTL_MASK;
 constexpr uint32_t MSUBM_MASK = 0b1111000000;
