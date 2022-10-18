@@ -38,20 +38,20 @@ class Breadboard : public QWidget {
 	KeybindingDialog* device_keys;
 	ConfigDialog* device_config;
 	QErrorMessage* error_dialog;
+	QMenu* add_device;
 
 	// Device
 	bool registerDevice(DeviceClass classname, DeviceID device_id);
 	void removeDevice(DeviceID id);
 
 	// Connections
-	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);
-	void addSPI(gpio::PinNumber global, bool noresponse, Device* device);
-	void addGraphics(QPoint offset, unsigned scale, Device* device);
+	void registerPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);
+	void registerSPI(gpio::PinNumber global, bool noresponse, Device* device);
 
 	void writeDevice(DeviceID id);
 
 	// Drag and Drop
-	Qt::DropAction startDrag(DeviceID device_id, QPoint hotspot, Qt::DropAction action);
+	bool moveDevice(DeviceID device_id, QPoint position, QPoint hotspot);
 	void dropEvent(QDropEvent* e) override;
 	void dragEnterEvent(QDragEnterEvent* e) override;
 	void dragMoveEvent(QDragMoveEvent* e) override;
@@ -87,10 +87,10 @@ public:
 
 public slots:
 	void connectionUpdate(bool active);
-	bool addDevice(DeviceClass classname);
+	bool addDevice(DeviceClass classname, QPoint pos);
 
 private slots:
-	void openDeviceMenu(QPoint pos);
+	void openContextMenu(QPoint pos);
 	void removeActiveDevice();
 	void scaleActiveDevice();
 	void keybindingActiveDevice();

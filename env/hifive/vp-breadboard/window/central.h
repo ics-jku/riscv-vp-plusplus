@@ -23,7 +23,6 @@ public slots:
 	void loadJSON(QString file);
 	void clearBreadboard();
 	void loadLUA(std::string dir, bool overwrite_integrated_devices);
-	void addDevice(DeviceClass device);
 
 private slots:
 	void timerUpdate();

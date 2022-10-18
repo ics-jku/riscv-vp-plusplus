@@ -62,10 +62,6 @@ std::list<DeviceClass> Central::getAvailableDevices() {
 	return breadboard->getAvailableDevices();
 }
 
-void Central::addDevice(DeviceClass device) {
-	breadboard->addDevice(device);
-}
-
 void Central::loadJSON(QString file) {
 	emit(sendStatus("Loading config file " + file, 10000));
 	if(!breadboard->loadConfigFile(file)) {

@@ -85,7 +85,7 @@ void MainWindow::loadJsonDirEntries(QString dir) {
 void MainWindow::addJsonDir(QString dir) {
 	if(std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;}) != json_dirs.end()) return;
 	statusBar()->showMessage("Add JSON directory " + dir, 10000);
-	QMenu* dir_menu = new QMenu(dir.startsWith(":") ? "Integrated" : dir);
+	QMenu* dir_menu = new QMenu(dir.startsWith(":") ? "Integrated" : dir, config);
 	json_dirs.push_back(dir_menu);
 	config->addMenu(dir_menu);
 	if(!dir.startsWith(":")) {
@@ -100,23 +100,12 @@ void MainWindow::addJsonDir(QString dir) {
 	loadJsonDirEntries(dir);
 }
 
-void MainWindow::loadDevices() {
-	devices->clear();
-	for(DeviceClass device : central->getAvailableDevices()) {
-		DeviceEntry *device_entry = new DeviceEntry(device);
-		connect(device_entry, &DeviceEntry::triggered, central, &Central::addDevice);
-		devices->addAction(device_entry);
-	}
-}
-
 void MainWindow::addLUA(QString dir) {
 	central->loadLUA(dir.toStdString(), false);
-	loadDevices();
 }
 
 void MainWindow::overwriteLUA(QString dir) {
 	central->loadLUA(dir.toStdString(), true);
-	loadDevices();
 }
 
 void MainWindow::createDropdown() {
@@ -140,20 +129,13 @@ void MainWindow::createDropdown() {
 	config->addSeparator();
 	addJsonDir(":/conf");
 
-	devices = new QMenu("Classes");
-	loadDevices();
 	devices_options = menuBar()->addMenu("Devices");
-	devices_options->addMenu(devices);
-	devices_options->addSeparator();
 	GetDir* add_lua_dir = new GetDir("Add LUA directory");
 	connect(add_lua_dir, &GetDir::triggered, this, &MainWindow::addLUA);
 	devices_options->addAction(add_lua_dir);
 	GetDir* overwrite_luas = new GetDir("Overwrite LUA directory");
 	connect(overwrite_luas, &GetDir::triggered, this, &MainWindow::overwriteLUA);
 	devices_options->addAction(overwrite_luas);
-	QAction* reload_devices = new QAction("Reload Devices");
-	connect(reload_devices, &QAction::triggered, this, &MainWindow::loadDevices);
-	devices_options->addAction(reload_devices);
 
 	QMenu* window = menuBar()->addMenu("Window");
 	QAction* debug = new QAction("Debug Mode");

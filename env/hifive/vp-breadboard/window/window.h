@@ -14,7 +14,6 @@ class MainWindow : public QMainWindow {
 	QMenu *config;
 	std::vector<QMenu*> json_dirs;
 	QMenu *devices_options;
-	QMenu *devices;
 
 	QLabel *debug_label;
 	QLabel *connection_label;
@@ -35,7 +34,6 @@ private slots:
 	void loadJsonDirEntries(QString dir);
 	void addJsonDir(QString dir);
 	void removeJsonDir(QString dir);
-	void loadDevices();
 	void addLUA(QString dir);
 	void overwriteLUA(QString dir);
 };

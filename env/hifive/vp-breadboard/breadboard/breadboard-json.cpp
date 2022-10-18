@@ -107,7 +107,7 @@ bool Breadboard::loadConfigFile(QString file) {
 				}
 				const gpio::PinNumber cs = spi["cs_pin"].toInt();
 				const bool noresponse = spi["noresponse"].toBool(true);
-				addSPI(cs, noresponse, device);
+				registerSPI(cs, noresponse, device);
 			}
 
 			if(device_desc.contains("pins") && device_desc["pins"].isArray()) {
@@ -125,7 +125,7 @@ bool Breadboard::loadConfigFile(QString file) {
 					const bool synchronous = pin["synchronous"].toBool(false);
 					const string pin_name = pin["name"].toString("undef").toStdString();
 
-					addPin(synchronous, device_pin, global_pin, pin_name, device);
+					registerPin(synchronous, device_pin, global_pin, pin_name, device);
 				}
 			}
 		}
