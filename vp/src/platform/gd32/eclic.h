@@ -3,23 +3,51 @@
 
 #include <tlm_utils/simple_target_socket.h>
 
+#include <mutex>
+#include <queue>
 #include <systemc>
 
 #include "core/common/irq_if.h"
-#include "nuclei_core/nuclei_irq_if.h"
-#include "util/memory_map.h"
 #include "util/nuclei_memory_map.h"
 #include "util/tlm_map.h"
 
 #define NUMBER_INTERRUPTS 87
 #define MAX_PRIORITY 15
 
+struct Interrupt {
+	uint32_t id;
+	uint8_t level;
+	uint8_t priority;
+
+	Interrupt(uint32_t id, uint8_t clicintctl, uint32_t clicinfo, uint8_t cliccfg) : id(id) {
+		uint8_t clicintctlbits = (clicinfo & 0x1E00000) >> 21;
+		uint8_t nlbits = (cliccfg & 0x1E) >> 1;
+
+		if (nlbits > clicintctlbits)
+			nlbits = clicintctlbits;
+
+		uint8_t level_mask = 0xFF << (8 - nlbits);
+		uint8_t level_extend = 0xFF >> nlbits;
+		level = (clicintctl & level_mask) | level_extend;
+
+		uint8_t priority_mask = (0xFF >> nlbits) & (0xFF << (8 - clicintctlbits));
+		uint8_t priority_extend = 0xFF >> clicintctlbits;
+		priority = (clicintctl & priority_mask) | priority_extend;
+	}
+};
+
+class InterruptComparator {
+   public:
+	bool operator()(Interrupt a, Interrupt b) {
+		return (b.level > a.level) || (b.level == a.level && b.priority > a.priority) ||
+		       (b.level == a.level && b.priority == a.priority && b.id > a.id);
+	}
+};
+
 template <unsigned NumberInterrupts, uint32_t MaxPriority>
 class ECLIC : public sc_core::sc_module, public interrupt_gateway {
    public:
 	tlm_utils::simple_target_socket<ECLIC> tsock;
-
-	nuclei_external_interrupt_target *target_hart = nullptr;
 
 	RegisterRange regs_cliccfg{0x0, 1};
 	IntegerView<uint8_t> cliccfg{regs_cliccfg};
@@ -45,13 +73,20 @@ class ECLIC : public sc_core::sc_module, public interrupt_gateway {
 	std::vector<RegisterRange *> register_ranges{&regs_cliccfg,   &regs_clicinfo,    &regs_mth,       &regs_clicintip,
 	                                             &regs_clicintie, &regs_clicintattr, &regs_clicintctl};
 
+	std::priority_queue<Interrupt, std::vector<Interrupt>, InterruptComparator> pending_interrupts;
+	std::mutex pending_interrupts_mutex;
+
 	ECLIC(sc_core::sc_module_name) {
 		tsock.register_b_transport(this, &ECLIC::transport);
 
-		regs_clicinfo.readonly = true;
 		// fill clicinfo register with following information
-		// CLICINTCTLBITS = 8, VERSION = 1, NUM_INTERRUPT = NumberInterrupts
-		clicinfo.write(1 << 24 | 1 << 13 | NumberInterrupts);
+		// cf. "core_feature_eclic.h"
+		// CLICINTCTLBITS = 4, VERSION = 1, NUM_INTERRUPT = NumberInterrupts
+		auto info = 4 << 21 | 1 << 13 | NumberInterrupts;
+		clicinfo.write(info);
+		regs_clicinfo.readonly = true;
+
+		cliccfg.write(1);  // LSB is reserved and ties to 1
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -59,9 +94,10 @@ class ECLIC : public sc_core::sc_module, public interrupt_gateway {
 	}
 
 	void gateway_trigger_interrupt(uint32_t irq_id) {
-		// TODO
+		assert(irq_id > 0 && irq_id < NumberInterrupts);
 		clicintip[irq_id] = 1;
-		target_hart->trigger_external_interrupt(irq_id);
+		std::lock_guard<std::mutex> guard(pending_interrupts_mutex);
+		pending_interrupts.push({irq_id, clicintctl[irq_id], clicinfo, cliccfg});
 	}
 };
 

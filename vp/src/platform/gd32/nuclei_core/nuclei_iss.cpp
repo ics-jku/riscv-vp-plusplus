@@ -65,24 +65,32 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 			return read(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
 
 		case JALMNXTI_ADDR: {
-			if (eclic->clicintip[irq_id]) {
-				pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + irq_id * 4);
-				eclic->clicintip[irq_id] = 0;
+			std::lock_guard<std::mutex> guard(eclic->pending_interrupts_mutex);
+			if (!eclic->pending_interrupts.empty()) {
+				auto id = eclic->pending_interrupts.top().id;
+				if (eclic->clicintattr[id] & 1)  // vectored interrupt must not be handled here
+					return 0;
+
 				get_csr_table()->mstatus.fields.mie = 1;
+				get_csr_table()->nuclei_mcause.fields.exccode = id;
+				eclic->pending_interrupts.pop();
+				eclic->clicintip[id] = 0;
+				pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
 				return last_pc;
 			} else {
-				get_csr_table()->mstatus.fields.mie = 0;
+				if (get_csr_table()->msubm.fields.typ == get_csr_table()->msubm.Interrupt)
+					get_csr_table()->mstatus.fields.mie = 0;
 				return 0;
 			}
 		}
 
 		case MNXTI_ADDR:
 			/* A read of the mnxti CSR returns either zero,
-			indicating there is no suitable interrupt to service
-			or that the highest ranked interrupt is SHV
-			or that the system is not in a CLIC mode,
+			    indicating there is no suitable interrupt to service
+			    or that the highest ranked interrupt is SHV
+			    or that the system is not in a CLIC mode,
 			or returns a non-zero address
-			of the entry in the trap handler table for software trap vectoring. */
+			    of the entry in the trap handler table for software trap vectoring. */
 			// TODO
 
 		case MTVT_ADDR:
@@ -198,25 +206,16 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 	}
 }
 
-void NUCLEI_ISS::trigger_external_interrupt(uint32_t id) {
-	clic_irq = true;
-	irq_id = id;
-}
-
-void NUCLEI_ISS::clear_external_interrupt(uint32_t irq_id) {
-	// TODO
-}
-
 void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	// update privlege mode
 	prv = get_csr_table()->mstatus.fields.mpp;
+	get_csr_table()->mstatus.fields.mpp = 0;  // not in the docs but real device seems to do that
 
 	// update machine sub-mode
 	get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.fields.ptyp;
 
 	// update mstatus
 	get_csr_table()->mstatus.fields.mie = get_csr_table()->mstatus.fields.mpie;
-	get_csr_table()->mstatus.fields.mpie = 1;
 
 	get_csr_table()->mintstatus.fields.mil = get_csr_table()->nuclei_mcause.fields.mpil;
 
@@ -247,14 +246,16 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 
 	// update mcause
 	get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
-	get_csr_table()->nuclei_mcause.fields.exccode = irq_id;
+
+	eclic->pending_interrupts_mutex.lock();
+	auto id = eclic->pending_interrupts.top().id;
+	get_csr_table()->nuclei_mcause.fields.exccode = id;
 
 	// mirror mcause/mstatus MPIE & MPP fields
 	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
 	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
 
-	auto mode = eclic->clicintattr[irq_id] & 1;
-	if (mode == 0) {
+	if ((eclic->clicintattr[id] & 1) == 0) {
 		// non-vectored
 		if (get_csr_table()->mtvt2.fields.mtvt2en) {
 			// use mtvt2
@@ -266,9 +267,11 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	} else {
 		// vectored
 		get_csr_table()->nuclei_mcause.fields.minhv = 1;
-		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + irq_id * 4);
+		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
 		get_csr_table()->nuclei_mcause.fields.minhv = 0;
+		eclic->pending_interrupts.pop();
 	}
+	eclic->pending_interrupts_mutex.unlock();
 
 	if (pc == 0) {
 		static bool once = true;
@@ -301,10 +304,19 @@ void NUCLEI_ISS::run_step() {
 	try {
 		exec_step();
 
-		auto pending =
-		    clic_irq && (get_csr_table()->mstatus.fields.mie & eclic->clicintip[irq_id] & eclic->clicintie[irq_id]);
+		bool pending = !eclic->pending_interrupts.empty() && get_csr_table()->mstatus.fields.mie;
+
+		// Interrupt preemption. Only supported for non-vectored interrupts.
+		// Current running interrupt will only be preempted by a higher non-vectored interrupt.
+		if (pending && get_csr_table()->msubm.fields.typ == get_csr_table()->msubm.Interrupt) {
+			auto current_intr_id = get_csr_table()->nuclei_mcause.fields.exccode;
+			auto pending_intr = eclic->pending_interrupts.top();
+			InterruptComparator cmp;
+			pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 &&
+			          cmp({current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg},
+			              pending_intr);
+		}
 		if (pending) {
-			clic_irq = false;
 			get_csr_table()->nuclei_mcause.fields.interrupt = 1;
 			switch_to_trap_handler();
 		}

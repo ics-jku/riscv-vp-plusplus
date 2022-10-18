@@ -9,8 +9,8 @@
 #include "gdb-mc/gdb_server.h"
 #include "gpio.h"
 #include "mem.h"
-#include "memory.h"
 #include "nuclei_core/nuclei_iss.h"
+#include "platform/common/memory.h"
 #include "platform/common/options.h"
 #include "rcu.h"
 #include "spi.h"
@@ -158,7 +158,6 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(spi0.tsock);
 	}
 
-	eclic.target_hart = &core;
 	core.eclic = &eclic;
 	for (auto &gpio : gpioVec) {
 		gpio->afio = &afio;
