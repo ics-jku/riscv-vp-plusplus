@@ -91,12 +91,17 @@ bool Breadboard::loadConfigFile(QString file) {
 			const string& classname = device_desc["class"].toString("undefined").toStdString();
 			const string& id = device_desc["id"].toString("undefined").toStdString();
 
-			if(!registerDevice(classname, id)) {
+			unique_ptr<Device> device = createDevice(classname, id);
+			if(!device) {
 				cerr << "[Breadboard] could not create device '" << classname << "'." << endl;
 				continue;
 			}
-			Device* device = devices.at(id).get();
 			device->fromJSON(device_desc);
+			if(device->graph && !checkDevicePosition(device->getID(), device->graph->getBuffer(),
+					device->graph->getScale(), device->graph->getBuffer().offset())) {
+				cerr << "[Breadboard] Device overlaps existing device" << endl;
+				continue;
+			}
 
 			if(device_desc.contains("spi") && device_desc["spi"].isObject()) {
 				const QJsonObject spi = device_desc["spi"].toObject();
@@ -107,7 +112,7 @@ bool Breadboard::loadConfigFile(QString file) {
 				}
 				const gpio::PinNumber cs = spi["cs_pin"].toInt();
 				const bool noresponse = spi["noresponse"].toBool(true);
-				registerSPI(cs, noresponse, device);
+				registerSPI(cs, noresponse, device.get());
 			}
 
 			if(device_desc.contains("pins") && device_desc["pins"].isArray()) {
@@ -125,9 +130,11 @@ bool Breadboard::loadConfigFile(QString file) {
 					const bool synchronous = pin["synchronous"].toBool(false);
 					const string pin_name = pin["name"].toString("undef").toStdString();
 
-					registerPin(synchronous, device_pin, global_pin, pin_name, device);
+					registerPin(synchronous, device_pin, global_pin, pin_name, device.get());
 				}
 			}
+
+			devices.insert(make_pair(id, std::move(device)));
 		}
 
 		if(debug_logging) {

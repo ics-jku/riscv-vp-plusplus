@@ -135,35 +135,31 @@ bool Breadboard::addDevice(DeviceClass classname, QPoint pos) {
 		id = std::to_string(id_int);
 	}
 
-	if(!registerDevice(classname, id)) {
-		cerr << "[Breadboard] Could not register new device " << classname << endl;
-		return false;
-	}
-	Device* device = devices.at(id).get();
-	if(!device->graph) return true;
+	unique_ptr<Device> device = factory.instantiateDevice(id, classname);
+	if(!device->graph) return false;
 	device->graph->createBuffer(pos);
-	if(!moveDevice(id, pos, QPoint(0,0))) {
-		removeDevice(id);
-		cerr << "[Breadboard] Could not place new device " << classname << endl;
-		return false;
+	if(moveDevice(device.get(), pos)) {
+		devices.insert(make_pair(id, std::move(device)));
+		return true;
 	}
-	return true;
+	cerr << "[Breadboard] Could not place new " << classname << " device" << endl;
+	return false;
 }
 
-bool Breadboard::registerDevice(DeviceClass classname, DeviceID id) {
+unique_ptr<Device> Breadboard::createDevice(DeviceClass classname, DeviceID id) {
 	if(!id.size()) {
 		cerr << "[Breadboard] Device ID cannot be empty string!" << endl;
+		return 0;
 	}
 	if(!factory.deviceExists(classname)) {
 		cerr << "[Breadboard] Add device: class name '" << classname << "' invalid." << endl;
-		return false;
+		return 0;
 	}
 	if(devices.find(id) != devices.end()) {
 		cerr << "[Breadboard] Another device with the ID '" << id << "' is already instatiated!" << endl;
-		return false;
+		return 0;
 	}
-	devices.emplace(id, factory.instantiateDevice(id, classname));
-	return true;
+	return factory.instantiateDevice(id, classname);
 }
 
 /* CONNECTIONS */
@@ -307,7 +303,7 @@ void Breadboard::scaleActiveDevice() {
 	}
 	bool ok;
 	int scale = QInputDialog::getInt(this, "Input new scale value", "Scale", device->second->graph->getScale(), 1, 10, 1, &ok);
-	if(ok) {
+	if(ok && checkDevicePosition(device->second->getID(), device->second->graph->getBuffer(), scale, device->second->graph->getBuffer().offset())) {
 		device->second->graph->setScale(scale);
 	}
 	active_device_menu = "";
@@ -507,7 +503,7 @@ void Breadboard::dropEvent(QDropEvent* e) {
 		QPoint hotspot;
 		dataStream >> q_id >> hotspot;
 
-		if(moveDevice(q_id.toStdString(), e->pos(), hotspot)) {
+		if(moveDevice(devices.at(q_id.toStdString()).get(), e->pos(), hotspot)) {
 			e->acceptProposedAction();
 		} else {
 			e->ignore();
@@ -520,39 +516,47 @@ void Breadboard::dropEvent(QDropEvent* e) {
 	}
 }
 
-bool Breadboard::moveDevice(DeviceID device_id, QPoint position, QPoint hotspot) {
-	Device* device = devices.at(device_id).get();
-	if(!device || !device->graph) return false;
-	unsigned scale = device->graph->getScale();
-	if(!scale) scale = 1;
-
+bool Breadboard::checkDevicePosition(DeviceID id, QImage buffer, int scale, QPoint position, QPoint hotspot) {
 	QPoint upper_left = position - hotspot;
-	QRect device_bounds = QRect(upper_left, getGraphicBounds(device->graph->getBuffer(), scale).size());
-
-	if(!rect().contains(device_bounds)) {
-		cerr << "[Breadboard] New device position invalid: Device may not leave window view." << endl;
-		return false;
-	}
-
-	for(const auto& [id_it, device_it] : devices) {
-		if(id_it == device_id) continue;
-		if(device_it->graph && getGraphicBounds(device_it->graph->getBuffer(), device_it->graph->getScale()).intersects(device_bounds)) {
-			cerr << "[Breadboard] New device position invalid: Overlaps with other device." << endl;
-			return false;
-		}
-	}
+	QRect device_bounds = QRect(upper_left, getGraphicBounds(buffer, scale).size());
 
 	if(isBreadboard()) {
 		if(bb_getRasterBounds().intersects(device_bounds)) {
 			QPoint dropPositionRaster = bb_getAbsolutePosition(bb_getRow(position), bb_getIndex(position));
 			upper_left = dropPositionRaster - device_getAbsolutePosition(device_getRow(hotspot), device_getIndex(hotspot));
+			device_bounds = QRect(upper_left, device_bounds.size());
 		} else {
-			cerr << "[Breadboard] New device position invalid: Device should be at least partially on raster." << endl;
+			cerr << "[Breadboard] Device position invalid: Device should be at least partially on raster." << endl;
 			return false;
 		}
 	}
 
-	device->graph->getBuffer().setOffset(upper_left);
+	if(!rect().contains(device_bounds)) {
+		cerr << "[Breadboard] Device position invalid: Device may not leave window view." << endl;
+		return false;
+	}
+
+	for(const auto& [id_it, device_it] : devices) {
+		if(id_it == id) continue;
+		if(device_it->graph && getGraphicBounds(device_it->graph->getBuffer(), device_it->graph->getScale()).intersects(device_bounds)) {
+			cerr << "[Breadboard] Device position invalid: Overlaps with other device." << endl;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool Breadboard::moveDevice(Device* device, QPoint position, QPoint hotspot) {
+	if(!device || !device->graph) return false;
+	unsigned scale = device->graph->getScale();
+	if(!scale) scale = 1;
+
+	if(!checkDevicePosition(device->getID(), device->graph->getBuffer(), scale, position, hotspot)) {
+		cerr << "[Breadboard] New device position is invalid." << endl;
+		return false;
+	}
+
+	device->graph->getBuffer().setOffset(position - hotspot);
 	device->graph->setScale(scale);
 	return true;
 }

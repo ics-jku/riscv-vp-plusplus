@@ -41,7 +41,7 @@ class Breadboard : public QWidget {
 	QMenu* add_device;
 
 	// Device
-	bool registerDevice(DeviceClass classname, DeviceID device_id);
+	std::unique_ptr<Device> createDevice(DeviceClass classname, DeviceID device_id);
 	void removeDevice(DeviceID id);
 
 	// Connections
@@ -51,7 +51,8 @@ class Breadboard : public QWidget {
 	void writeDevice(DeviceID id);
 
 	// Drag and Drop
-	bool moveDevice(DeviceID device_id, QPoint position, QPoint hotspot);
+	bool checkDevicePosition(DeviceID id, QImage buffer, int scale, QPoint position, QPoint hotspot=QPoint(0,0));
+	bool moveDevice(Device* device, QPoint position, QPoint hotspot=QPoint(0,0));
 	void dropEvent(QDropEvent* e) override;
 	void dragEnterEvent(QDragEnterEvent* e) override;
 	void dragMoveEvent(QDragMoveEvent* e) override;
