@@ -39,24 +39,3 @@ void putChr(char chr) {
     #endif
     return;
 }
-
-int is_RX_empty(){
-	int rx_empty;
-	#ifdef MICRORV
-        rx_empty = *UART_RX_FIFO_EMPTY_ADDR;
-	#else
-        rx_empty = *UART_RX_FIFO_EMPTY_ADDR;
-	#endif
-	return rx_empty == 1;
-}
-
-char read_char(){
-	char c;
-	
-	int rx_empty = is_RX_empty();
-	#ifdef MICRORV
-	if(rxEmpty) c = *UART_RX_DATA_ADDR;
-	#endif
-	return c;
-}
-char read_line();
