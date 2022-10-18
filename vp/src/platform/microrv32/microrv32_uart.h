@@ -1,8 +1,9 @@
 #pragma once
 
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
-
+#include <queue>
 #include <systemc>
 
 #include <tlm_utils/simple_target_socket.h>
@@ -11,11 +12,12 @@ struct MicroRV32UART : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<MicroRV32UART> tsock;
 
 	sc_core::sc_event run_event;
+	
+	// tx
 	char buf = 0;
-
-	// untested
-	Vector<char, 16> rxFifo;
-	bool empty, almostEmpty;
+	// rx
+	std::queue<char> rxFifo;
+	uint8_t rxFifoDepth = 16;
 
 	SC_HAS_PROCESS(MicroRV32UART);
 
@@ -41,11 +43,16 @@ struct MicroRV32UART : public sc_core::sc_module {
 		        // ignore
 		    } else if (addr == 4) {
 		        *((uint32_t*)ptr) = 1;
-			// untested
 		    } else if (addr == 8) {
-				*((uint32_t*)ptr) = rxFifo->pop();
+				if(rxFifo.size() > 0){
+					*((uint32_t*)ptr) = rxFifo.front();
+					std::cout << std::endl << "[TLM] uart transport RX: " << std::hex << static_cast<uint8_t>(rxFifo.front()) << std::endl;
+					rxFifo.pop();
+				}
 			} else if(addr == 12) {
-				*((uint32_t*)ptr) = rxFifo->occupancy();
+				*((uint32_t*)ptr) = rxFifo.size();
+			} else if(addr == 16) {
+				*((uint32_t*)ptr) = rxFifo.size() == 1;
 			}
 		}
 
@@ -55,10 +62,15 @@ struct MicroRV32UART : public sc_core::sc_module {
 	// untested
 	void run() {
 		while (true) {
-			run_event.notify(sc_core::sc_time(200, sc_core::SC_MS));
+			// 9600 baud ~= 1ms, 115200 ~= 87us
+			// run_event.notify(sc_core::sc_time(1, sc_core::SC_MS));
+			run_event.notify(sc_core::sc_time(87, sc_core::SC_US));
 			sc_core::wait(run_event);  // 40 times per second by default
 			char newRXChar = rand() + 48;
-			rxFifo.push(newRXChar);
+			if(rxFifo.size() <= rxFifoDepth){
+				rxFifo.push(newRXChar);
+				std::cout << std::endl << "[TLM] uart run: " << std::hex << (newRXChar & 0xff) << std::endl;
+			}
 		}
 	}
 
