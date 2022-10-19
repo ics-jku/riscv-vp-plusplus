@@ -25,16 +25,16 @@ struct MicroRV32GPIO : public sc_core::sc_module {
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		auto addr = trans.get_address();
 		auto cmd = trans.get_command();
-		auto len = trans.get_data_length();
+		// auto len = trans.get_data_length();
 		auto ptr = trans.get_data_ptr();
 		
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 		    if (addr == 0) {
 		        direction = *ptr;
-				printf("GPIO direction write: %X\n", *ptr);
+				// printf("\n[TLM] GPIO direction write: %X\n", *ptr);
 		    } else if (addr == 4) {
 		        output = *ptr;
-				printf("GPIO output write: %X\n", *ptr);
+				// printf("\n[TLM] GPIO output write: %X\n", *ptr);
 		    }
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
 		    if (addr == 0) {
@@ -49,7 +49,7 @@ struct MicroRV32GPIO : public sc_core::sc_module {
 		(void)delay;  // zero delay
 	}
 	/*
-	 * TODO : generate data for GPIO input register 
+	 * TODO for future : generate data for GPIO input register 
 	 * a) generate random data
 	 * b) read file with timestamp and value for input register
 	 * c) accept values for input register from socket/outside vp

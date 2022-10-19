@@ -22,13 +22,13 @@ struct MicroRV32LED : public sc_core::sc_module {
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		auto addr = trans.get_address();
 		auto cmd = trans.get_command();
-		auto len = trans.get_data_length();
+		// auto len = trans.get_data_length();
 		auto ptr = trans.get_data_ptr();
 		
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
 		    if (addr == 0) {
 		        led_vals = *ptr;
-				printf("LED vals write : %X \n", *ptr, *ptr);
+				// printf("\n[TLM] LED write : %X \n", *ptr);
 		    }
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
 		    if (addr == 0) {
