@@ -19,9 +19,18 @@ class TIMER : public clint_if, public sc_core::sc_module {
    public:
 	TIMER(sc_core::sc_module_name);
 
-	// TODO - what is the right value here? how to calculate?
-	// maybe 1000000/(27000000/32768) = 1214
-	static constexpr uint64_t scaler = 1214;  // seems about right for snake example
+	/*
+	    This is a bit complicated. Still unsure what the right value is. The Nuclei Core uses a frequency of
+	    108MHz stored in the variable "SystemCoreClock". The Nuclei SDK defines a function _premain_init()
+	    (file "system_gd32vf103.c") which is called before the regular main function. In this funciton the
+	    frequency is measured, (re)calculated (using mtime register, cycle count & the 108 MHz) & reassigned
+	    to the variable. The "real" device uses an oscilator for the mtime ticks, the VP, however, uses the
+	    SystemC simulation time - this results in wrong SystemCoreClock value. The scaler value should  correct
+	    for this deviation but I'm unsure how to calculte the right value. What makes this further difficult
+	    is that it seems like the advancing of time on the VP is influenced by the CPU load of the host machine.
+	    More information on the clock is in the GD32 User Manual on page 62.
+	*/
+	static constexpr uint64_t scaler = 8000;  // seems about right for snake example
 
 	tlm_utils::simple_target_socket<TIMER> tsock;
 
@@ -32,11 +41,13 @@ class TIMER : public clint_if, public sc_core::sc_module {
 	bool reset_mtime = false;
 	bool pause_mtime = false;
 
-	/* Regrading mtimectl register:
-	The documentation (https://doc.nucleisys.com/nuclei_spec/isa/timer.html#control-the-timer-counter-through-mtimectl)
-	is for Nuclei Core version >= 0104. The GD32VF103 seems to have version 0100. In this version the register
-	only has one effective bit, the TIMESTOP bit. The other two bits CMPCLREN & CLKSRC are reserved.
-	(The documentation itself is actually conflicting)
+	/*
+	    Regrading mtimectl register:
+	    The documentation
+	   (https://doc.nucleisys.com/nuclei_spec/isa/timer.html#control-the-timer-counter-through-mtimectl) is for Nuclei
+	   Core version >= 0104. The GD32VF103 seems to have version 0100. In this version the register only has one
+	   effective bit, the TIMESTOP bit. The other two bits CMPCLREN & CLKSRC are reserved. (The documentation itself is
+	   actually conflicting)
 	*/
 	RegisterRange regs_mtime;
 	RegisterRange regs_mtimecmp;
