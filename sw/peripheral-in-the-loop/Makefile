@@ -12,7 +12,7 @@ sim: all
 	$(virtual-bus-path)/responder-cli $(virtual-bus-path)/pipe_right &
 	hwitl-vp main --virtual-bus-device $(virtual-bus-path)/pipe_left
 	killall responder-cli
-
+	killall socat
 clean:
 	rm -f main
 
