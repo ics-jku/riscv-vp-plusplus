@@ -9,9 +9,10 @@
 #include "mem.h"
 #include "memory.h"
 #include "syscall.h"
-#include "uart.h"
 #include "util/options.h"
 #include "platform/common/options.h"
+#include "platform/common/terminal.h"
+#include "virtual_bus_tlm_connector.hpp"
 
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
@@ -21,6 +22,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+
 
 using namespace rv32;
 namespace po = boost::program_options;
@@ -40,12 +42,12 @@ public:
 	addr_t clint_end_addr = 0x0200ffff;
 	addr_t sys_start_addr = 0x02010000;
 	addr_t sys_end_addr = 0x020103ff;
-	addr_t uart_start_addr = 0x20010000;
-	addr_t uart_end_addr = uart_start_addr + 0xfff;
 	addr_t plic_start_addr = 0x40000000;
 	addr_t plic_end_addr = 0x41000000;
-
-	bool use_E_base_isa = false;
+	addr_t term_start_addr = 0x20000000;
+	addr_t term_end_addr = term_start_addr + 16;
+	addr_t virtual_bus_start_addr = 0x50000000;
+	addr_t virtual_bus_end_addr   = 0x5FFFFFFF;
 
 	OptionValue<unsigned long> entry_point;
 
@@ -54,9 +56,11 @@ public:
 		add_options()
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
-			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
-			("virtual-bus-device",  po::value<std::string>(&virtual_bus_device),"tty to virtual bus responder");
+			("virtual-bus-device",  po::value<std::string>(&virtual_bus_device)->required(),"tty to virtual bus responder")
+			("virtual-device-start",  po::value<unsigned int>(&virtual_bus_start_addr),"start of virtual peripheral")
+			("virtual-device-end",  po::value<unsigned int>(&virtual_bus_end_addr),"end of virtual peripheral");
+
         	// clang-format on
 	}
 
@@ -81,16 +85,28 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core(0, opt.use_E_base_isa);
+	ISS core(0);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
-	UART uart("Generic_UART", 6);
+	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<3, 13> bus("SimpleBus");
+	SimpleBus<2, 6> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
 	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+
+
+	int virtual_bus_device_handle = -1;
+	virtual_bus_device_handle = open(opt.virtual_bus_device.c_str(), O_RDWR| O_NOCTTY);
+	// todo: set Baudrate
+	if(virtual_bus_device_handle < 0) {
+		std::cerr << "[hwitl-vp] Device " << opt.virtual_bus_device << " could not be opened: "
+				<< strerror(errno) << std::endl;
+		return -1;
+	}
+	Initiator virtual_bus_connector(virtual_bus_device_handle);
+	VirtualBusMember virtual_bus_member("something", virtual_bus_connector, opt.virtual_bus_start_addr);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
@@ -135,21 +151,23 @@ int sc_main(int argc, char **argv) {
 		bus.ports[it++] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
 		bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
 		bus.ports[it++] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-		bus.ports[it++] = new PortMapping(opt.uart_start_addr, opt.uart_end_addr);
+		bus.ports[it++] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
 		bus.ports[it++] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+		bus.ports[it++] = new PortMapping(opt.virtual_bus_start_addr, opt.virtual_bus_end_addr);
 	}
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);
-	dbg_if.isock.bind(bus.tsocks[2]);
+	dbg_if.isock.bind(bus.tsocks[1]);
 
 	{
 		unsigned it = 0;
 		bus.isocks[it++].bind(mem.tsock);
 		bus.isocks[it++].bind(clint.tsock);
 		bus.isocks[it++].bind(plic.tsock);
-		bus.isocks[it++].bind(uart.tsock);
+		bus.isocks[it++].bind(term.tsock);
 		bus.isocks[it++].bind(sys.tsock);
+		bus.isocks[it++].bind(virtual_bus_member.tsock);
 	}
 
 	// connect interrupt signals/communication

@@ -17,11 +17,10 @@
 #include "sensor.h"
 #include "sensor2.h"
 #include "syscall.h"
-#include "terminal.h"
 #include "uart.h"
 #include "util/options.h"
 #include "platform/common/options.h"
-
+#include "platform/common/terminal.h"
 #include "gdb-mc/gdb_server.h"
 #include "gdb-mc/gdb_runner.h"
 
@@ -29,6 +28,7 @@
 #include <boost/program_options.hpp>
 #include <iomanip>
 #include <iostream>
+
 
 using namespace rv32;
 namespace po = boost::program_options;

@@ -1,9 +1,10 @@
-file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
+file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
+file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.c*)
 
 subdirs(virtual-bus)
 
 add_executable(hwitl-vp
-	main.cpp
+	${SOURCES}
 )
 
 target_link_libraries(hwitl-vp rv32 virtual-bus platform-common gdb-mc ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
