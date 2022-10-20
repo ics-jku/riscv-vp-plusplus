@@ -7,3 +7,6 @@
 [submodule "env/hifive/vp-breadboard/LuaBridge3"]
 	path = env/hifive/vp-breadboard/LuaBridge3
 	url = https://github.com/kunitoki/LuaBridge3
+[submodule "vp/src/platform/hwitl/virtual-bus"]
+	path = vp/src/platform/hwitl/virtual-bus
+	url = https://github.com/agra-uni-bremen/virtual-bus

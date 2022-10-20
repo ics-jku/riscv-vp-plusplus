@@ -1,0 +1,11 @@
+file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
+
+subdirs(virtual-bus)
+
+add_executable(hwitl-vp
+	main.cpp
+)
+
+target_link_libraries(hwitl-vp rv32 virtual-bus platform-common gdb-mc ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
+
+INSTALL(TARGETS hwitl-vp RUNTIME DESTINATION bin)
