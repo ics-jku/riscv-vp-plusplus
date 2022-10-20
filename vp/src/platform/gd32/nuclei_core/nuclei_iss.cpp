@@ -70,6 +70,8 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 				auto id = eclic->pending_interrupts.top().id;
 				if (eclic->clicintattr[id] & 1)  // vectored interrupt must not be handled here
 					return 0;
+				if (!(eclic->clicintip[id] & 1))  // check if interrupt is still pending
+					return 0;
 
 				get_csr_table()->mstatus.fields.mie = 1;
 				get_csr_table()->nuclei_mcause.fields.exccode = id;
@@ -255,7 +257,17 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
 	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
 
-	if ((eclic->clicintattr[id] & 1) == 0) {
+	if (eclic->clicintattr[id] & 1) {
+		// vectored
+		if (!(eclic->clicintip[id] & 1){  // check if interrupt is still pending
+			eclic->pending_interrupts_mutex.unlock();
+			return return_from_trap_handler(MachineMode);
+		}
+		get_csr_table()->nuclei_mcause.fields.minhv = 1;
+		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
+		get_csr_table()->nuclei_mcause.fields.minhv = 0;
+		eclic->pending_interrupts.pop();
+	} else {
 		// non-vectored
 		if (get_csr_table()->mtvt2.fields.mtvt2en) {
 			// use mtvt2
@@ -264,12 +276,6 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 			// use mtvec
 			pc = get_csr_table()->nuclei_mtvec.fields.addr;  // not sure if right. documentation is conflicting
 		}
-	} else {
-		// vectored
-		get_csr_table()->nuclei_mcause.fields.minhv = 1;
-		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
-		get_csr_table()->nuclei_mcause.fields.minhv = 0;
-		eclic->pending_interrupts.pop();
 	}
 	eclic->pending_interrupts_mutex.unlock();
 

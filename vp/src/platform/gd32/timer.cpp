@@ -78,22 +78,71 @@ TIMER::TIMER(sc_core::sc_module_name)
 	tsock.register_b_transport(this, &TIMER::transport);
 
 	regs_mtime.pre_read_callback = std::bind(&TIMER::pre_read_mtime, this, std::placeholders::_1);
+	regs_mtime.post_write_callback = std::bind(&TIMER::post_write_mtime, this, std::placeholders::_1);
+	regs_mtimectl.post_write_callback = std::bind(&TIMER::post_write_mtimectl, this, std::placeholders::_1);
+	regs_msip.post_write_callback = std::bind(&TIMER::post_write_msip, this, std::placeholders::_1);
+	regs_mtimecmp.post_write_callback = std::bind(&TIMER::post_write_mtimecmp, this, std::placeholders::_1);
 
 	SC_THREAD(run);
 }
 
 bool TIMER::pre_read_mtime(RegisterRange::ReadInfo t) {
-	sc_core::sc_time now = sc_core::sc_time_stamp() + t.delay;
-
-	mtime.write(now.value() / scaler);
+	update_and_get_mtime();
 	return true;
 }
 
+void TIMER::post_write_mtime(RegisterRange::WriteInfo t) {
+	const uint32_t nv = *t.trans.get_data_ptr();
+	base = sc_core::sc_time_stamp().value() - nv;
+	reset_mtime = true;
+	update_and_get_mtime();
+	irq_event.notify(t.delay);
+}
+
+void TIMER::post_write_mtimecmp(RegisterRange::WriteInfo t) {
+	irq_event.notify(t.delay);
+}
+
+void TIMER::post_write_mtimectl(RegisterRange::WriteInfo t) {
+	const uint32_t nv = *t.trans.get_data_ptr();
+	if (nv & 1) {
+		pause = sc_core::sc_time_stamp().value();
+		pause_mtime = true;
+	} else {
+		auto now = sc_core::sc_time_stamp().value();
+		base = base + (now - pause);
+		pause_mtime = false;
+		update_and_get_mtime();
+	}
+	irq_event.notify(t.delay);
+}
+
+void TIMER::post_write_msip(RegisterRange::WriteInfo t) {
+	const uint32_t nv = *t.trans.get_data_ptr();
+	if (nv & 1)
+		eclic->gateway_trigger_interrupt(SW_INT_NUM);
+	else
+		eclic->gateway_clear_interrupt(SW_INT_NUM);
+}
+
 uint64_t TIMER::update_and_get_mtime() {
-	auto now = sc_core::sc_time_stamp().value() / scaler;
-	if (now > mtime)
-		mtime = now;  // do not update backward in time (e.g. due to local quantums in tlm transaction processing)
+	const auto now = (sc_core::sc_time_stamp().value() - base) / scaler;
+	if (!pause_mtime && (now > mtime || reset_mtime)) {
+		// only update time if timer is not paused and
+		// do not update backward in time (e.g. due to local quantums in tlm transaction processing)
+		// unless mtime is reset
+		mtime.write(now);
+		reset_mtime = false;
+	}
 	return mtime;
+}
+
+void TIMER::notify_later() {
+	if (mtimecmp > 0 && mtimecmp < UINT64_MAX) {
+		const auto time = sc_core::sc_time::from_value(mtime * scaler);
+		const auto goal = sc_core::sc_time::from_value(mtimecmp * scaler);
+		irq_event.notify(goal - time);
+	}
 }
 
 void TIMER::run() {
@@ -102,7 +151,17 @@ void TIMER::run() {
 
 		update_and_get_mtime();
 
-		// TODO interrupts
+		if (mtimecmp > 0 && mtime >= mtimecmp) {
+			eclic->gateway_trigger_interrupt(TIMER_INT_NUM);
+			if (mtimectl & 0b10) {  // reset mtime
+				base = sc_core::sc_time_stamp().value();
+				reset_mtime = true;
+				update_and_get_mtime();
+				notify_later();
+			}
+		} else {
+			notify_later();
+		}
 	}
 }
 

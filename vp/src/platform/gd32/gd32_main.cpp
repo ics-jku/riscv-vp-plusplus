@@ -159,6 +159,7 @@ int sc_main(int argc, char **argv) {
 	}
 
 	core.eclic = &eclic;
+	timer.eclic = &eclic;
 	for (auto &gpio : gpioVec) {
 		gpio->afio = &afio;
 		gpio->exti = &exti;

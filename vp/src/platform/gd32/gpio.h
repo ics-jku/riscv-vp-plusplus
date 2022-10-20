@@ -7,8 +7,8 @@
 
 #include "gpio/gpio-server.hpp"
 #include "afio.h"
-#include "core/common/irq_if.h"
 #include "exti.h"
+#include "nuclei_core/nuclei_irq_if.h"
 #include "platform/common/async_event.h"
 #include "spi.h"
 #include "util/tlm_map.h"
@@ -37,7 +37,7 @@ struct GPIO : public sc_core::sc_module {
 	vp::map::LocalRouter router = {"GPIO"};
 	AFIO *afio = nullptr;
 	EXTI *exti = nullptr;
-	interrupt_gateway *eclic = nullptr;
+	nuclei_interrupt_gateway *eclic = nullptr;
 
 	static constexpr gpio::PinNumber available_pins = 16;
 	GpioServer server;

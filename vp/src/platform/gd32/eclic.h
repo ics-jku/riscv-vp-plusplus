@@ -7,7 +7,7 @@
 #include <queue>
 #include <systemc>
 
-#include "core/common/irq_if.h"
+#include "nuclei_core/nuclei_irq_if.h"
 #include "util/nuclei_memory_map.h"
 #include "util/tlm_map.h"
 
@@ -45,7 +45,7 @@ class InterruptComparator {
 };
 
 template <unsigned NumberInterrupts, uint32_t MaxPriority>
-class ECLIC : public sc_core::sc_module, public interrupt_gateway {
+class ECLIC : public sc_core::sc_module, public nuclei_interrupt_gateway {
    public:
 	tlm_utils::simple_target_socket<ECLIC> tsock;
 
@@ -98,6 +98,11 @@ class ECLIC : public sc_core::sc_module, public interrupt_gateway {
 		clicintip[irq_id] = 1;
 		std::lock_guard<std::mutex> guard(pending_interrupts_mutex);
 		pending_interrupts.push({irq_id, clicintctl[irq_id], clicinfo, cliccfg});
+	}
+
+	void gateway_clear_interrupt(uint32_t irq_id) {
+		assert(irq_id > 0 && irq_id < NumberInterrupts);
+		clicintip[irq_id] = 0;
 	}
 };
 
