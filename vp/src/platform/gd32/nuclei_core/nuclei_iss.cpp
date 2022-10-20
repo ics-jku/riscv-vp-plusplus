@@ -67,7 +67,7 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 		case JALMNXTI_ADDR: {
 			std::lock_guard<std::mutex> guard(eclic->pending_interrupts_mutex);
 			if (!eclic->pending_interrupts.empty()) {
-				auto id = eclic->pending_interrupts.top().id;
+				const auto id = eclic->pending_interrupts.top().id;
 				if (eclic->clicintattr[id] & 1)  // vectored interrupt must not be handled here
 					return 0;
 				if (!(eclic->clicintip[id] & 1))  // check if interrupt is still pending
@@ -169,19 +169,19 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			return write(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
 
 		case PUSHMCAUSE_ADDR: {
-			uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			const uint32_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
 			mem->store_word(mem_addr, get_csr_table()->nuclei_mcause.reg);
 			break;
 		}
 		case PUSHMEPC_ADDR: {
-			uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			const uint32_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
 			mem->store_word(mem_addr, get_csr_table()->mepc.reg);
 			break;
 		}
 		case PUSHMSUBM_ADDR: {
-			uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			const uint32_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
 			mem->store_word(mem_addr, get_csr_table()->msubm.reg);
 			break;
@@ -231,7 +231,7 @@ void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 
 void NUCLEI_ISS::switch_to_trap_handler() {
 	// update privlege mode
-	auto pp = prv;
+	const auto pp = prv;
 	prv = MachineMode;
 
 	// update machine sub-mode
@@ -250,7 +250,7 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
 
 	eclic->pending_interrupts_mutex.lock();
-	auto id = eclic->pending_interrupts.top().id;
+	const auto id = eclic->pending_interrupts.top().id;
 	get_csr_table()->nuclei_mcause.fields.exccode = id;
 
 	// mirror mcause/mstatus MPIE & MPP fields
@@ -259,7 +259,7 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 
 	if (eclic->clicintattr[id] & 1) {
 		// vectored
-		if (!(eclic->clicintip[id] & 1){  // check if interrupt is still pending
+		if (!(eclic->clicintip[id] & 1)) {  // check if interrupt is still pending
 			eclic->pending_interrupts_mutex.unlock();
 			return return_from_trap_handler(MachineMode);
 		}
@@ -315,8 +315,8 @@ void NUCLEI_ISS::run_step() {
 		// Interrupt preemption. Only supported for non-vectored interrupts.
 		// Current running interrupt will only be preempted by a higher non-vectored interrupt.
 		if (pending && get_csr_table()->msubm.fields.typ == get_csr_table()->msubm.Interrupt) {
-			auto current_intr_id = get_csr_table()->nuclei_mcause.fields.exccode;
-			auto pending_intr = eclic->pending_interrupts.top();
+			const auto current_intr_id = get_csr_table()->nuclei_mcause.fields.exccode;
+			const auto pending_intr = eclic->pending_interrupts.top();
 			InterruptComparator cmp;
 			pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 &&
 			          cmp({current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg},

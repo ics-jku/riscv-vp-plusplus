@@ -20,18 +20,18 @@ struct Interrupt {
 	uint8_t priority;
 
 	Interrupt(uint32_t id, uint8_t clicintctl, uint32_t clicinfo, uint8_t cliccfg) : id(id) {
-		uint8_t clicintctlbits = (clicinfo & 0x1E00000) >> 21;
+		const uint8_t clicintctlbits = (clicinfo & 0x1E00000) >> 21;
 		uint8_t nlbits = (cliccfg & 0x1E) >> 1;
 
 		if (nlbits > clicintctlbits)
 			nlbits = clicintctlbits;
 
-		uint8_t level_mask = 0xFF << (8 - nlbits);
-		uint8_t level_extend = 0xFF >> nlbits;
+		const uint8_t level_mask = 0xFF << (8 - nlbits);
+		const uint8_t level_extend = 0xFF >> nlbits;
 		level = (clicintctl & level_mask) | level_extend;
 
-		uint8_t priority_mask = (0xFF >> nlbits) & (0xFF << (8 - clicintctlbits));
-		uint8_t priority_extend = 0xFF >> clicintctlbits;
+		const uint8_t priority_mask = (0xFF >> nlbits) & (0xFF << (8 - clicintctlbits));
+		const uint8_t priority_extend = 0xFF >> clicintctlbits;
 		priority = (clicintctl & priority_mask) | priority_extend;
 	}
 };
@@ -82,7 +82,7 @@ class ECLIC : public sc_core::sc_module, public nuclei_interrupt_gateway {
 		// fill clicinfo register with following information
 		// cf. "core_feature_eclic.h"
 		// CLICINTCTLBITS = 4, VERSION = 1, NUM_INTERRUPT = NumberInterrupts
-		auto info = 4 << 21 | 1 << 13 | NumberInterrupts;
+		const uint32_t info = 4 << 21 | 1 << 13 | NumberInterrupts;
 		clicinfo.write(info);
 		regs_clicinfo.readonly = true;
 

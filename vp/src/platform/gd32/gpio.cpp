@@ -74,7 +74,7 @@ void GPIO::asyncOnchange(gpio::PinNumber bit, gpio::Tristate val) {
 }
 
 void GPIO::synchronousChange() {
-	gpio::State serverSnapshot = server.state;
+	const gpio::State serverSnapshot = server.state;
 
 	for (gpio::PinNumber i = 0; i < available_pins; i++) {
 		const auto bitmask = 1l << i;
@@ -98,7 +98,7 @@ void GPIO::synchronousChange() {
 		const auto port_num = static_cast<int>(port) - static_cast<int>(gpio::Port::A);
 		const auto afio_mask = port_num << (4 * (i % 4));
 		const auto afio_en = ~(afio_extiss_reg ^ afio_mask);
-		const auto input_en = ~(gpio_ctl_reg >> (4 * i)) & 0b11;
+		const auto input_en = ~(gpio_ctl_reg >> (4 * (i % 8))) & 0b11;
 
 		if (input_en && afio_en && ((exti->exti_inten & ~exti->exti_pd) & bitmask)) {
 			int intr_id = 0;
