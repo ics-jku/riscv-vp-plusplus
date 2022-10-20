@@ -13,7 +13,7 @@
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
-#include "mram.h"
+#include "memory_mapped_file.h"
 #include "sensor.h"
 #include "sensor2.h"
 #include "syscall.h"
@@ -132,7 +132,7 @@ int sc_main(int argc, char **argv) {
 	SimpleSensor sensor("SimpleSensor", 2);
 	SimpleSensor2 sensor2("SimpleSensor2", 5);
 	BasicTimer timer("BasicTimer", 3);
-	SimpleMRAM mram("SimpleMRAM", opt.mram_image, opt.mram_size);
+	MemoryMappedFile mram("MRAM", opt.mram_image, opt.mram_size);
 	SimpleDMA dma("SimpleDMA", 4);
 	Flashcontroller flashController("Flashcontroller", opt.flash_device);
 	EthernetDevice ethernet("EthernetDevice", 7, mem.data, opt.network_device);

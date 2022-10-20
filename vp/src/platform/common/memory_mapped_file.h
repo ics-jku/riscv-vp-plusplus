@@ -14,15 +14,15 @@ using namespace std;
 using namespace sc_core;
 using namespace tlm_utils;
 
-struct SimpleMRAM : public sc_core::sc_module {
-	simple_target_socket<SimpleMRAM> tsock;
+struct MemoryMappedFile : public sc_core::sc_module {
+	simple_target_socket<MemoryMappedFile> tsock;
 
 	string mFilepath;
 	uint32_t mSize;
 	fstream file;
 
-	SimpleMRAM(sc_module_name, string &filepath, uint32_t size) : mFilepath(filepath), mSize(size) {
-		tsock.register_b_transport(this, &SimpleMRAM::transport);
+	MemoryMappedFile(sc_module_name, string &filepath, uint32_t size) : mFilepath(filepath), mSize(size) {
+		tsock.register_b_transport(this, &MemoryMappedFile::transport);
 
 		if (filepath.size() == 0 || size == 0) {  // no file
 			return;
@@ -38,7 +38,7 @@ struct SimpleMRAM : public sc_core::sc_module {
 		assert(file.is_open() && file.good() && "File could not be opened");
 	}
 
-	~SimpleMRAM() {
+	~MemoryMappedFile() {
 		file.close();
 	}
 
@@ -55,6 +55,9 @@ struct SimpleMRAM : public sc_core::sc_module {
 		assert(addr + num_bytes <= mSize);
 		file.seekg(addr, file.beg);
 		file.read(reinterpret_cast<char *>(dst), num_bytes);
+		if (!file.is_open() || !file.good()) {
+			cout << "Failed to read " << mFilepath << ": " << strerror(errno) << endl;
+		}
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
