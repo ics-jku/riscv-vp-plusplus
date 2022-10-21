@@ -5,44 +5,78 @@
  - RV32GC and RV64GC core support (i.e. RV32IMAFDC and RV64IMAFDC)
  - Implemented in SystemC TLM-2.0
  - SW debug capabilities (GDB RSP interface) with Eclipse
- - FreeRTOS support
+ - Virtual Breadboard GUI (interactive IO) featuring C++ and Lua modeled digital devices
+ - FreeRTOS, RIOT, Zephyr, Linux support
  - Generic and configurable bus
  - CLINT and PLIC-based interrupt controller + additional peripherals
  - Instruction-based timing model + annotated TLM 2.0 transaction delays
  - Peripherals, e.g. display, flash controller, preliminary ethernet
- - Example configuration for the SiFive HiFive1 board available
- - Zephyr operating system support
+ - Example configuration for the SiFive HiFive1 (currently only Rev. A) board available
  - Support for simulation of multi-core platforms
  - Machine-, Supervisor- and User-mode (including user traps) privilege levels and CSRs
  - Virtual memory support (Sv32, Sv39, Sv48)
 
-For related information, e.g. verification, please visit http://www.systemc-verification.org/ or contact <riscv@systemc-verification.org>. 
+For related information, e.g. verification, please visit https://www.informatik.uni-bremen.de/agra/projects/risc-v/ or contact <riscv@informatik.uni-bremen.de>. 
 We accept pull requests and in general contributions are very welcome. 
 
 In the following we provide build instructions and how to compile and run software on the VP.
 
 
-#### 1) Build the RISC-V GNU Toolchain:
+#### 1) Build requirements
 
-(Cross-)Compiling the software examples, in order to run them on the VP, requires the RISC-V GNU toolchain to be available in PATH. Several standard packages are required to build the toolchain. On Ubuntu the required packages can be installed as follows:
+Mainly the usual build tools and boost is required:
 
-```bash
-sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev
-```
 On Ubuntu 20, install these:
 ```bash
-sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev qt5-default
+sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev qt5-default liblua5.3-dev
 ```
 
 On Fedora, following actions are required:
 ```bash
-sudo dnf install autoconf automake curl libmpc-devel mpfr-devel gmp-devel gawk bison flex texinfo gperf libtool patchutils bc zlib-devel expat-devel cmake boost-devel
+sudo dnf install autoconf automake curl libmpc-devel mpfr-devel gmp-devel gawk bison flex texinfo gperf libtool patchutils bc zlib-devel expat-devel cmake boost-devel qt5-qtbase qt5-qtbase-devel lua-devel
 sudo dnf groupinstall "C Development Tools and Libraries"
 #optional debuginfo
 sudo dnf debuginfo-install boost-iostreams boost-program-options boost-regex bzip2-libs glibc libgcc libicu libstdc++ zlib
 ```
 
-For more information on prerequisites for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain. With the packages installed, the toolchain can be build as follows:
+#### 2) Build this RISC-V Virtual Prototype:
+
+
+Check out all submodules (`git submodule update --init --recursive`), and type `make all`. This script does the following for you:
+
+>
+>i) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
+>
+>```bash
+>./build_systemc_233.sh
+>./build_softfloat.sh
+>```
+>
+>
+>ii) in *vp* folder (requires the *boost* C++ library):
+> 
+>```bash
+>mkdir build
+>cd build
+>cmake ..
+>make install
+>```
+
+#### 3) Building the interactive environment GUI (`vp-breadboard`)
+
+The GUI for interacting with the VP is located under `env/hifive/vp-breadboard` (subject to change).
+It can be built by the main `Makefile`: `make vp-breadboard`.
+Some example program such as a snake game, built around the Sifive Hifive1 board, can be found in this repo: https://github.com/agra-uni-bremen/sifive-hifive1.
+
+
+#### 3) Building SW examples using the GNU toolchain
+
+##### Requirements
+
+In order to test the software examples, a configured RISC-V GNU toolchain is required in your `$PATH`.
+Several standard packages are required to build the toolchain.
+For more information on prerequisites for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain.
+With the packages installed, the toolchain can be build as follows:
 
 ```bash
 # in some source folder
@@ -53,39 +87,10 @@ git submodule update --init --recursive # this may take a while
 make -j$(nproc)
 ```
 
-For additional configurations and options for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain.
-
 If wanted, move the `riscv-gnu-toolchain-dist-rv32imac-ilp32` folder to your `/opt/` folder and add it to your path in your `~/.bashrc`
 (e.g. `PATH=$PATH:/opt/riscv-gnu-toolchain-dist-rv32imac-ilp32/bin`)
 
-#### 2) Build this RISC-V Virtual Prototype:
-
-In the root folder, type `make`. This script does the following for you:
-
-> i) Checkout required git submodules:
->
->```bash
->git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
->```
->
->ii) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
->
->```bash
->./build_systemc_233.sh
->./build_softfloat.sh
->```
->
->
->iii) in *vp* folder (requires the *boost* C++ library):
-> 
->```bash
->mkdir build
->cd build
->cmake ..
->make install
->```
-
-#### 3) Compile and run some Software:
+##### Running the examples
 
 In *sw*:
 
@@ -98,13 +103,6 @@ make sim            # (requires *riscv-vp*, i.e. *vp/build/bin/riscv-vp*, execut
 Please note, if *make* is called without the *install* argument in step 2, then the *riscv-vp* executable is available in *vp/build/src/platform/basic/riscv-vp*.
 
 
-#### 4) Optional Makefile:
-
-The toplevel Makefile can alternatively be used to build the VP including its dependencies (i.e. step 2 in this README), from the toplevel folder call:
-
-```bash
-make
-```
 
 This will also copy the VP binaries into the *vp/build/bin* folder.
 
