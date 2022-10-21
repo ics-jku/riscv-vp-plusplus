@@ -110,6 +110,7 @@ void MainWindow::createDropdown() {
 	connect(save_config, &QAction::triggered, [this](){
 		QString path = QFileDialog::getSaveFileName(parentWidget(), "Select JSON file",
 				QDir::currentPath(), "JSON files (*.json)");
+		if(!path.endsWith(".json")) path.append(".json");
 		saveJSON(path);
 	});
 	config->addAction(save_config);

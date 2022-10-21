@@ -11,6 +11,7 @@ ConfigDialog::ConfigDialog(QWidget *parent) : QDialog(parent) {
 	connect(closeButton, &QAbstractButton::pressed, this, &QDialog::reject);
 	QPushButton *saveButton = new QPushButton("Save");
 	connect(saveButton, &QAbstractButton::pressed, this, &QDialog::accept);
+	saveButton->setDefault(true);
 	QHBoxLayout *buttons_close = new QHBoxLayout;
 	buttons_close->addWidget(closeButton);
 	buttons_close->addWidget(saveButton);
