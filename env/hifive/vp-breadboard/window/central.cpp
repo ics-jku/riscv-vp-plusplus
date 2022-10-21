@@ -23,15 +23,13 @@ Central::Central(const std::string host, const std::string port, QWidget *parent
 	connect(breadboard, &Breadboard::closeAllIOFs, this, &Central::closeAllIOFs);
 	connect(breadboard, &Breadboard::closeDeviceIOFs, this, &Central::closeDeviceIOFs);
 	connect(breadboard, &Breadboard::setBit, embedded, &Embedded::setBit);
-	connect(embedded, &Embedded::connectionLost, this, &Central::connectionLost);
+	connect(embedded, &Embedded::connectionLost, [this](){
+		emit(connectionUpdate(false));
+	});
 	connect(this, &Central::connectionUpdate, breadboard, &Breadboard::connectionUpdate);
 }
 
 Central::~Central() {
-}
-
-void Central::connectionLost() {
-	emit(connectionUpdate(false));
 }
 
 void Central::destroyConnection() {
@@ -57,10 +55,6 @@ void Central::closeDeviceIOFs(std::vector<gpio::PinNumber> gpio_offs, DeviceID d
 }
 
 /* LOAD */
-
-std::list<DeviceClass> Central::getAvailableDevices() {
-	return breadboard->getAvailableDevices();
-}
 
 void Central::loadJSON(QString file) {
 	emit(sendStatus("Loading config file " + file, 10000));

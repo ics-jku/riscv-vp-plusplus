@@ -17,16 +17,14 @@ public:
 	void destroyConnection();
 	bool toggleDebug();
 	void saveJSON(QString file);
-	std::list<DeviceClass> getAvailableDevices();
+	void loadJSON(QString file);
+	void loadLUA(std::string dir, bool overwrite_integrated_devices);
 
 public slots:
-	void loadJSON(QString file);
 	void clearBreadboard();
-	void loadLUA(std::string dir, bool overwrite_integrated_devices);
 
 private slots:
 	void timerUpdate();
-	void connectionLost();
 	void closeAllIOFs(std::vector<gpio::PinNumber> gpio_offs);
 	void closeDeviceIOFs(std::vector<gpio::PinNumber> gpio_offs, DeviceID device);
 

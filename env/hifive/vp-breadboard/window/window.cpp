@@ -1,25 +1,24 @@
 #include "window.h"
 
-#include "actions/get_dir.h"
-#include "actions/json_entry.h"
-#include "actions/device.h"
-
 #include <QApplication>
 #include <QDirIterator>
 #include <QMenuBar>
 #include <QStatusBar>
-
+#include <QFileDialog>
 #include <QLayout>
 
 MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
-		const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent) : QMainWindow(parent) {
+		const std::string host, const std::string port,
+		bool overwrite_integrated_devices, QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle("MainWindow");
 
 	central = new Central(host, port, this);
 	central->loadLUA(additional_device_dir, overwrite_integrated_devices);
 	central->loadJSON(configfile);
 	setCentralWidget(central);
-	connect(central, &Central::connectionUpdate, this, &MainWindow::connectionUpdate);
+	connect(central, &Central::connectionUpdate, [this](bool active){
+		connection_label->setText(active ? "Connected" : "Disconnected");
+	});
 	connect(central, &Central::sendStatus, this->statusBar(), &QStatusBar::showMessage);
 
 	createDropdown();
@@ -28,19 +27,6 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 }
 
 MainWindow::~MainWindow() {
-}
-
-void MainWindow::quit() {
-	central->destroyConnection();
-	QApplication::quit();
-}
-
-void MainWindow::toggleDebug() {
-	debug_label->setText(central->toggleDebug() ? "Debug" : "");
-}
-
-void MainWindow::connectionUpdate(bool active) {
-	connection_label->setText(active ? "Connected" : "Disconnected");
 }
 
 void MainWindow::saveJSON(QString file) {
@@ -52,7 +38,8 @@ void MainWindow::saveJSON(QString file) {
 }
 
 void MainWindow::removeJsonDir(QString dir) {
-	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;});
+	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(),
+			[dir](QMenu* menu){return menu->title() == dir;});
 	if(dir_menu == json_dirs.end()) return;
 	statusBar()->showMessage("Remove JSON directory", 10000);
 	QAction* json_dir_action = (*dir_menu)->menuAction();
@@ -62,7 +49,8 @@ void MainWindow::removeJsonDir(QString dir) {
 
 void MainWindow::loadJsonDirEntries(QString dir) {
 	QString title = dir.startsWith(":") ? "Integrated" : dir;
-	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [title](QMenu* menu){ return menu->title() == title; });
+	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(),
+			[title](QMenu* menu){ return menu->title() == title; });
 	if(dir_menu == json_dirs.end()) return;
 	QDirIterator it(dir, {"*.json"}, QDir::Files);
 	if(!it.hasNext()) {
@@ -76,76 +64,100 @@ void MainWindow::loadJsonDirEntries(QString dir) {
 	}
 	while(it.hasNext()) {
 		QString file = it.next();
-		JsonEntry *cur = new JsonEntry(file, file.right(file.size()-(dir.size() + 1)));
-		connect(cur, &JsonEntry::triggered, central, &Central::loadJSON);
+		QAction *cur = new QAction(file.right(file.size()-(dir.size() + 1)));
+		connect(cur, &QAction::triggered, [this, file](){
+			central->loadJSON(file);
+		});
 		(*dir_menu)->addAction(cur);
 	}
 }
 
 void MainWindow::addJsonDir(QString dir) {
-	if(std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;}) != json_dirs.end()) return;
+	if(std::find_if(json_dirs.begin(), json_dirs.end(),
+			[dir](QMenu* menu){return menu->title() == dir;}) != json_dirs.end()) return;
 	statusBar()->showMessage("Add JSON directory " + dir, 10000);
 	QMenu* dir_menu = new QMenu(dir.startsWith(":") ? "Integrated" : dir, config);
 	json_dirs.push_back(dir_menu);
 	config->addMenu(dir_menu);
 	if(!dir.startsWith(":")) {
-		JsonEntry *remove_dir = new JsonEntry(dir, "Remove Directory");
-		connect(remove_dir, &JsonEntry::triggered, this, &MainWindow::removeJsonDir);
+		QAction *remove_dir = new QAction("Remove Directory");
+		connect(remove_dir, &QAction::triggered, [this, dir](){
+			removeJsonDir(dir);
+		});
 		dir_menu->addAction(remove_dir);
-		JsonEntry *reload_dir = new JsonEntry(dir, "Reload Directory");
-		connect(reload_dir, &JsonEntry::triggered, this, &MainWindow::loadJsonDirEntries);
+		QAction *reload_dir = new QAction("Reload Directory");
+		connect(reload_dir, &QAction::triggered, [this, dir](){
+			loadJsonDirEntries(dir);
+		});
 		dir_menu->addAction(reload_dir);
 		dir_menu->addSeparator();
 	}
 	loadJsonDirEntries(dir);
 }
 
-void MainWindow::addLUA(QString dir) {
-	central->loadLUA(dir.toStdString(), false);
-}
-
-void MainWindow::overwriteLUA(QString dir) {
-	central->loadLUA(dir.toStdString(), true);
-}
-
 void MainWindow::createDropdown() {
 	config = menuBar()->addMenu("Config");
-	GetDir* load_config_file = new GetDir("Load JSON file");
+	QAction* load_config_file = new QAction("Load JSON file");
 	load_config_file->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
-	connect(load_config_file, &GetDir::triggered, central, &Central::loadJSON);
+	connect(load_config_file, &QAction::triggered, [this](){
+		QString path = QFileDialog::getOpenFileName(parentWidget(), "Select JSON file",
+				QDir::currentPath(), "JSON files (*.json)");
+		central->loadJSON(path);
+	});
 	config->addAction(load_config_file);
-	GetDir* save_config = new GetDir("Save to JSON file");
+	QAction* save_config = new QAction("Save to JSON file");
 	save_config->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
-	connect(save_config, &GetDir::triggered, this, &MainWindow::saveJSON);
+	connect(save_config, &QAction::triggered, [this](){
+		QString path = QFileDialog::getSaveFileName(parentWidget(), "Select JSON file",
+				QDir::currentPath(), "JSON files (*.json)");
+		saveJSON(path);
+	});
 	config->addAction(save_config);
 	QAction* clear_breadboard = new QAction("Clear breadboard");
 	clear_breadboard->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
 	connect(clear_breadboard, &QAction::triggered, central, &Central::clearBreadboard);
 	config->addAction(clear_breadboard);
-	GetDir* load_config_dir = new GetDir("Add JSON directory");
+	QAction* load_config_dir = new QAction("Add JSON directory");
 	load_config_dir->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
-	connect(load_config_dir, &GetDir::triggered, this, &MainWindow::addJsonDir);
+	connect(load_config_dir, &QAction::triggered, [this](){
+		QString path = QFileDialog::getExistingDirectory(parentWidget(), "Open Directory",
+				QDir::currentPath(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+		addJsonDir(path);
+	});
 	config->addAction(load_config_dir);
 	config->addSeparator();
 	addJsonDir(":/conf");
 
-	devices_options = menuBar()->addMenu("Devices");
-	GetDir* add_lua_dir = new GetDir("Add LUA directory");
-	connect(add_lua_dir, &GetDir::triggered, this, &MainWindow::addLUA);
-	devices_options->addAction(add_lua_dir);
-	GetDir* overwrite_luas = new GetDir("Overwrite LUA directory");
-	connect(overwrite_luas, &GetDir::triggered, this, &MainWindow::overwriteLUA);
-	devices_options->addAction(overwrite_luas);
+	lua = menuBar()->addMenu("LUA");
+	QAction* add_lua_dir = new QAction("Add directory");
+	connect(add_lua_dir, &QAction::triggered, [this](){
+		QString path = QFileDialog::getExistingDirectory(parentWidget(), "Open Directory",
+						QDir::currentPath(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+		central->loadLUA(path.toStdString(), false);
+	});
+	lua->addAction(add_lua_dir);
+	QAction* overwrite_luas = new QAction("Add directory (Overwrite integrated)");
+	connect(overwrite_luas, &QAction::triggered, [this](){
+		QString path = QFileDialog::getExistingDirectory(parentWidget(), "Open Directory",
+						QDir::currentPath(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+		central->loadLUA(path.toStdString(), true);
+	});
+	lua->addAction(overwrite_luas);
 
 	QMenu* window = menuBar()->addMenu("Window");
 	QAction* debug = new QAction("Debug Mode");
 	debug->setShortcut(QKeySequence(Qt::Key_Space));
-	connect(debug, &QAction::triggered, this, &MainWindow::toggleDebug);
+	connect(debug, &QAction::triggered, [this](){
+		debug_label->setText(central->toggleDebug() ? "Debug" : "");
+	});
 	window->addAction(debug);
 	window->addSeparator();
 	QAction* quit = new QAction("Quit");
 	quit->setShortcut(QKeySequence(Qt::Key_Q));
-	connect(quit, &QAction::triggered, this, &MainWindow::quit);
+	connect(quit, &QAction::triggered, [this](){
+		central->destroyConnection();
+		QApplication::quit();
+	});
 	window->addAction(quit);
 
 	debug_label = new QLabel();

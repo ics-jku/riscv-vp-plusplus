@@ -22,16 +22,16 @@ Breadboard::Breadboard() : QWidget() {
 	setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(this, &QWidget::customContextMenuRequested, this, &Breadboard::openContextMenu);
 	device_menu = new QMenu(this);
-	QAction* delete_device = new QAction("Delete");
+	QAction *delete_device = new QAction("Delete");
 	connect(delete_device, &QAction::triggered, this, &Breadboard::removeActiveDevice);
 	device_menu->addAction(delete_device);
-	QAction* scale_device = new QAction("Scale");
+	QAction *scale_device = new QAction("Scale");
 	connect(scale_device, &QAction::triggered, this, &Breadboard::scaleActiveDevice);
 	device_menu->addAction(scale_device);
-	QAction* keybinding_device = new QAction("Edit Keybindings");
+	QAction *keybinding_device = new QAction("Edit Keybindings");
 	connect(keybinding_device, &QAction::triggered, this, &Breadboard::keybindingActiveDevice);
 	device_menu->addAction(keybinding_device);
-	QAction* config_device = new QAction("Edit configurations");
+	QAction *config_device = new QAction("Edit configurations");
 	connect(config_device, &QAction::triggered, this, &Breadboard::configActiveDevice);
 	device_menu->addAction(config_device);
 
@@ -43,7 +43,7 @@ Breadboard::Breadboard() : QWidget() {
 
 	add_device = new QMenu(this);
 	for(DeviceClass device : factory.getAvailableDevices()) {
-		QAction* device_action = new QAction(QString::fromStdString(device));
+		QAction *device_action = new QAction(QString::fromStdString(device));
 		connect(device_action, &QAction::triggered, [this, device](){
 			addDevice(device, mapFromGlobal(add_device->pos()));
 		});
@@ -164,7 +164,7 @@ unique_ptr<Device> Breadboard::createDevice(DeviceClass classname, DeviceID id) 
 
 /* CONNECTIONS */
 
-void Breadboard::registerPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device) {
+void Breadboard::registerPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device *device) {
 	if(!device->pin) {
 		cerr << "[Breadboard] Attempting to add pin connection for device '" << device->getClass() <<
 				"', but device does not implement PIN interface." << endl;
@@ -214,7 +214,7 @@ void Breadboard::registerPin(bool synchronous, gpio::PinNumber device_pin, gpio:
 	}
 }
 
-void Breadboard::registerSPI(gpio::PinNumber global, bool noresponse, Device* device) {
+void Breadboard::registerSPI(gpio::PinNumber global, bool noresponse, Device *device) {
 	if(!device->spi) {
 		cerr << "[Breadboard] Attempting to add SPI connection for device '" << device->getClass() <<
 				"', but device does not implement SPI interface." << endl;
@@ -340,7 +340,7 @@ void Breadboard::configActiveDevice() {
 	active_device_menu = "";
 }
 
-void Breadboard::changeConfigActiveDevice(Config* config) {
+void Breadboard::changeConfigActiveDevice(Config *config) {
 	auto device = devices.find(active_device_menu);
 	if(device == devices.end() || !device->second->conf) {
 		error_dialog->showMessage("Device does not implement config interface.");
@@ -351,7 +351,7 @@ void Breadboard::changeConfigActiveDevice(Config* config) {
 
 /* User input */
 
-void Breadboard::keyPressEvent(QKeyEvent* e) {
+void Breadboard::keyPressEvent(QKeyEvent *e) {
 	if(!debugmode) {
 		switch (e->key()) {
 		case Qt::Key_0: {
@@ -385,7 +385,7 @@ void Breadboard::keyPressEvent(QKeyEvent* e) {
 	}
 }
 
-void Breadboard::keyReleaseEvent(QKeyEvent* e)
+void Breadboard::keyReleaseEvent(QKeyEvent *e)
 {
 	if(!debugmode) {
 		for(auto const& [id, device] : devices) {
@@ -403,7 +403,7 @@ void Breadboard::keyReleaseEvent(QKeyEvent* e)
 	}
 }
 
-void Breadboard::mousePressEvent(QMouseEvent* e) {
+void Breadboard::mousePressEvent(QMouseEvent *e) {
 	for(auto const& [id, device] : devices) {
 		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
 			if(e->button() == Qt::LeftButton)  {
@@ -443,7 +443,7 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 	update();
 }
 
-void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
+void Breadboard::mouseReleaseEvent(QMouseEvent *e) {
 	for(auto const& [id, device] : devices) {
 		if(e->button() == Qt::LeftButton) {
 			if(!debugmode) {
@@ -459,7 +459,7 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	update();
 }
 
-void Breadboard::mouseMoveEvent(QMouseEvent* e) {
+void Breadboard::mouseMoveEvent(QMouseEvent *e) {
 	bool device_hit = false;
 	for(auto const& [id, device] : devices) {
 		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(e->pos())) {
@@ -478,7 +478,7 @@ void Breadboard::mouseMoveEvent(QMouseEvent* e) {
 
 /* Drag and Drop */
 
-void Breadboard::dragMoveEvent(QDragMoveEvent* e) {
+void Breadboard::dragMoveEvent(QDragMoveEvent *e) {
 	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE) && (isBreadboard()?bb_isOnRaster(e->pos()):true)) {
 		e->acceptProposedAction();
 	} else {
@@ -486,7 +486,7 @@ void Breadboard::dragMoveEvent(QDragMoveEvent* e) {
 	}
 }
 
-void Breadboard::dragEnterEvent(QDragEnterEvent* e)  {
+void Breadboard::dragEnterEvent(QDragEnterEvent *e)  {
 	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE)) {
 		e->acceptProposedAction();
 	} else {
@@ -494,7 +494,7 @@ void Breadboard::dragEnterEvent(QDragEnterEvent* e)  {
 	}
 }
 
-void Breadboard::dropEvent(QDropEvent* e) {
+void Breadboard::dropEvent(QDropEvent *e) {
 	if(e->mimeData()->hasFormat(DEVICE_DRAG_TYPE)) {
 		QByteArray itemData = e->mimeData()->data(DEVICE_DRAG_TYPE);
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
@@ -546,7 +546,7 @@ bool Breadboard::checkDevicePosition(DeviceID id, QImage buffer, int scale, QPoi
 	return true;
 }
 
-bool Breadboard::moveDevice(Device* device, QPoint position, QPoint hotspot) {
+bool Breadboard::moveDevice(Device *device, QPoint position, QPoint hotspot) {
 	if(!device || !device->graph) return false;
 	unsigned scale = device->graph->getScale();
 	if(!scale) scale = 1;

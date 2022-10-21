@@ -34,36 +34,36 @@ class Breadboard : public QWidget {
 	QString bkgnd_path;
 
 	DeviceID active_device_menu;
-	QMenu* device_menu;
-	KeybindingDialog* device_keys;
-	ConfigDialog* device_config;
-	QErrorMessage* error_dialog;
-	QMenu* add_device;
+	QMenu *device_menu;
+	KeybindingDialog *device_keys;
+	ConfigDialog *device_config;
+	QErrorMessage *error_dialog;
+	QMenu *add_device;
 
 	// Device
 	std::unique_ptr<Device> createDevice(DeviceClass classname, DeviceID device_id);
 	void removeDevice(DeviceID id);
 
 	// Connections
-	void registerPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device* device);
-	void registerSPI(gpio::PinNumber global, bool noresponse, Device* device);
+	void registerPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, std::string name, Device *device);
+	void registerSPI(gpio::PinNumber global, bool noresponse, Device *device);
 
 	void writeDevice(DeviceID id);
 
 	// Drag and Drop
 	bool checkDevicePosition(DeviceID id, QImage buffer, int scale, QPoint position, QPoint hotspot=QPoint(0,0));
-	bool moveDevice(Device* device, QPoint position, QPoint hotspot=QPoint(0,0));
-	void dropEvent(QDropEvent* e) override;
-	void dragEnterEvent(QDragEnterEvent* e) override;
-	void dragMoveEvent(QDragMoveEvent* e) override;
+	bool moveDevice(Device *device, QPoint position, QPoint hotspot=QPoint(0,0));
+	void dropEvent(QDropEvent *e) override;
+	void dragEnterEvent(QDragEnterEvent *e) override;
+	void dragMoveEvent(QDragMoveEvent *e) override;
 
 	// QT
-	void paintEvent(QPaintEvent* e) override;
-	void keyPressEvent(QKeyEvent* e) override;
-	void keyReleaseEvent(QKeyEvent* e) override;
-	void mousePressEvent(QMouseEvent* e) override;
-	void mouseReleaseEvent(QMouseEvent* e) override;
-	void mouseMoveEvent(QMouseEvent* e) override;
+	void paintEvent(QPaintEvent *e) override;
+	void keyPressEvent(QKeyEvent *e) override;
+	void keyReleaseEvent(QKeyEvent *e) override;
+	void mousePressEvent(QMouseEvent *e) override;
+	void mouseReleaseEvent(QMouseEvent *e) override;
+	void mouseMoveEvent(QMouseEvent *e) override;
 
 public:
 	Breadboard();
@@ -97,7 +97,7 @@ private slots:
 	void keybindingActiveDevice();
 	void changeKeybindingActiveDevice(Keys keys);
 	void configActiveDevice();
-	void changeConfigActiveDevice(Config* config);
+	void changeConfigActiveDevice(Config *config);
 
 signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
