@@ -43,11 +43,12 @@ void KeybindingDialog::add(int key) {
 }
 
 void KeybindingDialog::accept() {
-	emit(keysChanged(keys));
+	emit(keysChanged(device, keys));
 	while(layout->rowCount() > 2) {
 		layout->removeRow(0);
 	}
 	keys.clear();
+	device = "";
 	QDialog::accept();
 }
 
@@ -56,11 +57,13 @@ void KeybindingDialog::reject() {
 		layout->removeRow(0);
 	}
 	keys.clear();
+	device = "";
 	QDialog::reject();
 }
 
-void KeybindingDialog::setKeys(Keys keys) {
+void KeybindingDialog::setKeys(DeviceID device, Keys keys) {
 	this->keys.clear();
+	this->device = device;
 	for(const Key& key : keys) {
 		add(key);
 	}

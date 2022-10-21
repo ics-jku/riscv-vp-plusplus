@@ -64,7 +64,8 @@ void ConfigDialog::addString(ConfigDescription name, QString value) {
 	this->addValue(name, box);
 }
 
-void ConfigDialog::setConfig(Config config) {
+void ConfigDialog::setConfig(DeviceID device, Config config) {
+	this->device = device;
 	this->config = config;
 	for(auto const& [description, element] : config) {
 		switch(element.type) {
@@ -88,13 +89,17 @@ void ConfigDialog::reject() {
 	while(layout->rowCount() > 1) {
 		layout->removeRow(0);
 	}
+	config.clear();
+	device = "";
 	QDialog::reject();
 }
 
 void ConfigDialog::accept() {
-	emit(configChanged(config));
+	emit(configChanged(device, config));
 	while(layout->rowCount() > 1) {
 		layout->removeRow(0);
 	}
+	config.clear();
+	device = "";
 	QDialog::accept();
 }

@@ -9,6 +9,7 @@ class ConfigDialog : public QDialog {
 
 	QFormLayout *layout;
 	Config config;
+	DeviceID device;
 
 	void addValue(ConfigDescription name, QWidget* value);
 	void addInt(ConfigDescription name, int value);
@@ -17,12 +18,12 @@ class ConfigDialog : public QDialog {
 
 public:
 	ConfigDialog(QWidget* parent);
-	void setConfig(Config config);
+	void setConfig(DeviceID device, Config config);
 
 public slots:
 	void accept() override;
 	void reject() override;
 
 signals:
-	void configChanged(Config config);
+	void configChanged(DeviceID device, Config config);
 };

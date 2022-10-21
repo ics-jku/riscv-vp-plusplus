@@ -9,17 +9,18 @@ class KeybindingDialog : public QDialog {
 
 	QFormLayout *layout;
 	Keys keys;
+	DeviceID device;
 
 	void add(int key);
 
 public:
 	KeybindingDialog(QWidget* parent);
-	void setKeys(Keys keys);
+	void setKeys(DeviceID device, Keys keys);
 
 public slots:
 	void accept() override;
 	void reject() override;
 
 signals:
-	void keysChanged(Keys keys);
+	void keysChanged(DeviceID device, Keys keys);
 };

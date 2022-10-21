@@ -33,7 +33,7 @@ class Breadboard : public QWidget {
 	bool debugmode = false;
 	QString bkgnd_path;
 
-	DeviceID active_device_menu;
+	DeviceID menu_device_id;
 	QMenu *device_menu;
 	KeybindingDialog *device_keys;
 	ConfigDialog *device_config;
@@ -97,9 +97,9 @@ private slots:
 	void removeActiveDevice();
 	void scaleActiveDevice();
 	void keybindingActiveDevice();
-	void changeKeybindingActiveDevice(Keys keys);
+	void changeKeybindingActiveDevice(DeviceID device, Keys keys);
 	void configActiveDevice();
-	void changeConfigActiveDevice(Config config);
+	void changeConfigActiveDevice(DeviceID device, Config config);
 
 signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);

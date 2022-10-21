@@ -282,7 +282,7 @@ void Breadboard::paintEvent(QPaintEvent*) {
 void Breadboard::openContextMenu(QPoint pos) {
 	for(auto const& [id, device] : devices) {
 		if(device->graph && getGraphicBounds(device->graph->getBuffer(), device->graph->getScale()).contains(pos)) {
-			active_device_menu = id;
+			menu_device_id = id;
 			device_menu->popup(mapToGlobal(pos));
 			return;
 		}
@@ -292,13 +292,13 @@ void Breadboard::openContextMenu(QPoint pos) {
 }
 
 void Breadboard::removeActiveDevice() {
-	if(!active_device_menu.size()) return;
-	removeDevice(active_device_menu);
-	active_device_menu = "";
+	if(!menu_device_id.size()) return;
+	removeDevice(menu_device_id);
+	menu_device_id = "";
 }
 
 void Breadboard::scaleActiveDevice() {
-	auto device = devices.find(active_device_menu);
+	auto device = devices.find(menu_device_id);
 	if(device == devices.end() || !device->second->graph) {
 		error_dialog->showMessage("Device does not implement graph interface.");
 		return;
@@ -308,22 +308,22 @@ void Breadboard::scaleActiveDevice() {
 	if(ok && checkDevicePosition(device->second->getID(), device->second->graph->getBuffer(), scale, device->second->graph->getBuffer().offset())) {
 		device->second->graph->setScale(scale);
 	}
-	active_device_menu = "";
+	menu_device_id = "";
 }
 
 void Breadboard::keybindingActiveDevice() {
-	auto device = devices.find(active_device_menu);
+	auto device = devices.find(menu_device_id);
 	if(device == devices.end() || !device->second->input) {
 		error_dialog->showMessage("Device does not implement input interface.");
 		return;
 	}
-	device_keys->setKeys(device->second->input->getKeys());
+	device_keys->setKeys(menu_device_id, device->second->input->getKeys());
+	menu_device_id = "";
 	device_keys->exec();
-	active_device_menu = "";
 }
 
-void Breadboard::changeKeybindingActiveDevice(Keys keys) {
-	auto device = devices.find(active_device_menu);
+void Breadboard::changeKeybindingActiveDevice(DeviceID device_id, Keys keys) {
+	auto device = devices.find(device_id);
 	if(device == devices.end() || !device->second->input) {
 		error_dialog->showMessage("Device does not implement input interface.");
 		return;
@@ -332,18 +332,18 @@ void Breadboard::changeKeybindingActiveDevice(Keys keys) {
 }
 
 void Breadboard::configActiveDevice() {
-	auto device = devices.find(active_device_menu);
+	auto device = devices.find(menu_device_id);
 	if(device == devices.end() || !device->second->conf) {
 		error_dialog->showMessage("Device does not implement config interface.");
 		return;
 	}
-	device_config->setConfig(device->second->conf->getConfig());
+	device_config->setConfig(menu_device_id, device->second->conf->getConfig());
+	menu_device_id = "";
 	device_config->exec();
-	active_device_menu = "";
 }
 
-void Breadboard::changeConfigActiveDevice(Config config) {
-	auto device = devices.find(active_device_menu);
+void Breadboard::changeConfigActiveDevice(DeviceID device_id, Config config) {
+	auto device = devices.find(device_id);
 	if(device == devices.end() || !device->second->conf) {
 		error_dialog->showMessage("Device does not implement config interface.");
 		return;
