@@ -19,7 +19,7 @@ struct nuclei_csr_mtvec {
 	};
 
 	uint32_t get_base_address() {
-		return fields.addr << 2;
+		return fields.addr & ~0b11;
 	}
 
 	enum Mode { CLIC = 0b11, CLINT = 0 };

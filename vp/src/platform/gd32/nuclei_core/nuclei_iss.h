@@ -16,6 +16,8 @@ struct NUCLEI_ISS : public ISS {
 	uint32_t get_csr_value(uint32_t addr) override;
 	void set_csr_value(uint32_t addr, uint32_t value) override;
 
+	void prepare_trap(SimulationTrap& e);
+
 	void return_from_trap_handler(PrivilegeLevel return_mode) override;
 	void switch_to_trap_handler();
 

@@ -1,5 +1,7 @@
 #include "nuclei_iss.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include "nuclei_csr.h"
 
 using namespace rv32;
@@ -208,6 +210,39 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 	}
 }
 
+// this is more or less just copy and paste from "iss.cpp" -> Code Duplication
+// but i think still a better solution then dealing with complicated inheritance
+// for the mcause/nuclei_mcause register
+void NUCLEI_ISS::prepare_trap(SimulationTrap &e) {
+	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's
+	// successor)
+	pc = last_pc;
+	unsigned exc_bit = (1 << e.reason);
+
+	// 1) machine mode execution takes any traps, independent of delegation setting
+	// 2) non-delegated traps are processed in machine mode, independent of current execution mode
+	if (prv == MachineMode || !(exc_bit & get_csr_table()->medeleg.reg)) {
+		get_csr_table()->nuclei_mcause.fields.interrupt = 0;
+		get_csr_table()->nuclei_mcause.fields.exccode = e.reason;
+		get_csr_table()->mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		return;
+	}
+
+	// see above machine mode comment
+	if (prv == SupervisorMode || !(exc_bit & get_csr_table()->sedeleg.reg)) {
+		get_csr_table()->scause.fields.interrupt = 0;
+		get_csr_table()->scause.fields.exception_code = e.reason;
+		get_csr_table()->stval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		return;
+	}
+
+	assert(prv == UserMode && (exc_bit & get_csr_table()->medeleg.reg) && (exc_bit & get_csr_table()->sedeleg.reg));
+	get_csr_table()->ucause.fields.interrupt = 0;
+	get_csr_table()->ucause.fields.exception_code = e.reason;
+	get_csr_table()->utval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+	return;
+}
+
 void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	// update privlege mode
 	prv = get_csr_table()->mstatus.fields.mpp;
@@ -219,12 +254,13 @@ void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	// update mstatus
 	get_csr_table()->mstatus.fields.mie = get_csr_table()->mstatus.fields.mpie;
 
-	get_csr_table()->mintstatus.fields.mil = get_csr_table()->nuclei_mcause.fields.mpil;
-
 	// mirror mcause/mstatus MPIE & MPP fields
 	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
 	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
 
+	if (get_csr_table()->nuclei_mcause.fields.interrupt) {
+		get_csr_table()->mintstatus.fields.mil = get_csr_table()->nuclei_mcause.fields.mpil;
+	}
 	// update pc
 	pc = get_csr_table()->mepc.reg;
 }
@@ -234,10 +270,6 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	const auto pp = prv;
 	prv = MachineMode;
 
-	// update machine sub-mode
-	get_csr_table()->msubm.fields.ptyp = get_csr_table()->msubm.fields.typ;
-	get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.Interrupt;
-
 	// update mepc
 	get_csr_table()->mepc.reg = pc;
 
@@ -246,38 +278,52 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	get_csr_table()->mstatus.fields.mie = 0;
 	get_csr_table()->mstatus.fields.mpp = pp;
 
-	// update mcause
-	get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
-
-	eclic->pending_interrupts_mutex.lock();
-	const auto id = eclic->pending_interrupts.top().id;
-	get_csr_table()->nuclei_mcause.fields.exccode = id;
-
 	// mirror mcause/mstatus MPIE & MPP fields
 	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
 	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
 
-	if (eclic->clicintattr[id] & 1) {
-		// vectored
-		if (!(eclic->clicintip[id] & 1)) {  // check if interrupt is still pending
-			eclic->pending_interrupts_mutex.unlock();
-			return return_from_trap_handler(MachineMode);
-		}
-		get_csr_table()->nuclei_mcause.fields.minhv = 1;
-		pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
-		get_csr_table()->nuclei_mcause.fields.minhv = 0;
-		eclic->pending_interrupts.pop();
-	} else {
-		// non-vectored
-		if (get_csr_table()->mtvt2.fields.mtvt2en) {
-			// use mtvt2
-			pc = get_csr_table()->mtvt2.fields.cmmon_code_entry << 2;
+	get_csr_table()->msubm.fields.ptyp = get_csr_table()->msubm.fields.typ;
+
+	if (get_csr_table()->nuclei_mcause.fields.interrupt) {
+		// Interrupt
+		// update machine sub-mode
+		get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.Interrupt;
+
+		// update mcause
+		get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
+
+		eclic->pending_interrupts_mutex.lock();
+		const auto id = eclic->pending_interrupts.top().id;
+		get_csr_table()->nuclei_mcause.fields.exccode = id;
+
+		if (eclic->clicintattr[id] & 1) {
+			// vectored
+			if (!(eclic->clicintip[id] & 1)) {  // check if interrupt is still pending
+				eclic->pending_interrupts_mutex.unlock();
+				return return_from_trap_handler(MachineMode);
+			}
+			get_csr_table()->nuclei_mcause.fields.minhv = 1;
+			pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
+			get_csr_table()->nuclei_mcause.fields.minhv = 0;
+			eclic->pending_interrupts.pop();
 		} else {
-			// use mtvec
-			pc = get_csr_table()->nuclei_mtvec.fields.addr;  // not sure if right. documentation is conflicting
+			// non-vectored
+			if (get_csr_table()->mtvt2.fields.mtvt2en) {
+				// use mtvt2
+				pc = get_csr_table()->mtvt2.fields.cmmon_code_entry << 2;
+			} else {
+				// use mtvec
+				pc = get_csr_table()->nuclei_mtvec.get_base_address();
+			}
 		}
+		eclic->pending_interrupts_mutex.unlock();
+	} else {
+		// Exception
+		// update machine sub-mode
+		get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.Exception;
+
+		pc = get_csr_table()->nuclei_mtvec.get_base_address();
 	}
-	eclic->pending_interrupts_mutex.unlock();
 
 	if (pc == 0) {
 		static bool once = true;
@@ -327,11 +373,11 @@ void NUCLEI_ISS::run_step() {
 			switch_to_trap_handler();
 		}
 	} catch (SimulationTrap &e) {
-		// TODO
 		if (trace)
 			std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
 		get_csr_table()->nuclei_mcause.fields.interrupt = 0;
-		// switch_to_trap_handler();
+		prepare_trap(e);
+		switch_to_trap_handler();
 	}
 
 	// NOTE: writes to zero register are supposedly allowed but must be ignored
