@@ -67,8 +67,8 @@ public:
 	public:
 		Config_Interface_Lua(luabridge::LuaRef& ref);
 		~Config_Interface_Lua();
-		Config* getConfig();
-		bool setConfig(Config* conf);
+		Config getConfig();
+		bool setConfig(Config conf);
 		static bool implementsInterface(const luabridge::LuaRef& ref);
 	};
 

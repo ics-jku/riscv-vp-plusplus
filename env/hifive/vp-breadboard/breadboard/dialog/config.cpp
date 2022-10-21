@@ -18,8 +18,6 @@ ConfigDialog::ConfigDialog(QWidget *parent) : QDialog(parent) {
 	layout = new QFormLayout(this);
 	layout->addRow(buttons_close);
 
-	this->config = new Config();
-
 	setWindowTitle("Edit config values");
 }
 
@@ -31,8 +29,8 @@ void ConfigDialog::addBool(ConfigDescription name, bool value) {
 	QCheckBox *box = new QCheckBox("");
 	box->setChecked(value);
 	connect(box, &QCheckBox::stateChanged, [this, name](int state) {
-		auto conf_value = config->find(name);
-		if(conf_value!=config->end() && conf_value->second.type == ConfigElem::Type::boolean) {
+		auto conf_value = config.find(name);
+		if(conf_value!=config.end() && conf_value->second.type == ConfigElem::Type::boolean) {
 			conf_value->second.value.boolean = state == Qt::Checked;
 		}
 	});
@@ -45,8 +43,8 @@ void ConfigDialog::addInt(ConfigDescription name, int value) {
 	box->setWrapping(true);
 	box->setValue(value);
 	connect(box, QOverload<int>::of(&QSpinBox::valueChanged), [this, name](int newValue) {
-		auto conf_value = config->find(name);
-		if(conf_value!=config->end() && conf_value->second.type == ConfigElem::Type::integer) {
+		auto conf_value = config.find(name);
+		if(conf_value!=config.end() && conf_value->second.type == ConfigElem::Type::integer) {
 			conf_value->second.value.integer = newValue;
 		}
 	});
@@ -56,19 +54,19 @@ void ConfigDialog::addInt(ConfigDescription name, int value) {
 void ConfigDialog::addString(ConfigDescription name, QString value) {
 	QLineEdit *box = new QLineEdit(value);
 	connect(box, &QLineEdit::textChanged, [this, name](QString text) {
-		auto conf_value = config->find(name);
-		if(conf_value!=config->end() && conf_value->second.type == ConfigElem::Type::string) {
-			config->erase(name);
+		auto conf_value = config.find(name);
+		if(conf_value!=config.end() && conf_value->second.type == ConfigElem::Type::string) {
+			config.erase(name);
 			QByteArray text_bytes = text.toLocal8Bit();
-			config->emplace(name, ConfigElem{text_bytes.data()});
+			config.emplace(name, ConfigElem{text_bytes.data()});
 		}
 	});
 	this->addValue(name, box);
 }
 
-void ConfigDialog::setConfig(Config* config) {
+void ConfigDialog::setConfig(Config config) {
 	this->config = config;
-	for(auto const& [description, element] : *config) {
+	for(auto const& [description, element] : config) {
 		switch(element.type) {
 		case ConfigElem::Type::integer: {
 			addInt(description, element.value.integer);

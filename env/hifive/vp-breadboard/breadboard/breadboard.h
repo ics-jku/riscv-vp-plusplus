@@ -97,7 +97,7 @@ private slots:
 	void keybindingActiveDevice();
 	void changeKeybindingActiveDevice(Keys keys);
 	void configActiveDevice();
-	void changeConfigActiveDevice(Config *config);
+	void changeConfigActiveDevice(Config config);
 
 signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);

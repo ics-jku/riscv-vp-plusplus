@@ -340,7 +340,7 @@ void Breadboard::configActiveDevice() {
 	active_device_menu = "";
 }
 
-void Breadboard::changeConfigActiveDevice(Config *config) {
+void Breadboard::changeConfigActiveDevice(Config config) {
 	auto device = devices.find(active_device_menu);
 	if(device == devices.end() || !device->second->conf) {
 		error_dialog->showMessage("Device does not implement config interface.");

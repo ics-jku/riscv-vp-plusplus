@@ -28,12 +28,12 @@ public:
 	class Config_Interface_C : public Device::Config_Interface {
 	protected:
 		CDevice* device;
-		Config* config;
+		Config config;
 	public:
 		Config_Interface_C(CDevice *device);
 		~Config_Interface_C();
-		Config* getConfig();
-		bool setConfig(Config* conf);
+		Config getConfig();
+		bool setConfig(Config conf);
 	};
 
 	class Graphbuf_Interface_C : public Device::Graphbuf_Interface {

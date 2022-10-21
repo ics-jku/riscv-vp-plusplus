@@ -22,17 +22,17 @@ void Device::fromJSON(QJsonObject json) {
 		}
 		else {
 			QJsonObject conf_obj = json["conf"].toObject();
-			auto config = new Config();
+			Config config;
 			for(QJsonObject::iterator conf_it = conf_obj.begin(); conf_it != conf_obj.end(); conf_it++) {
 				if(conf_it.value().isBool()) {
-					config->emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
+					config.emplace(conf_it.key().toStdString(), ConfigElem{conf_it.value().toBool()});
 				}
 				else if(conf_it.value().isDouble()) {
-					config->emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
+					config.emplace(conf_it.key().toStdString(), ConfigElem{(int64_t) conf_it.value().toInt()});
 				}
 				else if(conf_it.value().isString()) {
 					QByteArray value_bytes = conf_it.value().toString().toLocal8Bit();
-					config->emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
+					config.emplace(conf_it.key().toStdString(), ConfigElem{value_bytes.data()});
 				}
 				else {
 					std::cerr << "[Device] Invalid conf element type" << std::endl;
@@ -82,7 +82,7 @@ QJsonObject Device::toJSON() {
 	json["id"] = QString::fromStdString(getID());
 	if(conf) {
 		QJsonObject conf_json;
-		for(auto const& [desc, elem] : *conf->getConfig()) {
+		for(auto const& [desc, elem] : conf->getConfig()) {
 			if(elem.type == ConfigElem::Type::integer) {
 				conf_json[QString::fromStdString(desc)] = (int) elem.value.integer;
 			}
