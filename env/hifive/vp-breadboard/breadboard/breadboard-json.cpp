@@ -9,16 +9,7 @@ constexpr bool debug_logging = false;
 
 /* JSON */
 
-void Breadboard::clear() {
-	vector<gpio::PinNumber> iofs;
-	for(auto const& [id,spi] : spi_channels) {
-		iofs.push_back(spi.gpio_offs);
-	}
-	for(auto const& [id,pin] : pin_channels) {
-		iofs.push_back(pin.gpio_offs);
-	}
-	emit(closeAllIOFs(iofs));
-
+void Breadboard::defaultBackground() {
 	bkgnd_path = DEFAULT_PATH;
 	QSize bkgnd_size = DEFAULT_SIZE;
 	QPixmap bkgnd(bkgnd_path);
@@ -29,6 +20,19 @@ void Breadboard::clear() {
 	this->setAutoFillBackground(true);
 
 	setFixedSize(bkgnd_size);
+}
+
+void Breadboard::clear() {
+	vector<gpio::PinNumber> iofs;
+	for(auto const& [id,spi] : spi_channels) {
+		iofs.push_back(spi.gpio_offs);
+	}
+	for(auto const& [id,pin] : pin_channels) {
+		iofs.push_back(pin.gpio_offs);
+	}
+	emit(closeAllIOFs(iofs));
+
+	defaultBackground();
 }
 
 void Breadboard::clearConnections() {

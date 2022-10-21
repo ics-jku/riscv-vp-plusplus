@@ -49,6 +49,8 @@ Breadboard::Breadboard() : QWidget() {
 		});
 		add_device->addAction(device_action);
 	}
+
+	defaultBackground();
 }
 
 Breadboard::~Breadboard() {

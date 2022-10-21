@@ -40,6 +40,8 @@ class Breadboard : public QWidget {
 	QErrorMessage *error_dialog;
 	QMenu *add_device;
 
+	void defaultBackground();
+
 	// Device
 	std::unique_ptr<Device> createDevice(DeviceClass classname, DeviceID device_id);
 	void removeDevice(DeviceID id);
