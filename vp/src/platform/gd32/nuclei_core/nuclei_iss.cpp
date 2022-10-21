@@ -72,8 +72,11 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 				const auto id = eclic->pending_interrupts.top().id;
 				if (eclic->clicintattr[id] & 1)  // vectored interrupt must not be handled here
 					return 0;
-				if (!(eclic->clicintip[id] & 1))  // check if interrupt is still pending
+				if (!(eclic->clicintip[id] & 1)) {
+					// check if interrupt is still pending, if not remove from queue
+					eclic->pending_interrupts.pop();
 					return 0;
+				}
 
 				get_csr_table()->mstatus.fields.mie = 1;
 				get_csr_table()->nuclei_mcause.fields.exccode = id;
@@ -298,7 +301,9 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 
 		if (eclic->clicintattr[id] & 1) {
 			// vectored
-			if (!(eclic->clicintip[id] & 1)) {  // check if interrupt is still pending
+			if (!(eclic->clicintip[id] & 1)) {
+				// check if interrupt is still pending, if not remove from queue
+				eclic->pending_interrupts.pop();
 				eclic->pending_interrupts_mutex.unlock();
 				return return_from_trap_handler(MachineMode);
 			}
