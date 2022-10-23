@@ -67,6 +67,8 @@ Check out all submodules (`git submodule update --init --recursive`), and type `
 The GUI for interacting with the VP is located under `env/hifive/vp-breadboard` (subject to change).
 It can be built by the main `Makefile`: `make vp-breadboard`.
 Some example program such as a snake game, built around the Sifive Hifive1 board, can be found in this repo: https://github.com/agra-uni-bremen/sifive-hifive1.
+It contains some example environments (`.json` configuration files) and loads an OLED screen with some buttons per default.
+For a complete list of configuration files and available devices, run `vp-breadboard -h`.
 
 
 #### 3) Building SW examples using the GNU toolchain
