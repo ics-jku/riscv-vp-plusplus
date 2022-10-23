@@ -1,7 +1,8 @@
 virtual-bus-path=../../vp/src/platform/hwitl/virtual-bus
+simple-sensor-path=../simple-sensor
 
-all : main.c
-	riscv32-unknown-elf-gcc main.c bootstrap.S -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
+all : main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/irq.h $(simple-sensor-path)/bootstrap.S
+	riscv32-unknown-elf-gcc main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/bootstrap.S -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
 
 real-sim: all
 	hwitl-vp main /dev/ttyUSB0

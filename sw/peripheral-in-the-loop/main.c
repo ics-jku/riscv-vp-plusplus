@@ -3,8 +3,8 @@
 typedef uint32_t BUS_BRIDGE_TYPE;
 static volatile BUS_BRIDGE_TYPE * const BUS_BRIDGE_START = (BUS_BRIDGE_TYPE * const) 0x50000000;
 static volatile char * const TERMINAL_ADDR = (char * const)0x20000000;
-
-const unsigned num_bytes = 128;
+#define BUS_BRIDGE_ITR 2
+#define num_bytes 128
 
 void read_stuff() {
 	for (int i=0; i<(num_bytes/sizeof(BUS_BRIDGE_TYPE)); i++) {
@@ -25,12 +25,24 @@ void write_stuff() {
 	*TERMINAL_ADDR = '\n';
 }
 
+volatile int was_itr_triggered = 0;
+void virtual_bus_irq_handler() {
+	was_itr_triggered = 1;
+}
+
+char* hi = "Interrupt was triggered\n";
+
 int main() {
-	char hi[] = "lol\n";
+	register_interrupt_handler(BUS_BRIDGE_ITR, virtual_bus_irq_handler);
+
+	write_stuff();
+
+	while(!was_itr_triggered)
+		asm volatile ("wfi");
+
 	for(int i = 0; hi[i]; i++)
 		*TERMINAL_ADDR = hi[i];
 
-	write_stuff();
 	read_stuff();
 
 	return 0;
