@@ -20,11 +20,21 @@ VirtualBusMember::VirtualBusMember(sc_module_name name,
 	tsock.register_b_transport(this, &VirtualBusMember::transport);
 	m_read_delay = sc_time(SC_ZERO_TIME);
 	m_write_delay = sc_time(SC_ZERO_TIME);
+
+	// Zero time: Special case, dont update
+	m_interrupt_polling_delay = SC_ZERO_TIME;
+	SC_THREAD(interrupt_service);
 }
 
-void VirtualBusMember::set_delay(sc_time read_delay, sc_time write_delay) {
+void VirtualBusMember::setDelayTimes(sc_time read_delay, sc_time write_delay) {
 	m_read_delay = read_delay;
 	m_write_delay = write_delay;
+}
+
+void VirtualBusMember::setInterruptRoutine(std::function<void(void)> trigger_target, sc_core::sc_time polling_time) {
+	trigger_interrupt_callback = trigger_target;
+	m_interrupt_polling_delay = polling_time;
+	m_interrupt_event.notify(m_interrupt_polling_delay);
 }
 
 void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -78,4 +88,15 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 		sc_assert(false && "unsupported tlm command");
 	}
 
+}
+
+void VirtualBusMember::interrupt_service() {
+	while (true) {
+		if(m_interrupt_polling_delay > SC_ZERO_TIME)
+			m_interrupt_event.notify(m_interrupt_polling_delay);
+		sc_core::wait(m_interrupt_event);
+
+		if(trigger_interrupt_callback && virtual_bus.getInterrupt())
+			trigger_interrupt_callback();
+	}
 }

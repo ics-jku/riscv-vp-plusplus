@@ -107,6 +107,7 @@ int sc_main(int argc, char **argv) {
 	}
 	Initiator virtual_bus_connector(virtual_bus_device_handle);
 	VirtualBusMember virtual_bus_member("something", virtual_bus_connector, opt.virtual_bus_start_addr);
+	virtual_bus_member.setInterruptRoutine([&plic](){plic.gateway_trigger_interrupt(2);});
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
