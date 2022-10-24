@@ -37,20 +37,12 @@ and x30,x0,x0
 and x31,x0,x0
 .endm
 
-.macro SYS_EXIT, exit_code
+.macro SYS_EXIT
 li   a7, 93
-li   a0, \exit_code
 li   t0, SYSCALL_ADDR
 csrr a6, mhartid
 sw   a6, 0(t0)
 .endm
-
-# .macro SYS_EXIT, exit_code
-# li   a7, 93
-# li   a0, \exit_code
-# li   t0, SYSCALL_ADDR
-# sw   a7, 0(t0)
-# .endm
 
 _start:
 # initialize hw-platform
@@ -58,8 +50,8 @@ INIT_HW_PLATFORM
 la sp, stack_end
 jal main
 
-# call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
-SYS_EXIT 0
+# call exit (SYS_EXIT=93) with exit code in a0
+SYS_EXIT
 
 stack_begin:
 .zero 1024
