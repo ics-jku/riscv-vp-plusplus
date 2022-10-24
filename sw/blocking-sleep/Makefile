@@ -8,6 +8,6 @@ all: main
 main: main.o irq.o bootstrap.o
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^
 sim: main
-	tiny32-vp --intercept-syscalls $<
+	tiny32-vp --error-on-zero-traphandler=true --intercept-syscalls $<
 
 .PHONY: all sim

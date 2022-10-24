@@ -10,7 +10,8 @@ Options::Options(void) {
 	// clang-format off
 	add_options()
 		("help", "produce help message")
-		("intercept-syscalls", po::bool_switch(&intercept_syscalls), "directly intercept and handle syscalls in the ISS")
+		("intercept-syscalls", po::bool_switch(&intercept_syscalls), "directly intercept and handle syscalls in the ISS (testing mode)")
+		("error-on-zero-traphandler", po::value<bool>(&error_on_zero_traphandler), "Assume that taking an unset (zero) trap handler in machine mode is an error condition (which it usually is)")
 		("debug-mode", po::bool_switch(&use_debug_runner), "start execution in debugger (using gdb rsp interface)")
 		("debug-port", po::value<unsigned int>(&debug_port), "select port number to connect with GDB")
 		("trace-mode", po::bool_switch(&trace_mode), "enable instruction tracing")
@@ -43,11 +44,18 @@ void Options::parse(int argc, char **argv) {
 			use_data_dmi = true;
 			use_instr_dmi = true;
 		}
+		if (vm["intercept-syscalls"].as<bool>() && vm.count("error-on-zero-traphandler") == 0) {
+			// intercept syscalls active, but no overriding error-on-zero-traphandler switch
+			std::cout << "[Options] Info: switch 'intercept-syscalls' also activates 'error-on-zero-traphandler' if unset." << std::endl;
+			error_on_zero_traphandler = true;
+		}
 	} catch (po::error &e) {
 		std::cerr
 			<< "Error parsing command line options: "
 			<< e.what()
 			<< std::endl;
+
+		std::cout << *this << std::endl;
 		exit(1);
 	}
 }
@@ -55,6 +63,7 @@ void Options::parse(int argc, char **argv) {
 std::ostream& operator<<(std::ostream& os, const Options& o) {
 	os << std::dec;
 	os << "intercept_syscalls: " << o.intercept_syscalls << std::endl;
+	os << "error-on-zero-traphandler: " << o.error_on_zero_traphandler << std::endl;
 	os << "use_debug_runner: " << o.use_debug_runner << std::endl;
 	os << "debug_port: " << o.debug_port << std::endl;
 	os << "trace_mode: " << o.trace_mode << std::endl;

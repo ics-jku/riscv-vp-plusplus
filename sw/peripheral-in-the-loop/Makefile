@@ -11,7 +11,7 @@ sim: all
 	make -C $(virtual-bus-path) all
 	make -C $(virtual-bus-path) pipe_left pipe_right
 	$(virtual-bus-path)/responder-cli $(virtual-bus-path)/pipe_right &
-	hwitl-vp main --virtual-bus-device $(virtual-bus-path)/pipe_left
+	hwitl-vp main --error-on-zero-traphandler=true --virtual-bus-device $(virtual-bus-path)/pipe_left
 	killall responder-cli
 	killall socat
 clean:

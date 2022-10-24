@@ -171,7 +171,7 @@ void ISS::exec_step() {
 	switch (op) {
 		case Opcode::UNDEF:
 			if (trace)
-				std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
+				std::cout << "[ISS] WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
 				          << std::to_string(last_pc) << "'" << std::endl;
 			raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			break;
@@ -1755,10 +1755,14 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			pc = csrs.mtvec.get_base_address();
 
 			if(pc == 0) {
-				static bool once = true;
-				if (once)
-					std::cout << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error." << std::endl;
-				once = false;
+				if(error_on_zero_traphandler) {
+					throw std::runtime_error("[ISS] Took null trap handler in machine mode");
+				} else {
+					static bool once = true;
+					if (once)
+						std::cout << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error." << std::endl;
+					once = false;
+				}
 			}
 
 			if (csrs.mcause.interrupt && csrs.mtvec.mode == csrs.mtvec.Vectored)

@@ -164,6 +164,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	bool trace = false;
 	bool shall_exit = false;
     bool ignore_wfi = false;
+    bool error_on_zero_traphandler = false;
 	csr_table csrs;
 	PrivilegeLevel prv = MachineMode;
 	int64_t lr_sc_counter = 0;

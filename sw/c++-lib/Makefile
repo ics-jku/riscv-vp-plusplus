@@ -2,7 +2,7 @@ all : main.cpp
 	riscv32-unknown-elf-g++ -std=c++14 main.cpp -o main -march=rv32imac -mabi=ilp32
 	
 sim: all
-	riscv-vp --intercept-syscalls main
+	riscv-vp --intercept-syscalls --error-on-zero-traphandler=true main
 	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main

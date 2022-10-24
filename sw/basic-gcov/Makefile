@@ -4,7 +4,7 @@ all : main.c
 sim: main.gcda
 	
 main.gcda : all
-	riscv-vp --intercept-syscalls main
+	riscv-vp --intercept-syscalls --error-on-zero-traphandler=true main
 	
 # use -b option to display branch coverage too
 dump-coverage: main.gcda

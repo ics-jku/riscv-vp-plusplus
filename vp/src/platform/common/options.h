@@ -12,6 +12,7 @@ public:
 	std::string input_program;
 
 	bool intercept_syscalls = false;
+	bool error_on_zero_traphandler = false;
 	bool use_debug_runner = false;
 	unsigned int debug_port = 5005;
 	bool trace_mode = false;
