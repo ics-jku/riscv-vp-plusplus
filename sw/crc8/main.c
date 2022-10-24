@@ -33,9 +33,11 @@ unsigned char crc8(unsigned char *data ,int length) {
     return (~crc)&0xFF; // xor value = 0xFF
 }
 
+
+
 int main(int argc, char **argv) {
-	/* 
-	 * test cases from AUTOSAR specification 
+	/*
+	 * test cases from AUTOSAR specification
 	 * 8-bit SAE J1850 CRC
 	 * see : https://www.autosar.org/fileadmin/user_upload/standards/classic/4-3/AUTOSAR_SWS_CRCLibrary.pdf (page 22/50)
 	 * 		7.2.1 8-bit CRC calculation
@@ -45,9 +47,10 @@ int main(int argc, char **argv) {
 	// unsigned char crcData[] = {0x00,0xC0,0xDF,0xAC,0xAA,0x07,0x40}; // 0x6C
 	// unsigned char crcData[] = {0x00,0x00,0x00,0x00}; // 0x59
 	// unsigned char crcData[] = {0xF2,0x01,0x83}; // 0x37
-	unsigned char crcData[] = {0x33,0x22,0x55,0xAA,0xBB,0xCC,0xDD,0xEE,0xFF}; // 0xCB
+	const unsigned char crcData[] = {0x33,0x22,0x55,0xAA,0xBB,0xCC,0xDD,0xEE,0xFF}; // 0xCB
 	// unsigned char crcData[] = {0x92,0x6B,0x55}; // 0x8C
 	//unsigned char crcData[] = {0xFF,0xFF,0xFF,0xFF}; // 0x74
+	const unsigned char crcTrueResult = 0xCB;
 	char buf[3];
 	char buf2[3];
 	char *txt1 = "crc8 of:\n";
@@ -58,9 +61,17 @@ int main(int argc, char **argv) {
 		sendString(buf, 3);
 	}
 	putChr('\n');
-	itoa(crc8((unsigned char*)crcData,sizeof(crcData)), buf2, 16);
+	const unsigned char crcResult = crc8((unsigned char*)crcData,sizeof(crcData));
+	itoa(crcResult, buf2, 16);
 	sendString(txt2,9);
-    sendString(buf2, 3);
+	sendString(buf2, 3);
 	putChr('\n');
+
+	if(crcResult != crcTrueResult) {
+		sendString("CRC wrong!!!!111!!", 19);
+		return -1;
+	} else {
+		sendString("CRC correct\n", 13);
+	}
 	return 0;
 }
