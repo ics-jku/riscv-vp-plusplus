@@ -70,7 +70,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 			// run_event.notify(sc_core::sc_time(1, sc_core::SC_MS));
 			run_event.notify(sc_core::sc_time(87, sc_core::SC_US));
 			sc_core::wait(run_event);  // 40 times per second by default
-			unsigned char newRXChar = rand() + 48;
+			unsigned char newRXChar = (rand() %('z'-'A')) + 'A';
 			if (rxFifo.size() <= rxFifoDepth) {
 				rxFifo.push(newRXChar);
 				// printf("\n[TLM] UART, run: %X\n", newRXChar);
