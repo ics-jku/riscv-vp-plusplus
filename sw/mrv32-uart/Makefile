@@ -4,7 +4,7 @@ all : main.c bootstrap.S
 	riscv32-unknown-elf-gcc bootstrap.S main.c uart.c util.c -o main -march=$(rvArch) -mabi=ilp32 -mno-strict-align -nostartfiles -Wl,--no-relax,--print-memory-usage  -T link.ld
 	
 sim: all
-	../../vp/build/bin/microrv32-vp --intercept-syscalls main
+	microrv32-vp --intercept-syscalls main
 	
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main
