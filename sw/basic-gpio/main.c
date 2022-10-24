@@ -6,16 +6,16 @@
 //#include "gpio.h"
 void wait(uint32_t nOps) {
 	/*
-	 * TODO correlate nOps to clocks/time waited 
+	 * TODO correlate nOps to clocks/time waited
 	 */
 	for(uint32_t i = 0; i < nOps; i++) {
-		asm("nop"); 
+		asm("nop");
 	}
 }
 
 int main(int argc, char **argv) {
 	uint8_t val = 1;
-	
+
 	*GPIO_BANK_A_DIRECTION_ADDR = 0x000000ff; // set all pins to output
 	*GPIO_BANK_A_OUTPUT_ADDR = 0x01; // output 0x01 to all 8 pins of gpio bank A 
 	wait(10);
