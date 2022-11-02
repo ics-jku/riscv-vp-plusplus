@@ -23,7 +23,7 @@ vp/dependencies/softfloat-dist:
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
 
-all: vps vp-display vp-breadboard
+all: vps vp-display
 
 vp/build/Makefile:
 	mkdir -p vp/build
@@ -40,19 +40,11 @@ env/basic/vp-display/build/Makefile:
 vp-display: env/basic/vp-display/build/Makefile
 	$(MAKE) -C env/basic/vp-display/build #-j$(NPROCS)
 
-env/hifive/vp-breadboard/build/Makefile:
-	mkdir -p env/hifive/vp-breadboard/build
-	cd env/hifive/vp-breadboard/build && cmake ..
-
-vp-breadboard: env/hifive/vp-breadboard/build/Makefile
-	$(MAKE) -C env/hifive/vp-breadboard/build #-j$(NPROCS)
-
 vp-clean:
 	rm -rf vp/build
 
 qt-clean:
 	rm -rf env/basic/vp-display/build
-	rm -rf env/hifive/vp-breadboard/build
 
 sysc-clean:
 	rm -rf vp/dependencies/systemc*

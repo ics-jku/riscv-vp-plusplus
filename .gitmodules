@@ -4,9 +4,9 @@
 [submodule "tests/integration"]
 	path = vp/tests
 	url = https://github.com/agra-uni-bremen/vp-integration-tests.git
-[submodule "env/hifive/vp-breadboard/LuaBridge3"]
-	path = env/hifive/vp-breadboard/LuaBridge3
-	url = https://github.com/kunitoki/LuaBridge3
 [submodule "vp/src/platform/hwitl/virtual-bus"]
 	path = vp/src/platform/hwitl/virtual-bus
 	url = https://github.com/agra-uni-bremen/virtual-bus
+[submodule "vp/src/platform/hifive/vbb-protocol"]
+	path = vp/src/platform/hifive/vbb-protocol
+	url = https://github.com/agra-uni-bremen/virtual-breadboard-protocol.git
