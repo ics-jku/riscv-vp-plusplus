@@ -11,7 +11,7 @@ else
 	SYSTEMC_DEPENDENCY = vp/dependencies/systemc-dist
 endif
 
-vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile
+vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile vp/src/platform/hifive/vbb-protocol/CMakeLists.txt
 	$(MAKE) install -C vp/build #-j$(NPROCS)
 
 vp/dependencies/systemc-dist:
@@ -22,6 +22,9 @@ vp/dependencies/softfloat-dist:
 
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
+
+vp/src/platform/hifive/vbb-protocol/CMakeLists.txt:
+	git submodule update --init vp/src/platform/hifive/vbb-protocol
 
 all: vps vp-display
 
