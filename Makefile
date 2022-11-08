@@ -1,4 +1,3 @@
-NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 MAKEFLAGS += --no-print-directory
 
 # We are duplicating the CMake logic here, we should get rid of the
@@ -12,7 +11,7 @@ else
 endif
 
 vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile
-	$(MAKE) install -C vp/build #-j$(NPROCS)
+	$(MAKE) install -C vp/build
 
 vp/dependencies/systemc-dist:
 	cd vp/dependencies/ && ./build_systemc_233.sh
@@ -44,7 +43,7 @@ env/basic/vp-display/build/Makefile:
 	cd env/basic/vp-display/build && cmake ..
 
 vp-display: env/basic/vp-display/build/Makefile
-	$(MAKE) -C env/basic/vp-display/build #-j$(NPROCS)
+	$(MAKE) -C env/basic/vp-display/build
 
 vp-clean:
 	rm -rf vp/build
