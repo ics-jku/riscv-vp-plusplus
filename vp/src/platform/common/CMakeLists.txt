@@ -7,6 +7,7 @@ add_library(platform-common
 		fd_abstract_uart.cpp
 		slip.cpp
 		uart.cpp
+		sifive_test.cpp
 		options.cpp
 		${HEADERS})
 
