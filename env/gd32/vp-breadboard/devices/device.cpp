@@ -93,6 +93,7 @@ Device::EXMC_Interface::~EXMC_Interface() {}
 Device::Config_Interface::~Config_Interface() {}
 Device::Graphbuf_Interface::~Graphbuf_Interface() {}
 Device::Input_Interface::~Input_Interface() {}
+Device::TFT_Input_Interface::~TFT_Input_Interface() {}
 
 void Device::Graphbuf_Interface::setBuffer(QImage& image, Layout layout, const Xoffset x, const Yoffset y, Pixel p) {
 	auto* img = image.bits();

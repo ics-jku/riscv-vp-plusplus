@@ -75,6 +75,16 @@ class CDevice : public Device {
 		void onKeypress(Key key, bool active);
 	};
 
+	class TFT_Input_Interface_C : public Device::TFT_Input_Interface {
+	   protected:
+		CDevice* device;
+
+	   public:
+		TFT_Input_Interface_C(CDevice* device);
+		~TFT_Input_Interface_C();
+		void onClick(bool active, QMouseEvent* e);
+	};
+
 	CDevice(DeviceID id);
 	~CDevice();
 	void setBuffer(const Xoffset, const Yoffset, Pixel);

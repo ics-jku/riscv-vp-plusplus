@@ -17,6 +17,7 @@ class TFT : public CDevice {
 
 	inline static DeviceClass classname = "tft";
 	const DeviceClass getClass() const;
+	void draw(bool active, QMouseEvent* e);
 
 	class TFT_EXMC : public CDevice::EXMC_Interface_C {
 	   public:
@@ -27,6 +28,12 @@ class TFT : public CDevice {
 	   public:
 		TFT_Graph(CDevice* device);
 		void initializeBufferMaybe();
+	};
+
+	class TFT_Input : public CDevice::TFT_Input_Interface_C {
+	   public:
+		TFT_Input(CDevice* device);
+		void onClick(bool active, QMouseEvent* e);
 	};
 };
 

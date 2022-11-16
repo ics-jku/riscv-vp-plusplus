@@ -2,6 +2,7 @@
 
 #include <QImage>
 #include <QJsonObject>
+#include <QMouseEvent>
 #include <cstring>
 #include <gpio/gpio-client.hpp>
 #include <memory>
@@ -69,12 +70,19 @@ class Device {
 		Keys getKeys();
 	};
 
+	class TFT_Input_Interface {
+	   public:
+		virtual ~TFT_Input_Interface();
+		virtual void onClick(bool active, QMouseEvent* e) = 0;
+	};
+
 	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;
 	std::unique_ptr<EXMC_Interface> exmc;
 	std::unique_ptr<Config_Interface> conf;
 	std::unique_ptr<Graphbuf_Interface> graph;
 	std::unique_ptr<Input_Interface> input;
+	std::unique_ptr<TFT_Input_Interface> tft_input;
 
 	Device(DeviceID id);
 	virtual ~Device();

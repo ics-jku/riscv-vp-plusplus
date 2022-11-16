@@ -241,6 +241,12 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 					lua_access.unlock();
 					writeDevice(id);
 				}
+				if (dev.tft_input) {
+					lua_access.lock();
+					dev.tft_input->onClick(true, e);
+					lua_access.unlock();
+					writeDevice(id);
+				}
 			}
 		}
 		update();
@@ -255,6 +261,12 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 				if (dev.input) {
 					lua_access.lock();
 					dev.input->onClick(false);
+					lua_access.unlock();
+					writeDevice(id);
+				}
+				if (dev.tft_input) {
+					lua_access.lock();
+					dev.tft_input->onClick(true, e);
 					lua_access.unlock();
 					writeDevice(id);
 				}

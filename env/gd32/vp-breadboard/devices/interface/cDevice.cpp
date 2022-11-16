@@ -90,3 +90,12 @@ void CDevice::Input_Interface_C::onClick(bool active) {
 void CDevice::Input_Interface_C::onKeypress(Key key, bool active) {
 	std::cout << "Warning: key was not implemented" << std::endl;
 }
+
+/* TFT Input interface */
+
+CDevice::TFT_Input_Interface_C::TFT_Input_Interface_C(CDevice* device) : device(device) {}
+CDevice::TFT_Input_Interface_C::~TFT_Input_Interface_C() {}
+
+void CDevice::TFT_Input_Interface_C::onClick(bool active, QMouseEvent* e) {
+	std::cout << "Warning: mouse was not implemented" << std::endl;
+}
