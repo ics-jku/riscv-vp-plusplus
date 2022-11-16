@@ -30,7 +30,7 @@ class InputParser {
 
 int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
-	std::string configfile = ":/conf/oled_shield.json";
+	std::string configfile = ":/conf/tft_shield.json";
 	std::string scriptpath = "";
 	std::string host = "localhost";
 	bool overwrite_integrated_devices = false;

@@ -36,6 +36,12 @@ class Device {
 		virtual gpio::SPI_Response send(gpio::SPI_Command byte) = 0;
 	};
 
+	class EXMC_Interface {
+	   public:
+		virtual ~EXMC_Interface();
+		// ToDo Methods
+	};
+
 	class Config_Interface {
 	   public:
 		virtual ~Config_Interface();
@@ -65,6 +71,7 @@ class Device {
 
 	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;
+	std::unique_ptr<EXMC_Interface> exmc;
 	std::unique_ptr<Config_Interface> conf;
 	std::unique_ptr<Graphbuf_Interface> graph;
 	std::unique_ptr<Input_Interface> input;

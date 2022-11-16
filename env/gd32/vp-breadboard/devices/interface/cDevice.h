@@ -31,6 +31,16 @@ class CDevice : public Device {
 		gpio::SPI_Response send(gpio::SPI_Command byte);  // implement this
 	};
 
+	class EXMC_Interface_C : public Device::EXMC_Interface {
+	   protected:
+		CDevice* device;
+
+	   public:
+		EXMC_Interface_C(CDevice* device);
+		~EXMC_Interface_C();
+		// ToDo Methods
+	};
+
 	class Config_Interface_C : public Device::Config_Interface {
 	   protected:
 		CDevice* device;

@@ -1,0 +1,158 @@
+{
+  "window" : {
+    "background" : ":/img/oled_shield_cgi.jpg",
+    "windowsize" : [470, 750]
+  },
+  "devices" :
+  [
+   { 
+      "class" : "button",
+      "id" : "button_b",
+      "graphics" : 
+      { 
+        "offs" : [81, 646],
+        "scale" : 2
+      },
+      "keybindings" : [ "B", "X", "Y", "Z"],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 15,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+   { 
+      "class" : "button",
+      "id" : "button_a",
+      "graphics" : 
+      { 
+        "offs" : [81, 565],
+        "scale" : 2
+      },
+      "keybindings" : [ "A" ],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 14,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+   { 
+      "class" : "button",
+      "id" : "button_right",
+      "graphics" : 
+      { 
+        "offs" : [285, 610],
+        "scale" : 2
+      },
+      "keybindings" : [ "Right" ],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 11,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+   { 
+      "class" : "button",
+      "id" : "button_left",
+      "graphics" : 
+      { 
+        "offs" : [148, 610],
+        "scale" : 2
+      },
+      "keybindings" : [ "Left" ],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 12,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "button_up",
+      "graphics" : 
+      { 
+        "offs" : [216, 543],
+        "scale" : 2
+      },
+      "keybindings" : [ "Up" ],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 13,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "button_down",
+      "graphics" : 
+      { 
+        "offs" : [216, 673],
+        "scale" : 2
+      },
+      "keybindings" : [ "Down" ],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 9,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "button_center",
+      "graphics" : 
+      { 
+        "offs" : [216, 611],
+        "scale" : 2
+      },
+      "keybindings" : [ "C" ],
+      "pins" :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 10,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
+      ]
+    },
+    {
+      "class" : "tft",
+      "id"    : "display",
+     "graphics" :
+     {
+       "offs" : [95, 328],
+       "scale" : 2
+     }
+    }
+  ]
+}
