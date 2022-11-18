@@ -207,3 +207,7 @@ void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
 	return std::bind(&GpioServer::pushSPI, &server, cs, std::placeholders::_1);
 }
+
+ExmcWriteFunction GPIO::getEXMCwriteFunction(gpio::PinNumber cs) {
+	return std::bind(&GpioServer::pushEXMC, &server, cs, std::placeholders::_1);
+}

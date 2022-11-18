@@ -104,7 +104,8 @@ int sc_main(int argc, char **argv) {
 	GPIO gpioe("GPIOE", gpio::Port::E);
 	std::vector<GPIO *> gpioVec{&gpioa, &gpiob, &gpioc, &gpiod, &gpioe};
 
-	spi0.connect(gpioa.getSPIwriteFunction(4));  // pass spi write calls through to gpio server (port A)
+	spi0.connect(gpioa.getSPIwriteFunction(4));   // pass spi write calls through to gpio server (port A)
+	exmc.connect(gpiod.getEXMCwriteFunction(7));  // pass exmc write calls through to gpio server (port D)
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 

@@ -7,6 +7,7 @@
 
 #include "gpio/gpio-server.hpp"
 #include "afio.h"
+#include "exmc.h"
 #include "exti.h"
 #include "nuclei_core/nuclei_irq_if.h"
 #include "platform/common/async_event.h"
@@ -58,4 +59,5 @@ struct GPIO : public sc_core::sc_module {
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 
 	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
+	ExmcWriteFunction getEXMCwriteFunction(gpio::PinNumber cs);
 };
