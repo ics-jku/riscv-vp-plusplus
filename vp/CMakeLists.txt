@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8.12)
-project(riscv-vp)
+cmake_minimum_required(VERSION 3.20)
+project(riscv-vp
+	VERSION 1.2.2
+)
 
 option(USE_SYSTEM_SYSTEMC "use systemc version provided by the system" OFF)
 
