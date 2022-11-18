@@ -22,15 +22,9 @@ vp/dependencies/softfloat-dist:
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
 
-vp/src/platform/hifive/vbb-protocol/CMakeLists.txt:
-	git submodule update --init vp/src/platform/hifive/vbb-protocol
-
-vp/src/platform/hwitl/virtual-bus/CMakeLists.txt:
-	git submodule update --init vp/src/platform/hwitl/virtual-bus
-
 all: vps vp-display
 
-vp/build/Makefile: vp/src/platform/hifive/vbb-protocol/CMakeLists.txt vp/src/platform/hwitl/virtual-bus/CMakeLists.txt
+vp/build/Makefile:
 	mkdir -p vp/build
 	cd vp/build && cmake -DUSE_SYSTEM_SYSTEMC=$(USE_SYSTEM_SYSTEMC) ..
 

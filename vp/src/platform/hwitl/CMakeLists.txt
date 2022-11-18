@@ -1,7 +1,7 @@
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.c*)
 
-subdirs(virtual-bus)
+add_git_submodule(virtual-bus)
 
 add_executable(hwitl-vp
 	${SOURCES}

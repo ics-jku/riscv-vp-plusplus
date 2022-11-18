@@ -7,7 +7,7 @@ add_executable(hifive-vp
         ../../util/elegantEnums.cpp #sorry :(
         ${HEADERS})
 
-subdirs(vbb-protocol)
+add_git_submodule(vbb-protocol)
 
 target_link_libraries(hifive-vp virtual-breadboard-server rv32 platform-common gdb-mc ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
 
