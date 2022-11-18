@@ -36,6 +36,7 @@ class Embedded : public QWidget {
    public slots:
 	void registerIOF_PIN(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_SPI fun, bool noresponse);
+	void registerIOF_EXMC(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_EXMC fun);
 	void closeIOF(gpio::PinNumber pin, gpio::Port port);
 	void setBit(gpio::PinNumber pin, gpio::Port port, gpio::Tristate state);
 

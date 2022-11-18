@@ -40,6 +40,7 @@ class Device {
 	class EXMC_Interface {
 	   public:
 		virtual ~EXMC_Interface();
+		virtual void send(gpio::EXMC_Data data) = 0;
 		// ToDo Methods
 	};
 

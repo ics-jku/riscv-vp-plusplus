@@ -57,6 +57,13 @@ void Embedded::registerIOF_SPI(PinNumber pin, gpio::Port port, GpioClient::OnCha
 	}
 }
 
+void Embedded::registerIOF_EXMC(PinNumber pin, gpio::Port port, GpioClient::OnChange_EXMC fun) {
+	GpioObj* gpio = gpio_map.find(port)->second;
+	if (!gpio->client.isIOFactive(pin)) {
+		const bool success = gpio->client.registerEXMCOnChange(pin, fun);
+	}
+}
+
 void Embedded::closeIOF(PinNumber pin, gpio::Port port) {
 	gpio_map.find(port)->second->client.closeIOFunction(pin);
 }

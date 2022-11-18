@@ -25,6 +25,10 @@ const DeviceClass TFT::getClass() const {
 
 TFT::TFT_EXMC::TFT_EXMC(CDevice* device) : CDevice::EXMC_Interface_C(device) {}
 
+void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
+	std::cout << "breadboard tft recive data: " << std::hex << data << "\n";
+}
+
 /* Graphbuf Interface */
 
 TFT::TFT_Graph::TFT_Graph(CDevice* device) : CDevice::Graphbuf_Interface_C(device) {}
@@ -48,11 +52,15 @@ TFT::TFT_Input::TFT_Input(CDevice* device) : CDevice::TFT_Input_Interface_C(devi
 
 void TFT::TFT_Input::onClick(bool active, QMouseEvent* e) {
 	// TODO
+	// here we need to send an interrupt to the VP
+	// and somhow send the coordinates to the VP
 	TFT* tft_device = static_cast<TFT*>(device);
 	tft_device->draw(active, e);
 }
 
 void TFT::draw(bool active, QMouseEvent* e) {
+	// TODO
+	// this method should be called when we recive data via the EXMC client
 	auto* img = image->bits();
 	const auto offs = (e->pos().y() * layout_graph.width + e->pos().x()) * 4;  // heavily depends on rgba8888
 	img[offs + 0] = 255;

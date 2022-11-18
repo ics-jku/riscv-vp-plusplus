@@ -20,6 +20,12 @@ struct PIN_IOF_Request {
 	GpioClient::OnChange_PIN fun;
 };
 
+struct EXMC_IOF_Request {
+	gpio::PinNumber global_pin;
+	gpio::Port port;
+	GpioClient::OnChange_EXMC fun;
+};
+
 struct DeviceGraphic {
 	QImage image;
 	QPoint offset;

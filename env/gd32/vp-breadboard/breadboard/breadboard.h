@@ -20,6 +20,7 @@ class Breadboard : public QWidget {
 	std::unordered_map<DeviceID, std::unique_ptr<Device>> devices;
 	std::unordered_map<DeviceID, SPI_IOF_Request> spi_channels;
 	std::unordered_map<DeviceID, PIN_IOF_Request> pin_channels;
+	std::unordered_map<DeviceID, EXMC_IOF_Request> exmc_channels;
 	std::unordered_map<DeviceID, DeviceGraphic> device_graphics;
 
 	std::list<PinMapping> reading_connections;  // Semantic subject to change
@@ -32,6 +33,7 @@ class Breadboard : public QWidget {
 	void addPin(bool synchronous, gpio::PinNumber device_pin, gpio::PinNumber global, gpio::Port port, std::string name,
 	            Device* device);
 	void addSPI(gpio::PinNumber global, gpio::Port port, bool noresponse, Device* device);
+	void addEXMC(gpio::PinNumber global, gpio::Port port, Device* device);
 	void addGraphics(QPoint offset, unsigned scale, Device* device);
 
 	void writeDevice(DeviceID device);
@@ -66,6 +68,7 @@ class Breadboard : public QWidget {
    signals:
 	void registerIOF_PIN(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_SPI fun, bool noresponse);
+	void registerIOF_EXMC(gpio::PinNumber pin, gpio::Port port, GpioClient::OnChange_EXMC fun);
 	void closeIOF(gpio::PinNumber pin, gpio::Port port);
 	void closeIOFs(std::unordered_map<gpio::PinNumber, gpio::Port> pin);
 	void setBit(gpio::PinNumber pin, gpio::Port port, gpio::Tristate state);

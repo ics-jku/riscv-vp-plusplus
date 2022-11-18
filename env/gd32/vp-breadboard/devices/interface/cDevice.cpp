@@ -38,6 +38,9 @@ gpio::SPI_Response CDevice::SPI_Interface_C::send(gpio::SPI_Command byte) {
 CDevice::EXMC_Interface_C::EXMC_Interface_C(CDevice* device) : device(device) {}
 CDevice::EXMC_Interface_C::~EXMC_Interface_C() {}
 
+void CDevice::EXMC_Interface_C::send(gpio::EXMC_Data data) {
+	return;
+}
 // TODO
 
 /* Config Interface */

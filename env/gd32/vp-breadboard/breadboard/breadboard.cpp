@@ -45,6 +45,11 @@ void Breadboard::connectionUpdate(bool active, gpio::Port port) {
 				emit(registerIOF_PIN(req.global_pin, req.port, req.fun));
 			}
 		}
+		for (const auto& [id, req] : exmc_channels) {
+			if (port == req.port) {
+				emit(registerIOF_EXMC(req.global_pin, req.port, req.fun));
+			}
+		}
 	}
 	// else connection lost
 }
@@ -119,6 +124,21 @@ void Breadboard::addSPI(gpio::PinNumber global, gpio::Port port, bool noresponse
 		        lua_access.unlock();
 		        return ret;
 	        }});
+}
+
+void Breadboard::addEXMC(gpio::PinNumber global, gpio::Port port, Device* device) {
+	if (!device->exmc) {
+		cerr << "[Breadboard] Attempting to add EXMC connection for device '" << device->getClass()
+		     << "', but device does not implement EXMC interface." << endl;
+		return;
+	}
+	exmc_channels.emplace(
+	    device->getID(),
+	    EXMC_IOF_Request{.global_pin = global, .port = port, .fun = [this, device](gpio::EXMC_Data data) {
+		                     lua_access.lock();
+		                     device->exmc->send(data);
+		                     lua_access.unlock();
+	                     }});
 }
 
 void Breadboard::addGraphics(QPoint offset, unsigned scale, Device* device) {

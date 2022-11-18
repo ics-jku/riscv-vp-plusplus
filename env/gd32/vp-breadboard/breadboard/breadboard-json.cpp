@@ -17,6 +17,9 @@ void Breadboard::clear() {
 	for (auto const& [id, pin] : pin_channels) {
 		iofs.insert({pin.global_pin, pin.port});
 	}
+	for (auto const& [id, pin] : exmc_channels) {
+		iofs.insert({pin.global_pin, pin.port});
+	}
 	emit(closeIOFs(iofs));
 
 	bkgnd_path = default_bkgnd;
@@ -34,6 +37,7 @@ void Breadboard::clear() {
 void Breadboard::clearConnections() {
 	spi_channels.clear();
 	pin_channels.clear();
+	exmc_channels.clear();
 	device_graphics.clear();
 	writing_connections.clear();
 	reading_connections.clear();
@@ -115,6 +119,20 @@ bool Breadboard::loadConfigFile(QString file) {
 				const gpio::Port port = gpio::PORT_MAP.find(spi["port"].toString("undef").toStdString())->second;
 				const bool noresponse = spi["noresponse"].toBool(true);
 				addSPI(cs, port, noresponse, device);
+			}
+
+			if (device_desc.contains("exmc") && device_desc["exmc"].isObject()) {
+				const QJsonObject exmc = device_desc["exmc"].toObject();
+				if (!exmc.contains("cs_pin")) {
+					cerr << "[config loader] config for device '" << classname
+					     << "' sets"
+					        " an EXMC interface, but does not set a cs_pin."
+					     << endl;
+					continue;
+				}
+				const gpio::PinNumber cs = exmc["cs_pin"].toInt();
+				const gpio::Port port = gpio::PORT_MAP.find(exmc["port"].toString("undef").toStdString())->second;
+				addEXMC(cs, port, device);
 			}
 
 			if (device_desc.contains("pins") && device_desc["pins"].isArray()) {
@@ -237,6 +255,12 @@ bool Breadboard::saveConfigFile(QString file) {
 			spi_json["cs_pin"] = (int)spi->second.global_pin;
 			spi_json["noresponse"] = spi->second.noresponse;
 			dev_json["spi"] = spi_json;
+		}
+		auto exmc = exmc_channels.find(id);
+		if (exmc != exmc_channels.end()) {
+			QJsonObject exmc_json;
+			exmc_json["cs_pin"] = (int)exmc->second.global_pin;
+			dev_json["exmc"] = exmc_json;
 		}
 		QJsonArray pins_json;
 		for (PinMapping w : writing_connections) {

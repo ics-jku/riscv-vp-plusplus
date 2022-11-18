@@ -20,6 +20,7 @@ Central::Central(const std::string host, QWidget *parent) : QWidget(parent) {
 
 	connect(breadboard, &Breadboard::registerIOF_PIN, embedded, &Embedded::registerIOF_PIN);
 	connect(breadboard, &Breadboard::registerIOF_SPI, embedded, &Embedded::registerIOF_SPI);
+	connect(breadboard, &Breadboard::registerIOF_EXMC, embedded, &Embedded::registerIOF_EXMC);
 	connect(breadboard, &Breadboard::closeIOF, embedded, &Embedded::closeIOF);
 	connect(breadboard, &Breadboard::closeIOFs, this, &Central::closeIOFs);
 	connect(breadboard, &Breadboard::setBit, embedded, &Embedded::setBit);

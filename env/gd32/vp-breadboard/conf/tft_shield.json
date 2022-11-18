@@ -148,11 +148,16 @@
     {
       "class" : "tft",
       "id"    : "display",
-     "graphics" :
-     {
-       "offs" : [95, 328],
-       "scale" : 2
-     }
+      "exmc"   :
+      { 
+        "cs_pin" : 7,
+        "port": "D"
+      },
+      "graphics" :
+      {
+        "offs" : [10, 10],
+        "scale" : 1
+      }
     }
   ]
 }
