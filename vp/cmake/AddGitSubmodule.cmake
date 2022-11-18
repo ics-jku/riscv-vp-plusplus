@@ -12,15 +12,19 @@ function(add_git_submodule dir)
 # add_git_submodule(mysubmod_dir)
 
 find_package(Git REQUIRED)
+if(NOT EXISTS ${dir})
+    set(dir ${CMAKE_CURRENT_SOURCE_DIR}/${dir})
+endif()
 
-if(NOT EXISTS ${dir}/CMakeLists.txt)
-  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${dir}
+if(NOT EXISTS "${dir}/CMakeLists.txt")
+  message("checking out submodule ${dir}")
+  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${abs_dir}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     #COMMAND_ERROR_IS_FATAL		# cmake 3.19+ 
     #ANY						# cmake 3.19+
    )
 endif()
 
-add_subdirectory(${dir})
+add_subdirectory(${abs_dir})
 
 endfunction(add_git_submodule)
