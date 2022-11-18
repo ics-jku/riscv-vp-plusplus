@@ -136,7 +136,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 			unsigned off = i % 32;
 
 			if (hart_enabled_interrupts(hart_id, idx) & (1 << off)) {
-			    if (trace_mode) std::cout << "[vp::plic] hart " << hart_id << " has enabled ITR " << i << std::endl;
+				if (trace_mode) std::cout << "[vp::plic] hart " << hart_id << " has enabled ITR " << i << std::endl;
 				if (pending_interrupts[idx] & (1 << off)) {
 					auto prio = interrupt_priorities[i];
 					if (trace_mode) std::cout << "[vp::plic] .. and it is pending with priority " << prio << std::endl;
