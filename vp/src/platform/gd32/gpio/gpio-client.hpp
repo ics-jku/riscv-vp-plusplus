@@ -19,6 +19,7 @@ class GpioClient : public GpioCommon {
    public:
 	typedef std::function<gpio::SPI_Response(gpio::SPI_Command byte)> OnChange_SPI;
 	typedef std::function<void(gpio::Tristate val)> OnChange_PIN;
+	typedef std::function<void(gpio::EXMC_Data data)> OnChange_EXMC;
 
    private:
 	typedef int Socket;
@@ -37,6 +38,7 @@ class GpioClient : public GpioCommon {
 		struct {
 			OnChange_SPI spi;
 			OnChange_PIN pin;
+			OnChange_EXMC exmc;
 		} onchange;
 	};
 	std::unordered_map<gpio::IOF_Channel_ID, IOFChannelDescription> activeIOFs;
@@ -70,6 +72,7 @@ class GpioClient : public GpioCommon {
 	    gpio::PinNumber pin, OnChange_PIN fun = [](gpio::Tristate) {});
 	// registerI2C...
 	// registerUART...
+	bool registerEXMCOnChange(gpio::PinNumber pin, OnChange_EXMC fun);
 
 	bool isIOFactive(gpio::PinNumber pin);
 	void closeIOFunction(gpio::PinNumber pin);

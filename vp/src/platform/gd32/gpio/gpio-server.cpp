@@ -313,8 +313,8 @@ void GpioServer::handleConnection(Socket conn) {
 					}
 				}
 
-				cout << "[gpio-server] Started IOF channel type " << (int)req.reqIOF.iof << " on pin "
-				     << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
+				cout << "[gpio-server port:" << base_port << "] Started IOF channel type " << (int)req.reqIOF.iof
+				     << " on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
 				IOF_Channelinfo info = {.id = response.id, .requested_iof = req.reqIOF.iof};
 				active_IOF_channels.emplace(req.reqIOF.pin, info);
 
@@ -397,4 +397,26 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 		active_IOF_channels.clear();
 	}
 	return response;
+}
+
+void GpioServer::pushEXMC(gpio::PinNumber pin, EXMC_Data data) {
+	auto channel = active_IOF_channels.find(pin);
+	if (channel == active_IOF_channels.end()) {
+		return;
+	}
+
+	if (channel->second.requested_iof != IOFunction::EXMC) {
+		// requested different IOF
+		return;
+	}
+
+	IOF_Update update;
+	update.id = channel->second.id;
+	update.payload.exmc = data;
+
+	if (!writeStruct(data_channel_fd, &update)) {
+		cerr << "[gpio-server] Could not write EXMC command" << endl;
+		return;
+	}
+	return;
 }

@@ -188,6 +188,15 @@ bool GpioClient::registerPINOnChange(PinNumber pin, OnChange_PIN fun) {
 	return addIOFchannel(desc);
 }
 
+bool GpioClient::registerEXMCOnChange(gpio::PinNumber pin, OnChange_EXMC fun) {
+	IOFChannelDescription desc;
+	desc.iof = IOFunction::EXMC;
+	desc.pin = pin;
+	desc.onchange.exmc = fun;
+
+	return addIOFchannel(desc);
+}
+
 bool GpioClient::addIOFchannel(IOFChannelDescription desc) {
 	// cout << "Requesting IOF " << (int)desc.iof << " for pin " << (int)desc.pin << endl;
 
@@ -249,6 +258,10 @@ void GpioClient::handleDataChannel() {
 			case IOFunction::BITSYNC: {
 				state.pins[desc.pin] = toPinstate(update.payload.pin);
 				desc.onchange.pin(update.payload.pin);
+				break;
+			}
+			case IOFunction::EXMC: {
+				desc.onchange.exmc(update.payload.exmc);
 				break;
 			}
 

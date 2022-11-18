@@ -56,4 +56,5 @@ class GpioServer : public GpioCommon {
 	void pushPin(gpio::PinNumber pin, gpio::Tristate state);
 	// pin number should be the active CS
 	gpio::SPI_Response pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte);
+	void pushEXMC(gpio::PinNumber pin, uint16_t data);
 };

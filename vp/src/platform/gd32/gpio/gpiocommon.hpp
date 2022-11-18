@@ -40,6 +40,7 @@ enum class IOFunction : uint8_t {
 	PWM,
 	UART,
 	BITSYNC,
+	EXMC,
 };
 
 enum class Tristate : uint8_t {
@@ -70,6 +71,7 @@ typedef uint8_t IOF_Channel_ID;
 typedef uint8_t SPI_Command;
 typedef uint8_t SPI_Response;
 typedef uint8_t UART_Byte;
+typedef uint16_t EXMC_Data;
 
 struct State {
 	// TODO somehow packed?
@@ -109,6 +111,7 @@ struct IOF_Update {  // Server to Client
 		SPI_Command spi;
 		UART_Byte uart;
 		Tristate pin;
+		EXMC_Data exmc;
 	} payload;
 };
 
