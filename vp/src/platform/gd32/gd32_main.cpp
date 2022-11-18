@@ -4,6 +4,7 @@
 #include "afio.h"
 #include "eclic.h"
 #include "elf_loader.h"
+#include "exmc.h"
 #include "exti.h"
 #include "gdb-mc/gdb_runner.h"
 #include "gdb-mc/gdb_server.h"
@@ -29,6 +30,12 @@ class GD32Options : public Options {
 
 	addr_t timer_start_addr = 0xD1000000;
 	addr_t timer_end_addr = 0xD100D000;
+
+	addr_t exmc_start_addr = 0xA0000000;
+	addr_t exmc_end_addr = 0xA0000FFF;
+
+	addr_t exmc_ext_start_addr = 0x60000000;
+	addr_t exmc_ext_end_addr = 0x6ffffFFF;
 
 	addr_t rcu_start_addr = 0x40021000;
 	addr_t rcu_end_addr = 0x400213FF;
@@ -79,9 +86,10 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 14> ahb("AHB");
+	SimpleBus<2, 16> ahb("AHB");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
+	EXMC exmc("EXMC");
 	RCU rcu("RCU");
 	TIMER timer("TIMER");
 	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY> eclic("ECLIC");
@@ -130,6 +138,8 @@ int sc_main(int argc, char **argv) {
 		ahb.ports[it++] = new PortMapping(opt.gpiod_start_addr, opt.gpiod_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.gpioe_start_addr, opt.gpioe_end_addr);
 		ahb.ports[it++] = new PortMapping(opt.spi_start_addr, opt.spi_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.exmc_start_addr, opt.exmc_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.exmc_ext_start_addr, opt.exmc_ext_end_addr);
 	}
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
@@ -156,6 +166,8 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(gpiod.tsock);
 		ahb.isocks[it++].bind(gpioe.tsock);
 		ahb.isocks[it++].bind(spi0.tsock);
+		ahb.isocks[it++].bind(exmc.tsock_internal);
+		ahb.isocks[it++].bind(exmc.tsock_external);
 	}
 
 	core.eclic = &eclic;
