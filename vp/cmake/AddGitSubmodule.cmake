@@ -25,6 +25,6 @@ if(NOT EXISTS "${dir}/CMakeLists.txt")
    )
 endif()
 
-add_subdirectory(${abs_dir})
+add_subdirectory(${dir})
 
 endfunction(add_git_submodule)
