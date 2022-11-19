@@ -148,11 +148,21 @@
     {
       "class" : "tft",
       "id"    : "display",
-      "exmc"   :
+      "exmc"  :
       { 
         "cs_pin" : 7,
         "port": "D"
       },
+      "pins"  :
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 11,
+          "port": "D",
+          "name": "dc_pin",
+          "synchronous" : true
+        }
+      ],
       "graphics" :
       {
         "offs" : [10, 10],

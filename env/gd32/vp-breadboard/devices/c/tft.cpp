@@ -1,6 +1,12 @@
 #include "tft.h"
 
 TFT::TFT(DeviceID id) : CDevice(id) {
+	// Pin Layout
+	if (!pin) {
+		layout_pin = PinLayout();
+		layout_pin.emplace(1, PinDesc{PinDesc::Dir::input, "data_command"});
+		pin = std::make_unique<TFT_PIN>(this);
+	}
 	// EXMC
 	if (!exmc) {
 		exmc = std::make_unique<TFT_EXMC>(this);
@@ -21,12 +27,23 @@ const DeviceClass TFT::getClass() const {
 	return classname;
 }
 
+/* PIN Interface */
+
+TFT::TFT_PIN::TFT_PIN(CDevice* device) : CDevice::PIN_Interface_C(device) {}
+
+void TFT::TFT_PIN::setPin(PinNumber num, gpio::Tristate val) {
+	if (num == 1) {
+		TFT* tft_device = static_cast<TFT*>(device);
+		tft_device->is_data = val == gpio::Tristate::HIGH;
+	}
+}
+
 /* EXMC Interface */
 
 TFT::TFT_EXMC::TFT_EXMC(CDevice* device) : CDevice::EXMC_Interface_C(device) {}
 
 void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
-	std::cout << "breadboard tft recive data: " << std::hex << data << "\n";
+	// std::cout << "breadboard tft recive data: " << std::hex << data << "\n";
 }
 
 /* Graphbuf Interface */

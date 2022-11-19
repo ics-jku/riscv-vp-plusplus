@@ -9,7 +9,6 @@ const uint8_t COMMANDS [1] = {COL_LOW};
 
 class TFT : public CDevice {
 	bool is_data = false;
-	State state;
 
    public:
 	TFT(DeviceID id);
@@ -18,6 +17,12 @@ class TFT : public CDevice {
 	inline static DeviceClass classname = "tft";
 	const DeviceClass getClass() const;
 	void draw(bool active, QMouseEvent* e);
+
+	class TFT_PIN : public CDevice::PIN_Interface_C {
+	   public:
+		TFT_PIN(CDevice* device);
+		void setPin(PinNumber num, gpio::Tristate val);
+	};
 
 	class TFT_EXMC : public CDevice::EXMC_Interface_C {
 	   public:
