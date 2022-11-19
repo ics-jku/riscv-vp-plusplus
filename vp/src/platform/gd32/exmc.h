@@ -4,15 +4,21 @@
 
 #include <systemc>
 
+#include "gpio/gpiocommon.hpp"
 #include "util/tlm_map.h"
 
+#define LCD_CMD_ADDR 0x00000000
+#define LCD_DAT_ADDR 0x03FFFFFE
+
 typedef std::function<void(uint16_t)> ExmcWriteFunction;
+typedef std::function<void(gpio::Tristate)> PinWriteFunction;
 
 struct EXMC : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<EXMC> tsock_internal;
 	tlm_utils::simple_target_socket<EXMC> tsock_external;
 
-	ExmcWriteFunction writeFunction;
+	ExmcWriteFunction writeFunctionEXMC;
+	PinWriteFunction writeFunctionPIN;
 
 	// memory mapped configuration registers
 	uint32_t exmc_snctl0 = 0x000030DA;
@@ -43,18 +49,28 @@ struct EXMC : public sc_core::sc_module {
 	}
 
 	void transport_internal(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		// std::cout << "EXMC int tr addr:" << trans.get_address() << " read: " << trans.is_read() << " nv: " <<
+		// std::cout << "EXMC t_int addr:" << trans.get_address() << " read: " << trans.is_read() << " nv: " <<
 		// *trans.get_data_ptr() << std::endl;
 		router.transport(trans, delay);
 	}
 
 	void transport_external(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		// std::cout << "EXMC ext tr addr:" << trans.get_address() << " read: " << trans.is_read() << " nv: " <<
-		// std::hex << *trans.get_data_ptr() << std::endl;
-		writeFunction(*trans.get_data_ptr());
+		std::cout << "EXMC t_ext addr:" << trans.get_address() << " read: " << trans.is_read() << " nv: " << std::hex
+		          << *trans.get_data_ptr() << std::endl;
+		auto addr = trans.get_address();
+
+		if (addr == LCD_CMD_ADDR)
+			writeFunctionPIN(gpio::Tristate::LOW);
+		else if (addr == LCD_DAT_ADDR)
+			writeFunctionPIN(gpio::Tristate::HIGH);
+
+		writeFunctionEXMC(*trans.get_data_ptr());
 	}
 
 	void connect(ExmcWriteFunction interface) {
-		writeFunction = interface;
+		writeFunctionEXMC = interface;
+	}
+	void connect(PinWriteFunction interface) {
+		writeFunctionPIN = interface;
 	}
 };

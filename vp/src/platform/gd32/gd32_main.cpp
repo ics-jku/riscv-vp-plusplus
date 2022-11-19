@@ -106,6 +106,7 @@ int sc_main(int argc, char **argv) {
 
 	spi0.connect(gpioa.getSPIwriteFunction(4));   // pass spi write calls through to gpio server (port A)
 	exmc.connect(gpiod.getEXMCwriteFunction(7));  // pass exmc write calls through to gpio server (port D)
+	exmc.connect(gpiod.getPINwriteFunction(11));  // pass exmc write calls through to gpio server (port D)
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 

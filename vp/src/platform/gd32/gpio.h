@@ -60,4 +60,5 @@ struct GPIO : public sc_core::sc_module {
 
 	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
 	ExmcWriteFunction getEXMCwriteFunction(gpio::PinNumber cs);
+	PinWriteFunction getPINwriteFunction(gpio::PinNumber pin);
 };

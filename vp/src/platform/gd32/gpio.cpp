@@ -211,3 +211,7 @@ SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
 ExmcWriteFunction GPIO::getEXMCwriteFunction(gpio::PinNumber cs) {
 	return std::bind(&GpioServer::pushEXMC, &server, cs, std::placeholders::_1);
 }
+
+PinWriteFunction GPIO::getPINwriteFunction(gpio::PinNumber pin) {
+	return std::bind(&GpioServer::pushPin, &server, pin, std::placeholders::_1);
+}
