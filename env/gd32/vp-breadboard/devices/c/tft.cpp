@@ -88,6 +88,14 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 				}
 				break;
 			}
+			case TFT_MADCTL: {
+				uint8_t b5 = (data & 0b100000) >> 5;
+				uint8_t b6 = (data & 0b1000000) >> 6;
+				uint8_t b7 = (data & 0b10000000) << 7;
+
+				tft_device->state.setCtl(b5, b6, b6);
+				break;
+			}
 			default:
 				break;
 		}

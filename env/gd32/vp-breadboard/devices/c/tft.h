@@ -5,10 +5,11 @@
 #include "devices/factory/cFactory.h"
 
 const uint8_t TFT_CASET = 0x2A;
+const uint8_t TFT_MADCTL = 0x0B;
 const uint8_t TFT_PASET = 0x2B;
 const uint8_t TFT_RAMWR = 0x2C;
 
-const uint8_t COMMANDS[3] = {TFT_CASET, TFT_PASET, TFT_RAMWR};
+const uint8_t COMMANDS[4] = {TFT_CASET, TFT_PASET, TFT_RAMWR, TFT_MADCTL};
 
 template <class T, unsigned max>
 struct Parameters {
