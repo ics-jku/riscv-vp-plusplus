@@ -44,19 +44,14 @@ struct EXMC : public sc_core::sc_module {
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
-		// std::cout << "EXMC cb addr:" << r.addr << " read: " << r.read << " nv: " << r.nv << std::endl;
 		r.fn();
 	}
 
 	void transport_internal(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		// std::cout << "EXMC t_int addr:" << trans.get_address() << " read: " << trans.is_read() << " nv: " <<
-		// *trans.get_data_ptr() << std::endl;
 		router.transport(trans, delay);
 	}
 
 	void transport_external(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		std::cout << "EXMC t_ext addr:" << trans.get_address() << " read: " << trans.is_read() << " nv: " << std::hex
-		          << *trans.get_data_ptr() << std::endl;
 		auto addr = trans.get_address();
 
 		if (addr == LCD_CMD_ADDR)
@@ -64,7 +59,7 @@ struct EXMC : public sc_core::sc_module {
 		else if (addr == LCD_DAT_ADDR)
 			writeFunctionPIN(gpio::Tristate::HIGH);
 
-		writeFunctionEXMC(*trans.get_data_ptr());
+		writeFunctionEXMC(*(uint16_t *)trans.get_data_ptr());
 	}
 
 	void connect(ExmcWriteFunction interface) {
