@@ -43,7 +43,69 @@ void TFT::TFT_PIN::setPin(PinNumber num, gpio::Tristate val) {
 TFT::TFT_EXMC::TFT_EXMC(CDevice* device) : CDevice::EXMC_Interface_C(device) {}
 
 void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
-	// std::cout << "breadboard tft recive data: " << std::hex << data << "\n";
+	TFT* tft_device = static_cast<TFT*>(device);
+	if (tft_device->is_data) {
+		switch (tft_device->current_cmd) {
+			case TFT_CASET: {
+				if (tft_device->parameters.isEmpty())
+					tft_device->parameters.cmd = TFT_CASET;
+				else if (!tft_device->parameters.isEmpty() && tft_device->parameters.cmd != TFT_CASET) {
+					tft_device->parameters.reset();
+					break;
+				}
+
+				tft_device->parameters.add((uint8_t)data);
+				if (tft_device->parameters.isComplete()) {
+					tft_device->state.column.start = (tft_device->parameters[0] << 8) | tft_device->parameters[1];
+					tft_device->state.column.end = (tft_device->parameters[2] << 8) | tft_device->parameters[3];
+
+					tft_device->parameters.reset();
+				}
+				break;
+			}
+			case TFT_PASET: {
+				if (tft_device->parameters.isEmpty())
+					tft_device->parameters.cmd = TFT_PASET;
+				else if (!tft_device->parameters.isEmpty() && tft_device->parameters.cmd != TFT_PASET) {
+					tft_device->parameters.reset();
+					std::cerr << "writing parameters for wrong command\n";
+					break;
+				}
+
+				tft_device->parameters.add((uint8_t)data);
+				if (tft_device->parameters.isComplete()) {
+					tft_device->state.page.start = (tft_device->parameters[0] << 8) | tft_device->parameters[1];
+					tft_device->state.page.end = (tft_device->parameters[2] << 8) | tft_device->parameters[3];
+
+					tft_device->parameters.reset();
+				}
+				break;
+			}
+			case TFT_RAMWR: {
+				uint8_t r = (data & 0xF800) >> 8;
+				uint8_t g = (data & 0x07E0) >> 3;
+				uint8_t b = (data & 0x1F) << 3;
+
+				device->image->setPixel(tft_device->state.current_page, tft_device->state.current_column,
+				                        qRgb(r, g, b));
+				if (tft_device->state.current_column < tft_device->state.column.end) {
+					tft_device->state.current_column++;
+				} else if (tft_device->state.current_page < tft_device->state.page.end) {
+					tft_device->state.current_column = tft_device->state.column.start;
+					tft_device->state.current_page++;
+				}
+				break;
+			}
+			default:
+				break;
+		}
+	} else {
+		tft_device->current_cmd = data;
+		if (data == TFT_RAMWR) {
+			tft_device->state.current_column = tft_device->state.column.start;
+			tft_device->state.current_page = tft_device->state.page.start;
+		}
+	}
 }
 
 /* Graphbuf Interface */
