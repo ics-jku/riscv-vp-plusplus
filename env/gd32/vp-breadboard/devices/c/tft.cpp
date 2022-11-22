@@ -82,18 +82,22 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 
 				if (!tft_device->state.isColumnFull()) {
 					tft_device->state.incColumn();
-				} else if (!tft_device->state.isPageFull()) {
+				} else {
 					tft_device->state.setColumnStart();
-					tft_device->state.incPage();
+					if (!tft_device->state.isPageFull()) {
+						tft_device->state.incPage();
+					} else {
+						tft_device->state.setPageStart();
+					}
 				}
 				break;
 			}
 			case TFT_MADCTL: {
-				uint8_t b5 = (data & 0b100000) >> 5;
-				uint8_t b6 = (data & 0b1000000) >> 6;
-				uint8_t b7 = (data & 0b10000000) << 7;
+				uint8_t b5 = (data & 0x20) >> 5;
+				uint8_t b6 = (data & 0x40) >> 6;
+				uint8_t b7 = (data & 0x80) >> 7;
 
-				tft_device->state.setCtl(b5, b6, b6);
+				tft_device->state.setCtl(b5, b6, b7);
 				break;
 			}
 			default:

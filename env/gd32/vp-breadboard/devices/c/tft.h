@@ -5,7 +5,7 @@
 #include "devices/factory/cFactory.h"
 
 const uint8_t TFT_CASET = 0x2A;
-const uint8_t TFT_MADCTL = 0x0B;
+const uint8_t TFT_MADCTL = 0x36;
 const uint8_t TFT_PASET = 0x2B;
 const uint8_t TFT_RAMWR = 0x2C;
 
@@ -96,11 +96,11 @@ class TFTStateTranslator {
 	}
 
 	bool isColumnFull() {
-		return virtual_state.column < virtual_state.column_range.end;
+		return virtual_state.column >= virtual_state.column_range.end;
 	}
 
 	bool isPageFull() {
-		return virtual_state.page < virtual_state.page_range.end;
+		return virtual_state.page >= virtual_state.page_range.end;
 	}
 
 	uint16_t getPhysicalColumn() {
@@ -115,8 +115,10 @@ class TFTStateTranslator {
 			case 6:
 				return virtual_state.page;
 			case 5:
-			case 7:
-				return max_page - virtual_state.page;
+			case 7: {
+				auto col = max_page - virtual_state.page;
+				return col > max_column ? max_column : col;
+			}
 			default:
 				return 0;
 		}
