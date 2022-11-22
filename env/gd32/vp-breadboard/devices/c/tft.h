@@ -112,13 +112,11 @@ class TFTStateTranslator {
 			case 3:
 				return max_column - virtual_state.column;
 			case 4:
-			case 6:
-				return virtual_state.page;
 			case 5:
-			case 7: {
-				auto col = max_page - virtual_state.page;
-				return col > max_column ? max_column : col;
-			}
+				return virtual_state.page;
+			case 6:
+			case 7:
+				return max_column - virtual_state.page;
 			default:
 				return 0;
 		}
@@ -133,11 +131,11 @@ class TFTStateTranslator {
 			case 3:
 				return max_page - virtual_state.page;
 			case 4:
-			case 5:
-				return virtual_state.column;
 			case 6:
+				return virtual_state.column;
+			case 5:
 			case 7:
-				return max_column - virtual_state.column;
+				return max_page - virtual_state.column;
 			default:
 				return 0;
 		}
