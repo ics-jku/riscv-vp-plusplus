@@ -79,28 +79,22 @@ class TFTStateTranslator {
 		virtual_state.page_range.end = end;
 	}
 
-	void setColumnStart() {
+	void setToStart() {
 		virtual_state.column = virtual_state.column_range.start;
-	}
-
-	void setPageStart() {
 		virtual_state.page = virtual_state.page_range.start;
 	}
 
-	void incColumn() {
-		virtual_state.column++;
-	}
-
-	void incPage() {
-		virtual_state.page++;
-	}
-
-	bool isColumnFull() {
-		return virtual_state.column >= virtual_state.column_range.end;
-	}
-
-	bool isPageFull() {
-		return virtual_state.page >= virtual_state.page_range.end;
+	void advance() {
+		if (virtual_state.column < virtual_state.column_range.end) {
+			virtual_state.column++;
+		} else {
+			virtual_state.column = virtual_state.column_range.start;
+			if (virtual_state.page < virtual_state.page_range.end) {
+				virtual_state.page++;
+			} else {
+				virtual_state.page = virtual_state.page_range.start;
+			}
+		}
 	}
 
 	uint16_t getPhysicalColumn() {

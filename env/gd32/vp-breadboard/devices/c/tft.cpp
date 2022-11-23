@@ -80,16 +80,7 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 				device->image->setPixel(tft_device->state.getPhysicalPage(), tft_device->state.getPhysicalColumn(),
 				                        qRgb(r, g, b));
 
-				if (!tft_device->state.isColumnFull()) {
-					tft_device->state.incColumn();
-				} else {
-					tft_device->state.setColumnStart();
-					if (!tft_device->state.isPageFull()) {
-						tft_device->state.incPage();
-					} else {
-						tft_device->state.setPageStart();
-					}
-				}
+				tft_device->state.advance();
 				break;
 			}
 			case TFT_MADCTL: {
@@ -106,8 +97,7 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 	} else {
 		tft_device->current_cmd = data;
 		if (data == TFT_RAMWR) {
-			tft_device->state.setColumnStart();
-			tft_device->state.setPageStart();
+			tft_device->state.setToStart();
 		}
 	}
 }
