@@ -115,14 +115,17 @@ void GPIO::synchronousChange() {
 					exti->exti_pd |= bitmask;                   // set interrupt pending
 					eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
 				}
-				gpio_istat |= bitmask;
 			} else if ((gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::LOW) {
 				if ((exti->exti_ften & bitmask)) {
 					exti->exti_pd |= bitmask;                   // set interrupt pending
 					eclic->gateway_trigger_interrupt(intr_id);  // trigger interrupt
 				}
-				gpio_istat &= ~bitmask;
 			}
+		}
+		if (!(gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::HIGH) {
+			gpio_istat |= bitmask;
+		} else if ((gpio_istat & bitmask) && serverSnapshot.pins[i] == gpio::Pinstate::LOW) {
+			gpio_istat &= ~bitmask;
 		}
 
 		server.state = serverSnapshot;
