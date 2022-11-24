@@ -20,6 +20,8 @@ struct EXMC : public sc_core::sc_module {
 	ExmcWriteFunction writeFunctionEXMC;
 	PinWriteFunction writeFunctionPIN;
 
+	sc_dt::uint64 addr_cache;
+
 	// memory mapped configuration registers
 	uint32_t exmc_snctl0 = 0x000030DA;
 	uint32_t exmc_sntcfg0 = 0x0FFFFFFF;
@@ -53,11 +55,13 @@ struct EXMC : public sc_core::sc_module {
 
 	void transport_external(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		auto addr = trans.get_address();
-
-		if (addr == LCD_CMD_ADDR)
-			writeFunctionPIN(gpio::Tristate::LOW);
-		else if (addr == LCD_DAT_ADDR)
-			writeFunctionPIN(gpio::Tristate::HIGH);
+		if (addr != addr_cache) {
+			if (addr == LCD_CMD_ADDR)
+				writeFunctionPIN(gpio::Tristate::LOW);
+			else if (addr == LCD_DAT_ADDR)
+				writeFunctionPIN(gpio::Tristate::HIGH);
+			addr_cache = addr;
+		}
 
 		writeFunctionEXMC(*(uint16_t *)trans.get_data_ptr());
 	}
