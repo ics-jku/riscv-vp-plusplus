@@ -416,6 +416,8 @@ void GpioServer::pushEXMC(gpio::PinNumber pin, EXMC_Data data) {
 
 	if (!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write EXMC command" << endl;
+		closeAndInvalidate(data_channel_fd);
+		active_IOF_channels.clear();
 		return;
 	}
 	return;
