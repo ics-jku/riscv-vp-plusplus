@@ -12,10 +12,12 @@ const uint8_t TFT_RAMWR = 0x2C;
 const uint8_t COMMANDS[4] = {TFT_CASET, TFT_PASET, TFT_RAMWR, TFT_MADCTL};
 
 template <class T, unsigned max>
-struct Parameters {
+class Parameters {
 	std::vector<T> parameters;
-	uint8_t cmd;
 	int count = 0;
+
+   public:
+	uint8_t cmd;
 
 	bool add(T val) {
 		if (count >= max)
