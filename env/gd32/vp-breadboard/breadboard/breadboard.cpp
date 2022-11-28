@@ -286,7 +286,7 @@ void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 				}
 				if (dev.tft_input) {
 					lua_access.lock();
-					dev.tft_input->onClick(true, e);
+					dev.tft_input->onClick(false, e);
 					lua_access.unlock();
 					writeDevice(id);
 				}

@@ -141,6 +141,7 @@ class TFT : public CDevice {
 	TFTStateTranslator state;
 	uint8_t current_cmd;
 	Parameters<uint8_t, 4> parameters;
+	bool penirq;
 
    public:
 	TFT(DeviceID id);
@@ -148,12 +149,12 @@ class TFT : public CDevice {
 
 	inline static DeviceClass classname = "tft";
 	const DeviceClass getClass() const;
-	void draw(bool active, QMouseEvent* e);
 
 	class TFT_PIN : public CDevice::PIN_Interface_C {
 	   public:
 		TFT_PIN(CDevice* device);
 		void setPin(PinNumber num, gpio::Tristate val);
+		gpio::Tristate getPin(PinNumber num);
 	};
 
 	class TFT_EXMC : public CDevice::EXMC_Interface_C {

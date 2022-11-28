@@ -21,7 +21,14 @@
           "port": "D",
           "name": "dc_pin",
           "synchronous" : true
-        }
+        },
+        {
+          "device_pin" : 2,
+          "global_pin" : 4,
+          "port": "E",
+          "name" : "output",
+          "synchronous" : false 
+        } 
       ],
       "graphics" :
       {

@@ -5,6 +5,7 @@ TFT::TFT(DeviceID id) : CDevice(id) {
 	if (!pin) {
 		layout_pin = PinLayout();
 		layout_pin.emplace(1, PinDesc{PinDesc::Dir::input, "data_command"});
+		layout_pin.emplace(2, PinDesc{PinDesc::Dir::output, "penirq"});
 		pin = std::make_unique<TFT_PIN>(this);
 	}
 	// EXMC
@@ -36,6 +37,14 @@ void TFT::TFT_PIN::setPin(PinNumber num, gpio::Tristate val) {
 		TFT* tft_device = static_cast<TFT*>(device);
 		tft_device->is_data = val == gpio::Tristate::HIGH;
 	}
+}
+
+gpio::Tristate TFT::TFT_PIN::getPin(PinNumber num) {
+	if (num == 2) {
+		TFT* tft_device = static_cast<TFT*>(device);
+		return tft_device->penirq ? gpio::Tristate::LOW : gpio::Tristate::HIGH;
+	}
+	return gpio::Tristate::UNSET;
 }
 
 /* EXMC Interface */
@@ -128,16 +137,7 @@ void TFT::TFT_Input::onClick(bool active, QMouseEvent* e) {
 	// here we need to send an interrupt to the VP
 	// and somhow send the coordinates to the VP
 	TFT* tft_device = static_cast<TFT*>(device);
-	tft_device->draw(active, e);
-}
-
-void TFT::draw(bool active, QMouseEvent* e) {
-	// TODO
-	// this method should be called when we recive data via the EXMC client
-	auto* img = image->bits();
-	const auto offs = (e->pos().y() * layout_graph.width + e->pos().x()) * 4;  // heavily depends on rgba8888
-	img[offs + 0] = 255;
-	img[offs + 1] = 255;
-	img[offs + 2] = 255;
-	img[offs + 3] = 255;
+	tft_device->penirq = active;
+	// auto x = e->pos().x();
+	// tft_device->draw(active, e);
 }
