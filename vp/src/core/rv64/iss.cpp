@@ -91,6 +91,7 @@ void RegFile::show() {
 
 ISS::ISS(uint64_t hart_id) : systemc_name("Core-" + std::to_string(hart_id)) {
 	csrs.mhartid.reg = hart_id;
+	op = 0;
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
