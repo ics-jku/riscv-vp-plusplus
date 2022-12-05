@@ -12,4 +12,3 @@ target_include_directories(gtkwave_riscv-filter PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../..
 )
 target_compile_features(gtkwave_riscv-filter PRIVATE cxx_std_20)
-target_link_libraries(gtkwave_riscv-filter)
