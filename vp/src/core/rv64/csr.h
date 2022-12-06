@@ -35,19 +35,19 @@ struct csr_misa {
 			unsigned extensions : 26;
 			unsigned long wiri : 36;
 			unsigned mxl : 2;
-		};
+		} fields;
 	};
 
 	bool has_C_extension() {
-		return extensions & C;
+		return fields.extensions & C;
 	}
 
 	bool has_user_mode_extension() {
-		return extensions & U;
+		return fields.extensions & U;
 	}
 
 	bool has_supervisor_mode_extension() {
-		return extensions & S;
+		return fields.extensions & S;
 	}
 
 	enum {
@@ -64,8 +64,8 @@ struct csr_misa {
 	};
 
 	void init() {
-		extensions = I | M | A | F | D | C | N | U | S;  // IMACFD + NUS
-		mxl = 2;                                         // RV64
+		fields.extensions = I | M | A | F | D | C | N | U | S;  // IMACFD + NUS
+		fields.mxl = 2;                                         // RV64
 	}
 };
 
@@ -76,15 +76,15 @@ struct csr_mvendorid {
 			unsigned offset : 7;
 			unsigned bank : 25;
 			unsigned _unused : 32;
-		};
+		} fields;
 	};
 };
 
 struct csr_mstatus {
 	csr_mstatus() {
 		// hardwire to 64 bit mode for now
-		sxl = 2;
-		uxl = 2;
+		fields.sxl = 2;
+		fields.uxl = 2;
 	}
 
 	union {
@@ -114,7 +114,7 @@ struct csr_mstatus {
 			unsigned sxl : 2;
 			unsigned wpri5 : 27;
 			unsigned sd : 1;
-		};
+		} fields;
 	};
 };
 
@@ -124,19 +124,19 @@ struct csr_mtvec {
 		struct {
 			unsigned mode : 2;        // WARL
 			unsigned long base : 62;  // WARL
-		};
+		} fields;
 	};
 
 	uint64_t get_base_address() {
-		return base << 2;
+		return fields.base << 2;
 	}
 
 	enum Mode { Direct = 0, Vectored = 1 };
 
 	void checked_write(uint64_t val) {
 		reg = val;
-		if (mode >= 1)
-			mode = 0;
+		if (fields.mode >= 1)
+			fields.mode = 0;
 	}
 };
 
@@ -160,7 +160,7 @@ struct csr_mie {
 			unsigned meie : 1;
 
 			unsigned long wpri4 : 52;
-		};
+		} fields;
 	};
 };
 
@@ -184,7 +184,7 @@ struct csr_mip {
 			unsigned meip : 1;
 
 			unsigned long wiri4 : 52;
-		};
+		} fields;
 	};
 };
 
@@ -200,7 +200,7 @@ struct csr_mcause {
 		struct {
 			unsigned long exception_code : 63;  // WLRL
 			unsigned interrupt : 1;
-		};
+		} fields;
 	};
 };
 
@@ -212,7 +212,7 @@ struct csr_mcounteren {
 			unsigned TM : 1;
 			unsigned IR : 1;
 			unsigned long reserved : 61;
-		};
+		} fields;
 	};
 };
 
@@ -224,7 +224,7 @@ struct csr_mcountinhibit {
 			unsigned zero : 1;
 			unsigned IR : 1;
 			unsigned long reserved : 61;
-		};
+		} fields;
 	};
 };
 
@@ -240,11 +240,11 @@ struct csr_pmpaddr {
 		struct {
 			unsigned long address : 54;
 			unsigned zero : 10;
-		};
+		} fields;
 	};
 
 	unsigned get_address() {
-		return address << 2;
+		return fields.address << 2;
 	}
 };
 
@@ -255,7 +255,7 @@ struct csr_satp {
 			unsigned long ppn : 44;  // WARL
 			unsigned asid : 16;      // WARL
 			unsigned mode : 4;       // WARL
-		};
+		} fields;
 	};
 };
 
@@ -268,14 +268,14 @@ struct csr_fcsr {
 			unsigned frm : 3;
 			unsigned reserved : 24;
 			unsigned _ : 32;
-		};
+		} fields;
 		struct {
 			unsigned NX : 1;  // invalid operation
 			unsigned UF : 1;  // divide by zero
 			unsigned OF : 1;  // overflow
-			unsigned DZ : 1;  // underlow
+			unsigned DZ : 1;  // underflow
 			unsigned NV : 1;  // inexact
-		};
+		} fflags;
 	};
 };
 

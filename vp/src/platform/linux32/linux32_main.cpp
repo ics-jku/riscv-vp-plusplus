@@ -199,7 +199,7 @@ int sc_main(int argc, char **argv) {
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
 
 		// configure supported instructions
-		cores[i]->iss.csrs.misa.extensions |= cores[i]->iss.csrs.misa.M | cores[i]->iss.csrs.misa.A |
+		cores[i]->iss.csrs.misa.fields.extensions |= cores[i]->iss.csrs.misa.M | cores[i]->iss.csrs.misa.A |
 			cores[i]->iss.csrs.misa.F | cores[i]->iss.csrs.misa.D;
 	}
 

@@ -50,18 +50,18 @@ class CAN  {
 					uint8_t id[4];
 					struct {
 						/*
-						 *	MCP_SIDH        0
+						    MCP_SIDH        0
 						    MCP_SIDL        1
 						    MCP_EID8        2
-						    MCP_EID0		3
+						    MCP_EID0        3
 						 */
 						uint16_t sid;
 						uint16_t eid;
-					};
+					} fields;
 				};
 				uint8_t length;
 				uint8_t payload[CANFD_MAX_DLEN];
-			};
+			} fields;
 		};
 	};
 

@@ -18,7 +18,7 @@ struct InstrMemoryProxy : public instr_memory_if {
 	InstrMemoryProxy(const MemoryDMI &dmi, ISS &owner) : dmi(dmi), core(owner), quantum_keeper(owner.quantum_keeper) {}
 
 	virtual uint32_t load_instr(uint64_t pc) override {
-		assert((core.csrs.satp.mode == SATP_MODE_BARE) && "InstrMemoryProxy does not support virtual memory");
+		assert((core.csrs.satp.fields.mode == SATP_MODE_BARE) && "InstrMemoryProxy does not support virtual memory");
 		quantum_keeper.inc(access_delay);
 		return *(dmi.get_mem_ptr_to_global_addr<uint32_t>(pc));
 	}

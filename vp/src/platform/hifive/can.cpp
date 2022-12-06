@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 CAN::CAN() {
 	state = State::init;
@@ -337,7 +338,7 @@ uint8_t CAN::loadTxBuf(uint8_t no, uint8_t byte) {
 	switch (command.state) {
 		case LoadTX::id:
 			// std::cout << "\t[CAN] ID: " << std::hex << unsigned(byte) << std::endl;
-			txBuf[no].id[command.payload_ptr++] = byte;
+			txBuf[no].fields.id[command.payload_ptr++] = byte;
 			if (command.payload_ptr == 4) {
 				command.payload_ptr = 0;
 				command.state = LoadTX::length;
@@ -346,12 +347,12 @@ uint8_t CAN::loadTxBuf(uint8_t no, uint8_t byte) {
 		case LoadTX::length:
 			// std::cout << "\t[CAN] Length : " << std::hex << unsigned(byte) << std::endl;
 			command.state = LoadTX::payload;
-			txBuf[no].length = byte;
+			txBuf[no].fields.length = byte;
 			break;
 		case LoadTX::payload:
 			// std::cout << "\t[CAN] PL : " << std::hex << unsigned(byte) << std::endl;
-			txBuf[no].payload[command.payload_ptr++] = byte;
-			if (command.payload_ptr == txBuf[no].length) {
+			txBuf[no].fields.payload[command.payload_ptr++] = byte;
+			if (command.payload_ptr == txBuf[no].fields.length) {
 				command = LoadTX();
 				state = State::init;
 			}
@@ -369,9 +370,9 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t) {
 	struct can_frame frame;
 	bool extended;  // this is ignored
 	memset(&frame, 0, sizeof(struct can_frame));
-	mcp2515_buf_to_id(frame.can_id, extended, txBuf[no].id);
-	frame.can_dlc = txBuf[no].length;
-	memcpy(frame.data, txBuf[no].payload, txBuf[no].length);
+	mcp2515_buf_to_id(frame.can_id, extended, txBuf[no].fields.id);
+	frame.can_dlc = txBuf[no].fields.length;
+	memcpy(frame.data, txBuf[no].fields.payload, txBuf[no].fields.length);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
@@ -390,7 +391,7 @@ uint8_t CAN::sendTxBuf(uint8_t no, uint8_t) {
 uint8_t CAN::readRxBuf(uint8_t no, uint8_t) {
 	static uint8_t payload_ptr = 0;
 	uint8_t ret = rxBuf[no].raw[payload_ptr++];
-	if (payload_ptr > rxBuf[no].length + 4) {
+	if (payload_ptr > rxBuf[no].fields.length + 4) {
 		payload_ptr = 0;
 		state = State::init;
 		status &= ~(1 << no);  // MCP_STAT_RX0IF = 1 << 0
@@ -445,9 +446,9 @@ void CAN::enqueueIncomingCanFrame(const struct can_frame& frame) {
 		{
 			// empty buffer
 			memset(&rxBuf[i], 0, sizeof(MCPFrame));
-			mcp2515_id_to_buf(frame.can_id, rxBuf[i].id);  // FIXME: This will break if extended frame or stuff happens
-			rxBuf[i].length = frame.can_dlc;
-			memcpy(rxBuf[i].payload, frame.data, frame.can_dlc);
+			mcp2515_id_to_buf(frame.can_id, rxBuf[i].fields.id);  // FIXME: This will break if extended frame or stuff happens
+			rxBuf[i].fields.length = frame.can_dlc;
+			memcpy(rxBuf[i].fields.payload, frame.data, frame.can_dlc);
 			status |= 1 << i;
 			return;
 		}

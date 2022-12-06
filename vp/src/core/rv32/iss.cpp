@@ -1084,7 +1084,7 @@ void ISS::exec_step() {
             // std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
             release_lr_sc_reservation();
 
-            if (s_mode() && csrs.mstatus.tw)
+            if (s_mode() && csrs.mstatus.fields.tw)
                 raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
             if (u_mode() && csrs.misa.has_supervisor_mode_extension())
@@ -1095,7 +1095,7 @@ void ISS::exec_step() {
             break;
 
         case Opcode::SFENCE_VMA:
-            if (s_mode() && csrs.mstatus.tvm)
+            if (s_mode() && csrs.mstatus.fields.tvm)
                 raise_trap(EXC_ILLEGAL_INSTR, instr.data());
             mem->flush_tlb();
             break;
@@ -1107,7 +1107,7 @@ void ISS::exec_step() {
             break;
 
         case Opcode::SRET:
-            if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.tsr))
+            if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.fields.tsr))
                 raise_trap(EXC_ILLEGAL_INSTR, instr.data());
             return_from_trap_handler(SupervisorMode);
             break;
@@ -1215,29 +1215,29 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 		case MTIME_ADDR: {
 			uint64_t mtime = clint->update_and_get_mtime();
 			csrs.time.reg = mtime;
-			return csrs.time.low;
+			return csrs.time.words.low;
 		}
 
 		case TIMEH_ADDR:
 		case MTIMEH_ADDR: {
 			uint64_t mtime = clint->update_and_get_mtime();
 			csrs.time.reg = mtime;
-			return csrs.time.high;
+			return csrs.time.words.high;
 		}
 
 		case MCYCLE_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
-			return csrs.cycle.low;
+			return csrs.cycle.words.low;
 
 		case MCYCLEH_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
-			return csrs.cycle.high;
+			return csrs.cycle.words.high;
 
 		case MINSTRET_ADDR:
-			return csrs.instret.low;
+			return csrs.instret.words.low;
 
 		case MINSTRETH_ADDR:
-			return csrs.instret.high;
+			return csrs.instret.words.high;
 
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:  // not implemented
 			return 0;
@@ -1264,7 +1264,7 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 			return read(csrs.mie, UIE_MASK);
 
 		case SATP_ADDR:
-			if (csrs.mstatus.tvm)
+			if (csrs.mstatus.fields.tvm)
 				RAISE_ILLEGAL_INSTRUCTION();
 			break;
 
@@ -1272,10 +1272,10 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 			return read(csrs.fcsr, FCSR_MASK);
 
 		case FFLAGS_ADDR:
-			return csrs.fcsr.fflags;
+			return csrs.fcsr.fields.fflags;
 
 		case FRM_ADDR:
-			return csrs.fcsr.frm;
+			return csrs.fcsr.fields.frm;
 
         // debug CSRs not supported, thus hardwired
         case TSELECT_ADDR:
@@ -1307,7 +1307,7 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			break;
 
         case SATP_ADDR: {
-            if (csrs.mstatus.tvm)
+            if (csrs.mstatus.fields.tvm)
                 RAISE_ILLEGAL_INSTRUCTION();
             write(csrs.satp, SATP_MASK);
             // std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
@@ -1396,11 +1396,11 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			break;
 
 		case FFLAGS_ADDR:
-			csrs.fcsr.fflags = value;
+			csrs.fcsr.fields.fflags = value;
 			break;
 
 		case FRM_ADDR:
-			csrs.fcsr.frm = value;
+			csrs.fcsr.fields.frm = value;
 			break;
 
         // debug CSRs not supported, thus hardwired
@@ -1511,14 +1511,14 @@ void ISS::fp_prepare_instr() {
 }
 
 void ISS::fp_set_dirty() {
-	csrs.mstatus.sd = 1;
-	csrs.mstatus.fs = FS_DIRTY;
+	csrs.mstatus.fields.sd = 1;
+	csrs.mstatus.fields.fs = FS_DIRTY;
 }
 
 void ISS::fp_update_exception_flags() {
 	if (softfloat_exceptionFlags) {
 		fp_set_dirty();
-		csrs.fcsr.fflags |= softfloat_exceptionFlags;
+		csrs.fcsr.fields.fflags |= softfloat_exceptionFlags;
 		softfloat_exceptionFlags = 0;
 	}
 }
@@ -1526,45 +1526,45 @@ void ISS::fp_update_exception_flags() {
 void ISS::fp_setup_rm() {
 	auto rm = instr.frm();
 	if (rm == FRM_DYN)
-		rm = csrs.fcsr.frm;
+		rm = csrs.fcsr.fields.frm;
 	if (rm >= FRM_RMM)
 		RAISE_ILLEGAL_INSTRUCTION();
 	softfloat_roundingMode = rm;
 }
 
 void ISS::fp_require_not_off() {
-	if (csrs.mstatus.fs == FS_OFF)
+	if (csrs.mstatus.fields.fs == FS_OFF)
 		RAISE_ILLEGAL_INSTRUCTION();
 }
 
 void ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	switch (return_mode) {
 		case MachineMode:
-			prv = csrs.mstatus.mpp;
-			csrs.mstatus.mie = csrs.mstatus.mpie;
-			csrs.mstatus.mpie = 1;
+			prv = csrs.mstatus.fields.mpp;
+			csrs.mstatus.fields.mie = csrs.mstatus.fields.mpie;
+			csrs.mstatus.fields.mpie = 1;
 			pc = csrs.mepc.reg;
 			if (csrs.misa.has_user_mode_extension())
-				csrs.mstatus.mpp = UserMode;
+				csrs.mstatus.fields.mpp = UserMode;
 			else
-				csrs.mstatus.mpp = MachineMode;
+				csrs.mstatus.fields.mpp = MachineMode;
 			break;
 
 		case SupervisorMode:
-			prv = csrs.mstatus.spp;
-			csrs.mstatus.sie = csrs.mstatus.spie;
-			csrs.mstatus.spie = 1;
+			prv = csrs.mstatus.fields.spp;
+			csrs.mstatus.fields.sie = csrs.mstatus.fields.spie;
+			csrs.mstatus.fields.spie = 1;
 			pc = csrs.sepc.reg;
 			if (csrs.misa.has_user_mode_extension())
-				csrs.mstatus.spp = UserMode;
+				csrs.mstatus.fields.spp = UserMode;
 			else
-				csrs.mstatus.spp = SupervisorMode;
+				csrs.mstatus.fields.spp = SupervisorMode;
 			break;
 
 		case UserMode:
 			prv = UserMode;
-			csrs.mstatus.uie = csrs.mstatus.upie;
-			csrs.mstatus.upie = 1;
+			csrs.mstatus.fields.uie = csrs.mstatus.fields.upie;
+			csrs.mstatus.fields.upie = 1;
 			pc = csrs.uepc.reg;
 			break;
 
@@ -1583,13 +1583,13 @@ void ISS::trigger_external_interrupt(PrivilegeLevel level) {
 
 	switch (level) {
 		case UserMode:
-			csrs.mip.ueip = true;
+			csrs.mip.fields.ueip = true;
 			break;
 		case SupervisorMode:
-			csrs.mip.seip = true;
+			csrs.mip.fields.seip = true;
 			break;
 		case MachineMode:
-			csrs.mip.meip = true;
+			csrs.mip.fields.meip = true;
 			break;
 	}
 
@@ -1602,13 +1602,13 @@ void ISS::clear_external_interrupt(PrivilegeLevel level) {
 
 	switch (level) {
 		case UserMode:
-			csrs.mip.ueip = false;
+			csrs.mip.fields.ueip = false;
 			break;
 		case SupervisorMode:
-			csrs.mip.seip = false;
+			csrs.mip.fields.seip = false;
 			break;
 		case MachineMode:
-			csrs.mip.meip = false;
+			csrs.mip.fields.meip = false;
 			break;
 	}
 }
@@ -1616,14 +1616,14 @@ void ISS::clear_external_interrupt(PrivilegeLevel level) {
 void ISS::trigger_timer_interrupt(bool status) {
 	if (trace)
 		std::cout << "[vp::iss] trigger timer interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
-	csrs.mip.mtip = status;
+	csrs.mip.fields.mtip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 void ISS::trigger_software_interrupt(bool status) {
 	if (trace)
 		std::cout << "[vp::iss] trigger software interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
-	csrs.mip.msip = status;
+	csrs.mip.fields.msip = status;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
@@ -1636,23 +1636,23 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 	// 1) machine mode execution takes any traps, independent of delegation setting
 	// 2) non-delegated traps are processed in machine mode, independent of current execution mode
 	if (prv == MachineMode || !(exc_bit & csrs.medeleg.reg)) {
-		csrs.mcause.interrupt = 0;
-		csrs.mcause.exception_code = e.reason;
+		csrs.mcause.fields.interrupt = 0;
+		csrs.mcause.fields.exception_code = e.reason;
 		csrs.mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
 		return MachineMode;
 	}
 
 	// see above machine mode comment
 	if (prv == SupervisorMode || !(exc_bit & csrs.sedeleg.reg)) {
-		csrs.scause.interrupt = 0;
-		csrs.scause.exception_code = e.reason;
+		csrs.scause.fields.interrupt = 0;
+		csrs.scause.fields.exception_code = e.reason;
 		csrs.stval.reg = boost::lexical_cast<uint32_t>(e.mtval);
 		return SupervisorMode;
 	}
 
 	assert(prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
-	csrs.ucause.interrupt = 0;
-	csrs.ucause.exception_code = e.reason;
+	csrs.ucause.fields.interrupt = 0;
+	csrs.ucause.fields.exception_code = e.reason;
 	csrs.utval.reg = boost::lexical_cast<uint32_t>(e.mtval);
 	return UserMode;
 }
@@ -1666,41 +1666,41 @@ void ISS::prepare_interrupt(const PendingInterrupts &e) {
 	csr_mip x{e.pending};
 
 	ExceptionCode exc;
-	if (x.meip)
+	if (x.fields.meip)
 		exc = EXC_M_EXTERNAL_INTERRUPT;
-	else if (x.msip)
+	else if (x.fields.msip)
 		exc = EXC_M_SOFTWARE_INTERRUPT;
-	else if (x.mtip)
+	else if (x.fields.mtip)
 		exc = EXC_M_TIMER_INTERRUPT;
-	else if (x.seip)
+	else if (x.fields.seip)
 		exc = EXC_S_EXTERNAL_INTERRUPT;
-	else if (x.ssip)
+	else if (x.fields.ssip)
 		exc = EXC_S_SOFTWARE_INTERRUPT;
-	else if (x.stip)
+	else if (x.fields.stip)
 		exc = EXC_S_TIMER_INTERRUPT;
-	else if (x.ueip)
+	else if (x.fields.ueip)
 		exc = EXC_U_EXTERNAL_INTERRUPT;
-	else if (x.usip)
+	else if (x.fields.usip)
 		exc = EXC_U_SOFTWARE_INTERRUPT;
-	else if (x.utip)
+	else if (x.fields.utip)
 		exc = EXC_U_TIMER_INTERRUPT;
 	else
 		throw std::runtime_error("some pending interrupt must be available here");
 
 	switch (e.target_mode) {
 		case MachineMode:
-			csrs.mcause.exception_code = exc;
-			csrs.mcause.interrupt = 1;
+			csrs.mcause.fields.exception_code = exc;
+			csrs.mcause.fields.interrupt = 1;
 			break;
 
 		case SupervisorMode:
-			csrs.scause.exception_code = exc;
-			csrs.scause.interrupt = 1;
+			csrs.scause.fields.exception_code = exc;
+			csrs.scause.fields.interrupt = 1;
 			break;
 
 		case UserMode:
-			csrs.ucause.exception_code = exc;
-			csrs.ucause.interrupt = 1;
+			csrs.ucause.fields.exception_code = exc;
+			csrs.ucause.fields.interrupt = 1;
 			break;
 
 		default:
@@ -1715,18 +1715,18 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 		return {NoneMode, 0};
 
 	auto m_pending = pending & ~csrs.mideleg.reg;
-	if (m_pending && (prv < MachineMode || (prv == MachineMode && csrs.mstatus.mie))) {
+	if (m_pending && (prv < MachineMode || (prv == MachineMode && csrs.mstatus.fields.mie))) {
 		return {MachineMode, m_pending};
 	}
 
 	pending = pending & csrs.mideleg.reg;
 	auto s_pending = pending & ~csrs.sideleg.reg;
-	if (s_pending && (prv < SupervisorMode || (prv == SupervisorMode && csrs.mstatus.sie))) {
+	if (s_pending && (prv < SupervisorMode || (prv == SupervisorMode && csrs.mstatus.fields.sie))) {
 		return {SupervisorMode, s_pending};
 	}
 
 	auto u_pending = pending & csrs.sideleg.reg;
-	if (u_pending && (prv == UserMode && csrs.mstatus.uie)) {
+	if (u_pending && (prv == UserMode && csrs.mstatus.fields.uie)) {
 		return {UserMode, u_pending};
 	}
 
@@ -1736,7 +1736,7 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 	if (trace) {
 		printf("[vp::iss] switch to trap handler, time %s, last_pc %8x, pc %8x, irq %u, t-prv %1x\n",
-		       quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.interrupt, target_mode);
+		       quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.fields.interrupt, target_mode);
 	}
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
@@ -1749,9 +1749,9 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 		case MachineMode:
 			csrs.mepc.reg = pc;
 
-			csrs.mstatus.mpie = csrs.mstatus.mie;
-			csrs.mstatus.mie = 0;
-			csrs.mstatus.mpp = pp;
+			csrs.mstatus.fields.mpie = csrs.mstatus.fields.mie;
+			csrs.mstatus.fields.mie = 0;
+			csrs.mstatus.fields.mpp = pp;
 
 			pc = csrs.mtvec.get_base_address();
 
@@ -1766,8 +1766,8 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 				}
 			}
 
-			if (csrs.mcause.interrupt && csrs.mtvec.mode == csrs.mtvec.Vectored)
-				pc += 4 * csrs.mcause.exception_code;
+			if (csrs.mcause.fields.interrupt && csrs.mtvec.fields.mode == csr_mtvec::Mode::Vectored)
+				pc += 4 * csrs.mcause.fields.exception_code;
 			break;
 
 		case SupervisorMode:
@@ -1775,14 +1775,14 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			csrs.sepc.reg = pc;
 
-			csrs.mstatus.spie = csrs.mstatus.sie;
-			csrs.mstatus.sie = 0;
-			csrs.mstatus.spp = pp;
+			csrs.mstatus.fields.spie = csrs.mstatus.fields.sie;
+			csrs.mstatus.fields.sie = 0;
+			csrs.mstatus.fields.spp = pp;
 
 			pc = csrs.stvec.get_base_address();
 
-			if (csrs.scause.interrupt && csrs.stvec.mode == csrs.stvec.Vectored)
-				pc += 4 * csrs.scause.exception_code;
+			if (csrs.scause.fields.interrupt && csrs.stvec.fields.mode == csr_mtvec::Mode::Vectored)
+				pc += 4 * csrs.scause.fields.exception_code;
 			break;
 
 		case UserMode:
@@ -1790,13 +1790,13 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			csrs.uepc.reg = pc;
 
-			csrs.mstatus.upie = csrs.mstatus.uie;
-			csrs.mstatus.uie = 0;
+			csrs.mstatus.fields.upie = csrs.mstatus.fields.uie;
+			csrs.mstatus.fields.uie = 0;
 
 			pc = csrs.utvec.get_base_address();
 
-			if (csrs.ucause.interrupt && csrs.utvec.mode == csrs.utvec.Vectored)
-				pc += 4 * csrs.ucause.exception_code;
+			if (csrs.ucause.fields.interrupt && csrs.utvec.fields.mode == csr_mtvec::Mode::Vectored)
+				pc += 4 * csrs.ucause.fields.exception_code;
 			break;
 
 		default:
@@ -1807,7 +1807,7 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
     ++total_num_instr;
 
-	if (!csrs.mcountinhibit.IR)
+	if (!csrs.mcountinhibit.fields.IR)
 		++csrs.instret.reg;
 
 	if (lr_sc_counter != 0) {
@@ -1819,7 +1819,7 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 
 	auto new_cycles = instr_cycles[executed_op];
 
-	if (!csrs.mcountinhibit.CY)
+	if (!csrs.mcountinhibit.fields.CY)
 		cycle_counter += new_cycles;
 
 	quantum_keeper.inc(new_cycles);

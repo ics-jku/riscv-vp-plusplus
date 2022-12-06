@@ -88,14 +88,14 @@ struct GenericMMU {
     }
 
     uint64_t translate_virtual_to_physical_addr(uint64_t vaddr, MemoryAccessType type) {
-        if (core.csrs.satp.mode == SATP_MODE_BARE)
+        if (core.csrs.satp.fields.mode == SATP_MODE_BARE)
             return vaddr;
 
         auto mode = core.prv;
 
         if (type != FETCH) {
-            if (core.csrs.mstatus.mprv)
-                mode = core.csrs.mstatus.mpp;
+            if (core.csrs.mstatus.fields.mprv)
+                mode = core.csrs.mstatus.fields.mpp;
         }
 
         if (mode == MachineMode)
@@ -124,8 +124,8 @@ struct GenericMMU {
 
     vm_info decode_vm_info(PrivilegeLevel prv) {
         assert(prv <= SupervisorMode);
-        uint64_t ptbase = (uint64_t)core.csrs.satp.ppn << PGSHIFT;
-        unsigned mode = core.csrs.satp.mode;
+        uint64_t ptbase = (uint64_t)core.csrs.satp.fields.ppn << PGSHIFT;
+        unsigned mode = core.csrs.satp.fields.mode;
         switch (mode) {
             case SATP_MODE_SV32:
                 return {2, 10, 4, ptbase};
@@ -153,8 +153,8 @@ struct GenericMMU {
 
     uint64_t walk(uint64_t vaddr, MemoryAccessType type, PrivilegeLevel mode) {
         bool s_mode = mode == SupervisorMode;
-        bool sum = core.csrs.mstatus.sum;
-        bool mxr = core.csrs.mstatus.mxr;
+        bool sum = core.csrs.mstatus.fields.sum;
+        bool mxr = core.csrs.mstatus.fields.mxr;
 
         vm_info vm = decode_vm_info(mode);
 

@@ -35,28 +35,28 @@ struct csr_misa {
 			unsigned extensions : 26;
 			unsigned wiri : 4;
 			unsigned mxl : 2;
-		};
+		} fields;
 	};
 
 	bool has_C_extension() {
-		return extensions & C;
+		return fields.extensions & C;
 	}
 
 	bool has_E_base_isa() {
-		return extensions & E;
+		return fields.extensions & E;
 	}
 
 	void select_E_base_isa() {
-		extensions &= ~I;
-		extensions |= E;
+		fields.extensions &= ~I;
+		fields.extensions |= E;
 	}
 
 	bool has_user_mode_extension() {
-		return extensions & U;
+		return fields.extensions & U;
 	}
 
 	bool has_supervisor_mode_extension() {
-		return extensions & S;
+		return fields.extensions & S;
 	}
 
 	enum {
@@ -73,9 +73,9 @@ struct csr_misa {
 	};
 
 	void init() {
-		extensions = I | M | A | F | C | N | U | S;  // IMACF + NUS
-		wiri = 0;
-		mxl = 1;  // RV32
+		fields.extensions = I | M | A | F | C | N | U | S;  // IMACF + NUS
+		fields.wiri = 0;
+		fields.mxl = 1;  // RV32
 	}
 };
 
@@ -91,7 +91,7 @@ struct csr_mvendorid {
 		struct {
 			unsigned offset : 7;
 			unsigned bank : 25;
-		};
+		} fields;
 	};
 };
 
@@ -120,7 +120,7 @@ struct csr_mstatus {
 			unsigned tsr : 1;
 			unsigned wpri4 : 8;
 			unsigned sd : 1;
-		};
+		} fields;
 	};
 };
 
@@ -130,19 +130,19 @@ struct csr_mtvec {
 		struct {
 			unsigned mode : 2;   // WARL
 			unsigned base : 30;  // WARL
-		};
+		} fields;
 	};
 
 	uint32_t get_base_address() {
-		return base << 2;
+		return fields.base << 2;
 	}
 
 	enum Mode { Direct = 0, Vectored = 1 };
 
 	void checked_write(uint32_t val) {
 		reg = val;
-		if (mode >= 1)
-			mode = 0;
+		if (fields.mode >= 1)
+			fields.mode = 0;
 	}
 };
 
@@ -166,7 +166,7 @@ struct csr_mie {
 			unsigned meie : 1;
 
 			unsigned wpri4 : 20;
-		};
+		} fields;
 	};
 };
 
@@ -190,7 +190,7 @@ struct csr_mip {
 			unsigned meip : 1;
 
 			unsigned wiri4 : 20;
-		};
+		} fields;
 	};
 };
 
@@ -206,7 +206,7 @@ struct csr_mcause {
 		struct {
 			unsigned exception_code : 31;  // WLRL
 			unsigned interrupt : 1;
-		};
+		} fields;
 	};
 };
 
@@ -218,7 +218,7 @@ struct csr_mcounteren {
 			unsigned TM : 1;
 			unsigned IR : 1;
 			unsigned reserved : 29;
-		};
+		} fields;
 	};
 };
 
@@ -230,7 +230,7 @@ struct csr_mcountinhibit {
 			unsigned zero : 1;
 			unsigned IR : 1;
 			unsigned reserved : 29;
-		};
+		} fields;
 	};
 };
 
@@ -245,7 +245,7 @@ struct csr_pmpcfg {
 			unsigned X0 : 1;              // WARL
 			unsigned W0 : 1;              // WARL
 			unsigned R0 : 1;              // WARL
-		};
+		} fields;
 	};
 };
 
@@ -256,7 +256,7 @@ struct csr_satp {
 			unsigned ppn : 22;  // WARL
 			unsigned asid : 9;  // WARL
 			unsigned mode : 1;  // WARL
-		};
+		} fields;
 	};
 };
 
@@ -267,16 +267,16 @@ struct csr_fcsr {
 			unsigned fflags : 5;
 			unsigned frm : 3;
 			unsigned reserved : 24;
-		};
+		} fields;
 		// fflags accessed separately
 		struct {
 			unsigned NX : 1;  // invalid operation
 			unsigned UF : 1;  // divide by zero
 			unsigned OF : 1;  // overflow
-			unsigned DZ : 1;  // underlow
+			unsigned DZ : 1;  // underflow
 			unsigned NV : 1;  // inexact
 			unsigned _ : 27;
-		};
+		} fflags;
 	};
 };
 
@@ -290,7 +290,7 @@ struct csr_64 {
 		struct {
 			int32_t low;
 			int32_t high;
-		};
+		} words;
 	};
 
 	void increment() {
