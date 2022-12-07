@@ -20,7 +20,7 @@ if(NOT EXISTS "${dir}/CMakeLists.txt")
   message("checking out submodule ${dir}")
   execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive -- ${abs_dir}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    #COMMAND_ERROR_IS_FATAL		# cmake 3.19+ 
+    #COMMAND_ERROR_IS_FATAL		# cmake 3.19+
     #ANY						# cmake 3.19+
    )
 endif()
