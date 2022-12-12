@@ -1,46 +1,16 @@
-#include "abstract_uart.h"
-
-#include <err.h>
-#include <fcntl.h>
-#include <poll.h>
 #include <semaphore.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <uart_if.h>
 #include <unistd.h>
 #include <mutex>
 #include <queue>
-#include <thread>
 
-#define stop_fd (stop_pipe[0])
-#define newpollfd(FD) \
-	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR, .revents = 0};
-
-#define UART_TXWM (1 << 0)
-#define UART_RXWM (1 << 1)
-#define UART_FULL (1 << 31)
-
-/* 8-entry transmit and receive FIFO buffers */
-#define UART_FIFO_DEPTH 8
-
-/* Extracts the interrupt trigger threshold from a control register */
-#define UART_CTRL_CNT(REG) ((REG) >> 16)
-
-enum {
-	TXDATA_REG_ADDR = 0x0,
-	RXDATA_REG_ADDR = 0x4,
-	TXCTRL_REG_ADDR = 0x8,
-	RXCTRL_REG_ADDR = 0xC,
-	IE_REG_ADDR = 0x10,
-	IP_REG_ADDR = 0x14,
-	DIV_REG_ADDR = 0x18,
-};
-
-AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
+UART_IF::UART_IF(sc_core::sc_module_name, uint32_t irqsrc) {
 	irq = irqsrc;
-	tsock.register_b_transport(this, &AbstractUART::transport);
+	tsock.register_b_transport(this, &UART_IF::transport);
 
-	router
-	    .add_register_bank({
+	router.add_register_bank({
 		{TXDATA_REG_ADDR, &txdata},
 		{RXDATA_REG_ADDR, &rxdata},
 		{TXCTRL_REG_ADDR, &txctrl},
@@ -49,58 +19,26 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 		{IP_REG_ADDR, &ip},
 		{DIV_REG_ADDR, &div},
 	    })
-	    .register_handler(this, &AbstractUART::register_access_callback);
+	    .register_handler(this, &UART_IF::register_access_callback);
 
-	stop = false;
-	if (pipe(stop_pipe) == -1)
-		throw std::system_error(errno, std::generic_category());
 	if (sem_init(&txfull, 0, 0))
 		throw std::system_error(errno, std::generic_category());
 	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
 		throw std::system_error(errno, std::generic_category());
+
 
 	SC_METHOD(interrupt);
 	sensitive << asyncEvent;
 	dont_initialize();
 }
 
-AbstractUART::~AbstractUART(void) {
-	close(stop_pipe[0]);
-	close(stop_pipe[1]);
-
+UART_IF::~UART_IF(void) {
 	sem_destroy(&txfull);
 	sem_destroy(&rxempty);
 }
 
-void AbstractUART::start_threads(int fd, bool write_only) {
-	fds[0] = newpollfd(stop_fd);
-	fds[1] = newpollfd(fd);
-
-	if (!write_only)
-		rcvthr = new std::thread(&AbstractUART::receive, this);
-	txthr = new std::thread(&AbstractUART::transmit, this);
-}
-
-void AbstractUART::stop_threads(void) {
-	stop = true;
-
-	if (txthr) {
-		spost(&txfull); // unblock transmit thread
-		txthr->join();
-		delete txthr;
-	}
-
-	if (rcvthr) {
-		uint8_t byte = 0;
-		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
-			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
-		spost(&rxempty); // unblock receive thread
-		rcvthr->join();
-		delete rcvthr;
-	}
-}
-
-void AbstractUART::rxpush(uint8_t data) {
+void UART_IF::rxpush(uint8_t data) {
+	// TODO: discard bytes if rx full
 	swait(&rxempty);
 	rcvmtx.lock();
 	rx_fifo.push(data);
@@ -108,7 +46,19 @@ void AbstractUART::rxpush(uint8_t data) {
 	asyncEvent.notify();
 }
 
-void AbstractUART::register_access_callback(const vp::map::register_access_t &r) {
+uint8_t UART_IF::txpull() {
+	uint8_t data;
+	swait(&txfull);
+	if(tx_fifo.size() == 0) // Other thread will only increase count, not decrease
+		return 0;
+	txmtx.lock();
+	data = tx_fifo.front();
+	tx_fifo.pop();
+	txmtx.unlock();
+	return data;
+}
+
+void UART_IF::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.read) {
 		if (r.vptr == &txdata) {
 			txmtx.lock();
@@ -165,6 +115,7 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 		asyncEvent.notify();
 
 	if (r.write && r.vptr == &txdata) {
+		// from SoC to remote
 		txmtx.lock();
 		if (tx_fifo.size() >= UART_FIFO_DEPTH) {
 			txmtx.unlock();
@@ -177,50 +128,11 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 	}
 }
 
-void AbstractUART::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+void UART_IF::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
 
-void AbstractUART::transmit(void) {
-	uint8_t data;
-
-	while (!stop) {
-		swait(&txfull);
-		if (stop) break;
-
-		txmtx.lock();
-		data = tx_fifo.front();
-		tx_fifo.pop();
-		txmtx.unlock();
-
-		asyncEvent.notify();
-		write_data(data);
-	}
-}
-
-void AbstractUART::receive(void) {
-	while (!stop) {
-		if (poll(fds, (nfds_t)NFDS, -1) == -1)
-			throw std::system_error(errno, std::generic_category());
-
-		/* stop_fd is checked first as it is fds[0] */
-		for (size_t i = 0; i < NFDS; i++) {
-			int fd = fds[i].fd;
-			short ev = fds[i].revents;
-
-			if (ev & POLLERR) {
-				throw std::runtime_error("received unexpected POLLERR");
-			} else if (ev & POLLIN) {
-				if (fd == stop_fd)
-					break;
-				else
-					handle_input(fd);
-			}
-		}
-	}
-}
-
-void AbstractUART::interrupt(void) {
+void UART_IF::interrupt(void) {
 	bool trigger = false;
 
 	/* XXX: Possible optimization would be to trigger the
@@ -245,12 +157,12 @@ void AbstractUART::interrupt(void) {
 		plic->gateway_trigger_interrupt(irq);
 }
 
-void AbstractUART::swait(sem_t *sem) {
+void UART_IF::swait(sem_t *sem) {
 	if (sem_wait(sem))
 		throw std::system_error(errno, std::generic_category());
 }
 
-void AbstractUART::spost(sem_t *sem) {
+void UART_IF::spost(sem_t *sem) {
 	if (sem_post(sem))
 		throw std::system_error(errno, std::generic_category());
 }

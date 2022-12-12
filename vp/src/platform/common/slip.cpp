@@ -25,7 +25,7 @@
 #define SLIP_ESC_END 0334
 #define SLIP_ESC_ESC 0335
 
-SLIP::SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string netdev) : AbstractUART(name, irqsrc) {
+SLIP::SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string netdev) : FD_ABSTRACT_UART(name, irqsrc) {
 	tunfd = open("/dev/net/tun", O_RDWR);
 	if (tunfd == -1)
 		goto err0;
@@ -105,10 +105,10 @@ void SLIP::send_packet(void) {
 
 void SLIP::handle_input(int fd) {
 	ssize_t ret = read(fd, rcvbuf, rcvsiz);
-	if (ret == -1)
+	if (ret <= -1)
 		throw std::system_error(errno, std::generic_category());
 
-	for (size_t i = 0; i < (size_t)ret; i++) {
+	for (size_t i = 0; i < static_cast<size_t>(ret); i++) {
 		switch (rcvbuf[i]) {
 			case SLIP_END:
 				rxpush(SLIP_ESC);

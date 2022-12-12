@@ -16,7 +16,7 @@
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
 UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
-		: AbstractUART(name, irqsrc) {
+		: FD_ABSTRACT_UART(name, irqsrc) {
 	// If stdin isn't a tty, it doesn't make much sense to poll from it.
 	// In this case, we will run the UART in write-only mode.
 	bool write_only = !isatty(STDIN_FILENO);

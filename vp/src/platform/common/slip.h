@@ -2,10 +2,10 @@
 #define RISCV_VP_SLIP_H
 
 #include <stdint.h>
+#include <fd_abstract_uart.h>
 #include <systemc>
-#include "abstract_uart.h"
 
-class SLIP : public AbstractUART {
+class SLIP : public FD_ABSTRACT_UART {
 public:
 	SLIP(const sc_core::sc_module_name &, uint32_t, std::string);
 	~SLIP(void);
