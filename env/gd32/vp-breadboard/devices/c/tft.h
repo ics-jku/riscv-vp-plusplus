@@ -1,5 +1,6 @@
 #pragma once
 
+#include <queue>
 #include <vector>
 
 #include "devices/factory/cFactory.h"
@@ -8,6 +9,9 @@ const uint8_t TFT_CASET = 0x2A;
 const uint8_t TFT_MADCTL = 0x36;
 const uint8_t TFT_PASET = 0x2B;
 const uint8_t TFT_RAMWR = 0x2C;
+
+const uint8_t XPT_X = 0x90;
+const uint8_t XPT_Y = 0xD0;
 
 const uint8_t COMMANDS[4] = {TFT_CASET, TFT_PASET, TFT_RAMWR, TFT_MADCTL};
 
@@ -144,6 +148,9 @@ class TFT : public CDevice {
 	uint8_t current_cmd;
 	Parameters<uint8_t, 4> parameters;
 	bool penirq;
+	std::queue<uint8_t> txbuffer;
+	uint16_t current_x;
+	uint16_t current_y;
 
    public:
 	TFT(DeviceID id);

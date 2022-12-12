@@ -120,10 +120,30 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 TFT::TFT_SPI::TFT_SPI(CDevice* device) : CDevice::SPI_Interface_C(device) {}
 
 gpio::SPI_Response TFT::TFT_SPI::send(gpio::SPI_Command byte) {
-	// TODO
 	TFT* tft_device = static_cast<TFT*>(device);
-	std::cout << "TFT recived SPI: " << std::hex << (int)byte << "\n";
-	return 0x11;
+	uint8_t response = 0;
+
+	if (!tft_device->txbuffer.empty()) {
+		response = tft_device->txbuffer.front();
+		tft_device->txbuffer.pop();
+	}
+
+	switch (byte) {
+		case XPT_X: {
+			tft_device->txbuffer.push(tft_device->current_x >> 8);
+			tft_device->txbuffer.push((uint8_t)tft_device->current_x);
+			break;
+		}
+		case XPT_Y: {
+			tft_device->txbuffer.push(tft_device->current_y >> 8);
+			tft_device->txbuffer.push((uint8_t)tft_device->current_y);
+			break;
+		}
+		default:
+			break;
+	}
+
+	return response;
 }
 
 /* Graphbuf Interface */
@@ -148,11 +168,9 @@ void TFT::TFT_Graph::initializeBufferMaybe() {
 TFT::TFT_Input::TFT_Input(CDevice* device) : CDevice::TFT_Input_Interface_C(device) {}
 
 void TFT::TFT_Input::onClick(bool active, QMouseEvent* e) {
-	// TODO
-	// here we need to send an interrupt to the VP
-	// and somhow send the coordinates to the VP
 	TFT* tft_device = static_cast<TFT*>(device);
 	tft_device->penirq = active;
-	// auto x = e->pos().x();
-	// tft_device->draw(active, e);
+	// TODO convert coordinates
+	tft_device->current_x = e->pos().x();
+	tft_device->current_y = e->pos().y();
 }
