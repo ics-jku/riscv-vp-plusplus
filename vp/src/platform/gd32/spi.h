@@ -76,8 +76,11 @@ struct SPI : public sc_core::sc_module {
 
 		if (r.write) {
 			if (r.vptr == &spi_data) {
-				buffer.push(spi_data);
-				writeFunction(spi_data);
+				std::cout << "VP SPI push: " << (int)spi_data << "\n";
+				uint8_t val = writeFunction(spi_data);
+				buffer.push(val);
+				spi_stat = spi_stat | 0x01;  // set RBNE flag to 1
+				std::cout << "VP SPI recv: " << (int)val << "\n";
 				spi_stat = spi_stat | 0x02;  // set TBE flag to 1
 			}
 		}
