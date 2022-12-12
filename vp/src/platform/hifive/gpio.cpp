@@ -313,4 +313,3 @@ SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
 	const auto pin = getPinOffsFromSPIcs(cs);
 	return bind(&GpioServer::pushSPI, &server, pin, placeholders::_1);
 }
-
