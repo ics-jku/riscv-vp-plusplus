@@ -273,6 +273,10 @@ void Breadboard::mousePressEvent(QMouseEvent* e) {
 	}
 }
 
+void Breadboard::mouseMoveEvent(QMouseEvent* e) {
+	mousePressEvent(e);
+}
+
 void Breadboard::mouseReleaseEvent(QMouseEvent* e) {
 	if (!debugmode) {
 		for (auto const& [id, graph] : device_graphics) {
