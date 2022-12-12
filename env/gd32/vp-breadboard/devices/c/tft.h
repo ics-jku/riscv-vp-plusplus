@@ -165,6 +165,12 @@ class TFT : public CDevice {
 		void send(gpio::EXMC_Data data);
 	};
 
+	class TFT_SPI : public CDevice::SPI_Interface_C {
+	   public:
+		TFT_SPI(CDevice* device);
+		gpio::SPI_Response send(gpio::SPI_Command byte);
+	};
+
 	class TFT_Graph : public CDevice::Graphbuf_Interface_C {
 	   public:
 		TFT_Graph(CDevice* device);

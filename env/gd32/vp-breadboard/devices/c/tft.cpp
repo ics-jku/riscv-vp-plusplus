@@ -12,6 +12,10 @@ TFT::TFT(DeviceID id) : CDevice(id) {
 	if (!exmc) {
 		exmc = std::make_unique<TFT_EXMC>(this);
 	}
+	// SPI
+	if (!spi) {
+		spi = std::make_unique<TFT_SPI>(this);
+	}
 	// TFT Input
 	if (!tft_input) {
 		tft_input = std::make_unique<TFT_Input>(this);
@@ -109,6 +113,17 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 			tft_device->state.setToStart();
 		}
 	}
+}
+
+/* SPI Interface */
+
+TFT::TFT_SPI::TFT_SPI(CDevice* device) : CDevice::SPI_Interface_C(device) {}
+
+gpio::SPI_Response TFT::TFT_SPI::send(gpio::SPI_Command byte) {
+	// TODO
+	TFT* tft_device = static_cast<TFT*>(device);
+	std::cout << "TFT recived SPI: " << std::hex << (int)byte << "\n";
+	return 0x11;
 }
 
 /* Graphbuf Interface */

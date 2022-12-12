@@ -8,6 +8,12 @@
     {
       "class" : "tft",
       "id"    : "display",
+      "spi"   :
+      { 
+        "cs_pin" : 4,
+        "port": "A",
+        "noresponse": false
+      },
       "exmc"  :
       { 
         "cs_pin" : 7,
