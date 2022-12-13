@@ -6,7 +6,7 @@
 #include <mutex>
 #include <queue>
 
-UART_IF::UART_IF(sc_core::sc_module_name, uint32_t irqsrc) {
+UART_IF::UART_IF(sc_core::sc_module_name, uint32_t irqsrc) : plic(nullptr){
 	irq = irqsrc;
 	tsock.register_b_transport(this, &UART_IF::transport);
 

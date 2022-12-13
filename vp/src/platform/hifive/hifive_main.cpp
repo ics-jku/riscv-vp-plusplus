@@ -66,7 +66,7 @@ public:
 	addr_t uart0_start_addr = 0x10013000;
 	addr_t uart0_end_addr = 0x10013FFF;
 	addr_t uart1_start_addr = 0x10023000;
-	addr_t uart1_end_addr = 0x10023FFF;
+	addr_t uart1_end_addr = 0x10023FFF;		// not routed on Hifive1 Rev. A
 	addr_t spi0_start_addr = 0x10014000;
 	addr_t spi0_end_addr = 0x10014FFF;
 	addr_t spi1_start_addr = 0x10024000;
@@ -85,6 +85,7 @@ public:
 	bool enable_can = false;
 	bool disable_inline_oled = false;
 	bool wait_for_gpio_connection = false;
+	bool forward_uart_0 = false;
 	std::string tun_device = "tun0";
 
 	HifiveOptions(void) {
@@ -92,6 +93,7 @@ public:
 		add_options()
 			("enable-inline-can",  po::bool_switch(&enable_can), "enable support for CAN SPI module")
 			("disable-inline-oled", po::bool_switch(&disable_inline_oled), "enable support for OLED SPI module")
+			("forward-uart-to-vbb", po::bool_switch(&forward_uart_0), "forwards UART_0 TX/RX to virtual breadboard")
 			("wait-for-gpio-connection", po::bool_switch(&wait_for_gpio_connection), "Waits for a GPIO-Connection before starting program")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
 		// clang-format on
@@ -121,7 +123,7 @@ int sc_main(int argc, char **argv) {
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
 	SPI spi0("SPI0");
 	SPI spi1("SPI1");
-	std::shared_ptr<CAN> can = nullptr;
+	std::shared_ptr<CAN> can;
 	if (opt.enable_can) {
 		std::cout << "using internal CAN controller on SPI CS 0" << std::endl;
 		can = std::make_shared<CAN>();
@@ -130,7 +132,7 @@ int sc_main(int argc, char **argv) {
 		// pass through to gpio server
 		spi1.connect(0, gpio0.getSPIwriteFunction(0));
 	}
-	std::shared_ptr<SS1106> oled = nullptr;
+	std::shared_ptr<SS1106> oled;
 	if(!opt.disable_inline_oled) {
 		std::cout << "[hifive_main] using internal SS1106 oled controller on SPI CS 2 (with DC as Pin 16, Bit 10)" << std::endl;
 		oled = std::make_shared<SS1106>([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
@@ -142,7 +144,16 @@ int sc_main(int argc, char **argv) {
 
 	spi1.connect(3, gpio0.getSPIwriteFunction(3));
 	SPI spi2("SPI2");
-	UART uart0("UART0", 3);
+	std::shared_ptr<UART> uart0;
+	std::shared_ptr<Tunnel_UART> uart0_tunnel;
+	if(opt.forward_uart_0) {
+		std::cout << "[hifive_main] tunneling UART0 over virtual breadboard protocol" << std::endl;
+		uart0_tunnel = std::make_shared<Tunnel_UART>("UART0", 3);
+		uart0_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(17));
+		gpio0.registerUartReceiveFunction(16, std::bind(&Tunnel_UART::nonblock_receive, uart0_tunnel, std::placeholders::_1));
+	} else {
+		uart0 = std::make_shared<UART>("UART0", 3);
+	}
 	SLIP slip("SLIP", 4, opt.tun_device);
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -196,7 +207,11 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[4].bind(aon.tsock);
 	bus.isocks[5].bind(prci.tsock);
 	bus.isocks[6].bind(spi0.tsock);
-	bus.isocks[7].bind(uart0.tsock);
+	if(uart0) {
+		bus.isocks[7].bind(uart0->tsock);
+	} else if (uart0_tunnel) {
+		bus.isocks[7].bind(uart0_tunnel->tsock);
+	}
 	bus.isocks[8].bind(maskROM.tsock);
 	bus.isocks[9].bind(gpio0.tsock);
 	bus.isocks[10].bind(sys.tsock);
@@ -208,7 +223,10 @@ int sc_main(int argc, char **argv) {
 	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
-	uart0.plic = &plic;
+	if(uart0)
+		uart0->plic = &plic;
+	if(uart0_tunnel)
+		uart0_tunnel->plic = &plic;
 	slip.plic = &plic;
 
 	std::vector<debug_target_if *> threads;
@@ -223,6 +241,7 @@ int sc_main(int argc, char **argv) {
 	}
 
 	if(opt.wait_for_gpio_connection) {
+		std::cout << "[hifive_main] Waiting for virtual breadboard protocol connection" << std::endl;
 		while(!gpio0.isServerConnected()) {
 			usleep(2000);
 		}

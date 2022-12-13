@@ -5,6 +5,7 @@
 #include <gpio-server.hpp>
 #include "util/tlm_map.h"
 #include "spi.h"
+#include "tunnel-uart.hpp"
 
 #include <tlm_utils/simple_target_socket.h>
 #include <systemc>
@@ -73,6 +74,9 @@ struct GPIO : public sc_core::sc_module {
 
 	void asyncOnchange(gpio::PinNumber bit, gpio::Tristate val);
 	void synchronousChange();
+
+	UartTXFunction getUartTransmitFunction(gpio::PinNumber tx);
+	void registerUartReceiveFunction(gpio::PinNumber rx, UartRXFunction);
 
 	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
 };

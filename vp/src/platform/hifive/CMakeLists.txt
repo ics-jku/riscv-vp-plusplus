@@ -4,6 +4,7 @@ add_executable(hifive-vp
         oled/common.cpp
         oled/oled.cpp
         gpio.cpp
+        tunnel-uart.cpp
         ../../util/elegantEnums.cpp #sorry :(
         ${HEADERS})
 

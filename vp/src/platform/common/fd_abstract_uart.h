@@ -5,17 +5,9 @@
 #include <semaphore.h>
 #include <stdbool.h>
 
-#include <systemc>
-#include <tlm_utils/simple_target_socket.h>
-
 #include <thread>
-#include <mutex>
-#include <queue>
 
 #include "uart_if.h"
-#include "core/common/irq_if.h"
-#include "util/tlm_map.h"
-#include "platform/common/async_event.h"
 
 class FD_ABSTRACT_UART : public UART_IF {
 public:

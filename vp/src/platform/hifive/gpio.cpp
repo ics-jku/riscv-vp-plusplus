@@ -309,6 +309,14 @@ void GPIO::synchronousChange() {
 	server.state = serverSnapshot;
 }
 
+UartTXFunction GPIO::getUartTransmitFunction(const gpio::PinNumber tx){
+	return bind(&GpioServer::pushUART, &server, tx, placeholders::_1);
+}
+void GPIO::registerUartReceiveFunction(const gpio::PinNumber rx, UartRXFunction fun){
+	server.registerUARTRX(rx, fun);
+}
+
+
 SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
 	const auto pin = getPinOffsFromSPIcs(cs);
 	return bind(&GpioServer::pushSPI, &server, pin, placeholders::_1);
