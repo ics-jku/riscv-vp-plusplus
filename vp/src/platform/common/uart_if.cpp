@@ -26,8 +26,6 @@ UART_IF::UART_IF(sc_core::sc_module_name, uint32_t irqsrc) {
 	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
 		throw std::system_error(errno, std::generic_category());
 
-	std::cout << "inited UART_IF" << std::endl;
-
 	SC_METHOD(interrupt);
 	sensitive << asyncEvent;
 	dont_initialize();
@@ -39,8 +37,6 @@ UART_IF::~UART_IF(void) {
 }
 
 void UART_IF::rxpush(uint8_t data) {
-	// TODO: discard bytes if rx full
-	std::cout << "rxpush " << +data << std::endl;
 	swait(&rxempty);
 	rcvmtx.lock();
 	rx_fifo.push(data);
@@ -49,14 +45,12 @@ void UART_IF::rxpush(uint8_t data) {
 }
 
 uint8_t UART_IF::txpull() {
-	std::cout << "txpull " << std::endl;
 	uint8_t data;
 	swait(&txfull);
 	if(tx_fifo.size() == 0) // Other thread will only increase count, not decrease
 		return 0;
 	txmtx.lock();
 	data = tx_fifo.front();
-	std::cout << "data " << +data << std::endl;
 	tx_fifo.pop();
 	txmtx.unlock();
 	return data;
@@ -69,9 +63,7 @@ void UART_IF::register_access_callback(const vp::map::register_access_t &r) {
 			txdata = (tx_fifo.size() >= UART_FIFO_DEPTH) ? UART_FULL : 0;
 			txmtx.unlock();
 		} else if (r.vptr == &rxdata) {
-			std::cout << "UART_IF read rxdata" << std::endl;
 			rcvmtx.lock();
-			std::cout << "locked" << std::endl;
 			if (rx_fifo.empty()) {
 				rxdata = 1 << 31;
 			} else {
@@ -120,7 +112,6 @@ void UART_IF::register_access_callback(const vp::map::register_access_t &r) {
 		asyncEvent.notify();
 
 	if (r.write && r.vptr == &txdata) {
-		std::cout << "pushing " << +txdata << " into tx_fifo" << std::endl;
 		// from SoC to remote
 		txmtx.lock();
 		if (tx_fifo.size() >= UART_FIFO_DEPTH) {

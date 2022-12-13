@@ -23,7 +23,6 @@ UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
 
 	enableRawMode(STDIN_FILENO);
 	start_threads(STDIN_FILENO, write_only);
-	std::cout << "UART started threads" << std::endl;
 }
 
 UART::~UART(void) {
@@ -43,7 +42,8 @@ void UART::handle_input(int fd) {
 
 	switch (state) {
 	case STATE_NORMAL:
-		rxpush(buf);
+		if(buf != KEY_ESC)	// filter out first esc sequence
+			rxpush(buf);
 		break;
 	case STATE_COMMAND:
 		handle_cmd(buf);
@@ -74,7 +74,6 @@ void UART::handle_cmd(uint8_t cmd) {
 
 void UART::write_data(uint8_t data) {
 	ssize_t nwritten;
-	std::cout << "UART write data " << +data << std::endl;
 	nwritten = write(STDOUT_FILENO, &data, sizeof(data));
 	if (nwritten == -1)
 		throw std::system_error(errno, std::generic_category());
