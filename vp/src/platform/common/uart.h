@@ -8,7 +8,7 @@
 class UART : public FD_ABSTRACT_UART {
 public:
 	UART(const sc_core::sc_module_name&, uint32_t);
-	~UART(void);
+	virtual ~UART(void);
 
 private:
 	typedef enum {

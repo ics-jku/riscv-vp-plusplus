@@ -41,7 +41,7 @@ public:
 	tlm_utils::simple_target_socket<UART_IF> tsock;
 
 	UART_IF(sc_core::sc_module_name, uint32_t);
-	~UART_IF(void);
+	virtual ~UART_IF(void);
 
 	SC_HAS_PROCESS(UART_IF);	// interrupt
 

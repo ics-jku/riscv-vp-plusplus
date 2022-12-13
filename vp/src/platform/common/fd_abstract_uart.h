@@ -20,7 +20,7 @@
 class FD_ABSTRACT_UART : public UART_IF {
 public:
 	FD_ABSTRACT_UART(sc_core::sc_module_name, uint32_t);
-	~FD_ABSTRACT_UART(void);
+	virtual ~FD_ABSTRACT_UART(void);
 
 protected:
 	void start_threads(int fd, bool write_only = false);
