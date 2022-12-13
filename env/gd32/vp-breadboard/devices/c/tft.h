@@ -13,7 +13,8 @@ const uint8_t TFT_RAMWR = 0x2C;
 const uint8_t XPT_X = 0x90;
 const uint8_t XPT_Y = 0xD0;
 
-const uint8_t COMMANDS[4] = {TFT_CASET, TFT_PASET, TFT_RAMWR, TFT_MADCTL};
+const uint16_t touchCalibration_x0 = 300, touchCalibration_x1 = 3360, touchCalibration_y0 = 300,
+               touchCalibration_y1 = 3400, width = 240, height = 320;
 
 template <class T, unsigned max>
 class Parameters {

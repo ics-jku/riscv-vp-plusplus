@@ -22,7 +22,7 @@ TFT::TFT(DeviceID id) : CDevice(id) {
 	}
 	// Graph
 	if (!graph) {
-		layout_graph = Layout{320, 240, "rgba"};
+		layout_graph = Layout{height, width, "rgba"};
 		graph = std::make_unique<TFT_Graph>(this);
 	}
 }
@@ -130,13 +130,13 @@ gpio::SPI_Response TFT::TFT_SPI::send(gpio::SPI_Command byte) {
 
 	switch (byte) {
 		case XPT_X: {
-			tft_device->txbuffer.push((tft_device->current_x >> 5) & 0xFF);
-			tft_device->txbuffer.push((tft_device->current_x & 0xF) << 3);
+			tft_device->txbuffer.push(tft_device->current_x >> 5);
+			tft_device->txbuffer.push((tft_device->current_x & 0x1F) << 3);
 			break;
 		}
 		case XPT_Y: {
-			tft_device->txbuffer.push((tft_device->current_y >> 5) & 0xFF);
-			tft_device->txbuffer.push((tft_device->current_y & 0xF) << 3);
+			tft_device->txbuffer.push(tft_device->current_y >> 5);
+			tft_device->txbuffer.push((tft_device->current_y & 0x1F) << 3);
 			break;
 		}
 		default:
@@ -163,29 +163,25 @@ void TFT::TFT_Graph::initializeBufferMaybe() {
 	}
 }
 
-/* Input Interface */
-
-uint16_t touchCalibration_x0 = 300, touchCalibration_x1 = 3360, touchCalibration_y0 = 300, touchCalibration_y1 = 3400;
-uint16_t _width = 240;
-uint16_t _height = 320;
-
 void convertXY(uint16_t* x, uint16_t* y) {
 	uint16_t x_tmp = *x, y_tmp = *y, xx, yy;
 
-	xx = ((x_tmp * touchCalibration_x1) / _height) + touchCalibration_x0;
-	yy = ((y_tmp * touchCalibration_y1) / _width) + touchCalibration_y0;
+	xx = ((x_tmp * touchCalibration_x1) / height) + touchCalibration_x0;
+	yy = ((y_tmp * touchCalibration_y1) / width) + touchCalibration_y0;
 
 	*x = xx;
 	*y = yy;
 }
+
+/* Input Interface */
 
 TFT::TFT_Input::TFT_Input(CDevice* device) : CDevice::TFT_Input_Interface_C(device) {}
 
 void TFT::TFT_Input::onClick(bool active, QMouseEvent* e) {
 	TFT* tft_device = static_cast<TFT*>(device);
 	tft_device->penirq = active;
-	uint16_t tmp_x = (e->pos().x() - 10);
-	uint16_t tmp_y = (e->pos().y() - 10);
+	uint16_t tmp_x = e->pos().x() - 10;
+	uint16_t tmp_y = e->pos().y() - 10;
 	convertXY(&tmp_x, &tmp_y);
 	tft_device->current_x = tmp_x;
 	tft_device->current_y = tmp_y;

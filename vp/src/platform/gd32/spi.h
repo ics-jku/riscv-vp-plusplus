@@ -12,8 +12,8 @@ typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
 struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
-	static constexpr uint_fast8_t buffer_size = 1;
-	std::queue<uint16_t> buffer;
+	static constexpr uint_fast8_t rxbuffer_size = 1;
+	std::queue<uint16_t> rxbuffer;
 	SpiWriteFunction writeFunction;
 
 	// memory mapped configuration registers
@@ -63,12 +63,11 @@ struct SPI : public sc_core::sc_module {
 		// TODO csid & interrupts
 		if (r.read) {
 			if (r.vptr == &spi_data) {
-				if (!buffer.empty()) {
-					spi_data = buffer.front();
-					buffer.pop();
+				if (!rxbuffer.empty()) {
+					spi_data = rxbuffer.front();
+					rxbuffer.pop();
 				}
-				// TODO maybe also need to reset TBE flag here?
-				spi_stat = spi_stat & 0xFE;  // set RBNE flag to 0
+				spi_stat &= 0xFE;  // set RBNE flag to 0
 			}
 		}
 
@@ -76,12 +75,11 @@ struct SPI : public sc_core::sc_module {
 
 		if (r.write) {
 			if (r.vptr == &spi_data) {
-				std::cout << "VP SPI push: " << (int)spi_data << "\n";
-				uint8_t val = writeFunction(spi_data);
-				buffer.push(val);
-				spi_stat = spi_stat | 0x01;  // set RBNE flag to 1
-				std::cout << "VP SPI recv: " << (int)val << "\n";
-				spi_stat = spi_stat | 0x02;  // set TBE flag to 1
+				spi_stat &= 0xFD;  // set TBE flag to 0
+				uint8_t response = writeFunction(spi_data);
+				spi_stat |= 0x02;  // set TBE flag to 1
+				rxbuffer.push(response);
+				spi_stat |= 0x01;  // set RBNE flag to 1
 			}
 		}
 	}
