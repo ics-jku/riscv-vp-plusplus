@@ -86,6 +86,7 @@ public:
 	bool disable_inline_oled = false;
 	bool wait_for_gpio_connection = false;
 	bool forward_uart_0 = false;
+	bool forward_uart_1 = false;
 	std::string tun_device = "tun0";
 
 	HifiveOptions(void) {
@@ -93,7 +94,8 @@ public:
 		add_options()
 			("enable-inline-can",  po::bool_switch(&enable_can), "enable support for CAN SPI module")
 			("disable-inline-oled", po::bool_switch(&disable_inline_oled), "enable support for OLED SPI module")
-			("forward-uart-to-vbb", po::bool_switch(&forward_uart_0), "forwards UART_0 TX/RX to virtual breadboard")
+			("forward-uart0-to-vbb", po::bool_switch(&forward_uart_0), "forwards UART_0 TX/RX to virtual breadboard")
+			("forward-uart1-to-vbb", po::bool_switch(&forward_uart_1), "forwards UART_1 TX/RX to virtual breadboard")
 			("wait-for-gpio-connection", po::bool_switch(&wait_for_gpio_connection), "Waits for a GPIO-Connection before starting program")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
 		// clang-format on
@@ -154,7 +156,17 @@ int sc_main(int argc, char **argv) {
 	} else {
 		uart0 = std::make_shared<UART>("UART0", 3);
 	}
-	SLIP slip("SLIP", 4, opt.tun_device);
+	std::shared_ptr<SLIP> slip;
+	std::shared_ptr<Tunnel_UART> uart1_tunnel;
+	if(opt.forward_uart_1) {
+		std::cout << "[hifive_main] tunneling UART1 over virtual breadboard protocol" << std::endl;
+		uart1_tunnel = std::make_shared<Tunnel_UART>("UART1", 4);
+		// following pins only connected on RevB
+		uart1_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(23));
+		gpio0.registerUartReceiveFunction(18, std::bind(&Tunnel_UART::nonblock_receive, uart1_tunnel, std::placeholders::_1));
+	} else {
+		slip = std::make_shared<SLIP>("SLIP", 4, opt.tun_device);
+	}
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
@@ -217,7 +229,11 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[10].bind(sys.tsock);
 	bus.isocks[11].bind(spi1.tsock);
 	bus.isocks[12].bind(spi2.tsock);
-	bus.isocks[13].bind(slip.tsock);
+	if(slip) {
+		bus.isocks[13].bind(slip->tsock);
+	} else if (uart1_tunnel) {
+		bus.isocks[13].bind(uart1_tunnel->tsock);
+	}
 
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
@@ -227,7 +243,10 @@ int sc_main(int argc, char **argv) {
 		uart0->plic = &plic;
 	if(uart0_tunnel)
 		uart0_tunnel->plic = &plic;
-	slip.plic = &plic;
+	if(slip)
+		slip->plic = &plic;
+	if(uart1_tunnel)
+		uart1_tunnel->plic = &plic;
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);

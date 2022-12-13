@@ -5,9 +5,9 @@ using namespace gpio;
 
 static Pinstate getIOF(PinNumber pin, bool iofsel) {
 	switch(pin) {
-	case 16:	// RX
+	case 16:	// UART0 RX
 		return !iofsel ? Pinstate::IOF_UART_RX : Pinstate::UNSET;
-	case 17:	// TX
+	case 17:	// UART0 TX
 		return !iofsel ? Pinstate::IOF_UART_TX : Pinstate::UNSET;
 	case 19:	// PWM1_1
 	case 20:	// PWM1_0
@@ -31,6 +31,10 @@ static Pinstate getIOF(PinNumber pin, bool iofsel) {
 	case 12:	// PWM2_2
 	case 13:	// PWM2_3
 		return !iofsel ? Pinstate::UNSET : Pinstate::IOF_PWM;
+	case 18:	// UART1 (RX?)
+		return !iofsel ? Pinstate::IOF_UART_RX : Pinstate::UNSET;
+	case 23:	// UART1 (TX?)
+		return !iofsel ? Pinstate::IOF_UART_TX : Pinstate::UNSET;
 	default:
 		return Pinstate::UNSET;
 	}
