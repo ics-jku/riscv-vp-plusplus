@@ -20,11 +20,18 @@ Tunnel_UART::~Tunnel_UART(){
 }
 
 void Tunnel_UART::nonblock_receive(gpio::UART_Bytes bytes) {
-	nonblock_rx_mutex.lock();
+	const std::lock_guard<std::mutex> lock(nonblock_rx_mutex);
+	if(nonblocking_rx_queue.size() > DROP_AT_FIFO_DEPTH - UART_FIFO_DEPTH) {
+		std::cerr << "[tunnel-uart] Warn: pre-rx_queue growing to " << nonblocking_rx_queue.size() << " byte." << std::endl;
+		std::cerr << "              The VP can probably not keep up with the remote." << std::endl;
+	}
+	if(nonblocking_rx_queue.size() > DROP_AT_FIFO_DEPTH) {
+		// Dropping elements
+		return;
+	}
 	for(const auto& byte : bytes) {
 		nonblocking_rx_queue.push(byte);
 	}
-	nonblock_rx_mutex.unlock();
 }
 
 void Tunnel_UART::register_transmit_function(UartTXFunction fun) {
@@ -51,6 +58,6 @@ void Tunnel_UART::tx_dequeue(UartTXFunction fun) {
 		const auto data = txpull(); // TODO: Optimize if more elems are in tx queue
 		if(stop)
 			break;
-		fun(gpio::UART_Bytes{data, 1});
+		fun(gpio::UART_Bytes{data});
 	}
 }
