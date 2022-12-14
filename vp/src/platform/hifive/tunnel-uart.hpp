@@ -11,7 +11,7 @@ typedef std::function<void(gpio::UART_Bytes)> UartRXFunction;	// from server to 
 typedef std::function<void(gpio::UART_Bytes)> UartTXFunction;	// from peripheral to server
 
 class Tunnel_UART : public UART_IF {
-	static constexpr unsigned DROP_AT_FIFO_DEPTH = 1500;
+	static constexpr unsigned DROP_AT_FIFO_DEPTH = 1600;
 public:
 	Tunnel_UART(sc_core::sc_module_name, uint32_t irqsrc);
 	virtual ~Tunnel_UART(void);
