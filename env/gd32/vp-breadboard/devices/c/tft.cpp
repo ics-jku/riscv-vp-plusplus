@@ -180,8 +180,8 @@ TFT::TFT_Input::TFT_Input(CDevice* device) : CDevice::TFT_Input_Interface_C(devi
 void TFT::TFT_Input::onClick(bool active, QMouseEvent* e) {
 	TFT* tft_device = static_cast<TFT*>(device);
 	tft_device->penirq = active;
-	uint16_t tmp_x = e->pos().x() - 10;
-	uint16_t tmp_y = e->pos().y() - 10;
+	uint16_t tmp_x = e->pos().x() - 116;
+	uint16_t tmp_y = e->pos().y() - 93;
 	convertXY(&tmp_x, &tmp_y);
 	tft_device->current_x = tmp_x;
 	tft_device->current_y = tmp_y;
