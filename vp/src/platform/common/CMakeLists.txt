@@ -8,8 +8,15 @@ add_library(platform-common
 		slip.cpp
 		uart.cpp
 		sifive_test.cpp
+		vncsimplefb.cpp
 		options.cpp
 		${HEADERS})
 
 target_include_directories(platform-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(platform-common systemc)
+
+# only for libvncserver > 0.9.13
+# find_package(LibVNCServer)
+# if(LibVNCServer_FOUND)
+# 	target_link_libraries(platform-common LibVNCServer::vncserver)
+# endif()
+target_link_libraries(platform-common systemc vncserver)
