@@ -5,7 +5,7 @@
  - RV32GC and RV64GC core support (i.e. RV32IMAFDC and RV64IMAFDC)
  - Implemented in SystemC TLM-2.0
  - SW debug capabilities (GDB RSP interface) with Eclipse
- - Virtual Breadboard GUI (interactive IO) featuring C++ and Lua modeled digital devices (separate repo)
+ - Virtual Breadboard GUI (interactive IO) featuring C++ and Lua modeled digital devices (separate repository)
  - FreeRTOS, RIOT, Zephyr, Linux support
  - Generic and configurable bus
  - CLINT and PLIC-based interrupt controller + additional peripherals
@@ -17,7 +17,9 @@
  - Virtual memory support (Sv32, Sv39, Sv48)
 
 For related information, e.g. verification, please visit https://www.informatik.uni-bremen.de/agra/projects/risc-v/ or contact <riscv@informatik.uni-bremen.de>. 
-We accept pull requests and in general contributions are very welcome. 
+We accept pull requests and in general contributions are very welcome.
+If you are using the RISC-V VP in a scientific paper, please cite https://doi.org/10.1016/j.sysarc.2020.101756. For the Virtual Breadboard GUI, please refer to https://www.mdpi.com/2079-9268/12/4/52.
+
 
 In the following we provide build instructions and how to compile and run software on the VP.
 
