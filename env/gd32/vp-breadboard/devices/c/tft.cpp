@@ -104,17 +104,16 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 				tft_device->state.setCtl(b5, b6, b7);
 				break;
 			}
+#ifdef ENABLE_SCREENSHOT
+			case TFT_SCREENSHOT: {
+				tft_device->image->save(QString::fromStdString("screenshot_" + std::to_string(data) + ".png"));
+				break;
+			}
+#endif
 			default:
 				break;
 		}
 	} else {
-#ifdef ENABLE_SCREENSHOT
-		if (data == TFT_SCREENSHOT) {
-			tft_device->image->save(
-			    QString::fromStdString("screenshot_" + std::to_string(screenshot_count++) + ".png"));
-			return;
-		}
-#endif
 		tft_device->current_cmd = data;
 		if (data == TFT_RAMWR) {
 			tft_device->state.setToStart();
