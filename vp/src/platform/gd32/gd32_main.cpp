@@ -71,7 +71,14 @@ class GD32Options : public Options {
 	addr_t flash_start_addr = 0x08000000;
 	addr_t flash_end_addr = flash_start_addr + flash_size - 1;
 
-	GD32Options(void) {}
+	bool wait_for_gpio_connection = false;
+
+	GD32Options(void) {
+		// clang-format off
+		add_options()
+			("wait-for-gpio-connections", po::bool_switch(&wait_for_gpio_connection), "Waits for all five GPIO-Connections before starting program");
+		// clang-format on
+	}
 };
 
 int sc_main(int argc, char **argv) {
@@ -189,6 +196,13 @@ int sc_main(int argc, char **argv) {
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
 		new DirectCoreRunner(core);
+	}
+
+	if (opt.wait_for_gpio_connection) {
+		while (!gpioa.isServerConnected() && !gpiob.isServerConnected() && !gpioc.isServerConnected() &&
+		       !gpioc.isServerConnected() && !gpioe.isServerConnected()) {
+			usleep(2000);
+		}
 	}
 
 	sc_core::sc_start();

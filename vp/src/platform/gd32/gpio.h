@@ -58,6 +58,8 @@ struct GPIO : public sc_core::sc_module {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
 
+	bool isServerConnected();
+
 	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
 	ExmcWriteFunction getEXMCwriteFunction(gpio::PinNumber cs);
 	PinWriteFunction getPINwriteFunction(gpio::PinNumber pin);

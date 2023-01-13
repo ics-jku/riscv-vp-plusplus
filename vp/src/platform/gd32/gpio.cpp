@@ -136,6 +136,10 @@ void GPIO::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
 
+bool GPIO::isServerConnected() {
+	return server.isConnected();
+}
+
 void GPIO::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.write) {
 		int offset = 0;
