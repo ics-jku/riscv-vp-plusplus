@@ -5,6 +5,12 @@
 
 #include "devices/factory/cFactory.h"
 
+#define ENABLE_SCREENSHOT
+#ifdef ENABLE_SCREENSHOT
+const uint8_t TFT_SCREENSHOT = 0xFF;
+static int screenshot_count = 0;
+#endif
+
 const uint8_t TFT_CASET = 0x2A;
 const uint8_t TFT_MADCTL = 0x36;
 const uint8_t TFT_PASET = 0x2B;
