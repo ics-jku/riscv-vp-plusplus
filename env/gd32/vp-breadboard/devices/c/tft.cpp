@@ -164,7 +164,7 @@ void TFT::TFT_Graph::initializeBufferMaybe() {
 			img[offs + 0] = 0;
 			img[offs + 1] = 0;
 			img[offs + 2] = 0;
-			img[offs + 3] = 255;
+			img[offs + 3] = 0;
 		}
 	}
 }
