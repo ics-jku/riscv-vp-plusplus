@@ -100,6 +100,15 @@ public:
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
 		// clang-format on
 	}
+
+	void printValues(std::ostream& os) const override {
+		os << std::hex;
+		os << "flash_start_addr:\t" << +flash_start_addr << std::endl;
+		os << "flash_end_addr:\t"   << +flash_end_addr   << std::endl;
+		os << "dram_start_addr:\t" << +dram_start_addr << std::endl;
+		os << "dram_end_addr:\t"   << +dram_end_addr   << std::endl;
+		static_cast <const Options&>( *this ).printValues(os);
+	}
 };
 
 int sc_main(int argc, char **argv) {
