@@ -60,15 +60,14 @@ void Options::parse(int argc, char **argv) {
 	}
 }
 
-std::ostream& operator<<(std::ostream& os, const Options& o) {
+void Options::printValues(std::ostream& os) const {
 	os << std::dec;
-	os << "intercept_syscalls: " << o.intercept_syscalls << std::endl;
-	os << "error-on-zero-traphandler: " << o.error_on_zero_traphandler << std::endl;
-	os << "use_debug_runner: " << o.use_debug_runner << std::endl;
-	os << "debug_port: " << o.debug_port << std::endl;
-	os << "trace_mode: " << o.trace_mode << std::endl;
-	os << "tlm_global_quantum: " << o.tlm_global_quantum << std::endl;
-	os << "use_instr_dmi: " << o.use_instr_dmi << std::endl;
-	os << "use_data_dmi: " << o.use_data_dmi << std::endl;
-	return os;
+	os << "intercept_syscalls: " << intercept_syscalls << std::endl;
+	os << "error-on-zero-traphandler: " << error_on_zero_traphandler << std::endl;
+	os << "use_debug_runner: " << use_debug_runner << std::endl;
+	os << "debug_port: " << debug_port << std::endl;
+	os << "trace_mode: " << trace_mode << std::endl;
+	os << "tlm_global_quantum: " << tlm_global_quantum << std::endl;
+	os << "use_instr_dmi: " << use_instr_dmi << std::endl;
+	os << "use_data_dmi: " << use_data_dmi << std::endl;
 }

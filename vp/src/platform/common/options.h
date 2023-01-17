@@ -2,6 +2,7 @@
 #define RISCV_VP_OPTIONS_H
 
 #include <boost/program_options.hpp>
+#include <iostream>
 
 class Options : public boost::program_options::options_description {
 public:
@@ -20,7 +21,7 @@ public:
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
 
-	friend std::ostream& operator<<(std::ostream& os, const Options& o);
+	virtual void printValues(std::ostream& os = std::cout) const;
 
 private:
 
@@ -28,6 +29,5 @@ private:
 	boost::program_options::variables_map vm;
 };
 
-std::ostream& operator<<(std::ostream& os, const Options& o);
 
 #endif

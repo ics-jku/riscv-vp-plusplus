@@ -89,6 +89,13 @@ public:
 			("network-device", po::value<std::string>(&network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
 			("signature", po::value<std::string>(&test_signature)->default_value(""),"output filename for the test execution signature");
         	// clang-format on
+	};
+
+	void printValues(std::ostream& os) const override {
+		os << std::hex;
+		os << "mem_start_addr:\t" << +mem_start_addr << std::endl;
+		os << "mem_end_addr:\t"   << +mem_end_addr   << std::endl;
+		static_cast <const Options&>( *this ).printValues(os);
 	}
 
 	void parse(int argc, char **argv) override {
@@ -103,13 +110,6 @@ public:
 	}
 };
 
-std::ostream& operator<<(std::ostream& os, const BasicOptions& o) {
-	os << std::hex;
-	os << "mem_start_addr:\t" << +o.mem_start_addr << std::endl;
-	os << "mem_end_addr:\t"   << +o.mem_end_addr   << std::endl;
-	os << static_cast <const Options&>( o );
-	return os;
-}
 
 int sc_main(int argc, char **argv) {
 	BasicOptions opt;
@@ -161,7 +161,7 @@ int sc_main(int argc, char **argv) {
 	} catch(ELFLoader::load_executable_exception& e) {
 		std::cerr << e.what() << std::endl;
 		std::cerr << "Memory map: " << std::endl;
-		std::cerr << opt << std::endl;
+		opt.printValues(std::cerr);
 		return -1;
 	}
 	/*
