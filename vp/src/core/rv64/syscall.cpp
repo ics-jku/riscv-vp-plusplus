@@ -232,6 +232,10 @@ int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint
 			return sys_close(_a0);
 
 		case SYS_exit:
+			// If the software requested a non-zero exit code then terminate directly.
+			// Otherwise, stop the SystemC simulation and exit with a zero exit code.
+			if (_a0) exit(_a0);
+
 			shall_exit = true;
 			return 0;
 
