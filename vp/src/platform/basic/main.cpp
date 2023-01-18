@@ -72,6 +72,7 @@ public:
 	addr_t display_start_addr = 0x72000000;
 	addr_t display_end_addr = display_start_addr + Display::addressRange;
 
+	bool quiet = false;
 	bool use_E_base_isa = false;
 
 	OptionValue<unsigned long> entry_point;
@@ -79,6 +80,7 @@ public:
 	BasicOptions(void) {
         	// clang-format off
 		add_options()
+			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
@@ -241,9 +243,11 @@ int sc_main(int argc, char **argv) {
 		new DirectCoreRunner(core);
 	}
 
+	if (opt.quiet)
+		sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
 	sc_core::sc_start();
-
-	core.show();
+	if (!opt.quiet)
+		core.show();
 
 	if (opt.test_signature != "") {
 		auto begin_sig = loader.get_begin_signature_address();
