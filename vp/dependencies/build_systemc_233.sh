@@ -11,7 +11,7 @@ version=2.3.3
 source=systemc-$version.tar.gz
 
 if [ ! -f "$source" ]; then
-	wget http://www.accellera.org/images/downloads/standards/systemc/$source
+	wget https://www.accellera.org/images/downloads/standards/systemc/$source
 fi
 
 tar xzf $source
