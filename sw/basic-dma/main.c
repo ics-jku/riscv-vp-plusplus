@@ -15,7 +15,7 @@ static const uint32_t DMA_OP_NOP = 0;
 static const uint32_t DMA_OP_MEMCPY = 1;
 
 
-_Bool dma_completed = 0;
+volatile _Bool dma_completed = 0;
 
 void dma_irq_handler() {
 	dma_completed = 1;

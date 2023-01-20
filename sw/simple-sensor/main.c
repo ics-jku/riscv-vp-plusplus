@@ -6,7 +6,7 @@ static volatile char * const SENSOR_INPUT_ADDR = (char * const)0x50000000;
 static volatile uint32_t * const SENSOR_SCALER_REG_ADDR = (uint32_t * const)0x50000080;
 static volatile uint32_t * const SENSOR_FILTER_REG_ADDR = (uint32_t * const)0x50000084;
 
-_Bool has_sensor_data = 0;
+volatile _Bool has_sensor_data = 0;
 
 void sensor_irq_handler() {
 	has_sensor_data = 1;

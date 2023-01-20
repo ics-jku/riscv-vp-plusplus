@@ -16,7 +16,7 @@ enum {
 #define MACHINE_TIMER 7
 
 /* Set after timer interrupt was received */
-static bool terminate = false;
+static volatile bool terminate = false;
 
 static volatile uint64_t *MTIMECMP_REG = (uint64_t *)0x2004000;
 static volatile uint64_t *MTIME_REG = (uint64_t *)0x200bff8;
