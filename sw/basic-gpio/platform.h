@@ -6,7 +6,7 @@
 #ifdef MICRORV
 // LED
 static volatile uint32_t *LED_ADDR = (uint32_t *)0x81000000;
-// UART 
+// UART
 static volatile uint32_t *UART_TX_DATA_ADDR = (uint32_t *)0x82000000;
 static volatile uint32_t *UART_TX_CTRL_ADDR = (uint32_t *)0x82000004;
 static volatile uint32_t *UART_RX_DATA_ADDR = (uint32_t *)0x82000008;

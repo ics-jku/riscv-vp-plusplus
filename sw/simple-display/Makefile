@@ -3,10 +3,10 @@ all : main.cpp libDisplay.cpp
 
 sim: all
 	riscv-vp --intercept-syscalls --error-on-zero-traphandler=true main
-	
+
 dump-elf: all
 	riscv32-unknown-elf-readelf -a main
-	
+
 dump-code: all
 	riscv32-unknown-elf-objdump -D main
 

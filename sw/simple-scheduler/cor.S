@@ -12,8 +12,8 @@ coroutine_entry:
 	ebreak
 
 
-/* 
- * registers a0 and a1 point to the current and next context, respectively 
+/*
+ * registers a0 and a1 point to the current and next context, respectively
  *
  * 1) store all current registers and pc in the current context
  * 2) load register values from next context
@@ -39,7 +39,7 @@ contextswitch:
 	// store pc
 	la    t0,_resume
 	sw    t0,0(a0)
-	
+
 	// restore other registers (NOTE: callee saved only + ra)
 	lw    x1,4(a1)		// ra
 	lw    x2,8(a1)		// sp
@@ -55,12 +55,12 @@ contextswitch:
 	lw    x25,100(a1)	// s9
 	lw    x26,104(a1)	// s10
 	lw    x27,108(a1)	// s11
-		
+
 	// load new program counter and perform context switch
 	lw	  t0,0(a1)
 	jr    t0
-	
+
 	_resume:
-	
+
 	ret
 

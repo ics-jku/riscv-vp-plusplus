@@ -73,19 +73,19 @@ void function_B(void *arg) {
 
 coroutine_t *create_coroutine(entrypoint_t fn, void *arg) {
 	coroutine_t *cor = (coroutine_t *)malloc(sizeof(coroutine_t));
-	
+
 	for (int i=0; i<31; ++i)
 		cor->ctx.regs[i] = 0;
-		
+
 	cor->ctx.regs[REG_SP] = (uint32_t)(&cor->stack[16384]);
 	cor->ctx.regs[REG_S0] = (uint32_t)cor;
-	
+
 	cor->entry = fn;
 	cor->arg = arg;
 	cor->stat = START;
-	
+
 	cor->ctx.pc = (uint32_t)coroutine_entry;
-	
+
 	return cor;
 }
 
@@ -96,22 +96,22 @@ void free_coroutine(coroutine_t *cor) {
 int main() {
 	coroutine_t *A_cor = create_coroutine(function_A, 0);
 	coroutine_t *B_cor = create_coroutine(function_B, 0);
-	
+
 	_Bool done = 0;
 	while (!done) {
 		done = 1;
-	
+
 		if (A_cor->stat != FINISHED) {
 			switch_to_coroutine(A_cor);
 			done = 0;
 		}
-			
+
 		if (B_cor->stat != FINISHED) {
 			switch_to_coroutine(B_cor);
 			done = 0;
 		}
 	}
-	
+
 	free_coroutine(A_cor);
 	free_coroutine(B_cor);
 	return 0;

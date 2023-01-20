@@ -17,5 +17,5 @@ SECTIONS
   .data : { *(.data) } > RAM
   .bss : { *(.bss) } > RAM
   _end = .;
-} 
+}
 

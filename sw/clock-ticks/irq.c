@@ -1,7 +1,7 @@
 #include "irq.h"
 #include "assert.h"
 
-	
+
 #define RISCV_MACHINE_SOFTWARE_INTERRUPT 3
 #define RISCV_MACHINE_TIMER_INTERRUPT 7
 #define RISCV_MACHINE_EXTERNAL_INTERRUPT 11
@@ -31,43 +31,43 @@ void level_1_interrupt_handler(uint32_t cause) {
 		case RISCV_MACHINE_EXTERNAL_INTERRUPT: {
 			register long t0 asm("t0") = 0x800;
 			asm volatile ("csrc mip, t0");
-			
+
 			uint32_t irq_id = *PLIC_CLAIM_AND_RESPONSE_REGISTER;
-	
+
 			irq_handler_table[irq_id]();
-	
+
 			*PLIC_CLAIM_AND_RESPONSE_REGISTER = 1;
-			
+
 			return;
 		}
-		
-		case RISCV_MACHINE_TIMER_INTERRUPT: {
-		    // Note: the pending timer interrupt bit will be automatically cleared when writing to the *mtimecmp* register of this hart
-            if (timer_irq_handler) {
-                // let the user registered handler clear the timer interrupt bit
-                timer_irq_handler();
-            } else {
-                // reset the *mtimecmp* register to zero to clear the pending bit
-                *mtimecmp = 0;
-            }
 
-		    return;
+		case RISCV_MACHINE_TIMER_INTERRUPT: {
+			// Note: the pending timer interrupt bit will be automatically cleared when writing to the *mtimecmp* register of this hart
+			if (timer_irq_handler) {
+				// let the user registered handler clear the timer interrupt bit
+				timer_irq_handler();
+			} else {
+				// reset the *mtimecmp* register to zero to clear the pending bit
+				*mtimecmp = 0;
+			}
+
+			return;
 		}
 	}
-	
+
 	assert (0 && "unsupported cause");
 }
 
 void register_interrupt_handler(uint32_t irq_id, irq_handler_t fn) {
 	assert (irq_id < IRQ_TABLE_NUM_ENTRIES);
 	// enable interrupt
-    volatile uint32_t* const reg = (PLIC_INTERRUPT_ENABLE_START + irq_id/32);
-    *reg |= 1 << (irq_id%32);
+	volatile uint32_t* const reg = (PLIC_INTERRUPT_ENABLE_START + irq_id/32);
+	*reg |= 1 << (irq_id%32);
 	// set a prio different to zero (which means do-not-interrupt)
 	*((uint32_t*) (PLIC_BASE + irq_id*sizeof(uint32_t))) = 1;
 	irq_handler_table[irq_id] = fn;
 }
 
 void register_timer_interrupt_handler(irq_handler_t fn) {
-    timer_irq_handler = fn;
+	timer_irq_handler = fn;
 }

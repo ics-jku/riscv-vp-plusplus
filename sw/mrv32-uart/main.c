@@ -6,7 +6,7 @@
 #include "util.h"
 
 void delay(uint32_t loops) {
-	for(uint32_t i = 0; i < loops; i++){
+	for(uint32_t i = 0; i < loops; i++) {
 		asm volatile("nop");
 	}
 }
@@ -28,13 +28,13 @@ int main() {
 	int occ;
 	if(!rxEmpty) {
 		// read rx data register from uart peripheral
-		do{
+		do {
 			rxBuf[0] = UART->RXDATA;
 			putChr(rxBuf[0]);
 			cnt++;
 			occ = UART->RXOCCU;
 			// sendString()
-		}while(UART->RXEMPT || cnt <= maxCnt);
+		} while(UART->RXEMPT || cnt <= maxCnt);
 		putChr('\n');
 		putChr('\n');
 	} else {

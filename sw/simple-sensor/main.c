@@ -17,16 +17,16 @@ void dump_sensor_data() {
 		asm volatile ("wfi");
 	}
 	has_sensor_data = 0;
-	
+
 	for (int i=0; i<64; ++i) {
 		*TERMINAL_ADDR = *(SENSOR_INPUT_ADDR + i) % 92 + 32;
 	}
 	*TERMINAL_ADDR = '\n';
 }
 
-int main() {	
+int main() {
 	register_interrupt_handler(2, sensor_irq_handler);
-	
+
 	*SENSOR_SCALER_REG_ADDR = 5;
 	*SENSOR_FILTER_REG_ADDR = 2;
 
