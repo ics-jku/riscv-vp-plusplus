@@ -29,8 +29,7 @@ void level_1_interrupt_handler(uint32_t cause) {
 
 	switch (cause & 0xf) {
 		case RISCV_MACHINE_EXTERNAL_INTERRUPT: {
-			register long t0 asm("t0") = 0x800;
-			asm volatile ("csrc mip, t0");
+			asm volatile ("csrc mip, %0" : : "r" (0x800));
 
 			uint32_t irq_id = *PLIC_CLAIM_AND_RESPONSE_REGISTER;
 
