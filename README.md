@@ -4,6 +4,7 @@
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
 
 ### Key features of *RISCV-VP++*
+ * Linux RV32 and RV64, single and quad-core VPs
  * Harmonized coding style (make codestyle)
  * Based on [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp) (commit 9418b8abb5)
 
