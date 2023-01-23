@@ -36,16 +36,16 @@ public:
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications
-	addr_t mem_start_addr = 0x00000000;
+	addr_t mem_start_addr         = 0x00000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
-	addr_t clint_start_addr = 0x02000000;
-	addr_t clint_end_addr = 0x0200ffff;
-	addr_t sys_start_addr = 0x02010000;
-	addr_t sys_end_addr = 0x020103ff;
-	addr_t plic_start_addr = 0x40000000;
-	addr_t plic_end_addr = 0x41000000;
-	addr_t term_start_addr = 0x20000000;
-	addr_t term_end_addr = term_start_addr + 16;
+	addr_t clint_start_addr       = 0x02000000;
+	addr_t clint_end_addr         = 0x0200ffff;
+	addr_t sys_start_addr         = 0x02010000;
+	addr_t sys_end_addr           = 0x020103ff;
+	addr_t plic_start_addr        = 0x40000000;
+	addr_t plic_end_addr          = 0x41000000;
+	addr_t term_start_addr        = 0x20000000;
+	addr_t term_end_addr          = term_start_addr + 16;
 	addr_t virtual_bus_start_addr = 0x50000000;
 	addr_t virtual_bus_end_addr   = 0x5FFFFFFF;
 
@@ -60,7 +60,6 @@ public:
 			("virtual-bus-device",  po::value<std::string>(&virtual_bus_device)->required(),"tty to virtual bus responder")
 			("virtual-device-start",  po::value<unsigned int>(&virtual_bus_start_addr),"start of virtual peripheral")
 			("virtual-device-end",  po::value<unsigned int>(&virtual_bus_end_addr),"end of virtual peripheral");
-
         	// clang-format on
 	}
 
