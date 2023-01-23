@@ -22,16 +22,18 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <termios.h>
 
 
 using namespace rv32;
 namespace po = boost::program_options;
 
-class BasicOptions : public Options {
+class HwitlOptions : public Options {
 public:
 	typedef unsigned int addr_t;
 
 	std::string virtual_bus_device;
+	unsigned virtual_bus_baudrate = 0;
 	std::string test_signature;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
@@ -51,13 +53,14 @@ public:
 
 	OptionValue<unsigned long> entry_point;
 
-	BasicOptions(void) {
+	HwitlOptions(void) {
         	// clang-format off
 		add_options()
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
 			("virtual-bus-device",  po::value<std::string>(&virtual_bus_device)->required(),"tty to virtual bus responder")
+			("virtual-bus-baudrate",  po::value<unsigned int>(&virtual_bus_baudrate),"If set, change baudrate of tty device")
 			("virtual-device-start",  po::value<unsigned int>(&virtual_bus_start_addr),"start of virtual peripheral")
 			("virtual-device-end",  po::value<unsigned int>(&virtual_bus_end_addr),"end of virtual peripheral");
         	// clang-format on
@@ -65,19 +68,38 @@ public:
 
 	void parse(int argc, char **argv) override {
 		Options::parse(argc, argv);
-
 		entry_point.finalize(parse_ulong_option);
 	}
 };
 
-std::ostream& operator<<(std::ostream& os, const BasicOptions& o) {
+std::ostream& operator<<(std::ostream& os, const HwitlOptions& o) {
 	os << "virtual-bus-device:\t" << o.virtual_bus_device << std::endl;
 	os << static_cast <const Options&>( o );
 	return os;
 }
 
+
+bool setBaudrate(int handle, unsigned baudrate) {
+	struct termios tty;
+	if(tcgetattr(handle, &tty) != 0) {
+		printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+		return false;
+	}
+	if(cfsetspeed(&tty, baudrate) != 0) {
+		printf("Error %i from setting baudrate: %s\n", errno, strerror(errno));
+		std::cerr << "... is the device a tty?" << std::endl;
+		return false;
+	}
+	// Save tty settings, also checking for error
+	if (tcsetattr(handle, TCSANOW, &tty) != 0) {
+		printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+		return false;
+	}
+	return true;
+}
+
 int sc_main(int argc, char **argv) {
-	BasicOptions opt;
+	HwitlOptions opt;
 	opt.parse(argc, argv);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
@@ -98,12 +120,17 @@ int sc_main(int argc, char **argv) {
 
 	int virtual_bus_device_handle = -1;
 	virtual_bus_device_handle = open(opt.virtual_bus_device.c_str(), O_RDWR| O_NOCTTY);
-	// todo: set Baudrate
 	if(virtual_bus_device_handle < 0) {
 		std::cerr << "[hwitl-vp] Device " << opt.virtual_bus_device << " could not be opened: "
 				<< strerror(errno) << std::endl;
 		return -1;
 	}
+	if(opt.virtual_bus_baudrate > 0) {
+		if(!setBaudrate(virtual_bus_device_handle, opt.virtual_bus_baudrate)) {
+			std::cerr << "[hwitl-vp] WARN: Could not set baudrate of " << opt.virtual_bus_baudrate << "!" << std::endl;
+		}
+	}
+
 	Initiator virtual_bus_connector(virtual_bus_device_handle);
 	VirtualBusMember virtual_bus_member("something", virtual_bus_connector, opt.virtual_bus_start_addr);
 	virtual_bus_member.setInterruptRoutine([&plic](){plic.gateway_trigger_interrupt(2);});
