@@ -66,11 +66,11 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 			break;
 		case hwitl::ResponseStatus::Ack::not_mapped:
 			trans.set_response_status(tlm_response_status::TLM_ADDRESS_ERROR_RESPONSE);
-			cerr << "[virtual_bus_tlm_connector] Address " << showbase << hex << base_address + addr << " not mapped" << endl;
+			cerr << "[virtual_bus_tlm_connector] Write Address " << showbase << hex << base_address + addr << dec << " not mapped" << endl;
 			break;
 		default:
 			trans.set_response_status(tlm_response_status::TLM_GENERIC_ERROR_RESPONSE);
-			cerr << "[virtual_bus_tlm_connector] Error " << static_cast<unsigned>(response) << " at address " << showbase << hex << base_address + addr << endl;
+			cerr << "[virtual_bus_tlm_connector] Write Error '" << static_cast<unsigned>(response) << "' at address " << showbase << hex << base_address + addr << dec << endl;
 		}
 		delay += m_write_delay;
 	} else if (cmd == tlm::TLM_READ_COMMAND) {
@@ -81,9 +81,11 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 			break;
 		case hwitl::ResponseStatus::Ack::not_mapped:
 			trans.set_response_status(tlm_response_status::TLM_ADDRESS_ERROR_RESPONSE);
+			cerr << "[virtual_bus_tlm_connector] Read Address " << showbase << hex << base_address + addr << dec << " not mapped" << endl;
 			break;
 		default:
 			trans.set_response_status(tlm_response_status::TLM_GENERIC_ERROR_RESPONSE);
+			cerr << "[virtual_bus_tlm_connector] Read Error " << static_cast<unsigned>(response.status.ack) << " at address " << showbase << hex << base_address + addr << dec << endl;
 		}
 		delay += m_read_delay;
 	} else {
