@@ -55,8 +55,13 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 	if(!unaligned) {
 		 data = reinterpret_cast<hwitl::Payload*>(trans.get_data_ptr());
 	} else {
-		// todo
-		assert(false && "[virtual_bus_tlm_connector] unaligned access currently unsupported");
+		temp = 0;
+		if(cmd == tlm::TLM_WRITE_COMMAND) {
+			// This just ignores word size and writes to unaligned addresses.
+			// WARN: This lets the actual peripheral handle this
+			assert(len <= sizeof(hwitl::Payload));	// should always be the case
+			memcpy(data, trans.get_data_ptr(), len);
+		}
 	}
 
 	if (cmd == tlm::TLM_WRITE_COMMAND) {
@@ -86,6 +91,10 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 		default:
 			trans.set_response_status(tlm_response_status::TLM_GENERIC_ERROR_RESPONSE);
 			cerr << "[virtual_bus_tlm_connector] Read Error " << static_cast<unsigned>(response.status.ack) << " at address " << showbase << hex << base_address + addr << dec << endl;
+		}
+		if(unaligned) {
+			assert(len <= sizeof(hwitl::Payload));	// should always be the case
+			memcpy(trans.get_data_ptr(), data, len);
 		}
 		delay += m_read_delay;
 	} else {
