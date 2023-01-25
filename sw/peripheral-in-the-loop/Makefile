@@ -6,7 +6,7 @@ main : main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/irq.h $(simple-s
 	riscv32-unknown-elf-gcc main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/bootstrap.S -g -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
 
 $(virtual-bus-path)/responder-cli:
-	make -C $(virtual-bus-path)/responder-cli
+	make -C $(virtual-bus-path) responder-cli
 
 sim: main $(virtual-bus-path)/responder-cli clearpipes
 	make -C $(virtual-bus-path) pipe_left pipe_right
