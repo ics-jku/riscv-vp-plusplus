@@ -1,5 +1,6 @@
 virtual-bus-path=../../vp/src/platform/hwitl/virtual-bus
 simple-sensor-path=../simple-sensor
+tty=/dev/ttyUSB2
 
 main : main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/irq.h $(simple-sensor-path)/bootstrap.S
 	riscv32-unknown-elf-gcc main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/bootstrap.S -g -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
@@ -14,12 +15,14 @@ sim: main $(virtual-bus-path)/responder-cli clearpipes
 	killall responder-cli
 	killall socat
 
-real: all
-	hwitl-vp main --error-on-zero-traphandler=true --virtual-bus-device /dev/ttyUSB2
+real: main
+	hwitl-vp main --error-on-zero-traphandler=true --virtual-bus-device $(tty)
+
+all: main
 
 clearpipes:
-	killall responder-cli
-	killall socat
+	killall responder-cli || true
+	killall socat || true
 
 clean: clearpipes
 	rm -f main
