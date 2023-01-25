@@ -46,7 +46,7 @@ void Options::parse(int argc, char **argv) {
 		}
 		if (vm["intercept-syscalls"].as<bool>() && vm.count("error-on-zero-traphandler") == 0) {
 			// intercept syscalls active, but no overriding error-on-zero-traphandler switch
-			std::cout << "[Options] Info: switch 'intercept-syscalls' also activates 'error-on-zero-traphandler' if unset." << std::endl;
+			std::cerr << "[Options] Info: switch 'intercept-syscalls' also activates 'error-on-zero-traphandler' if unset." << std::endl;
 			error_on_zero_traphandler = true;
 		}
 	} catch (po::error &e) {
