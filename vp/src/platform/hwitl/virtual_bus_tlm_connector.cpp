@@ -21,6 +21,8 @@ VirtualBusMember::VirtualBusMember(sc_module_name name,
 	m_read_delay = sc_time(SC_ZERO_TIME);
 	m_write_delay = sc_time(SC_ZERO_TIME);
 
+	// TODO: Issue Reset command to remote device
+
 	// Zero time: Special case, dont update
 	m_interrupt_polling_delay = SC_ZERO_TIME;
 	SC_THREAD(interrupt_service);
@@ -53,7 +55,7 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 	hwitl::Payload* data = &temp;
 	const bool unaligned = len != sizeof(hwitl::Payload);
 	if(!unaligned) {
-		 data = reinterpret_cast<hwitl::Payload*>(trans.get_data_ptr());
+		data = reinterpret_cast<hwitl::Payload*>(trans.get_data_ptr());
 	} else {
 		temp = 0;
 		if(cmd == tlm::TLM_WRITE_COMMAND) {
