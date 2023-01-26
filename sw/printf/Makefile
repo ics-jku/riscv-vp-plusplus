@@ -1,14 +1,6 @@
-all : main.c entry.S
-	riscv32-unknown-elf-gcc main.c entry.S -o main -march=rv32i -mabi=ilp32 -Wl,-e_reset_vector
+OBJECTS  = main.o entry.o
+CFLAGS   = -march=rv32i -mabi=ilp32
+LDFLAGS  = -Wl,-e_reset_vector
+VP_FLAGS = --error-on-zero-traphandler=true
 
-sim: all
-	riscv-vp --error-on-zero-traphandler=true main
-
-dump-elf: all
-	riscv32-unknown-elf-readelf -a main
-
-dump-code: all
-	riscv32-unknown-elf-objdump -D main
-
-clean:
-	rm -f main
+include ../Makefile.common

@@ -1,14 +1,5 @@
-all : main.cpp
-	riscv32-unknown-elf-g++ -ggdb -std=c++14 main.cpp -o main -march=rv32ima -mabi=ilp32
+OBJECTS  = main.o
+CXXFLAGS = -ggdb -std=c++14 -march=rv32ima -mabi=ilp32
 
-sim: all
-	riscv-vp --intercept-syscalls --error-on-zero-traphandler=true main
-
-dump-elf: all
-	riscv32-unknown-elf-readelf -a main
-
-dump-code: all
-	riscv32-unknown-elf-objdump -D main
-
-clean:
-	rm -f main
+include ../Makefile.common
+override LD = $(CXX)

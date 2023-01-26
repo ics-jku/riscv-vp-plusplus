@@ -1,13 +1,7 @@
-override CC = riscv32-unknown-elf-gcc
+OBJECTS  = main.o bootstrap.o
+CFLAGS   = -march=rv32i -mabi=ilp32
+LDFLAGS  = -nostartfiles -Wl,--no-relax
 
-CFLAGS  = -march=rv32i -mabi=ilp32
-ASFLAGS = $(CFLAGS)
-LDFLAGS = -nostartfiles -Wl,--no-relax
+VP       = tiny32-vp
 
-all: main
-main: main.o bootstrap.o
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^
-sim: main
-	tiny32-vp --error-on-zero-traphandler=true --intercept-syscalls $<
-
-.PHONY: all sim
+include ../Makefile.common

@@ -19,7 +19,7 @@ for test in *; do
 	name=${test##*/}
 
 	printf "Building sw '%s': " "${name}"
-	make -C "${test}" all >/dev/null
+	make -C "${test}" >/dev/null
 	handle_exit $?
 
 	printf "Running sw '%s': " "${name}"
