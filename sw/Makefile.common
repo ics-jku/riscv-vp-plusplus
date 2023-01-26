@@ -1,0 +1,29 @@
+RISCV_PREFIX ?= riscv32-unknown-elf-
+override CC = $(RISCV_PREFIX)gcc
+
+VP ?= riscv-vp
+VP_FLAGS ?= --error-on-zero-traphandler=true
+
+EXECUTABLE ?= "main"
+OBJECTS ?= $(wildcard *.o)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $^ $(LDLIBS)
+
+%.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+
+sim: $(EXECUTABLE)
+	$(VP) $(VP_FLAGS) $<
+
+dump-elf: $(EXECUTABLE)
+	$(RISCV_PREFIX)readelf -a main
+
+dump-code: $(EXECUTABLE)
+	$(RISCV_PREFIX)objdump -D main
+
+clean:
+	rm -f $(OBJECTS) $(EXECUTABLE)
+
+.PHONY: sim dump-elf dump-code clean
+.DEFAULT_GOAL := $(EXECUTABLE)

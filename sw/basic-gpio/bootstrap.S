@@ -61,6 +61,7 @@ jal main
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
 SYS_EXIT 0
 
+.align 4
 stack_begin:
 .zero 1024
 stack_end:
