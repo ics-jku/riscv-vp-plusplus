@@ -2,8 +2,10 @@ virtual-bus-path=../../vp/src/platform/hwitl/virtual-bus
 simple-sensor-path=../simple-sensor
 tty=/dev/ttyUSB2
 
+CFLAGS_EXTRA ?= -misa-spec=2.2
+
 main : main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/irq.h $(simple-sensor-path)/bootstrap.S
-	riscv32-unknown-elf-gcc main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/bootstrap.S -g -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
+	riscv32-unknown-elf-gcc $(CFLAGS_EXTRA) main.c $(simple-sensor-path)/irq.c $(simple-sensor-path)/bootstrap.S -g -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax
 
 $(virtual-bus-path)/responder-cli:
 	make -C $(virtual-bus-path) responder-cli
