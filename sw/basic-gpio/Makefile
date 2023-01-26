@@ -1,20 +1,11 @@
-all : main.c uart.c bootstrap.S
-	riscv32-unknown-elf-gcc bootstrap.S main.c uart.c -o main -march=rv32i -mabi=ilp32 -nostartfiles -Wl,--no-relax -T link.ld
+OBJECTS  = bootstrap.o main.o uart.o
+CFLAGS   = -g3 -march=rv32i -mabi=ilp32
+LDLIBS   = -Tlink.ld -nostartfiles -Wl,--no-relax
 
-sim: all
-	microrv32-vp main
+VP       = microrv32-vp
+VP_FLAGS =
 
-dump-elf: all
-	riscv32-unknown-elf-readelf -a main
-
-dump-code: all
-	riscv32-unknown-elf-objdump -D main
-
-dump-comment: all
-	objdump -s --section .comment main
-
-hex: all
+hex: $(EXECUTABLE)
 	../elf2bin.py ./main gpio.hex 0x4020
 
-clean:
-	rm -f main
+include ../Makefile.common

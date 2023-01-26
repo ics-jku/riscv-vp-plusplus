@@ -1,6 +1,7 @@
 .globl register_handler
 .globl lvl0_handler
 
+.align 4
 lvl0_handler:
     # Store all register values on the stack
     addi sp, sp, -4 * 32
