@@ -51,26 +51,18 @@ sudo dnf debuginfo-install boost-iostreams boost-program-options boost-regex bzi
 
 #### 2) Build this RISC-V Virtual Prototype:
 
+**Note:** By default the VPs are build without optmization and debug symbols.
+To enable the optimizations set the environment variable `RELEASE_BUILD=ON`.
 
-Check out all submodules (`git submodule update --init --recursive`), and type `make all`. This script does the following for you:
+To create a debug build without optimisations, type
+```
+make vps
+```
 
->
->i) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
->
->```bash
->./build_systemc_233.sh
->./build_softfloat.sh
->```
->
->
->ii) in *vp* folder (requires the *boost* C++ library):
-> 
->```bash
->mkdir build
->cd build
->cmake ..
->make install
->```
+To create an optimized release build, type
+```
+RELEASE_BUILD=ON make vps
+```
 
 #### 3) Building SW examples using the GNU toolchain
 
