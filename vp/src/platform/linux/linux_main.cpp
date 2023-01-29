@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "core/common/clint.h"
+#include "core/common/lwrt_clint.h"
 #include "debug.h"
 #include "debug_memory.h"
 #include "elf_loader.h"
@@ -138,7 +139,7 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<NUM_CORES + 1, 9> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	FU540_PLIC plic("PLIC", NUM_CORES);
-	CLINT<NUM_CORES> clint("CLINT");
+	LWRT_CLINT<NUM_CORES> clint("CLINT");
 	PRCI prci("PRCI");
 	UART uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
