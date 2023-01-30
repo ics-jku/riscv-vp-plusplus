@@ -10,14 +10,11 @@ else
 	SYSTEMC_DEPENDENCY = vp/dependencies/systemc-dist
 endif
 
-vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/dependencies/softfloat-dist vp/build/Makefile
+vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/build/Makefile
 	$(MAKE) install -C vp/build
 
 vp/dependencies/systemc-dist:
 	cd vp/dependencies/ && ./build_systemc_233.sh
-
-vp/dependencies/softfloat-dist:
-	cd vp/dependencies/ && ./build_softfloat.sh
 
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
@@ -48,10 +45,7 @@ qt-clean:
 sysc-clean:
 	rm -rf vp/dependencies/systemc*
 
-softfloat-clean:
-	rm -rf vp/dependencies/softfloat-dist
-
-clean-all: vp-clean qt-clean sysc-clean softfloat-clean
+clean-all: vp-clean qt-clean sysc-clean
 
 clean: vp-clean
 

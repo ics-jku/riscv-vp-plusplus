@@ -31,9 +31,6 @@ else()
 	find_library(SystemC_LIBRARIES libsystemc.a)
 endif()
 
-find_package( SoftFloat REQUIRED )
-include_directories( ${SoftFloat_INCLUDE_DIRS} )
-
 subdirs(src)
 
 enable_testing()
