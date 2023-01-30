@@ -1,12 +1,12 @@
 #ifndef RISCV_VP_VNCSIMPLEFB_H
 #define RISCV_VP_VNCSIMPLEFB_H
 
-#include <rfb/rfb.h>
 #include <tlm_utils/simple_target_socket.h>
 
 #include <systemc>
 
 #include "util/tlm_map.h"
+#include "util/vncserver.h"
 
 /*
  * Simple framebuffer modules using libvncserver
@@ -16,14 +16,15 @@ class VNCSimpleFB : public sc_core::sc_module {
    public:
 	tlm_utils::simple_target_socket<VNCSimpleFB> tsock;
 
-	VNCSimpleFB(sc_core::sc_module_name);
+	VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer);
 	~VNCSimpleFB(void);
 
 	SC_HAS_PROCESS(VNCSimpleFB);
 
    private:
-	rfbScreenInfoPtr rfbScreen;
+	VNCServer &vncServer;
 	uint8_t *frameBuffer;
+	uint8_t *vncFrameBuffer;
 	sc_core::sc_mutex mutex;
 	bool areaChanged;
 	uint32_t xMin, yMin, xMax, yMax;
@@ -34,7 +35,7 @@ class VNCSimpleFB : public sc_core::sc_module {
 	void areaChangedReset();
 	void areaChangedSet(uint32_t addr, uint32_t len);
 
-	void updateRfbScreen();
+	void updateScreen();
 	void updateProcess();
 
 	vp::map::LocalRouter router = {"VNCSimpleFB"};

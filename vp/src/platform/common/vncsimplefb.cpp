@@ -10,22 +10,13 @@
 //#define TRACK_CHANGED_AREA
 #undef TRACK_CHANGED_AREA
 
-VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name) {
+VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer) : vncServer(vncServer) {
 	tsock.register_b_transport(this, &VNCSimpleFB::transport);
 
 	areaChangedReset();
 
-	rfbScreen = rfbGetScreen(nullptr, nullptr, WIDTH, HEIGHT, 8, 3, BPP);
-	if (!rfbScreen)
-		return;
-	rfbScreen->desktopName = "RISCV-VP VNC Simple Frame Buffer";
 	frameBuffer = new uint8_t[SIZE];
-	rfbScreen->frameBuffer = new char[SIZE];
-	rfbScreen->alwaysShared = true;
-
-	/* Initialize the server */
-	rfbInitServer(rfbScreen);
-	rfbRunEventLoop(rfbScreen, -1, true);
+	vncServer.setScreenProperties(WIDTH, HEIGHT, 8, 3, BPP);
 
 	router.add_start_size_mapping(0x00, SIZE, vp::map::read_write)
 	    .register_handler(this, &VNCSimpleFB::fb_access_callback);
@@ -34,10 +25,7 @@ VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name) {
 }
 
 VNCSimpleFB::~VNCSimpleFB(void) {
-	rfbShutdownServer(rfbScreen, true);
-	delete[] rfbScreen->frameBuffer;
 	delete[] frameBuffer;
-	rfbScreenCleanup(rfbScreen);
 }
 
 void VNCSimpleFB::fb_access_callback(tlm::tlm_generic_payload &trans, sc_core::sc_time) {
@@ -96,7 +84,7 @@ void VNCSimpleFB::areaChangedSet(uint32_t addr, uint32_t len) {
 	areaChanged = true;
 }
 
-void VNCSimpleFB::updateRfbScreen() {
+void VNCSimpleFB::updateScreen() {
 	mutex.lock();
 
 	if (!areaChanged) {
@@ -115,14 +103,14 @@ void VNCSimpleFB::updateRfbScreen() {
 	for (uint32_t y = yMin; y < yMax; y++) {
 		for (uint32_t x = xMin; x < xMax; x++) {
 			uint32_t addr = (x * BPP) + (y * WIDTH * BPP);
-			rfbScreen->frameBuffer[addr + 0] = frameBuffer[addr + 2];
-			rfbScreen->frameBuffer[addr + 1] = frameBuffer[addr + 1];
-			rfbScreen->frameBuffer[addr + 2] = frameBuffer[addr + 0];
+			vncFrameBuffer[addr + 0] = frameBuffer[addr + 2];
+			vncFrameBuffer[addr + 1] = frameBuffer[addr + 1];
+			vncFrameBuffer[addr + 2] = frameBuffer[addr + 0];
 		}
 	}
 
 	/* trigger update for modified area */
-	rfbMarkRectAsModified(rfbScreen, xMin, yMin, xMax, yMax);
+	vncServer.markRectAsModified(xMin, yMin, xMax, yMax);
 
 	areaChangedReset();
 
@@ -130,8 +118,13 @@ void VNCSimpleFB::updateRfbScreen() {
 }
 
 void VNCSimpleFB::updateProcess() {
-	while (rfbIsActive(rfbScreen)) {
-		updateRfbScreen();
+	vncServer.start();
+	vncFrameBuffer = vncServer.getFrameBuffer();
+
+	while (vncServer.isActive()) {
+		updateScreen();
 		wait(1000000L / REFRESH_RATE, sc_core::SC_US);
 	}
+
+	vncServer.stop();
 }
