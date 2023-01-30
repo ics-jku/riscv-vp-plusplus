@@ -1,7 +1,8 @@
-FROM alpine:3.17
+FROM alpine:edge
 
 RUN apk update && apk add --no-cache  build-base cmake boost-dev \
-	systemc-dev systemc-static git newlib-riscv-none-elf gdb-multiarch
+	systemc-dev systemc-static git gcc-riscv-none-elf \
+	g++-riscv-none-elf newlib-riscv-none-elf gdb-multiarch
 
 # Examples expect riscv32-unknown-* compiler triplet.
 # TODO: Find a better way to deal with this problem.
