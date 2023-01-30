@@ -9,6 +9,7 @@ add_library(platform-common
 		uart.cpp
 		sifive_test.cpp
 		vncsimplefb.cpp
+		vncsimpleinput.cpp
 		options.cpp
 		${HEADERS})
 

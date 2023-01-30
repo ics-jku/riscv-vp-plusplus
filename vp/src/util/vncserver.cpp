@@ -21,7 +21,23 @@ static enum rfbNewClientAction c_newClient(rfbClientPtr cl) {
 	return vncServer->newClient(cl);
 }
 
-VNCServer::VNCServer() : width(0), height(0), bitsPerSample(0), samplesPerPixel(0), bytesPerPixel(0) {}
+static void c_doPtr(int buttonMask, int x, int y, rfbClientPtr cl) {
+	VNCInput_if *vncInput = (VNCInput_if *)cl->clientData;
+	if (vncInput != nullptr) {
+		vncInput->doPtr(buttonMask, x, y);
+	}
+	rfbDefaultPtrAddEvent(buttonMask, x, y, cl);
+}
+
+static void c_doKbd(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
+	VNCInput_if *vncInput = (VNCInput_if *)cl->clientData;
+	if (vncInput != nullptr) {
+		vncInput->doKbd(down, key);
+	}
+}
+
+VNCServer::VNCServer()
+    : width(0), height(0), bitsPerSample(0), samplesPerPixel(0), bytesPerPixel(0), vncInput(nullptr) {}
 
 VNCServer::~VNCServer(void) {
 	stop();
@@ -40,6 +56,8 @@ bool VNCServer::start(void) {
 	rfbScreen->desktopName = "RISCV-VP VNC Server";
 	rfbScreen->screenData = (void *)this;
 	rfbScreen->newClientHook = c_newClient;
+	rfbScreen->ptrAddEvent = c_doPtr;
+	rfbScreen->kbdAddEvent = c_doKbd;
 	rfbScreen->frameBuffer = new char[width * height * bytesPerPixel];
 	rfbScreen->alwaysShared = true;
 
@@ -50,6 +68,7 @@ bool VNCServer::start(void) {
 }
 
 enum rfbNewClientAction VNCServer::newClient(rfbClientPtr cl) {
+	cl->clientData = (void *)vncInput;
 	return RFB_CLIENT_ACCEPT;
 }
 

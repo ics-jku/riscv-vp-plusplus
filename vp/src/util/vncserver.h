@@ -4,6 +4,13 @@
 #include <rfb/rfb.h>
 #include <stdint.h>
 
+class VNCInput_if {
+   public:
+	/* callbacks */
+	virtual void doPtr(int buttonMask, int x, int y) = 0;
+	virtual void doKbd(rfbBool down, rfbKeySym key) = 0;
+};
+
 class VNCServer {
    public:
 	VNCServer(void);
@@ -18,6 +25,18 @@ class VNCServer {
 		this->bitsPerSample = bitsPerSample;
 		this->samplesPerPixel = samplesPerPixel;
 		this->bytesPerPixel = bytesPerPixel;
+	}
+
+	inline int getWidth(void) {
+		return width;
+	}
+
+	inline int getHeight(void) {
+		return height;
+	}
+
+	inline void setVNCInput(VNCInput_if *vncInput) {
+		this->vncInput = vncInput;
 	}
 
 	inline rfbScreenInfoPtr getScreen(void) {
@@ -44,6 +63,7 @@ class VNCServer {
    private:
 	int width, height, bitsPerSample, samplesPerPixel, bytesPerPixel;
 	rfbScreenInfoPtr rfbScreen;
+	VNCInput_if *vncInput;
 };
 
 #endif /* RISCV_VP_VNCSERVER_H */
