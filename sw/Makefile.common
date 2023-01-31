@@ -5,6 +5,7 @@ override CXX = $(RISCV_PREFIX)g++
 override LD = $(RISCV_PREFIX)gcc
 
 ASFLAGS ?= $(CFLAGS)
+SIM_TARGET ?= sim-default
 
 # ISA Version 2.2 is the last version where zicsr is still
 # supported as part of the base ISA. Use that for now until
@@ -35,7 +36,8 @@ $(EXECUTABLE): $(OBJECTS)
 
 ########################################################################
 
-sim: $(EXECUTABLE)
+sim: $(SIM_TARGET)
+sim-default: $(EXECUTABLE)
 	$(VP) $(VP_FLAGS) $<
 
 dump-elf: $(EXECUTABLE)
@@ -47,5 +49,5 @@ dump-code: $(EXECUTABLE)
 clean:
 	rm -f $(OBJECTS) $(EXECUTABLE) $(CLEAN_EXTRA)
 
-.PHONY: sim dump-elf dump-code clean
+.PHONY: sim sim-default dump-elf dump-code clean
 .DEFAULT_GOAL := $(EXECUTABLE)
