@@ -261,7 +261,11 @@ void GpioClient::handleDataChannel() {
 				break;
 			}
 			case IOFunction::EXMC: {
-				desc.onchange.exmc(update.payload.exmc);
+				EXMC_Data resp = desc.onchange.exmc(update.payload.exmc);
+				if (!writeStruct(data_channel, &resp)) {
+					cerr << "[gpio-client] [data channel] Error in SPI write answer" << endl;
+					break;
+				}
 				break;
 			}
 

@@ -55,7 +55,7 @@ gpio::Tristate TFT::TFT_PIN::getPin(PinNumber num) {
 
 TFT::TFT_EXMC::TFT_EXMC(CDevice* device) : CDevice::EXMC_Interface_C(device) {}
 
-void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
+gpio::EXMC_Data TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 	TFT* tft_device = static_cast<TFT*>(device);
 	if (tft_device->is_data) {
 		switch (tft_device->current_cmd) {
@@ -119,6 +119,7 @@ void TFT::TFT_EXMC::send(gpio::EXMC_Data data) {
 			tft_device->state.setToStart();
 		}
 	}
+	return 0;
 }
 
 /* SPI Interface */

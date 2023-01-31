@@ -136,8 +136,9 @@ void Breadboard::addEXMC(gpio::PinNumber global, gpio::Port port, Device* device
 	    device->getID(),
 	    EXMC_IOF_Request{.global_pin = global, .port = port, .fun = [this, device](gpio::EXMC_Data data) {
 		                     lua_access.lock();
-		                     device->exmc->send(data);
+		                     const gpio::EXMC_Data ret = device->exmc->send(data);
 		                     lua_access.unlock();
+		                     return ret;
 	                     }});
 }
 

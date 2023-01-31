@@ -175,7 +175,7 @@ class TFT : public CDevice {
 	class TFT_EXMC : public CDevice::EXMC_Interface_C {
 	   public:
 		TFT_EXMC(CDevice* device);
-		void send(gpio::EXMC_Data data);
+		gpio::EXMC_Data send(gpio::EXMC_Data data);
 	};
 
 	class TFT_SPI : public CDevice::SPI_Interface_C {

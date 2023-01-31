@@ -19,7 +19,7 @@ class GpioClient : public GpioCommon {
    public:
 	typedef std::function<gpio::SPI_Response(gpio::SPI_Command byte)> OnChange_SPI;
 	typedef std::function<void(gpio::Tristate val)> OnChange_PIN;
-	typedef std::function<void(gpio::EXMC_Data data)> OnChange_EXMC;
+	typedef std::function<gpio::EXMC_Data(gpio::EXMC_Data data)> OnChange_EXMC;
 
    private:
 	typedef int Socket;

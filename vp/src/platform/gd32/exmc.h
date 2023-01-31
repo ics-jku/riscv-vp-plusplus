@@ -10,7 +10,7 @@
 #define LCD_CMD_ADDR 0x00000000
 #define LCD_DAT_ADDR 0x03FFFFFE
 
-typedef std::function<void(uint16_t)> ExmcWriteFunction;
+typedef std::function<uint16_t(uint16_t)> ExmcWriteFunction;
 typedef std::function<void(gpio::Tristate)> PinWriteFunction;
 
 struct EXMC : public sc_core::sc_module {

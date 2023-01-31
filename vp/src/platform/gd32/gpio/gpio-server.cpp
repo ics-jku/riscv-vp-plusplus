@@ -399,15 +399,15 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	return response;
 }
 
-void GpioServer::pushEXMC(gpio::PinNumber pin, EXMC_Data data) {
+EXMC_Data GpioServer::pushEXMC(gpio::PinNumber pin, EXMC_Data data) {
 	auto channel = active_IOF_channels.find(pin);
 	if (channel == active_IOF_channels.end()) {
-		return;
+		return 0;
 	}
 
 	if (channel->second.requested_iof != IOFunction::EXMC) {
 		// requested different IOF
-		return;
+		return 0;
 	}
 
 	IOF_Update update;
@@ -418,7 +418,14 @@ void GpioServer::pushEXMC(gpio::PinNumber pin, EXMC_Data data) {
 		cerr << "[gpio-server] Could not write EXMC command" << endl;
 		closeAndInvalidate(data_channel_fd);
 		active_IOF_channels.clear();
-		return;
+		return 0;
 	}
-	return;
+
+	EXMC_Data response = 0;
+	if (!readStruct(data_channel_fd, &response)) {
+		cerr << "[gpio-server] Could not read EXMC response" << endl;
+		closeAndInvalidate(data_channel_fd);
+		active_IOF_channels.clear();
+	}
+	return response;
 }

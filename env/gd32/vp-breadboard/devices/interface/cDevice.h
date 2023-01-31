@@ -38,8 +38,8 @@ class CDevice : public Device {
 	   public:
 		EXMC_Interface_C(CDevice* device);
 		~EXMC_Interface_C();
-		void send(gpio::EXMC_Data data);  // implement this
-		                                  // ToDo Methods
+		gpio::EXMC_Data send(gpio::EXMC_Data data);  // implement this
+		                                             // ToDo Methods
 	};
 
 	class Config_Interface_C : public Device::Config_Interface {
