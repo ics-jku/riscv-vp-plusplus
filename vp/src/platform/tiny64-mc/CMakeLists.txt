@@ -5,6 +5,6 @@ add_executable(tiny64-mc
         ${HEADERS})
 
 target_link_libraries(tiny64-mc rv64 platform-common gdb-mc
-	${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
+	${Boost_LIBRARIES} systemc pthread)
 
 INSTALL(TARGETS tiny64-mc RUNTIME DESTINATION bin)

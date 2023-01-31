@@ -1,20 +1,10 @@
 MAKEFLAGS += --no-print-directory
 
-# We are duplicating the CMake logic here, we should get rid of the
-# Makefile alltogether and simply build the entire thing inlcuding
-# vp/dependencies from CMake.
+# Whether to use a system-wide SystemC library instead of the vendored one.
 USE_SYSTEM_SYSTEMC ?= OFF
-ifeq ($(USE_SYSTEM_SYSTEMC),ON)
-	SYSTEMC_DEPENDENCY =
-else
-	SYSTEMC_DEPENDENCY = vp/dependencies/systemc-dist
-endif
 
-vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c $(SYSTEMC_DEPENDENCY) vp/build/Makefile
+vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c vp/build/Makefile
 	$(MAKE) install -C vp/build
-
-vp/dependencies/systemc-dist:
-	cd vp/dependencies/ && ./build_systemc_233.sh
 
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
@@ -42,10 +32,7 @@ vp-clean:
 qt-clean:
 	rm -rf env/basic/vp-display/build
 
-sysc-clean:
-	rm -rf vp/dependencies/systemc*
-
-clean-all: vp-clean qt-clean sysc-clean
+clean-all: vp-clean qt-clean
 
 clean: vp-clean
 

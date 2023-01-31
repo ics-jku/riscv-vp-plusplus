@@ -11,3 +11,4 @@ add_library(platform-common
 		${HEADERS})
 
 target_include_directories(platform-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(platform-common systemc)

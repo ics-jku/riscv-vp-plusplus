@@ -6,4 +6,4 @@ add_library(gdb-mc
 	register_format.cpp
 	handler.cpp)
 
-target_link_libraries(gdb-mc gdb core-common)
+target_link_libraries(gdb-mc gdb core-common systemc)

@@ -7,6 +7,6 @@ add_executable(hwitl-vp
 	${SOURCES}
 )
 
-target_link_libraries(hwitl-vp rv32 virtual-bus platform-common gdb-mc ${Boost_LIBRARIES} ${SystemC_LIBRARIES} pthread)
+target_link_libraries(hwitl-vp rv32 virtual-bus platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
 
 INSTALL(TARGETS hwitl-vp RUNTIME DESTINATION bin)
