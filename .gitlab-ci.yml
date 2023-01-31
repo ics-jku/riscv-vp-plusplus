@@ -11,16 +11,7 @@ cache:
 default:
   before_script:
     - apk update && apk add --no-cache build-base git boost-dev cmake git gdb-multiarch g++-riscv-none-elf gcc-riscv-none-elf newlib-riscv-none-elf valgrind socat
-    - mkdir -p /tmp/toolchain
-    - ln -s $(command -v riscv-none-elf-gcc) /tmp/toolchain/riscv32-unknown-elf-gcc
-    - ln -s $(command -v riscv-none-elf-g++) /tmp/toolchain/riscv32-unknown-elf-g++
-    - ln -s $(command -v riscv-none-elf-as) /tmp/toolchain/riscv32-unknown-elf-as
-    - ln -s $(command -v riscv-none-elf-ld) /tmp/toolchain/riscv32-unknown-elf-ld
-    - ln -s $(command -v riscv-none-elf-gcc) /tmp/toolchain/riscv64-unknown-elf-gcc
-    - ln -s $(command -v riscv-none-elf-g++) /tmp/toolchain/riscv64-unknown-elf-g++
-    - ln -s $(command -v riscv-none-elf-as) /tmp/toolchain/riscv64-unknown-elf-as
-    - ln -s $(command -v riscv-none-elf-ld) /tmp/toolchain/riscv64-unknown-elf-ld
-    - export PATH="$PATH:/tmp/toolchain"
+    - export RISCV_PREFIX=riscv-none-elf-
 
 build-vp:
   stage: build
