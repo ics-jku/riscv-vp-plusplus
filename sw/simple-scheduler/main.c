@@ -1,7 +1,7 @@
-#include "stdlib.h"
-#include "stdio.h"
-#include "assert.h"
-
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stdint.h>
 
 #define REG_SP 1
 #define REG_S0 7
