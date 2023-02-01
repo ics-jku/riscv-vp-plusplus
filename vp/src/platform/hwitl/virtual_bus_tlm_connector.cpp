@@ -82,9 +82,14 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 		delay += m_write_delay;
 	} else if (cmd == tlm::TLM_READ_COMMAND) {
 		const auto response = virtual_bus.read(base_address + addr);
-		switch(response.status.ack) {
+		if(!response) {
+			trans.set_response_status(tlm_response_status::TLM_GENERIC_ERROR_RESPONSE);
+			cerr << "[virtual_bus_tlm_connector] Could not read from remote" << endl;
+			return;
+		}
+		switch(response->getStatus().ack) {
 		case hwitl::ResponseStatus::Ack::ok:
-			*data = response.payload;
+			*data = response->getPayload();
 			break;
 		case hwitl::ResponseStatus::Ack::not_mapped:
 			trans.set_response_status(tlm_response_status::TLM_ADDRESS_ERROR_RESPONSE);
@@ -92,7 +97,7 @@ void VirtualBusMember::transport(tlm::tlm_generic_payload &trans, sc_core::sc_ti
 			break;
 		default:
 			trans.set_response_status(tlm_response_status::TLM_GENERIC_ERROR_RESPONSE);
-			cerr << "[virtual_bus_tlm_connector] Read Error " << static_cast<unsigned>(response.status.ack) << " at address " << showbase << hex << base_address + addr << dec << endl;
+			cerr << "[virtual_bus_tlm_connector] Read Error " << static_cast<unsigned>(response->getStatus().ack) << " at address " << showbase << hex << base_address + addr << dec << endl;
 		}
 		if(unaligned) {
 			assert(len <= sizeof(hwitl::Payload));	// should always be the case
