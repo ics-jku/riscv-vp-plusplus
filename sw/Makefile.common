@@ -19,7 +19,7 @@ endif
 VP ?= riscv-vp
 VP_FLAGS ?= --intercept-syscalls --error-on-zero-traphandler=true
 
-EXECUTABLE ?= "main"
+EXECUTABLE ?= main
 OBJECTS ?= main.o
 
 ########################################################################
