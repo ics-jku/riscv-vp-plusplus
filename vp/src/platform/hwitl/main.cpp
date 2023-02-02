@@ -79,40 +79,6 @@ std::ostream& operator<<(std::ostream& os, const HwitlOptions& o) {
 }
 
 
-bool setBaudrate(int handle, unsigned baudrate) {
-	struct termios tty;
-	if(tcgetattr(handle, &tty) != 0) {
-		printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
-		return false;
-	}
-	if(cfsetspeed(&tty, baudrate) != 0) {
-		printf("Error %i from setting baudrate: %s\n", errno, strerror(errno));
-		std::cerr << "... is the device a tty?" << std::endl;
-		return false;
-	}
-	// Save tty settings, also checking for error
-	if (tcsetattr(handle, TCSANOW, &tty) != 0) {
-		printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
-		return false;
-	}
-	return true;
-}
-
-bool setTimeout(int handle) {
-	struct termios termios;
-	if(tcgetattr(handle, &termios) != 0){
-		printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
-		return false;
-	}
-	termios.c_lflag &= ~ICANON; /* Set non-canonical mode */
-	termios.c_cc[VMIN] = 10; /* Set timeout of tenths seconds */
-	if(tcsetattr(handle, TCSANOW, &termios) != 0){
-		printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
-		return false;
-	}
-	return true;
-}
-
 int sc_main(int argc, char **argv) {
 	HwitlOptions opt;
 	opt.parse(argc, argv);
@@ -145,7 +111,7 @@ int sc_main(int argc, char **argv) {
 			std::cerr << "[hwitl-vp] WARN: Could not set baudrate of " << opt.virtual_bus_baudrate << "!" << std::endl;
 		}
 	}
-	setTimeout(virtual_bus_device_handle);	// ignore return
+	setTTYRawmode(virtual_bus_device_handle);	// ignore return
 
 	Initiator virtual_bus_connector(virtual_bus_device_handle);
 	VirtualBusMember virtual_bus_member("virtual_bus_member", virtual_bus_connector, opt.virtual_bus_start_addr);
