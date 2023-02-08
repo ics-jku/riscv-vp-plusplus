@@ -92,13 +92,7 @@ void VNCSimpleFB::updateScreen() {
 		return;
 	}
 
-#ifndef TRACK_CHANGED_AREA
-	xMax = WIDTH;
-	yMax = HEIGHT;
-	xMin = 0;
-	yMin = 0;
-#endif
-
+#ifdef TRACK_CHANGED_AREA
 	/* update changed area (including endianess change) */
 	for (uint32_t y = yMin; y < yMax; y++) {
 		for (uint32_t x = xMin; x < xMax; x++) {
@@ -111,6 +105,18 @@ void VNCSimpleFB::updateScreen() {
 
 	/* trigger update for modified area */
 	vncServer.markRectAsModified(xMin, yMin, xMax, yMax);
+#else
+
+	/* update full framebuffer (including endianess change) */
+	for (uint32_t addr = 0; addr < SIZE; addr += BPP) {
+		vncFrameBuffer[addr + 0] = frameBuffer[addr + 2];
+		vncFrameBuffer[addr + 1] = frameBuffer[addr + 1];
+		vncFrameBuffer[addr + 2] = frameBuffer[addr + 0];
+	}
+
+	/* trigger update for full framebuffer */
+	vncServer.markRectAsModified(0, 0, WIDTH, HEIGHT);
+#endif
 
 	areaChangedReset();
 
