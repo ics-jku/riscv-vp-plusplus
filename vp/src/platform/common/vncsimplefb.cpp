@@ -6,9 +6,9 @@
 #define BPP 3 /* rgb888 */
 #define SIZE (WIDTH * HEIGHT * BPP)
 
-/* Possible optimization (TODO: measure) */
-//#define TRACK_CHANGED_AREA
-#undef TRACK_CHANGED_AREA
+/* Optimization, if small changes are dominating */
+#define TRACK_CHANGED_AREA
+//#undef TRACK_CHANGED_AREA
 
 VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer) : vncServer(vncServer) {
 	tsock.register_b_transport(this, &VNCSimpleFB::transport);
