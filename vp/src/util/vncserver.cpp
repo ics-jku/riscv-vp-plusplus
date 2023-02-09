@@ -5,10 +5,10 @@
  */
 static void c_clientGone(rfbClientPtr cl) {
 	VNCServer *vncServer = (VNCServer *)cl->screen->screenData;
-	if (vncServer != nullptr) {
-		vncServer->clientGone(cl);
+	if (vncServer == nullptr) {
+		return;
 	}
-	cl->clientData = NULL;
+	vncServer->clientGone(cl);
 }
 
 static enum rfbNewClientAction c_newClient(rfbClientPtr cl) {
@@ -22,18 +22,19 @@ static enum rfbNewClientAction c_newClient(rfbClientPtr cl) {
 }
 
 static void c_doPtr(int buttonMask, int x, int y, rfbClientPtr cl) {
-	VNCInput_if *vncInput = (VNCInput_if *)cl->clientData;
-	if (vncInput != nullptr) {
-		vncInput->doPtr(buttonMask, x, y);
+	VNCServer *vncServer = (VNCServer *)cl->screen->screenData;
+	if (vncServer == nullptr) {
+		return;
 	}
-	rfbDefaultPtrAddEvent(buttonMask, x, y, cl);
+	vncServer->doPtr(cl, buttonMask, x, y);
 }
 
 static void c_doKbd(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
-	VNCInput_if *vncInput = (VNCInput_if *)cl->clientData;
-	if (vncInput != nullptr) {
-		vncInput->doKbd(down, key);
+	VNCServer *vncServer = (VNCServer *)cl->screen->screenData;
+	if (vncServer == nullptr) {
+		return;
 	}
+	vncServer->doKbd(cl, down, key);
 }
 
 VNCServer::VNCServer()
@@ -68,8 +69,20 @@ bool VNCServer::start(void) {
 }
 
 enum rfbNewClientAction VNCServer::newClient(rfbClientPtr cl) {
-	cl->clientData = (void *)vncInput;
 	return RFB_CLIENT_ACCEPT;
 }
 
 void VNCServer::clientGone(rfbClientPtr cl) {}
+
+void VNCServer::doPtr(rfbClientPtr cl, int buttonMask, int x, int y) {
+	if (vncInput != nullptr) {
+		vncInput->doPtr(buttonMask, x, y);
+	}
+	rfbDefaultPtrAddEvent(buttonMask, x, y, cl);
+}
+
+void VNCServer::doKbd(rfbClientPtr cl, rfbBool down, rfbKeySym key) {
+	if (vncInput == nullptr)
+		return;
+	vncInput->doKbd(down, key);
+}

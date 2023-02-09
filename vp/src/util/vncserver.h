@@ -59,6 +59,8 @@ class VNCServer {
 	/* callbacks */
 	enum rfbNewClientAction newClient(rfbClientPtr cl);
 	void clientGone(rfbClientPtr cl);
+	void doPtr(rfbClientPtr cl, int buttonMask, int x, int y);
+	void doKbd(rfbClientPtr cl, rfbBool down, rfbKeySym key);
 
    private:
 	int width, height, bitsPerSample, samplesPerPixel, bytesPerPixel;
