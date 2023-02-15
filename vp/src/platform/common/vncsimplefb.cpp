@@ -94,8 +94,8 @@ void VNCSimpleFB::updateScreen() {
 
 #ifdef TRACK_CHANGED_AREA
 	/* update changed area (including endianess change) */
-	for (uint32_t y = yMin; y < yMax; y++) {
-		for (uint32_t x = xMin; x < xMax; x++) {
+	for (uint32_t y = yMin; y <= yMax; y++) {
+		for (uint32_t x = xMin; x <= xMax; x++) {
 			uint32_t addr = (x * BPP) + (y * WIDTH * BPP);
 			vncFrameBuffer[addr + 0] = frameBuffer[addr + 2];
 			vncFrameBuffer[addr + 1] = frameBuffer[addr + 1];
@@ -104,7 +104,7 @@ void VNCSimpleFB::updateScreen() {
 	}
 
 	/* trigger update for modified area */
-	vncServer.markRectAsModified(xMin, yMin, xMax, yMax);
+	vncServer.markRectAsModified(xMin, yMin, xMax + 1, yMax + 1);
 #else
 
 	/* update full framebuffer (including endianess change) */
