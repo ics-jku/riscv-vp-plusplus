@@ -6,26 +6,21 @@
 #define BPP 3 /* rgb888 */
 #define SIZE (WIDTH * HEIGHT * BPP)
 
-/* Optimization, if small changes are dominating */
-#define TRACK_CHANGED_AREA
-//#undef TRACK_CHANGED_AREA
+/* Area tracking is more costly to simulation than full update in rfb thread */
+//#define TRACK_CHANGED_AREA
+#undef TRACK_CHANGED_AREA
 
 VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer) : vncServer(vncServer) {
 	tsock.register_b_transport(this, &VNCSimpleFB::transport);
 
 	areaChangedReset();
 
-	frameBuffer = new uint8_t[SIZE];
 	vncServer.setScreenProperties(WIDTH, HEIGHT, 8, 3, BPP);
 
 	router.add_start_size_mapping(0x00, SIZE, vp::map::read_write)
 	    .register_handler(this, &VNCSimpleFB::fb_access_callback);
 
 	SC_THREAD(updateProcess);
-}
-
-VNCSimpleFB::~VNCSimpleFB(void) {
-	delete[] frameBuffer;
 }
 
 void VNCSimpleFB::fb_access_callback(tlm::tlm_generic_payload &trans, sc_core::sc_time) {
@@ -93,27 +88,9 @@ void VNCSimpleFB::updateScreen() {
 	}
 
 #ifdef TRACK_CHANGED_AREA
-	/* update changed area (including endianess change) */
-	for (uint32_t y = yMin; y <= yMax; y++) {
-		for (uint32_t x = xMin; x <= xMax; x++) {
-			uint32_t addr = (x * BPP) + (y * WIDTH * BPP);
-			vncFrameBuffer[addr + 0] = frameBuffer[addr + 2];
-			vncFrameBuffer[addr + 1] = frameBuffer[addr + 1];
-			vncFrameBuffer[addr + 2] = frameBuffer[addr + 0];
-		}
-	}
-
 	/* trigger update for modified area */
 	vncServer.markRectAsModified(xMin, yMin, xMax + 1, yMax + 1);
 #else
-
-	/* update full framebuffer (including endianess change) */
-	for (uint32_t addr = 0; addr < SIZE; addr += BPP) {
-		vncFrameBuffer[addr + 0] = frameBuffer[addr + 2];
-		vncFrameBuffer[addr + 1] = frameBuffer[addr + 1];
-		vncFrameBuffer[addr + 2] = frameBuffer[addr + 0];
-	}
-
 	/* trigger update for full framebuffer */
 	vncServer.markRectAsModified(0, 0, WIDTH, HEIGHT);
 #endif
@@ -125,7 +102,14 @@ void VNCSimpleFB::updateScreen() {
 
 void VNCSimpleFB::updateProcess() {
 	vncServer.start();
-	vncFrameBuffer = vncServer.getFrameBuffer();
+
+	/* match location of color bytes to linux simpleframebuffer */
+	rfbScreenInfoPtr rfbScreen = vncServer.getScreen();
+	rfbScreen->serverFormat.redShift = 16;
+	rfbScreen->serverFormat.greenShift = 8;
+	rfbScreen->serverFormat.blueShift = 0;
+
+	frameBuffer = vncServer.getFrameBuffer();
 
 	while (vncServer.isActive()) {
 		updateScreen();

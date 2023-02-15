@@ -17,14 +17,12 @@ class VNCSimpleFB : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<VNCSimpleFB> tsock;
 
 	VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer);
-	~VNCSimpleFB(void);
 
 	SC_HAS_PROCESS(VNCSimpleFB);
 
    private:
 	VNCServer &vncServer;
 	uint8_t *frameBuffer;
-	uint8_t *vncFrameBuffer;
 	sc_core::sc_mutex mutex;
 	bool areaChanged;
 	uint32_t xMin, yMin, xMax, yMax;
