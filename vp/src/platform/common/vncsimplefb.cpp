@@ -3,7 +3,7 @@
 #define REFRESH_RATE 30 /* Hz */
 #define WIDTH 800
 #define HEIGHT 480
-#define BPP 3 /* rgb888 */
+#define BPP 2 /* rgb565 */
 #define SIZE (WIDTH * HEIGHT * BPP)
 
 /* Area tracking is more costly to simulation than full update in rfb thread */
@@ -15,7 +15,7 @@ VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer) : vncSer
 
 	areaChangedReset();
 
-	vncServer.setScreenProperties(WIDTH, HEIGHT, 8, 3, BPP);
+	vncServer.setScreenProperties(WIDTH, HEIGHT, 5, 3, BPP);
 
 	router.add_start_size_mapping(0x00, SIZE, vp::map::read_write)
 	    .register_handler(this, &VNCSimpleFB::fb_access_callback);
@@ -103,11 +103,16 @@ void VNCSimpleFB::updateScreen() {
 void VNCSimpleFB::updateProcess() {
 	vncServer.start();
 
-	/* match location of color bytes to linux simpleframebuffer */
+	/* match location of color bytes to linux simpleframebuffer (rgb565) */
 	rfbScreenInfoPtr rfbScreen = vncServer.getScreen();
-	rfbScreen->serverFormat.redShift = 16;
-	rfbScreen->serverFormat.greenShift = 8;
+	rfbScreen->serverFormat.redShift = 11;
+	rfbScreen->serverFormat.greenShift = 5;
 	rfbScreen->serverFormat.blueShift = 0;
+	rfbScreen->serverFormat.redMax = (1 << 5) - 1;
+	rfbScreen->serverFormat.greenMax = (1 << 6) - 1;
+	rfbScreen->serverFormat.blueMax = (1 << 5) - 1;
+	rfbScreen->serverFormat.bitsPerPixel = BPP * 8;
+	rfbScreen->serverFormat.bigEndian = false;
 
 	frameBuffer = vncServer.getFrameBuffer();
 
