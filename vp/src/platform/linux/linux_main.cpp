@@ -140,7 +140,8 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	VNCServer vncServer;
+	VNCServer vncServer("GUI-VP VNCServer");
+	;
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);

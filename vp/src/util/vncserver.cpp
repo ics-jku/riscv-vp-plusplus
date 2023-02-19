@@ -37,13 +37,6 @@ static void c_doKbd(rfbBool down, rfbKeySym key, rfbClientPtr cl) {
 	vncServer->doKbd(cl, down, key);
 }
 
-VNCServer::VNCServer()
-    : width(0), height(0), bitsPerSample(0), samplesPerPixel(0), bytesPerPixel(0), vncInput(nullptr) {}
-
-VNCServer::~VNCServer(void) {
-	stop();
-}
-
 void VNCServer::stop(void) {
 	rfbShutdownServer(rfbScreen, true);
 	delete[] rfbScreen->frameBuffer;
@@ -54,7 +47,7 @@ bool VNCServer::start(void) {
 	rfbScreen = rfbGetScreen(nullptr, nullptr, width, height, bitsPerSample, samplesPerPixel, bytesPerPixel);
 	if (!rfbScreen)
 		return false;
-	rfbScreen->desktopName = "RISCV-VP VNC Server";
+	rfbScreen->desktopName = desktopName;
 	rfbScreen->screenData = (void *)this;
 	rfbScreen->newClientHook = c_newClient;
 	rfbScreen->ptrAddEvent = c_doPtr;
