@@ -2,6 +2,7 @@
 #include <ctime>
 
 #include "core/common/clint.h"
+#include "core/common/real_clint.h"
 #include "elf_loader.h"
 #include "fe310_plic.h"
 #include "debug_memory.h"
@@ -35,6 +36,7 @@ public:
 	std::string virtual_bus_device;
 	unsigned virtual_bus_baudrate = 0;
 	std::string test_signature;
+	bool use_real_clint = false;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications
@@ -56,6 +58,7 @@ public:
 	HwitlOptions(void) {
         	// clang-format off
 		add_options()
+			("use-real-clint", po::bool_switch(&use_real_clint),"Lock clint to wall-clock time")
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
@@ -95,8 +98,19 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
-	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+
+	std::shared_ptr<CLINT<1>> sim_clint;
+	std::shared_ptr<RealCLINT> real_clint;
+	clint_if* one_clint;
+	if(opt.use_real_clint) {
+		std::vector<clint_interrupt_target*> real_clint_targets {&core};
+		real_clint = std::make_shared<RealCLINT>("REAL_CLINT", real_clint_targets);
+		one_clint = real_clint.get();
+	} else {
+		sim_clint = std::make_shared<CLINT<1>>("SIM_CLINT");
+		one_clint = sim_clint.get();
+	}
 
 
 	int virtual_bus_device_handle = -1;
@@ -147,7 +161,7 @@ int sc_main(int argc, char **argv) {
 	 * mainly used together with the syscall handler, this helps for certain floats.
 	 * https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
 	 */
-	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
+	core.init(instr_mem_if, data_mem_if, one_clint, entry_point, rv64_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 
@@ -172,7 +186,10 @@ int sc_main(int argc, char **argv) {
 	{
 		unsigned it = 0;
 		bus.isocks[it++].bind(mem.tsock);
-		bus.isocks[it++].bind(clint.tsock);
+		if(opt.use_real_clint)
+			bus.isocks[it++].bind(real_clint->tsock);
+		else
+			bus.isocks[it++].bind(sim_clint->tsock);
 		bus.isocks[it++].bind(plic.tsock);
 		bus.isocks[it++].bind(term.tsock);
 		bus.isocks[it++].bind(sys.tsock);
@@ -181,7 +198,8 @@ int sc_main(int argc, char **argv) {
 
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
-	clint.target_harts[0] = &core;
+	if(sim_clint)
+		sim_clint->target_harts[0] = &core;
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
