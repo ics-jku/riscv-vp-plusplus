@@ -102,9 +102,9 @@ int sc_main(int argc, char **argv) {
 
 	std::shared_ptr<CLINT<1>> sim_clint;
 	std::shared_ptr<RealCLINT> real_clint;
+	std::vector<clint_interrupt_target*> real_clint_targets {&core};
 	clint_if* one_clint;
 	if(opt.use_real_clint) {
-		std::vector<clint_interrupt_target*> real_clint_targets {&core};
 		real_clint = std::make_shared<RealCLINT>("REAL_CLINT", real_clint_targets);
 		one_clint = real_clint.get();
 	} else {
