@@ -1673,18 +1673,30 @@ void ISS::clear_external_interrupt(PrivilegeLevel level) {
 	}
 }
 
-void ISS::trigger_timer_interrupt(bool status) {
+void ISS::trigger_timer_interrupt() {
 	if (trace)
-		std::cout << "[vp::iss] trigger timer interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
-	csrs.mip.fields.mtip = status;
+		std::cout << "[vp::iss] trigger timer interrupt, " << sc_core::sc_time_stamp() << std::endl;
+	csrs.mip.fields.mtip = true;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
 }
 
-void ISS::trigger_software_interrupt(bool status) {
+void ISS::clear_timer_interrupt() {
 	if (trace)
-		std::cout << "[vp::iss] trigger software interrupt=" << status << ", " << sc_core::sc_time_stamp() << std::endl;
-	csrs.mip.fields.msip = status;
+		std::cout << "[vp::iss] clear timer interrupt, " << sc_core::sc_time_stamp() << std::endl;
+	csrs.mip.fields.mtip = false;
+}
+
+void ISS::trigger_software_interrupt() {
+	if (trace)
+		std::cout << "[vp::iss] trigger software interrupt, " << sc_core::sc_time_stamp() << std::endl;
+	csrs.mip.fields.msip = true;
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
+}
+
+void ISS::clear_software_interrupt() {
+	if (trace)
+		std::cout << "[vp::iss] clear software interrupt, " << sc_core::sc_time_stamp() << std::endl;
+	csrs.mip.fields.msip = false;
 }
 
 PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {

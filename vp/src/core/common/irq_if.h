@@ -21,8 +21,10 @@ struct external_interrupt_target {
 struct clint_interrupt_target {
 	virtual ~clint_interrupt_target() {}
 
-	virtual void trigger_timer_interrupt(bool status) = 0;
-	virtual void trigger_software_interrupt(bool status) = 0;
+	virtual void trigger_timer_interrupt() = 0;
+	virtual void clear_timer_interrupt() = 0;
+	virtual void trigger_software_interrupt() = 0;
+	virtual void clear_software_interrupt() = 0;
 };
 
 struct interrupt_gateway {

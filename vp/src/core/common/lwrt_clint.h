@@ -101,7 +101,7 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 				// std::cout << "[vp::clint] process mtimecmp[" << i << "]=" << cmp << ", mtime=" << mtime << std::endl;
 				if (cmp > 0 && mtime >= cmp) {
 					// std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
-					target_harts[i]->trigger_timer_interrupt(true);
+					target_harts[i]->trigger_timer_interrupt();
 				}
 			}
 		}
@@ -122,10 +122,10 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 		auto cmp = mtimecmp[i];
 		if (cmp > 0 && mtime >= cmp) {
 			// std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
-			target_harts[i]->trigger_timer_interrupt(true);
+			target_harts[i]->trigger_timer_interrupt();
 		} else {
 			// std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
-			target_harts[i]->trigger_timer_interrupt(false);
+			target_harts[i]->clear_timer_interrupt();
 		}
 	}
 
@@ -133,7 +133,11 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 		assert(t.addr % 4 == 0);
 		unsigned idx = t.addr / 4;
 		msip[idx] &= 0x1;
-		target_harts[idx]->trigger_software_interrupt(msip[idx] != 0);
+		if (msip[idx] != 0) {
+			target_harts[idx]->trigger_software_interrupt();
+		} else {
+			target_harts[idx]->clear_software_interrupt();
+		}
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {

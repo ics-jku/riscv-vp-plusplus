@@ -94,10 +94,10 @@ void RealCLINT::post_write_mtimecmp(RegisterRange::WriteInfo info) {
 	timer->pause();
 
 	if (time >= cmp) {
-		harts.at(hart)->trigger_timer_interrupt(true);
+		harts.at(hart)->trigger_timer_interrupt();
 		return;
 	}
-	harts.at(hart)->trigger_timer_interrupt(false);
+	harts.at(hart)->clear_timer_interrupt();
 
 	uint64_t goal_ticks = cmp - time;
 	usecs duration = ticks_to_usec(goal_ticks);
@@ -110,7 +110,11 @@ void RealCLINT::post_write_msip(RegisterRange::WriteInfo info) {
 	unsigned hart = info.addr / MSIP_SIZE;
 
 	msip.at(hart) &= MSIP_MASK;
-	harts.at(hart)->trigger_software_interrupt(msip.at(hart) != 0);
+	if (msip.at(hart) != 0) {
+		harts.at(hart)->trigger_software_interrupt();
+	} else {
+		harts.at(hart)->clear_software_interrupt();
+	}
 }
 
 void RealCLINT::post_write_mtime(RegisterRange::WriteInfo info) {
@@ -134,7 +138,7 @@ void RealCLINT::interrupt(void) {
 	for (size_t i = 0; i < harts.size(); i++) {
 		auto cmp = mtimecmp.at(i);
 		if (mtime >= cmp)
-			harts.at(i)->trigger_timer_interrupt(true);
+			harts.at(i)->trigger_timer_interrupt();
 	}
 }
 
