@@ -91,7 +91,8 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 		init_time();
 
 		while (true) {
-			sc_core::wait(irq_event);
+			/* poll with 10us */
+			sc_core::wait(10, sc_core::SC_US);
 
 			update_and_get_mtime();
 
@@ -101,13 +102,6 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 				if (cmp > 0 && mtime >= cmp) {
 					// std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
 					target_harts[i]->trigger_timer_interrupt(true);
-				} else {
-					// std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
-					target_harts[i]->trigger_timer_interrupt(false);
-					if (cmp > 0 && cmp < UINT64_MAX) {
-						/* poll with 10us */
-						irq_event.notify(10, sc_core::SC_US);
-					}
 				}
 			}
 		}
@@ -124,7 +118,15 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 	void post_write_mtimecmp(RegisterRange::WriteInfo t) {
 		// std::cout << "[vp::clint] write mtimecmp[addr=" << t.addr << "]=" << mtimecmp[t.addr / 8] << ", mtime=" <<
 		// mtime << std::endl;
-		irq_event.notify(t.delay);
+		unsigned i = t.addr / 8;
+		auto cmp = mtimecmp[i];
+		if (cmp > 0 && mtime >= cmp) {
+			// std::cout << "[vp::clint] set timer interrupt for core " << i << std::endl;
+			target_harts[i]->trigger_timer_interrupt(true);
+		} else {
+			// std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
+			target_harts[i]->trigger_timer_interrupt(false);
+		}
 	}
 
 	void post_write_msip(RegisterRange::WriteInfo t) {
