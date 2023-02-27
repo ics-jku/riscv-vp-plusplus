@@ -20,7 +20,6 @@ class VNCSimpleInput : public sc_core::sc_module, public VNCInput_if {
 	tlm_utils::simple_target_socket<VNCSimpleInput> tsock;
 
 	VNCSimpleInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq);
-	~VNCSimpleInput(void);
 
 	SC_HAS_PROCESS(VNCSimpleInput);
 

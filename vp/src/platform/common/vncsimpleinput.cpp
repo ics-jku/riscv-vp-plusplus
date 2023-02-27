@@ -38,8 +38,6 @@ VNCSimpleInput::VNCSimpleInput(sc_core::sc_module_name, VNCServer &vncServer, ui
 	SC_THREAD(updateProcess);
 }
 
-VNCSimpleInput::~VNCSimpleInput(void) {}
-
 void VNCSimpleInput::doPtr(int buttonMask, int x, int y) {
 	// printf("%s.%s.%i %ix%i 0x%X\n", __FILE__, __FUNCTION__, __LINE__,x,y,buttonMask);
 	mutex.lock();
@@ -58,8 +56,8 @@ void VNCSimpleInput::register_access_callback(const vp::map::register_access_t &
 		if (r.vptr == &reg_width_ptr || r.vptr == &reg_height_ptr) {
 			/* ignore */
 			return;
-		}
-		if (r.vptr == &reg_ctrl_ptr) {
+
+		} else if (r.vptr == &reg_ctrl_ptr) {
 			/* reset fifo on any write to ctrl */
 			mutex.lock();
 			ptrEvents = {};
