@@ -35,6 +35,7 @@ class VNCSimpleInput : public sc_core::sc_module, public VNCInput_if {
 	std::queue<std::tuple<int, int, int>> ptrEvents;
 
 	uint32_t irq;
+	bool interrupt;
 
 	uint32_t reg_ctrl_ptr = 0;
 	uint32_t reg_width_ptr = 0;

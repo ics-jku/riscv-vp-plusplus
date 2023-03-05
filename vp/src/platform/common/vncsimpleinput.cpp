@@ -33,6 +33,7 @@ VNCSimpleInput::VNCSimpleInput(sc_core::sc_module_name, VNCServer &vncServer, ui
 	    })
 	    .register_handler(this, &VNCSimpleInput::register_access_callback);
 
+	interrupt = false;
 	vncServer.setVNCInput(this);
 
 	SC_THREAD(updateProcess);
@@ -43,6 +44,7 @@ void VNCSimpleInput::doPtr(int buttonMask, int x, int y) {
 	mutex.lock();
 	if (IS_ENABLED() && (ptrEvents.size() < PTR_EVENT_QUEUE_SIZE)) {
 		ptrEvents.push(std::make_tuple(buttonMask, x, y));
+		interrupt = true;
 	}
 	mutex.unlock();
 }
@@ -61,6 +63,7 @@ void VNCSimpleInput::register_access_callback(const vp::map::register_access_t &
 			/* reset fifo on any write to ctrl */
 			mutex.lock();
 			ptrEvents = {};
+			interrupt = false;
 			reg_buttonmask_ptr = 0;
 			mutex.unlock();
 		}
@@ -68,6 +71,7 @@ void VNCSimpleInput::register_access_callback(const vp::map::register_access_t &
 	} else if (r.read) {
 		if (r.vptr == &reg_buttonmask_ptr) {
 			/* load next event on read of buttonmask */
+			bool notify = false;
 			mutex.lock();
 			int size = ptrEvents.size();
 			if (size > 0) {
@@ -77,14 +81,19 @@ void VNCSimpleInput::register_access_callback(const vp::map::register_access_t &
 				/* still elements? */
 				if (size > 1) {
 					reg_buttonmask_ptr |= REG_BUTTONMASK_PTR_DATA_AVAIL_BIT;
-					plic->gateway_trigger_interrupt(irq);
+					notify = true;
 				} else {
 					reg_buttonmask_ptr &= ~REG_BUTTONMASK_PTR_DATA_AVAIL_BIT;
 				}
 			}
 			mutex.unlock();
+
+			if (notify) {
+				plic->gateway_trigger_interrupt(irq);
+			}
 		}
 	}
+
 	r.fn();
 }
 
@@ -98,9 +107,12 @@ void VNCSimpleInput::updateProcess() {
 
 	while (vncServer.isActive()) {
 		wait(1000000L / REFRESH_RATE, sc_core::SC_US);
+
 		mutex.lock();
-		bool notify = (IS_ENABLED() && ptrEvents.size());
+		bool notify = interrupt;
+		interrupt = false;
 		mutex.unlock();
+
 		if (notify) {
 			plic->gateway_trigger_interrupt(irq);
 		}
