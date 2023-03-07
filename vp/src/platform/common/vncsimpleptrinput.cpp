@@ -44,7 +44,7 @@ void VNCSimplePtrInput::doPtr(int buttonMask, int x, int y) {
 	// printf("%s.%s.%i %ix%i 0x%X\n", __FILE__, __FUNCTION__, __LINE__,x,y,buttonMask);
 	mutex.lock();
 	if (IS_ENABLED() && (ptrEvents.size() < PTR_EVENT_QUEUE_SIZE)) {
-		ptrEvents.push(std::make_tuple(buttonMask, x, y));
+		ptrEvents.push(std::make_tuple(REG_BUTTONMASK_DATA_AVAIL_BIT | buttonMask, x, y));
 		interrupt = true;
 	}
 	mutex.unlock();
@@ -77,11 +77,11 @@ void VNCSimplePtrInput::register_access_callback(const vp::map::register_access_
 				ptrEvents.pop();
 				/* still elements? */
 				if (size > 1) {
-					reg_buttonmask |= REG_BUTTONMASK_DATA_AVAIL_BIT;
 					notify = true;
 				} else {
-					reg_buttonmask &= ~REG_BUTTONMASK_DATA_AVAIL_BIT;
 				}
+			} else {
+				reg_buttonmask &= ~REG_BUTTONMASK_DATA_AVAIL_BIT;
 			}
 			mutex.unlock();
 
