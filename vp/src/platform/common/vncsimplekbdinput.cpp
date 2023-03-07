@@ -3,14 +3,14 @@
 #define KBD_EVENT_QUEUE_SIZE 10
 #define REFRESH_RATE 30 /* Hz */
 
+#define REG_CTRL_ADDR 0x00
+#define REG_KEY_ADDR 0x04
+
 #define REG_CTRL_ENABLE_BIT (1 << 0)
 #define REG_KEY_DATA_AVAIL_BIT (1 << 31)
 #define REG_KEY_PRESSED_BIT (1 << 0)
 #define REG_KEY_CODE_MASK (0x7FFFFFFE)
 #define REG_KEY_CODE_SHIFT (1)
-
-#define REG_CTRL_ADDR 0x00
-#define REG_KEY_ADDR 0x04
 
 #define IS_ENABLED() ((reg_ctrl & REG_CTRL_ENABLE_BIT) == REG_CTRL_ENABLE_BIT)
 

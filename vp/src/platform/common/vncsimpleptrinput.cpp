@@ -3,20 +3,21 @@
 #define PTR_EVENT_QUEUE_SIZE 10
 #define REFRESH_RATE 30 /* Hz */
 
-#define REG_CTRL_PTR_ENABLE_BIT (1 << 0)
-#define REG_BUTTONMASK_PTR_DATA_AVAIL_BIT (1 << 31)
-#define REG_BUTTONMASK_PTR_MOUSE_LEFT_BIT (1 << 0)
-#define REG_BUTTONMASK_PTR_MOUSE_MIDDLE_BIT (1 << 1)
-#define REG_BUTTONMASK_PTR_MOUSE_RIGHT_BIT (1 << 2)
+/* Registers and Bits */
+#define REG_CTRL_ADDR 0x00
+#define REG_WIDTH_ADDR 0x04
+#define REG_HEIGHT_ADDR 0x08
+#define REG_X_ADDR 0x0c
+#define REG_Y_ADDR 0x10
+#define REG_BUTTONMASK_ADDR 0x14
 
-#define REG_CTRL_PTR_ADDR 0x00
-#define REG_WIDTH_PTR_ADDR 0x04
-#define REG_HEIGHT_PTR_ADDR 0x08
-#define REG_X_PTR_ADDR 0x0c
-#define REG_Y_PTR_ADDR 0x10
-#define REG_BUTTONMASK_PTR_ADDR 0x14
+#define REG_CTRL_ENABLE_BIT (1 << 0)
+#define REG_BUTTONMASK_DATA_AVAIL_BIT (1 << 31)
+#define REG_BUTTONMASK_MOUSE_LEFT_BIT (1 << 0)
+#define REG_BUTTONMASK_MOUSE_MIDDLE_BIT (1 << 1)
+#define REG_BUTTONMASK_MOUSE_RIGHT_BIT (1 << 2)
 
-#define IS_ENABLED() ((reg_ctrl_ptr & REG_CTRL_PTR_ENABLE_BIT) == REG_CTRL_PTR_ENABLE_BIT)
+#define IS_ENABLED() ((reg_ctrl & REG_CTRL_ENABLE_BIT) == REG_CTRL_ENABLE_BIT)
 
 VNCSimplePtrInput::VNCSimplePtrInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq)
     : vncServer(vncServer), irq(irq) {
@@ -24,12 +25,12 @@ VNCSimplePtrInput::VNCSimplePtrInput(sc_core::sc_module_name, VNCServer &vncServ
 
 	router
 	    .add_register_bank({
-	        {REG_CTRL_PTR_ADDR, &reg_ctrl_ptr},
-	        {REG_WIDTH_PTR_ADDR, &reg_width_ptr},
-	        {REG_HEIGHT_PTR_ADDR, &reg_height_ptr},
-	        {REG_X_PTR_ADDR, &reg_x_ptr},
-	        {REG_Y_PTR_ADDR, &reg_y_ptr},
-	        {REG_BUTTONMASK_PTR_ADDR, &reg_buttonmask_ptr},
+	        {REG_CTRL_ADDR, &reg_ctrl},
+	        {REG_WIDTH_ADDR, &reg_width},
+	        {REG_HEIGHT_ADDR, &reg_height},
+	        {REG_X_ADDR, &reg_x},
+	        {REG_Y_ADDR, &reg_y},
+	        {REG_BUTTONMASK_ADDR, &reg_buttonmask},
 	    })
 	    .register_handler(this, &VNCSimplePtrInput::register_access_callback);
 
@@ -51,35 +52,35 @@ void VNCSimplePtrInput::doPtr(int buttonMask, int x, int y) {
 
 void VNCSimplePtrInput::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.write) {
-		if (r.vptr == &reg_width_ptr || r.vptr == &reg_height_ptr) {
+		if (r.vptr == &reg_width || r.vptr == &reg_height) {
 			/* ignore */
 			return;
 
-		} else if (r.vptr == &reg_ctrl_ptr) {
+		} else if (r.vptr == &reg_ctrl) {
 			/* reset fifo on any write to ctrl */
 			mutex.lock();
 			ptrEvents = {};
 			interrupt = false;
-			reg_buttonmask_ptr = 0;
+			reg_buttonmask = 0;
 			mutex.unlock();
 		}
 
 	} else if (r.read) {
-		if (r.vptr == &reg_buttonmask_ptr) {
+		if (r.vptr == &reg_buttonmask) {
 			/* load next event on read of buttonmask */
 			bool notify = false;
 			mutex.lock();
 			int size = ptrEvents.size();
 			if (size > 0) {
 				/* get next event */
-				std::tie(reg_buttonmask_ptr, reg_x_ptr, reg_y_ptr) = ptrEvents.front();
+				std::tie(reg_buttonmask, reg_x, reg_y) = ptrEvents.front();
 				ptrEvents.pop();
 				/* still elements? */
 				if (size > 1) {
-					reg_buttonmask_ptr |= REG_BUTTONMASK_PTR_DATA_AVAIL_BIT;
+					reg_buttonmask |= REG_BUTTONMASK_DATA_AVAIL_BIT;
 					notify = true;
 				} else {
-					reg_buttonmask_ptr &= ~REG_BUTTONMASK_PTR_DATA_AVAIL_BIT;
+					reg_buttonmask &= ~REG_BUTTONMASK_DATA_AVAIL_BIT;
 				}
 			}
 			mutex.unlock();
@@ -98,8 +99,8 @@ void VNCSimplePtrInput::transport(tlm::tlm_generic_payload &trans, sc_core::sc_t
 }
 
 void VNCSimplePtrInput::updateProcess() {
-	reg_width_ptr = vncServer.getWidth();
-	reg_height_ptr = vncServer.getHeight();
+	reg_width = vncServer.getWidth();
+	reg_height = vncServer.getHeight();
 
 	while (vncServer.isActive()) {
 		wait(1000000L / REFRESH_RATE, sc_core::SC_US);

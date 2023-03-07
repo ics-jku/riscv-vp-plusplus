@@ -35,12 +35,12 @@ class VNCSimplePtrInput : public sc_core::sc_module, public VNCInputPtr_if {
 	uint32_t irq;
 	bool interrupt;
 
-	uint32_t reg_ctrl_ptr = 0;
-	uint32_t reg_width_ptr = 0;
-	uint32_t reg_height_ptr = 0;
-	uint32_t reg_x_ptr = 0;
-	uint32_t reg_y_ptr = 0;
-	uint32_t reg_buttonmask_ptr = 0;
+	uint32_t reg_ctrl = 0;
+	uint32_t reg_width = 0;
+	uint32_t reg_height = 0;
+	uint32_t reg_x = 0;
+	uint32_t reg_y = 0;
+	uint32_t reg_buttonmask = 0;
 
 	void register_access_callback(const vp::map::register_access_t &r);
 	void transport(tlm::tlm_generic_payload &, sc_core::sc_time &);
