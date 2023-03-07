@@ -1,4 +1,4 @@
-#include "vncsimpleptrinput.h"
+#include "vncsimpleinputptr.h"
 
 #define PTR_EVENT_QUEUE_SIZE 10
 #define REFRESH_RATE 30 /* Hz */
@@ -19,9 +19,9 @@
 
 #define IS_ENABLED() ((reg_ctrl & REG_CTRL_ENABLE_BIT) == REG_CTRL_ENABLE_BIT)
 
-VNCSimplePtrInput::VNCSimplePtrInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq)
+VNCSimpleInputPtr::VNCSimpleInputPtr(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq)
     : vncServer(vncServer), irq(irq) {
-	tsock.register_b_transport(this, &VNCSimplePtrInput::transport);
+	tsock.register_b_transport(this, &VNCSimpleInputPtr::transport);
 
 	router
 	    .add_register_bank({
@@ -32,7 +32,7 @@ VNCSimplePtrInput::VNCSimplePtrInput(sc_core::sc_module_name, VNCServer &vncServ
 	        {REG_Y_ADDR, &reg_y},
 	        {REG_BUTTONMASK_ADDR, &reg_buttonmask},
 	    })
-	    .register_handler(this, &VNCSimplePtrInput::register_access_callback);
+	    .register_handler(this, &VNCSimpleInputPtr::register_access_callback);
 
 	interrupt = false;
 	vncServer.setVNCInputPtr(this);
@@ -40,7 +40,7 @@ VNCSimplePtrInput::VNCSimplePtrInput(sc_core::sc_module_name, VNCServer &vncServ
 	SC_THREAD(updateProcess);
 }
 
-void VNCSimplePtrInput::doPtr(int buttonMask, int x, int y) {
+void VNCSimpleInputPtr::doPtr(int buttonMask, int x, int y) {
 	// printf("%s.%s.%i %ix%i 0x%X\n", __FILE__, __FUNCTION__, __LINE__,x,y,buttonMask);
 	mutex.lock();
 	if (IS_ENABLED() && (ptrEvents.size() < PTR_EVENT_QUEUE_SIZE)) {
@@ -50,7 +50,7 @@ void VNCSimplePtrInput::doPtr(int buttonMask, int x, int y) {
 	mutex.unlock();
 }
 
-void VNCSimplePtrInput::register_access_callback(const vp::map::register_access_t &r) {
+void VNCSimpleInputPtr::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.write) {
 		if (r.vptr == &reg_width || r.vptr == &reg_height) {
 			/* ignore */
@@ -94,11 +94,11 @@ void VNCSimplePtrInput::register_access_callback(const vp::map::register_access_
 	r.fn();
 }
 
-void VNCSimplePtrInput::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+void VNCSimpleInputPtr::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
 
-void VNCSimplePtrInput::updateProcess() {
+void VNCSimpleInputPtr::updateProcess() {
 	reg_width = vncServer.getWidth();
 	reg_height = vncServer.getHeight();
 

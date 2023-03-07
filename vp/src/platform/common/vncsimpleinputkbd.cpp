@@ -1,4 +1,4 @@
-#include "vncsimplekbdinput.h"
+#include "vncsimpleinputkbd.h"
 
 #define KBD_EVENT_QUEUE_SIZE 10
 #define REFRESH_RATE 30 /* Hz */
@@ -14,16 +14,16 @@
 
 #define IS_ENABLED() ((reg_ctrl & REG_CTRL_ENABLE_BIT) == REG_CTRL_ENABLE_BIT)
 
-VNCSimpleKbdInput::VNCSimpleKbdInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq)
+VNCSimpleInputKbd::VNCSimpleInputKbd(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq)
     : vncServer(vncServer), irq(irq) {
-	tsock.register_b_transport(this, &VNCSimpleKbdInput::transport);
+	tsock.register_b_transport(this, &VNCSimpleInputKbd::transport);
 
 	router
 	    .add_register_bank({
 	        {REG_CTRL_ADDR, &reg_ctrl},
 	        {REG_KEY_ADDR, &reg_key},
 	    })
-	    .register_handler(this, &VNCSimpleKbdInput::register_access_callback);
+	    .register_handler(this, &VNCSimpleInputKbd::register_access_callback);
 
 	interrupt = false;
 	vncServer.setVNCInputKbd(this);
@@ -31,7 +31,7 @@ VNCSimpleKbdInput::VNCSimpleKbdInput(sc_core::sc_module_name, VNCServer &vncServ
 	SC_THREAD(updateProcess);
 }
 
-void VNCSimpleKbdInput::doKbd(rfbBool down, rfbKeySym key) {
+void VNCSimpleInputKbd::doKbd(rfbBool down, rfbKeySym key) {
 	uint32_t lkey = VNCServer::rfbKeyToLinux(key);
 	if (lkey == 0) {
 		/* NOT SUPPORTED */
@@ -48,7 +48,7 @@ void VNCSimpleKbdInput::doKbd(rfbBool down, rfbKeySym key) {
 	mutex.unlock();
 }
 
-void VNCSimpleKbdInput::register_access_callback(const vp::map::register_access_t &r) {
+void VNCSimpleInputKbd::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.write && (r.vptr == &reg_ctrl)) {
 		/* reset fifo on any write to ctrl */
 		mutex.lock();
@@ -83,11 +83,11 @@ void VNCSimpleKbdInput::register_access_callback(const vp::map::register_access_
 	r.fn();
 }
 
-void VNCSimpleKbdInput::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
+void VNCSimpleInputKbd::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 	router.transport(trans, delay);
 }
 
-void VNCSimpleKbdInput::updateProcess() {
+void VNCSimpleInputKbd::updateProcess() {
 	while (vncServer.isActive()) {
 		wait(1000000L / REFRESH_RATE, sc_core::SC_US);
 

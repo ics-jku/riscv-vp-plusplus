@@ -1,5 +1,5 @@
-#ifndef RISCV_VP_VNCSIMPLEKBDINPUT_H
-#define RISCV_VP_VNCSIMPLEKBDINPUT_H
+#ifndef RISCV_VP_VNCSIMPLEINPUTKBD_H
+#define RISCV_VP_VNCSIMPLEINPUTKBD_H
 
 #include <tlm_utils/simple_target_socket.h>
 
@@ -14,13 +14,13 @@
 /*
  * Simple kbd input module
  */
-class VNCSimpleKbdInput : public sc_core::sc_module, public VNCInputKbd_if {
+class VNCSimpleInputKbd : public sc_core::sc_module, public VNCInputKbd_if {
    public:
-	tlm_utils::simple_target_socket<VNCSimpleKbdInput> tsock;
+	tlm_utils::simple_target_socket<VNCSimpleInputKbd> tsock;
 
-	VNCSimpleKbdInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq);
+	VNCSimpleInputKbd(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq);
 
-	SC_HAS_PROCESS(VNCSimpleKbdInput);
+	SC_HAS_PROCESS(VNCSimpleInputKbd);
 
 	/* callbacks (VNCInputKbd_if) */
 	void doKbd(rfbBool down, rfbKeySym key);
@@ -43,7 +43,7 @@ class VNCSimpleKbdInput : public sc_core::sc_module, public VNCInputKbd_if {
 
 	void updateProcess();
 
-	vp::map::LocalRouter router = {"VNCSimpleKbdInput"};
+	vp::map::LocalRouter router = {"VNCSimpleInputKbd"};
 };
 
-#endif /* RISCV_VP_VNCSIMPLEKBDINPUT_H */
+#endif /* RISCV_VP_VNCSIMPLEINPUTKBD_H */
