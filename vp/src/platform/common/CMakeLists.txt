@@ -10,6 +10,7 @@ add_library(platform-common
 		sifive_test.cpp
 		vncsimplefb.cpp
 		vncsimpleptrinput.cpp
+		vncsimplekbdinput.cpp
 		options.cpp
 		${HEADERS})
 

@@ -53,6 +53,8 @@ class VNCServer {
 		this->vncInputPtr = vncInputPtr;
 	}
 
+	static uint32_t rfbKeyToLinux(uint32_t key);
+
 	inline void setVNCInputKbd(VNCInputKbd_if *vncInputKbd) {
 		this->vncInputKbd = vncInputKbd;
 	}
