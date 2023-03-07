@@ -25,7 +25,7 @@
 #include "platform/common/slip.h"
 #include "platform/common/uart.h"
 #include "platform/common/vncsimplefb.h"
-#include "platform/common/vncsimpleinput.h"
+#include "platform/common/vncsimpleptrinput.h"
 #include "prci.h"
 #include "syscall.h"
 #include "util/options.h"
@@ -79,8 +79,8 @@ struct LinuxOptions : public Options {
 	addr_t sifive_test_end_addr = 0x100fff;
 	addr_t vncsimplefb_start_addr = 0x11000000;
 	addr_t vncsimplefb_end_addr = 0x11ffffff; /* 16MiB */
-	addr_t vncsimpleinput_start_addr = 0x12000000;
-	addr_t vncsimpleinput_end_addr = 0x12000fff;
+	addr_t vncsimpleptrinput_start_addr = 0x12000000;
+	addr_t vncsimpleptrinput_end_addr = 0x12000fff;
 
 	OptionValue<unsigned long> entry_point;
 	std::string dtb_file;
@@ -155,7 +155,7 @@ int sc_main(int argc, char **argv) {
 	SLIP slip("SLIP", 4, opt.tun_device);
 	SIFIVE_Test sifive_test("SIFIVE_Test");
 	VNCSimpleFB vncsimplefb("VNCSimpleFB", vncServer);
-	VNCSimpleInput vncsimpleinput("VNCSimpleInput", vncServer, 10);
+	VNCSimplePtrInput vncsimpleptrinput("VNCSimplePtrInput", vncServer, 10);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 
@@ -195,7 +195,7 @@ int sc_main(int argc, char **argv) {
 	bus.ports[7] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
 	bus.ports[8] = new PortMapping(opt.sifive_test_start_addr, opt.sifive_test_end_addr);
 	bus.ports[9] = new PortMapping(opt.vncsimplefb_start_addr, opt.vncsimplefb_end_addr);
-	bus.ports[10] = new PortMapping(opt.vncsimpleinput_start_addr, opt.vncsimpleinput_end_addr);
+	bus.ports[10] = new PortMapping(opt.vncsimpleptrinput_start_addr, opt.vncsimpleptrinput_end_addr);
 
 	// connect TLM sockets
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -212,7 +212,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[7].bind(prci.tsock);
 	bus.isocks[8].bind(sifive_test.tsock);
 	bus.isocks[9].bind(vncsimplefb.tsock);
-	bus.isocks[10].bind(vncsimpleinput.tsock);
+	bus.isocks[10].bind(vncsimpleptrinput.tsock);
 
 	// connect interrupt signals/communication
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -221,7 +221,7 @@ int sc_main(int argc, char **argv) {
 	}
 	uart0.plic = &plic;
 	slip.plic = &plic;
-	vncsimpleinput.plic = &plic;
+	vncsimpleptrinput.plic = &plic;
 
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		// switch for printing instructions

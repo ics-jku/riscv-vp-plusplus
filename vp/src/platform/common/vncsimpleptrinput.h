@@ -1,5 +1,5 @@
-#ifndef RISCV_VP_VNCSIMPLEINPUT_H
-#define RISCV_VP_VNCSIMPLEINPUT_H
+#ifndef RISCV_VP_VNCSIMPLEPTRINPUT_H
+#define RISCV_VP_VNCSIMPLEPTRINPUT_H
 
 #include <tlm_utils/simple_target_socket.h>
 
@@ -12,20 +12,18 @@
 #include "util/vncserver.h"
 
 /*
- * Simple input module
- * (TODO: only pointer events yet; no keyboard)
+ * Simple ptr (mouse) input module
  */
-class VNCSimpleInput : public sc_core::sc_module, public VNCInput_if {
+class VNCSimplePtrInput : public sc_core::sc_module, public VNCInputPtr_if {
    public:
-	tlm_utils::simple_target_socket<VNCSimpleInput> tsock;
+	tlm_utils::simple_target_socket<VNCSimplePtrInput> tsock;
 
-	VNCSimpleInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq);
+	VNCSimplePtrInput(sc_core::sc_module_name, VNCServer &vncServer, uint32_t irq);
 
-	SC_HAS_PROCESS(VNCSimpleInput);
+	SC_HAS_PROCESS(VNCSimplePtrInput);
 
-	/* callbacks (VNCInput_if) */
+	/* callback (VNCInputPtr_if) */
 	void doPtr(int buttonMask, int x, int y);
-	void doKbd(rfbBool down, rfbKeySym key);
 
 	interrupt_gateway *plic;
 
@@ -49,7 +47,7 @@ class VNCSimpleInput : public sc_core::sc_module, public VNCInput_if {
 
 	void updateProcess();
 
-	vp::map::LocalRouter router = {"VNCSimpleInput"};
+	vp::map::LocalRouter router = {"VNCSimplePtrInput"};
 };
 
-#endif /* RISCV_VP_VNCSIMPLEINPUT_H */
+#endif /* RISCV_VP_VNCSIMPLEPTRINPUT_H */

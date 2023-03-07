@@ -68,14 +68,14 @@ enum rfbNewClientAction VNCServer::newClient(rfbClientPtr cl) {
 void VNCServer::clientGone(rfbClientPtr cl) {}
 
 void VNCServer::doPtr(rfbClientPtr cl, int buttonMask, int x, int y) {
-	if (vncInput != nullptr) {
-		vncInput->doPtr(buttonMask, x, y);
+	if (vncInputPtr != nullptr) {
+		vncInputPtr->doPtr(buttonMask, x, y);
 	}
 	rfbDefaultPtrAddEvent(buttonMask, x, y, cl);
 }
 
 void VNCServer::doKbd(rfbClientPtr cl, rfbBool down, rfbKeySym key) {
-	if (vncInput == nullptr)
+	if (vncInputKbd == nullptr)
 		return;
-	vncInput->doKbd(down, key);
+	vncInputKbd->doKbd(down, key);
 }
