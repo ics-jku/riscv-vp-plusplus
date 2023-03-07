@@ -32,7 +32,7 @@ VNCSimpleInputKbd::VNCSimpleInputKbd(sc_core::sc_module_name, VNCServer &vncServ
 }
 
 void VNCSimpleInputKbd::doKbd(rfbBool down, rfbKeySym key) {
-	uint32_t lkey = VNCServer::rfbKeyToLinux(key);
+	uint32_t lkey = VNCServer::keySymToLinuxKeyCode(key);
 	if (lkey == 0) {
 		/* NOT SUPPORTED */
 		return;

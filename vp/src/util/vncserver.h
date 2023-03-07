@@ -53,7 +53,10 @@ class VNCServer {
 		this->vncInputPtr = vncInputPtr;
 	}
 
-	static uint32_t rfbKeyToLinux(uint32_t key);
+	/*
+	 * CAUTION: works only, if keySyms are US
+	 */
+	static uint32_t keySymToLinuxKeyCode(uint32_t keySym);
 
 	inline void setVNCInputKbd(VNCInputKbd_if *vncInputKbd) {
 		this->vncInputKbd = vncInputKbd;
