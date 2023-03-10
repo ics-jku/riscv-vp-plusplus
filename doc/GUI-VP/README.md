@@ -10,6 +10,7 @@ The main features of *GUI-VP* are:
  * Graphics Output (800x480 RGB565 Framebuffer, VNC)
  * Mouse Input (VNC)
  * Keyboard Input (VNC)
+ * Efficient boot (Memory-mapped file for rootfs)
 
 **We strongly recommend using *GUI-VP* with [GUI-VP Kit](https://github.com/ics-jku/GUI-VP_Kit).
 *GUI-VP Kit* provides an easy-to-use build system and experimentation platform for *GUI-VP* and Linux.**
