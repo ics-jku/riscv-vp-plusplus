@@ -368,10 +368,9 @@ void NUCLEI_ISS::run_step() {
 		if (pending && get_csr_table()->msubm.fields.typ == get_csr_table()->msubm.Interrupt) {
 			const auto current_intr_id = get_csr_table()->nuclei_mcause.fields.exccode;
 			const auto pending_intr = eclic->pending_interrupts.top();
-			InterruptComparator cmp;
-			pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 &&
-			          cmp({current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg},
-			              pending_intr);
+			Interrupt current_intr =
+			    Interrupt(current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg);
+			pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 && pending_intr.level > current_intr.level;
 		}
 		if (pending) {
 			get_csr_table()->nuclei_mcause.fields.interrupt = 1;
