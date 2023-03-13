@@ -38,7 +38,7 @@ struct Interrupt {
 
 class InterruptComparator {
    public:
-	bool operator()(Interrupt a, Interrupt b) {
+	inline bool operator()(const Interrupt &a, const Interrupt &b) const {
 		return (b.level > a.level) || (b.level == a.level && b.priority > a.priority) ||
 		       (b.level == a.level && b.priority == a.priority && b.id > a.id);
 	}
