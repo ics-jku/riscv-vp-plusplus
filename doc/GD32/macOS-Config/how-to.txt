@@ -1,0 +1,9 @@
+Der VP läuft bei mir in einem Ubuntu Docker Container. Die Dockerfile dazu ist sehr ähnlich zu der im VP-Repo. Für das GUI verwendet ich XQuartz welches lokal auf dem Mac läuft. Dafür hab ich hier https://github.com/KevOrr/binaryninja-docker/issues/1 eine kurze Anleitung gefunden.
+Im Wesentlichen muss nur Qt5 im Container installiert werden, die Umgebungsvariable DISPLAY auf die die IP des Hosts gesetzt werden und das X11 Unix Socket des Hosts im Container gemounten werden.
+
+Die Schritt-für-Schritt Anleitung sieht dann wie folgt aus:
+1. XQuartz installieren (entweder downloaden oder mit Brew (brew cask install xquartz))
+2. XQuartz öffnen und den Netzwerkzugriff erlauben unter: XQuartz -> Preferences -> Security -> "Allow connections from network clients"
+3. Den Container builden und dabei die IP des Host als Build-Argument mitgeben: docker build --build-arg IP=<IP> -t riscv-vp .
+4. Die IP des Host zu Xhost hinzufügen mit folgenden Kommando: xhost + <IP> (Das muss auch bei jedem Neustart von XQuartz gemacht werden)
+5. Anschließend den Container starten und dabei das X11 Unix Socket mounten: docker run --rm -v /tmp/.X11-unix:/tmp/.X11-unix -it risc-vp

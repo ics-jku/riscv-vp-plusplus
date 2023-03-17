@@ -1,0 +1,8 @@
+Problem: GD32 SDK kompiliert nicht. error: "unsupported architecture" u.ä.
+
+Lösung: in der Datei "~/.platformio/platforms/<platform>/builder/frameworks/_bare.py" muss unter CCFLAGS folgendes hinzugefügt werden:
+
+"-nostdinc", # somehow needed, otherwise mac C SDK gets included
+"-I/~/.platformio/packages/toolchain-gd32v/riscv-nuclei-elf/include", # somehow needed, otherwise mac C SDK gets included
+"-I/~/.platformio/packages/toolchain-gd32v/lib/gcc/riscv-nuclei-elf/10.2.0/include", # somehow needed, otherwise mac C SDK gets included
+"-I/~/.platformio/packages/toolchain-gd32v/lib/gcc/riscv-nuclei-elf/10.2.0/include-fixed", # somehow needed, otherwise mac C SDK gets included
