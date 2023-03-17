@@ -30,6 +30,7 @@ class USART : public sc_core::sc_module {
 	};
 
 	vp::map::LocalRouter router = {"USART"};
+	bool initialized = false;
 
 	USART(sc_core::sc_module_name) {
 		tsock.register_b_transport(this, &USART::transport);
@@ -48,8 +49,18 @@ class USART : public sc_core::sc_module {
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
-		// TODO
 		r.fn();
+
+		if (r.write && r.addr == USART_DATA) {
+			uint8_t data = *r.vptr;
+			if (!initialized) {
+				initialized = true;
+				if (data == 0)
+					return;
+			}
+			std::cout << static_cast<char>(data);
+			fflush(stdout);
+		}
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
