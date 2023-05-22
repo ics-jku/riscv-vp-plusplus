@@ -4,6 +4,9 @@
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
 
 ### Key features of *RISCV-VP++*
+ * Full integration of [GUI-VP](https://github.com/ics-jku/GUI-VP), which enables the simulation of interactive graphical Linux applications.
+   * All further work on *GUI-VP* will take place here in *RISCV-VP++*.
+   * More detailed information can be found [here](doc/GUI-VP/README.md)
  * Linux shutdown (stop simulation from within)
  * Linux RV32 and RV64, single and quad-core VPs
  * Harmonized coding style (make codestyle)
