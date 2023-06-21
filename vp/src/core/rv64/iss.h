@@ -27,6 +27,7 @@
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
+#include "v.h"
 
 namespace rv64 {
 
@@ -152,6 +153,7 @@ struct ISS : public external_interrupt_target,
 	bool shall_exit = false;
 	bool ignore_wfi = false;
 	csr_table csrs;
+	VExtension<ISS> v_ext;
 	PrivilegeLevel prv = MachineMode;
 	int64_t lr_sc_counter = 0;
 
