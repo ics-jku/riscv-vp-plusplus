@@ -141,8 +141,12 @@ void i64_to_f128M( int64_t, float128_t * );
 /*----------------------------------------------------------------------------
 | 16-bit (half-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
+uint_fast8_t f16_to_ui8( float16_t, uint_fast8_t, bool );
+uint_fast16_t f16_to_ui16( float16_t, uint_fast8_t, bool );
 uint_fast32_t f16_to_ui32( float16_t, uint_fast8_t, bool );
 uint_fast64_t f16_to_ui64( float16_t, uint_fast8_t, bool );
+int_fast8_t f16_to_i8( float16_t, uint_fast8_t, bool );
+int_fast16_t f16_to_i16( float16_t, uint_fast8_t, bool );
 int_fast32_t f16_to_i32( float16_t, uint_fast8_t, bool );
 int_fast64_t f16_to_i64( float16_t, uint_fast8_t, bool );
 uint_fast32_t f16_to_ui32_r_minMag( float16_t, bool );
@@ -150,6 +154,7 @@ uint_fast64_t f16_to_ui64_r_minMag( float16_t, bool );
 int_fast32_t f16_to_i32_r_minMag( float16_t, bool );
 int_fast64_t f16_to_i64_r_minMag( float16_t, bool );
 float32_t f16_to_f32( float16_t );
+float32_t bf16_to_f32( bfloat16_t );
 float64_t f16_to_f64( float16_t );
 #ifdef SOFTFLOAT_FAST_INT64
 extFloat80_t f16_to_extF80( float16_t );
@@ -160,6 +165,8 @@ void f16_to_f128M( float16_t, float128_t * );
 float16_t f16_roundToInt( float16_t, uint_fast8_t, bool );
 float16_t f16_add( float16_t, float16_t );
 float16_t f16_sub( float16_t, float16_t );
+float16_t f16_max( float16_t, float16_t );
+float16_t f16_min( float16_t, float16_t );
 float16_t f16_mul( float16_t, float16_t );
 float16_t f16_mulAdd( float16_t, float16_t, float16_t );
 float16_t f16_div( float16_t, float16_t );
@@ -172,12 +179,17 @@ bool f16_eq_signaling( float16_t, float16_t );
 bool f16_le_quiet( float16_t, float16_t );
 bool f16_lt_quiet( float16_t, float16_t );
 bool f16_isSignalingNaN( float16_t );
+uint_fast16_t f16_classify( float16_t );
+float16_t f16_rsqrte7( float16_t );
+float16_t f16_recip7( float16_t );
 
 /*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
+uint_fast16_t f32_to_ui16( float32_t, uint_fast8_t, bool );
 uint_fast32_t f32_to_ui32( float32_t, uint_fast8_t, bool );
 uint_fast64_t f32_to_ui64( float32_t, uint_fast8_t, bool );
+int_fast16_t f32_to_i16( float32_t, uint_fast8_t, bool );
 int_fast32_t f32_to_i32( float32_t, uint_fast8_t, bool );
 int_fast64_t f32_to_i64( float32_t, uint_fast8_t, bool );
 uint_fast32_t f32_to_ui32_r_minMag( float32_t, bool );
@@ -185,6 +197,7 @@ uint_fast64_t f32_to_ui64_r_minMag( float32_t, bool );
 int_fast32_t f32_to_i32_r_minMag( float32_t, bool );
 int_fast64_t f32_to_i64_r_minMag( float32_t, bool );
 float16_t f32_to_f16( float32_t );
+bfloat16_t f32_to_bf16( float32_t );
 float64_t f32_to_f64( float32_t );
 #ifdef SOFTFLOAT_FAST_INT64
 extFloat80_t f32_to_extF80( float32_t );
@@ -195,6 +208,8 @@ void f32_to_f128M( float32_t, float128_t * );
 float32_t f32_roundToInt( float32_t, uint_fast8_t, bool );
 float32_t f32_add( float32_t, float32_t );
 float32_t f32_sub( float32_t, float32_t );
+float32_t f32_max( float32_t, float32_t );
+float32_t f32_min( float32_t, float32_t );
 float32_t f32_mul( float32_t, float32_t );
 float32_t f32_mulAdd( float32_t, float32_t, float32_t );
 float32_t f32_div( float32_t, float32_t );
@@ -208,6 +223,8 @@ bool f32_le_quiet( float32_t, float32_t );
 bool f32_lt_quiet( float32_t, float32_t );
 bool f32_isSignalingNaN( float32_t );
 uint_fast16_t f32_classify( float32_t );
+float32_t f32_rsqrte7( float32_t );
+float32_t f32_recip7( float32_t );
 
 /*----------------------------------------------------------------------------
 | 64-bit (double-precision) floating-point operations.
@@ -231,6 +248,8 @@ void f64_to_f128M( float64_t, float128_t * );
 float64_t f64_roundToInt( float64_t, uint_fast8_t, bool );
 float64_t f64_add( float64_t, float64_t );
 float64_t f64_sub( float64_t, float64_t );
+float64_t f64_max( float64_t, float64_t );
+float64_t f64_min( float64_t, float64_t );
 float64_t f64_mul( float64_t, float64_t );
 float64_t f64_mulAdd( float64_t, float64_t, float64_t );
 float64_t f64_div( float64_t, float64_t );
@@ -244,6 +263,8 @@ bool f64_le_quiet( float64_t, float64_t );
 bool f64_lt_quiet( float64_t, float64_t );
 bool f64_isSignalingNaN( float64_t );
 uint_fast16_t f64_classify( float64_t );
+float64_t f64_rsqrte7( float64_t );
+float64_t f64_recip7( float64_t );
 
 /*----------------------------------------------------------------------------
 | Rounding precision for 80-bit extended double-precision floating-point.

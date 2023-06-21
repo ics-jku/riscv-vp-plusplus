@@ -1,4 +1,5 @@
 add_library(softfloat
+	bf16_to_f32.c
 	f128_add.c
 	f128_classify.c
 	f128_div.c
@@ -27,6 +28,7 @@ add_library(softfloat
 	f128_to_ui64.c
 	f128_to_ui64_r_minMag.c
 	f16_add.c
+	f16_classify.c
 	f16_div.c
 	f16_eq.c
 	f16_eq_signaling.c
@@ -44,10 +46,14 @@ add_library(softfloat
 	f16_to_f128.c
 	f16_to_f32.c
 	f16_to_f64.c
+	f16_to_i8.c
+	f16_to_i16.c
 	f16_to_i32.c
 	f16_to_i32_r_minMag.c
 	f16_to_i64.c
 	f16_to_i64_r_minMag.c
+	f16_to_ui8.c
+	f16_to_ui16.c
 	f16_to_ui32.c
 	f16_to_ui32_r_minMag.c
 	f16_to_ui64.c
@@ -68,13 +74,16 @@ add_library(softfloat
 	f32_roundToInt.c
 	f32_sqrt.c
 	f32_sub.c
+	f32_to_bf16.c
 	f32_to_f128.c
 	f32_to_f16.c
 	f32_to_f64.c
+	f32_to_i16.c
 	f32_to_i32.c
 	f32_to_i32_r_minMag.c
 	f32_to_i64.c
 	f32_to_i64_r_minMag.c
+	f32_to_ui16.c
 	f32_to_ui32.c
 	f32_to_ui32_r_minMag.c
 	f32_to_ui64.c
@@ -106,6 +115,8 @@ add_library(softfloat
 	f64_to_ui32_r_minMag.c
 	f64_to_ui64.c
 	f64_to_ui64_r_minMag.c
+	fall_maxmin.c
+	fall_reciprocal.c
 	i32_to_f128.c
 	i32_to_f16.c
 	i32_to_f32.c
@@ -172,6 +183,7 @@ add_library(softfloat
 	s_roundMToUI64.c
 	s_roundPackMToI64.c
 	s_roundPackMToUI64.c
+	s_roundPackToBF16.c
 	s_roundPackToF128.c
 	s_roundPackToF16.c
 	s_roundPackToF32.c
