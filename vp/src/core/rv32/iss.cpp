@@ -80,7 +80,7 @@ void RegFile::show() {
 	}
 }
 
-ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : systemc_name("Core-" + std::to_string(hart_id)) {
+ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
 	csrs.mhartid.reg = hart_id;
 	if (use_E_base_isa)
 		csrs.misa.select_E_base_isa();
@@ -163,7 +163,12 @@ void ISS::exec_step() {
 			case Opcode::Type::J:
 				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
 				break;
-			default:;
+			case Opcode::Type::V:
+				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
+				break;
+			default:
+				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.data());
+				break;
 		}
 		puts("");
 	}
@@ -1078,6 +1083,3149 @@ void ISS::exec_step() {
 			fp_finish_instr();
 		} break;
 
+		// RV-V Extension Start -- Placeholder 6
+		case Opcode::VSETVLI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.v_set_operation(instr.rd(), instr.rs1(), instr.zimm_10(), 0);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSETIVLI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.v_set_operation(instr.rd(), 0, instr.zimm_9(), instr.rs1());
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSETVL: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.v_set_operation(instr.rd(), instr.rs1(), regs[instr.rs2()], 0);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLM_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::masked);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSM_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::masked);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXEI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXEI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXEI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXEI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXEI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXEI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXEI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXEI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXEI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXEI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXEI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXEI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXEI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXEI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXEI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXEI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLE64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG2E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG2E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG2E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG2E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG2E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG2E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG2E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG2E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG2E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG2E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG2E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG2E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG2EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG2EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG2EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG2EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG2EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG2EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG2EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG2EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG2EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG2EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG2EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG2EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG2EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG2EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG2EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG2EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG2E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG3E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG3E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG3E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG3E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG3E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG3E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG3E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG3E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG3E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG3E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG3E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG3E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG3EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG3EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG3EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG3EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG3EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG3EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG3EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG3EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG3EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG3EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG3EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG3EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG3EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG3EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG3EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG3EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG3E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG4E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG4E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG4E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG4E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG4E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG4E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG4E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG4E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG4E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG4E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG4E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG4E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG4EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG4EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG4EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG4EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG4EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG4EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG4EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG4EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG4EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG4EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG4EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG4EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG4EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG4EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG4EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG4EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG4E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG5E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG5E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG5E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG5E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG5E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG5E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG5E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG5E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG5E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG5E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG5E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG5E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG5EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG5EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG5EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG5EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG5EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG5EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG5EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG5EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG5EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG5EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG5EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG5EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG5EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG5EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG5EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG5EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG5E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG6E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG6E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG6E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG6E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG6E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG6E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG6E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG6E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG6E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG6E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG6E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG6E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG6EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG6EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG6EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG6EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG6EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG6EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG6EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG6EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG6EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG6EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG6EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG6EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG6EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG6EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG6EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG6EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG6E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG7E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG7E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG7E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG7E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG7E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG7E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG7E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG7E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG7E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG7E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG7E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG7E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG7EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG7EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG7EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG7EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG7EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG7EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG7EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG7EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG7EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG7EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG7EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG7EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG7EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG7EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG7EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG7EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG7E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG8E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG8E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG8E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSEG8E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG8E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG8E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG8E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSSEG8E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG8E8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG8E16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG8E32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSSEG8E64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::standard_reg);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG8EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG8EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG8EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLUXSEG8EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG8EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG8EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG8EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLOXSEG8EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG8EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG8EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG8EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUXSEG8EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG8EI8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG8EI16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 16, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG8EI32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 32, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSOXSEG8EI64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 64, v_ext.load_store_type_t::indexed);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E8FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E16FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E32FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VLSEG8E64FF_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::fofl);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL1RE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL1RE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL1RE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL1RE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VS1R_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL2RE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL2RE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL2RE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL2RE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VS2R_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL4RE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL4RE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL4RE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL4RE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VS4R_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL8RE8_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL8RE16_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL8RE32_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VL8RE64_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VS8R_V: {
+			v_ext.prepInstr(true, true, false);
+			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VADD_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VADD_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VADD_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUB_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSUB_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VRSUB_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vRSub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VRSUB_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vRSub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADD_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADD_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUB_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUB_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADDU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADDU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUBU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUBU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADD_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wwxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADD_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wwxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUB_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wwxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUB_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wwxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADDU_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWADDU_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAdd(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUBU_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWSUBU_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSub(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VZEXT_VF2: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vExt(2), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSEXT_VF2: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vExt(2), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VZEXT_VF4: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vExt(4), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSEXT_VF4: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vExt(4), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VZEXT_VF8: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vExt(8), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSEXT_VF8: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vExt(8), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VADC_VVM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vAdc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VADC_VXM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vAdc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VADC_VIM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vAdc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADC_VVM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMadc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADC_VXM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMadc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADC_VIM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMadc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADC_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMadc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADC_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMadc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADC_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMadc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSBC_VVM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vSbc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSBC_VXM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vSbc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSBC_VVM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMsbc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSBC_VXM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMsbc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSBC_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMsbc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSBC_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMsbc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAND_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAnd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAND_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAnd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAND_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAnd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VOR_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vOr(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VOR_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vOr(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VOR_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vOr(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VXOR_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vXor(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VXOR_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vXor(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VXOR_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vXor(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLL_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLL_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLL_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSRL_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSRL_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSRL_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSRA_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSRA_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSRA_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNSRL_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNSRL_WI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNSRL_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNSRA_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xwxssu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNSRA_WI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xwxssu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNSRA_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShift(true), v_ext.elem_sel_t::xwxssu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSEQ_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::eq), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSEQ_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::eq), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSEQ_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::eq), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSNE_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::ne), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSNE_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::ne), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSNE_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::ne), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLTU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::lt), v_ext.elem_sel_t::xxxuuu,
+			                     v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLTU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::lt), v_ext.elem_sel_t::xxxuuu,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLT_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::lt), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLT_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::lt), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLEU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::le), v_ext.elem_sel_t::xxxuuu,
+			                     v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLEU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::le), v_ext.elem_sel_t::xxxuuu,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLEU_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::le), v_ext.elem_sel_t::xxxuus,
+			                     v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLE_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::le), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLE_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::le), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSLE_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::le), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSGTU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::gt), v_ext.elem_sel_t::xxxuuu,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSGTU_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::gt), v_ext.elem_sel_t::xxxuus,
+			                     v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSGT_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::gt), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSGT_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExtVoid(v_ext.vCompInt(v_ext.int_compare_t::gt), v_ext.elem_sel_t::xxxsss,
+			                     v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMINU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMin(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMINU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMin(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMIN_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMin(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMIN_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMin(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMAXU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMax(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMAXU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMax(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMAX_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMax(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMAX_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMax(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMUL_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMUL_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMULH_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMulh(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMULH_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMulh(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMULHU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMulh(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMULHU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMulh(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMULHSU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMulh(), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMULHSU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMulh(), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VDIVU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vDiv(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VDIVU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vDiv(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VDIV_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vDiv(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VDIV_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vDiv(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREMU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vRem(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREMU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vRem(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREM_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vRem(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREM_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vRem(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMUL_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMUL_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMULU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMULU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMULSU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::wxxusu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMULSU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMul(), v_ext.elem_sel_t::wxxusu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMACC_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMACC_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNMSAC_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vNmsac(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNMSAC_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vNmsac(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADD_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMADD_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNMSUB_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vNmsub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNMSUB_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vNmsub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACCU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACCU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACC_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACC_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACCSU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxuus, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACCSU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxuus, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWMACCUS_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVdExt(v_ext.vMacc(), v_ext.elem_sel_t::wxxusu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMERGE_VVM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vMerge(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMERGE_VXM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vMerge(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMERGE_VIM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExtCarry(v_ext.vMerge(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMV_V_V: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMv(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMV_V_X: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMv(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMV_V_I: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vMv(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSADDU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSaddu(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSADDU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSaddu(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSADDU_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSaddu(), v_ext.elem_sel_t::xxxuus, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSADD_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSADD_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSADD_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSUBU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSsubu(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSUBU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSsubu(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSUB_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSsub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSUB_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSsub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAADDU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAadd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAADDU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAadd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAADD_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VAADD_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAadd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VASUBU_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAsub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VASUBU_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAsub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VASUB_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAsub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VASUB_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vAsub(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSMUL_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSmul(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSMUL_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vSmul(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSRL_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSRL_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSRL_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSRA_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(false), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSRA_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(false), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSSRA_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(false), v_ext.elem_sel_t::xxxssu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNCLIPU_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNCLIPU_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNCLIPU_WI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNCLIP_WV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(true), v_ext.elem_sel_t::xwxssu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNCLIP_WX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(true), v_ext.elem_sel_t::xwxssu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VNCLIP_WI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoop(v_ext.vShiftRight(true), v_ext.elem_sel_t::xwxssu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VFADD_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfAdd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFADD_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfAdd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSUB_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSUB_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFRSUB_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfrSub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWADD_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwAdd(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWADD_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwAdd(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWSUB_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwSub(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWSUB_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwSub(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWADD_WV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwAddw(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWADD_WF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwAddw(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWSUB_WV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwSubw(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWSUB_WF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwSubw(), v_ext.elem_sel_t::wwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMUL_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMul(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMUL_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMul(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFDIV_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfDiv(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFDIV_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfDiv(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFRDIV_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfrDiv(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWMUL_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwMul(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWMUL_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwMul(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMACC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMacc(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMACC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMacc(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMACC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmacc(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMACC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmacc(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMSAC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMsac(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMSAC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMsac(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMSAC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmsac(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMSAC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmsac(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMADD_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMadd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMADD_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMadd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMADD_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmadd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMADD_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmadd(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMSUB_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMsub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMSUB_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMsub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMSUB_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmsub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNMSUB_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfNmsub(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWMACC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwMacc(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWMACC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwMacc(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWNMACC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwNmacc(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWNMACC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwNmacc(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWMSAC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwMsac(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWMSAC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwMsac(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWNMSAC_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwNmsac(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWNMSAC_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfwNmsac(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSQRT_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSqrt(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFRSQRT7_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfRsqrt7(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFREC7_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfFrec7(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMIN_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMin(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMIN_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMin(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMAX_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMax(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMAX_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfMax(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSGNJ_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSgnj(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSGNJ_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSgnj(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSGNJN_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSgnjn(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSGNJN_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSgnjn(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSGNJX_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSgnjx(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFSGNJX_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfSgnjx(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFEQ_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfeq(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFEQ_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfeq(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFNE_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfneq(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFNE_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfneq(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFLT_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMflt(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFLT_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMflt(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFLE_VV: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfle(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFLE_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfle(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFGT_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfgt(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMFGE_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExtVoid(v_ext.vMfge(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCLASS_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfClass(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMERGE_VFM: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopExtCarry(v_ext.vMerge(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMV_V_F: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfMv(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCVT_XU_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtXF(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCVT_X_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtXF(false), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCVT_RTZ_XU_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtXF(true), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCVT_RTZ_X_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtXF(true), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCVT_F_XU_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfCvtFX(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFCVT_F_X_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfCvtFX(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_XU_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtwXF(false), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_X_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtwXF(false), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_RTZ_XU_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtwXF(true), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_RTZ_X_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtwXF(true), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_F_XU_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfCvtFX(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_F_X_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfCvtFX(), v_ext.elem_sel_t::wxxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWCVT_F_F_V: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtwFF(), v_ext.elem_sel_t::wxxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_XU_F_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtnXF(false), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_X_F_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtnXF(false), v_ext.elem_sel_t::xwxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_RTZ_XU_F_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtnXF(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_RTZ_X_F_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtnXF(true), v_ext.elem_sel_t::xwxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_F_XU_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfCvtFX(), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_F_X_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoop(v_ext.vfCvtFX(), v_ext.elem_sel_t::xwxsss, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_F_F_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtnFF(false), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFNCVT_ROD_F_F_W: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVdExt(v_ext.vfCvtnFF(true), v_ext.elem_sel_t::xwxuuu, v_ext.param_sel_t::vf);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VREDSUM_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedSum(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDMAXU_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedMax(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDMAX_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedMax(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDMINU_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedMin(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDMIN_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedMin(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDAND_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedAnd(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDOR_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedOr(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VREDXOR_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedXor(), v_ext.elem_sel_t::xxxsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWREDSUMU_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedSum(), v_ext.elem_sel_t::wxwuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VWREDSUM_VS: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopRed(v_ext.vRedSum(), v_ext.elem_sel_t::wxwsss, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VFREDUSUM_VS: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopRed(v_ext.vfRedSum(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFREDOSUM_VS: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopRed(v_ext.vfRedSum(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFREDMAX_VS: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopRed(v_ext.vfRedMax(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFREDMIN_VS: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopRed(v_ext.vfRedMin(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWREDUSUM_VS: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopRed(v_ext.vfwRedSum(), v_ext.elem_sel_t::wxwuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFWREDOSUM_VS: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopRed(v_ext.vfwRedSum(), v_ext.elem_sel_t::wxwuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VMAND_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_and));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMNAND_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_nand));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMANDN_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_andn));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMXOR_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_xor));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMOR_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_or));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMNOR_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_nor));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMORN_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_orn));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMXNOR_MM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_xnor));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VCPOP_M: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vCpop();
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VFIRST_M: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vFirst();
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSBF_M: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vMs(v_ext.vms_type_t::sbf);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSIF_M: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vMs(v_ext.vms_type_t::sif);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMSOF_M: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vMs(v_ext.vms_type_t::sof);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VIOTA_M: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vIota();
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VID_V: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vId());
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMV_X_S: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vMvXs();
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMV_S_X: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vMvSx();
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VFMV_F_S: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vMvFs();
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VFMV_S_F: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vMvSf();
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VSLIDEUP_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vSlideUp(regs[instr.rs1()]));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLIDEUP_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vSlideUp(instr.rs1()));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLIDEDOWN_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vSlideDown(regs[instr.rs1()]));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLIDEDOWN_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vSlideDown(instr.rs1()));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VSLIDE1UP_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vSlide1Up(v_ext.param_sel_t::vx));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VFSLIDE1UP_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVoid(v_ext.vSlide1Up(v_ext.param_sel_t::vf));
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VSLIDE1DOWN_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopVoid(v_ext.vSlide1Down(v_ext.param_sel_t::vx));
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VFSLIDE1DOWN_VF: {
+			v_ext.prepInstr(true, false, true);
+			v_ext.vLoopVoid(v_ext.vSlide1Down(v_ext.param_sel_t::vf));
+			v_ext.finishInstr(true);
+		} break;
+		case Opcode::VRGATHER_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExt(v_ext.vGather(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VRGATHEREI16_VV: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExt(v_ext.vGather(true), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VRGATHER_VX: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExt(v_ext.vGather(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vx);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VRGATHER_VI: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vLoopExt(v_ext.vGather(false), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vi);
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VCOMPRESS_VM: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vCompress();
+			v_ext.finishInstr(false);
+		} break;
+		case Opcode::VMV_NR_R_V: {
+			v_ext.prepInstr(true, false, false);
+			v_ext.vMvNr();
+			v_ext.finishInstr(false);
+		} break;
+			// RV-V Extension End -- Placeholder 6
+
 			// privileged instructions
 
 		case Opcode::WFI:
@@ -1185,6 +4333,12 @@ bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
 	if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
 		REQUIRE_ISA(F_ISA_EXT);
 	}
+	if (csr_addr == csr::VSTART_ADDR || csr_addr == csr::VXSAT_ADDR || csr_addr == csr::VXRM_ADDR ||
+	    csr_addr == csr::VCSR_ADDR || csr_addr == csr::VL_ADDR || csr_addr == csr::VTYPE_ADDR ||
+	    csr_addr == csr::VLENB_ADDR) {
+		REQUIRE_ISA(V_ISA_EXT);
+		v_ext.requireNotOff();
+	}
 	PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
 	bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
 	bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension();
@@ -1278,6 +4432,9 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 
 		case FRM_ADDR:
 			return csrs.fcsr.fields.frm;
+
+		case VLENB_ADDR:
+			return VLEN / 8;
 
 		// debug CSRs not supported, thus hardwired
 		case TSELECT_ADDR:
@@ -1404,6 +4561,9 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		case FRM_ADDR:
 			csrs.fcsr.fields.frm = value;
 			break;
+
+		case VTYPE_ADDR:
+			write(csrs.vtype, VTYPE_MASK);
 
 		// debug CSRs not supported, thus hardwired
 		case TSELECT_ADDR:
