@@ -70,10 +70,11 @@ struct csr_misa {
 		N = 1 << 13,
 		S = 1 << 18,
 		U = 1 << 20,
+		V = 1 << 21,
 	};
 
 	void init() {
-		fields.extensions = I | M | A | F | C | N | U | S;  // IMACF + NUS
+		fields.extensions = I | M | A | F | C | N | U | S | V;  // IMACF + NUS
 		fields.wiri = 0;
 		fields.mxl = 1;  // RV32
 	}
@@ -84,6 +85,7 @@ constexpr unsigned A_ISA_EXT = csr_misa::A;
 constexpr unsigned F_ISA_EXT = csr_misa::F;
 constexpr unsigned D_ISA_EXT = csr_misa::D;
 constexpr unsigned C_ISA_EXT = csr_misa::C;
+constexpr unsigned V_ISA_EXT = csr_misa::V;
 
 struct csr_mvendorid {
 	union {
@@ -97,7 +99,8 @@ struct csr_mvendorid {
 
 struct csr_mstatus {
 	union {
-		uint32_t reg = 0;
+		// uint32_t reg = 0;
+		uint32_t reg = 0x600;  // TODO WA
 		struct {
 			unsigned uie : 1;
 			unsigned sie : 1;
@@ -108,7 +111,7 @@ struct csr_mstatus {
 			unsigned wpri2 : 1;
 			unsigned mpie : 1;
 			unsigned spp : 1;
-			unsigned wpri3 : 2;
+			unsigned vs : 2;
 			unsigned mpp : 2;
 			unsigned fs : 2;
 			unsigned xs : 2;
@@ -280,6 +283,69 @@ struct csr_fcsr {
 	};
 };
 
+struct csr_vtype {
+	union {
+		uint32_t reg = 0x8000000;  // vill=1 at reset
+		struct {
+			unsigned vlmul : 3;
+			unsigned vsew : 3;
+			unsigned vta : 1;
+			unsigned vma : 1;
+			unsigned reserved : 23;
+			unsigned vill : 1;
+		} fields;
+	};
+};
+
+struct csr_vl {
+	union {
+		uint32_t reg = 0;
+	};
+};
+
+struct csr_vstart {
+	union {
+		uint32_t reg = 0;
+	};
+};
+
+struct csr_vxrm {
+	union {
+		uint32_t reg = 0;
+		struct {
+			unsigned zero : 30;
+			unsigned vxrm : 2;
+		} fields;
+	};
+};
+
+struct csr_vxsat {
+	union {
+		uint32_t reg = 0;
+		struct {
+			unsigned zero : 31;
+			unsigned vxsat : 1;
+		} fields;
+	};
+};
+
+struct csr_vcsr {
+	union {
+		uint32_t reg = 0;
+		struct {
+			unsigned reserved : 29;
+			unsigned vxrm : 2;
+			unsigned vxsat : 1;
+		} fields;
+	};
+};
+
+struct csr_vlenb {
+	union {
+		uint32_t reg = 0;
+	};
+};
+
 /*
  * Add new subclasses with specific consistency check (e.g. by adding virtual
  * write_low, write_high functions) if necessary.
@@ -324,14 +390,18 @@ constexpr uint32_t MCOUNTINHIBIT_MASK = 0b101;
 constexpr uint32_t SEDELEG_MASK = 0b1011000111111111;
 constexpr uint32_t SIDELEG_MASK = MIDELEG_MASK;
 
-constexpr uint32_t MSTATUS_MASK = 0b10000000011111111111100110111011;
-constexpr uint32_t SSTATUS_MASK = 0b10000000000011011110000100110011;
+constexpr uint32_t MSTATUS_MASK = 0b10000000011111111111111110111011;
+constexpr uint32_t SSTATUS_MASK = 0b10000000000011011110011100110011;
 constexpr uint32_t USTATUS_MASK = 0b00000000000000000000000000010001;
 
 constexpr uint32_t SATP_MASK = 0b10000000001111111111111111111111;
 constexpr uint32_t SATP_MODE = 0b10000000000000000000000000000000;
 
 constexpr uint32_t FCSR_MASK = 0b11111111;
+
+constexpr uint32_t VTYPE_MASK = 0b10000000000000000000000001111111;
+constexpr uint32_t VXRM_MASK = 0b11;
+constexpr uint32_t VCSR_MASK = 0b111;
 
 // 64 bit timer csrs
 constexpr unsigned CYCLE_ADDR = 0xC00;
@@ -581,6 +651,15 @@ constexpr unsigned MHPMEVENT28_ADDR = 0x33C;
 constexpr unsigned MHPMEVENT29_ADDR = 0x33D;
 constexpr unsigned MHPMEVENT30_ADDR = 0x33E;
 constexpr unsigned MHPMEVENT31_ADDR = 0x33F;
+
+// vector CSRs
+constexpr unsigned VSTART_ADDR = 0x008;
+constexpr unsigned VXSAT_ADDR = 0x009;
+constexpr unsigned VXRM_ADDR = 0x00A;
+constexpr unsigned VCSR_ADDR = 0x00F;
+constexpr unsigned VL_ADDR = 0xC20;
+constexpr unsigned VTYPE_ADDR = 0xC21;
+constexpr unsigned VLENB_ADDR = 0xC22;
 };  // namespace csr
 
 struct csr_table {
@@ -632,6 +711,14 @@ struct csr_table {
 	csr_32 utval;
 
 	csr_fcsr fcsr;
+
+	csr_vstart vstart;
+	csr_vxsat vxsat;
+	csr_vxrm vxrm;
+	csr_vcsr vcsr;
+	csr_vtype vtype;
+	csr_vl vl;
+	csr_vl vlenb;
 
 	std::unordered_map<unsigned, uint32_t *> register_mapping;
 
@@ -692,6 +779,14 @@ struct csr_table {
 		register_mapping[UTVAL_ADDR] = &utval.reg;
 
 		register_mapping[FCSR_ADDR] = &fcsr.reg;
+
+		register_mapping[VSTART_ADDR] = &vstart.reg;
+		register_mapping[VXSAT_ADDR] = &vxsat.reg;
+		register_mapping[VXRM_ADDR] = &vxrm.reg;
+		register_mapping[VCSR_ADDR] = &vcsr.reg;
+		register_mapping[VL_ADDR] = &vl.reg;
+		register_mapping[VTYPE_ADDR] = &vtype.reg;
+		register_mapping[VLENB_ADDR] = &vlenb.reg;
 	}
 
 	bool is_valid_csr32_addr(unsigned addr) {
