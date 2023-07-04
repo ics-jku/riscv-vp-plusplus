@@ -1,5 +1,9 @@
 # RISC-V based Virtual Prototype (VP)
 
+<p align="center">
+  <img src="./img/riscv-vp_logo.png" alt="RISC-V based Virtual Prototype (VP)" width="250"/>
+</p>
+
 ### Key features of our VP:
 
  - RV32GC and RV64GC core support (i.e. RV32IMAFDC and RV64IMAFDC)
