@@ -91,15 +91,11 @@ class VExtension {
 
 	xlen_reg_t iss_reg_read(xlen_reg_t addr) {
 		op_reg_t val = iss.regs[addr];
-		printf("Cpu %lu Reg R x%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-		       (uint64_t)addr, (uint64_t)val);
 		return val;
 	}
 
 	void iss_reg_write(xlen_reg_t addr, xlen_reg_t value) {
 		iss.regs[addr] = value;
-		printf("Cpu %lu Reg W x%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-		       (uint64_t)addr, (uint64_t)iss.regs[addr]);
 	}
 
 	void set_fp_rm() {
@@ -123,9 +119,6 @@ class VExtension {
 				actual_val = raw_val;
 				break;
 		}
-
-		printf("Cpu %lu Reg R f%ld_0 val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-		       (uint64_t)addr, (uint64_t)raw_val);
 		return actual_val;
 	}
 
@@ -139,29 +132,6 @@ class VExtension {
 				break;
 			case 64:
 				iss.fp_regs.write(addr, f64(value));
-				break;
-		}
-
-		printf("Cpu %lu Reg W f%ld_0 val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-		       (uint64_t)addr, (uint64_t)iss.fp_regs.f64(addr).v);
-	}
-
-	void printHexFixed(op_reg_t number, xlen_reg_t numBytes) {
-		switch (numBytes) {
-			case 1:
-				printf("%02lx", number & 0xFF);
-				break;
-			case 2:
-				printf("%04lx", number & 0xFFFF);
-				break;
-			case 4:
-				printf("%08lx", number & 0xFFFFFFFF);
-				break;
-			case 8:
-				printf("%016lx", number);
-				break;
-			default:
-				printf("unknown num bytes %ld", numBytes);
 				break;
 		}
 	}
@@ -197,9 +167,6 @@ class VExtension {
 		iss.csrs.mstatus.fields.sd = 1;
 		iss.csrs.mstatus.fields.vs = VS_DIRTY;
 
-		printf("Cpu %lu Reg W %s val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg, "mstatus",
-		       (uint64_t)iss.csrs.mstatus.reg);
-
 		if (require_vill) {
 			v_assert(iss.csrs.vtype.fields.vill != 1, "vill == 1");
 		}
@@ -227,9 +194,6 @@ class VExtension {
 			op_reg_t exception_flags = softfloat_exceptionFlags;
 			iss.fp_finish_instr();
 			op_reg_t current_fcsr = iss.csrs.fcsr.reg;
-			if (exception_flags) {
-				printf("Cpu 0 Reg W fcsr val 0x%016lx mask 0xffffffffffffffff\n", current_fcsr);
-			}
 		}
 	}
 
@@ -281,14 +245,8 @@ class VExtension {
 		} else {
 			if (iss.csrs.vtype.reg != vtype_new) {
 				iss.csrs.vtype.reg = vtype_new;
-
-				printf("Cpu %lu Reg W %s val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-				       "vtype", (uint64_t)iss.csrs.vtype.reg);
 			}
 		}
-
-		printf("Cpu %lu Reg W %s val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg, "vl",
-		       (uint64_t)iss.csrs.vl.reg);
 
 		if ((!is_vsetivli && !(rd == 0 && rs1 == 0)) || is_vsetivli) {
 			iss_reg_write(rd, iss.csrs.vl.reg);
@@ -377,14 +335,12 @@ class VExtension {
 
 		auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
 
-		op2 = getSewSingleOperand(op2_eew, iss.instr.rs2(), i_op2, true);
+		op2 = getSewSingleOperand(op2_eew, iss.instr.rs2(), i_op2, false);
 		switch (param_sel) {
 			case param_sel_t::vv: {
-				op1 = getSewSingleOperand(op1_eew, iss.instr.rs1(), i_op1, true);
+				op1 = getSewSingleOperand(op1_eew, iss.instr.rs1(), i_op1, false);
 			} break;
 			case param_sel_t::vi: {
-				printf("Cpu %lu Reg R x%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-				       (uint64_t)iss.instr.rs1(), (uint64_t)iss.regs[iss.instr.rs1()]);
 				op1 = iss.instr.rs1();
 				if (op1_signed) {
 					op1 = signExtend(op1, 5);
@@ -469,7 +425,7 @@ class VExtension {
 
 		auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
 
-		op_reg_t vd = getSewSingleOperand(vd_eew, iss.instr.rd(), i, true);
+		op_reg_t vd = getSewSingleOperand(vd_eew, iss.instr.rd(), i, false);
 
 		return std::make_tuple(op1, op2, vd);
 	}
@@ -495,8 +451,6 @@ class VExtension {
 		xlen_reg_t elem_num = index % num_elem_per_reg;
 		xlen_reg_t elem_num_64 = elem_num / (64 / sew);
 		op_reg_t out = getSewSingleOperand(64, vec_idx, elem_num_64, false);
-		printf("Cpu %lu Reg W v%ld_%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg, vec_idx,
-		       elem_num_64, out);
 	};
 
 	void writeGeneric(op_reg_t result, unsigned i) {
@@ -517,7 +471,7 @@ class VExtension {
 			case load_store_type_t::standard_reg:
 				return i * iss_reg_read(iss.instr.rs2()) + field * numBytes;
 			case load_store_type_t::indexed:
-				return getSewSingleOperand(numBits, iss.instr.rs2(), i, true) + field * (getIntVSew() >> 3);
+				return getSewSingleOperand(numBits, iss.instr.rs2(), i, false) + field * (getIntVSew() >> 3);
 		}
 		v_assert(false);
 		return 0;
@@ -576,7 +530,7 @@ class VExtension {
 		}
 		if (iss.instr.vm() == 0) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			op_reg_t mask = (getSewSingleOperand(64, 0, reg_idx, true) >> reg_pos) & 1;
+			op_reg_t mask = (getSewSingleOperand(64, 0, reg_idx, false) >> reg_pos) & 1;
 			if (mask == 0) {
 				return true;
 			}
@@ -649,7 +603,7 @@ class VExtension {
 						}
 
 					} else {
-						value = getSewSingleOperand(switchElem, vec_idx, elem_num, true);
+						value = getSewSingleOperand(switchElem, vec_idx, elem_num, false);
 						switch (switchElem) {
 							case 8:
 								iss.mem->store_byte(addr, value);
@@ -665,37 +619,12 @@ class VExtension {
 								break;
 						}
 					}
-
-					traceLoadStore(i, ldst, evl, switchElem, effective_mul_idx, ldstType, value, addr, field);
 				}
 				if (break_loop) {
 					break;
 				}
 			}
 		}
-	}
-
-	void traceLoadStore(xlen_reg_t i, load_store_t ldst, xlen_reg_t evl, xlen_reg_t switchElem,
-	                    xlen_reg_t effective_mul_idx, load_store_type_t ldstType, op_reg_t value, xlen_reg_t addr,
-	                    xlen_reg_t startField) {
-		printf("Cpu %lu Mem %s bank 0 VA 0x%016lx PA 0x%016lx size %ld bytes 0x", (uint64_t)iss.csrs.mhartid.reg,
-		       ldst == load_store_t::load ? "R" : "W", addr, addr, switchElem >> 3);
-		if (ldst == load_store_t::load ||
-		    (ldst == load_store_t::store &&
-		     (ldstType == load_store_type_t::standard || ldstType == load_store_type_t::standard_reg ||
-		      ldstType == load_store_type_t::indexed))) {
-			printHexFixed(invertBytes(value, switchElem), switchElem >> 3);
-		} else {
-			printHexFixed(value, switchElem >> 3);
-		}
-		printf("\n");
-
-		auto [vec_idx, elem_num] = vIndices(i, ldstType, startField, switchElem, effective_mul_idx);
-		xlen_reg_t elem_num_64 = elem_num / (64 / switchElem);
-
-		op_reg_t out = getSewSingleOperand(64, vec_idx, elem_num_64, false);
-		printf("Cpu %lu Reg %s v%ld_%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-		       ldst == load_store_t::load ? "W" : "R", vec_idx, elem_num_64, out);
 	}
 
 	void genericVLoop(std::function<void(xlen_reg_t)> func) {
@@ -1043,15 +972,7 @@ class VExtension {
 	}
 
 	std::function<op_reg_t(op_reg_t, op_reg_t, xlen_reg_t)> vAdc() {
-		return [=](op_reg_t op2, op_reg_t op1, xlen_reg_t i) -> op_reg_t {
-			// TODO remove debug output
-			if (iss.instr.vm() == 0) {
-				printf("Cpu %ld Reg W v0_0 val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-				       (uint64_t)getSewSingleOperand(64, 0, 0, true));
-			}
-
-			return op2 + op1 + vCarry(i);
-		};
+		return [=](op_reg_t op2, op_reg_t op1, xlen_reg_t i) -> op_reg_t { return op2 + op1 + vCarry(i); };
 	}
 
 	std::function<void(xlen_reg_t)> vMadc() {
@@ -1073,7 +994,7 @@ class VExtension {
 			op_reg_t carry = vCarry(i);
 			has_overflown |= carry && res == getMask(64);
 
-			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, has_overflown, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -1081,14 +1002,7 @@ class VExtension {
 	}
 
 	std::function<op_reg_t(op_reg_t, op_reg_t, xlen_reg_t)> vSbc() {
-		return [=](op_reg_t op2, op_reg_t op1, xlen_reg_t i) -> op_reg_t {
-			// TODO remove debug output
-			if (iss.instr.vm() == 0) {
-				printf("Cpu %ld Reg W v0_0 val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
-				       (uint64_t)getSewSingleOperand(64, 0, 0, true));
-			}
-			return op2 - op1 - vCarry(i);
-		};
+		return [=](op_reg_t op2, op_reg_t op1, xlen_reg_t i) -> op_reg_t { return op2 - op1 - vCarry(i); };
 	}
 
 	std::function<void(xlen_reg_t)> vMsbc() {
@@ -1108,7 +1022,7 @@ class VExtension {
 			op_reg_t carry = vCarry(i);
 			has_overflown |= carry && res == 0;
 
-			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, has_overflown, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -1373,8 +1287,8 @@ class VExtension {
 		return [=](xlen_reg_t i) -> void {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
-			op_reg_t vs1 = (getSewSingleOperand(64, iss.instr.rs1(), reg_idx, true) >> reg_pos) & 1;
-			op_reg_t vs2 = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, true) >> reg_pos) & 1;
+			op_reg_t vs1 = (getSewSingleOperand(64, iss.instr.rs1(), reg_idx, false) >> reg_pos) & 1;
+			op_reg_t vs2 = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
 
 			op_reg_t res;
 			switch (op) {
@@ -1405,7 +1319,7 @@ class VExtension {
 			}
 			res &= 0b1;
 
-			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
 		};
@@ -1417,7 +1331,7 @@ class VExtension {
 		genericVLoop([=, &count](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
-			op_reg_t mask = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, true) >> reg_pos) & 1;
+			op_reg_t mask = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
 			count += mask;
 		});
 		iss_reg_write(iss.instr.rd(), count);
@@ -1430,7 +1344,7 @@ class VExtension {
 		genericVLoop([=, &position](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
-			op_reg_t mask = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, true) >> reg_pos) & 1;
+			op_reg_t mask = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
 			if (position == initial_position && mask) {
 				position = i;
 			}
@@ -1444,9 +1358,9 @@ class VExtension {
 		genericVLoop([=, &hit](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
-			bool mask_elem = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, true) >> reg_pos) & 1;
+			bool mask_elem = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
 
-			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			op_reg_t vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			op_reg_t result = 0;
 			if (!hit) {
@@ -1483,7 +1397,7 @@ class VExtension {
 			elem_sel = elem_sel_t::xxxuuu;
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
-			bool hit = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, true) >> reg_pos) & 1;
+			bool hit = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
 
 			writeGeneric(count, i);
 
@@ -1501,7 +1415,7 @@ class VExtension {
 	}
 
 	void vMvXs() {
-		op_reg_t res = getSewSingleOperand(getIntVSew(), iss.instr.rs2(), 0, true);
+		op_reg_t res = getSewSingleOperand(getIntVSew(), iss.instr.rs2(), 0, false);
 		res = signExtend(res, getIntVSew());
 		iss_reg_write(iss.instr.rd(), res);
 	}
@@ -1521,7 +1435,7 @@ class VExtension {
 			}
 			elem_sel = elem_sel_t::xxxsss;
 
-			op_reg_t res = getSewSingleOperand(getIntVSew(), iss.instr.rs2(), index - offset, true);
+			op_reg_t res = getSewSingleOperand(getIntVSew(), iss.instr.rs2(), index - offset, false);
 			writeGeneric(res, index);
 		};
 	}
@@ -1535,7 +1449,7 @@ class VExtension {
 			xlen_reg_t vlmax = lmul * VLEN / getIntVSew();
 			bool is_zero = (index + offset) >= vlmax;
 
-			op_reg_t res = is_zero ? 0 : getSewSingleOperand(getIntVSew(), iss.instr.rs2(), index + offset, true);
+			op_reg_t res = is_zero ? 0 : getSewSingleOperand(getIntVSew(), iss.instr.rs2(), index + offset, false);
 			writeGeneric(res, index);
 		};
 	}
@@ -1546,7 +1460,7 @@ class VExtension {
 			if (index != 0) {
 				elem_sel = elem_sel_t::xxxsss;
 
-				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2(), index - 1, true);
+				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2(), index - 1, false);
 				writeGeneric(res, index);
 			} else {
 				elem_sel = elem_sel_t::xxxuuu;
@@ -1563,7 +1477,7 @@ class VExtension {
 			if (index != (iss.csrs.vl.reg - 1)) {
 				elem_sel = elem_sel_t::xxxsss;
 
-				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2(), index + 1, true);
+				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2(), index + 1, false);
 				writeGeneric(res, index);
 			} else {
 				elem_sel = elem_sel_t::xxxuuu;
@@ -1593,7 +1507,7 @@ class VExtension {
 				return 0;
 			}
 
-			return getSewSingleOperand(getIntVSew(), iss.instr.rs2(), op1, true);
+			return getSewSingleOperand(getIntVSew(), iss.instr.rs2(), op1, false);
 		};
 	}
 
@@ -1608,7 +1522,7 @@ class VExtension {
 				return;
 			}
 
-			op_reg_t res = getSewSingleOperand(getIntVSew(), iss.instr.rs2(), i, true);
+			op_reg_t res = getSewSingleOperand(getIntVSew(), iss.instr.rs2(), i, false);
 			writeGeneric(res, current_position);
 			current_position++;
 		});
@@ -1624,7 +1538,7 @@ class VExtension {
 			for (xlen_reg_t idx = start; idx < evl; idx++) {
 				xlen_reg_t reg = idx / (VLEN / sew);
 				xlen_reg_t elem = idx % (VLEN / sew);
-				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2() + reg, elem, true);
+				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2() + reg, elem, false);
 
 				writeSewSingleOperand(sew, iss.instr.rd() + reg, elem, res);
 			}
@@ -1639,7 +1553,7 @@ class VExtension {
 
 	op_reg_t vCarry(xlen_reg_t index) {
 		auto [reg_idx, reg_pos] = getCarryElements(index);
-		op_reg_t carry = (getSewSingleOperand(64, 0, reg_idx, true) >> reg_pos) & 1;
+		op_reg_t carry = (getSewSingleOperand(64, 0, reg_idx, false) >> reg_pos) & 1;
 		if (iss.instr.vm() == 1) {
 			carry = 0;
 		}
@@ -2175,7 +2089,7 @@ class VExtension {
 					v_assert(false);
 			}
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
 		};
@@ -2198,7 +2112,7 @@ class VExtension {
 					v_assert(false);
 			}
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -2222,7 +2136,7 @@ class VExtension {
 					v_assert(false);
 			}
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -2246,7 +2160,7 @@ class VExtension {
 					v_assert(false);
 			}
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -2270,7 +2184,7 @@ class VExtension {
 					v_assert(false);
 			}
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -2294,7 +2208,7 @@ class VExtension {
 					v_assert(false);
 			}
 			auto [reg_idx, reg_pos] = getCarryElements(i);
-			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, true);
+			vd = getSewSingleOperand(64, iss.instr.rd(), reg_idx, false);
 
 			vd = setSingleBitUnmasked(vd, res, reg_pos);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), reg_idx, vd);
@@ -2319,7 +2233,7 @@ class VExtension {
 
 	void vMvFs() {
 		xlen_reg_t sew = getIntVSew();
-		op_reg_t val = getSewSingleOperand(sew, iss.instr.rs2(), 0, true);
+		op_reg_t val = getSewSingleOperand(sew, iss.instr.rs2(), 0, false);
 		fp_reg_write(iss.instr.rd(), val, sew);
 	}
 
