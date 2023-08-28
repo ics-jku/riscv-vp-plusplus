@@ -37,4 +37,21 @@ clean-all: vp-clean qt-clean
 clean: vp-clean
 
 codestyle:
-	find . -type d \( -name .git -o -name dependencies \) -prune -o -name '*.h' -o -name '*.hpp' -o -name '*.cpp' -print | xargs clang-format -i -style=file
+	find 									\
+		\(								\
+			-name "*.h" -or						\
+			-name "*.hpp" -or					\
+			-name "*.c" -or						\
+			-name "*.cpp"						\
+		\) -and								\
+		-not \(								\
+			-path "./.git/*" -or					\
+			-path "./vp/src/core/common/gdb-mc/libgdb/mpc/*" -or	\
+			-path "./vp/src/platform/hifive/vbb-protocol/*" -or	\
+			-path "./vp/src/platform/hwitl/virtual-bus/*" -or	\
+			-path "./vp/src/vendor/*" -or				\
+			-path "./vp/tests/*" -or				\
+			-path "./*/build/*"					\
+		\)								\
+		-print								\
+		| xargs clang-format -i -style=file
