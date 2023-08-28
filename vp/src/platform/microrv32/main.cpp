@@ -1,32 +1,30 @@
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "core/common/clint.h"
-#include "elf_loader.h"
 #include "debug_memory.h"
+#include "elf_loader.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
-#include "syscall.h"
-#include "microrv32_uart.h"
-#include "microrv32_led.h"
 #include "microrv32_gpio.h"
-#include "util/options.h"
+#include "microrv32_led.h"
+#include "microrv32_uart.h"
 #include "platform/common/options.h"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
+#include "syscall.h"
+#include "util/options.h"
 
 using namespace rv32;
 namespace po = boost::program_options;
 
 class BasicOptions : public Options {
-public:
+   public:
 	typedef unsigned int addr_t;
 
 	addr_t clint_start_addr = 0x2000000;
@@ -41,7 +39,7 @@ public:
 	addr_t uart_end_addr = 0x820000ff;
 	addr_t gpio_a_start_addr = 0x83000000;
 	addr_t gpio_a_end_addr = 0x830000ff;
-	
+
 	addr_t mem_size = mem_end_addr - mem_start_addr;
 
 	bool use_E_base_isa = false;
@@ -49,11 +47,11 @@ public:
 	OptionValue<unsigned long> entry_point;
 
 	BasicOptions(void) {
-        	// clang-format off
+		// clang-format off
 		add_options()
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)");
-        	// clang-format on
+		// clang-format on
 	}
 
 	void parse(int argc, char **argv) override {

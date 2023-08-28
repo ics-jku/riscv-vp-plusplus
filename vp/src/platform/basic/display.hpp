@@ -8,7 +8,9 @@
 #pragma once
 
 #include <tlm_utils/simple_target_socket.h>
+
 #include <systemc>
+
 #include "../../../../env/basic/vp-display/framebuffer.h"
 
 using namespace std;

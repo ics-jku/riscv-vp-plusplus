@@ -1,13 +1,12 @@
 #pragma once
 
-#include <systemc>
-
+#include <arpa/inet.h>
 #include <tlm_utils/simple_target_socket.h>
+
+#include <systemc>
 
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
-
-#include <arpa/inet.h>
 
 struct MaskROM : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<MaskROM> tsock;

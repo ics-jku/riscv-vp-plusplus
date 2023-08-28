@@ -1,8 +1,10 @@
 #include "uart.h"
-#include "platform.h"
+
 #include <stdint.h>
 
-int sendString(char* str, long len) {
+#include "platform.h"
+
+int sendString(char *str, long len) {
 	long cnt = len;
 	const char *s = (const char *)str;
 	while (cnt > 0) {
@@ -23,8 +25,8 @@ void putChr(char chr) {
 	do {
 		// read uart tx status
 		tx_rdy = *UART_TX_CTRL_ADDR;
-		asm volatile ("nop");
-	} while(!tx_rdy);
+		asm volatile("nop");
+	} while (!tx_rdy);
 #else
 	uint32_t tx_rdy = 0;
 	*UART_TX_DATA_ADDR = chr;
@@ -34,8 +36,8 @@ void putChr(char chr) {
 	do {
 		// read uart tx status
 		tx_rdy = *UART_TX_CTRL_ADDR;
-		asm volatile ("nop");
-	} while(!tx_rdy);
+		asm volatile("nop");
+	} while (!tx_rdy);
 #endif
 	return;
 }

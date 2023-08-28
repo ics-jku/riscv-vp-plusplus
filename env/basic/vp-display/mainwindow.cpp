@@ -1,6 +1,9 @@
 #include "mainwindow.h"
+
 #include <qpainter.h>
+
 #include <cassert>
+
 #include "framebuffer.h"
 #include "ui_mainwindow.h"
 

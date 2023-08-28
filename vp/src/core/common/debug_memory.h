@@ -1,11 +1,11 @@
 #ifndef RISCV_ISA_DEBUG_MEMORY_H
 #define RISCV_ISA_DEBUG_MEMORY_H
 
-#include <string>
-#include <type_traits>
-
 #include <tlm_utils/simple_initiator_socket.h>
+
+#include <string>
 #include <systemc>
+#include <type_traits>
 
 #include "core_defs.h"
 #include "trap.h"

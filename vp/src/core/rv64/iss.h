@@ -1,5 +1,20 @@
 #pragma once
 
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/tlm_quantumkeeper.h>
+
+#include <functional>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <stdexcept>
+#include <systemc>
+#include <unordered_set>
+#include <vector>
+
 #include "core/common/bus_lock_if.h"
 #include "core/common/clint_if.h"
 #include "core/common/core_defs.h"
@@ -7,27 +22,11 @@
 #include "core/common/irq_if.h"
 #include "core/common/trap.h"
 #include "csr.h"
+#include "debug.h"
 #include "fp.h"
 #include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
-#include "debug.h"
-
-#include <assert.h>
-#include <stdint.h>
-#include <string.h>
-
-#include <functional>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <stdexcept>
-#include <unordered_set>
-#include <vector>
-
-#include <tlm_utils/simple_initiator_socket.h>
-#include <tlm_utils/tlm_quantumkeeper.h>
-#include <systemc>
 
 namespace rv64 {
 
@@ -137,7 +136,10 @@ struct PendingInterrupts {
 	uint64_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public debug_target_if, public iss_syscall_if {
+struct ISS : public external_interrupt_target,
+             public clint_interrupt_target,
+             public debug_target_if,
+             public iss_syscall_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "iss.h"
 #include "core/common/mmu.h"
+#include "iss.h"
 
 namespace rv32 {
 
-    typedef GenericMMU<ISS> MMU;
+typedef GenericMMU<ISS> MMU;
 
-}  // namespace rv64
+}  // namespace rv32

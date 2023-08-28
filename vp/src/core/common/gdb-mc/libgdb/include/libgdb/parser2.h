@@ -5,11 +5,10 @@
 extern "C" {
 #endif
 
+#include <inttypes.h>
+#include <libgdb/parser1.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <inttypes.h>
-
-#include <libgdb/parser1.h>
 
 #ifndef LIBGDB_ADDR_TYPE
 #define LIBGDB_ADDR_TYPE uint64_t

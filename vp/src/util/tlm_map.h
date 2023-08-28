@@ -1,13 +1,12 @@
 #ifndef RISCV_TLM_MAP_H
 #define RISCV_TLM_MAP_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/simple_target_socket.h>
 
 #include <boost/format.hpp>
 #include <functional>
+#include <systemc>
 #include <unordered_map>
 
 /*
@@ -185,7 +184,7 @@ struct RegisterMapping : public AbstractMapping {
 		assert(r.mode.can_write() || cmd != tlm::TLM_WRITE_COMMAND);
 
 		auto fn = [cmd, &r, new_vptr, &trans]() {
-		    (void) new_vptr;
+			(void)new_vptr;
 			auto off = trans.get_address() % 4;
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				uint32_t n = r.bus_read();

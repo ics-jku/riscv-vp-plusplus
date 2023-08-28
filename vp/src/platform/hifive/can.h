@@ -1,15 +1,15 @@
 #pragma once
 
-#include "can/mcp_can_dfs.h"
-#include "spi.h"
-
 #include <linux/can.h>
 #include <net/if.h>
 
 #include <functional>
 #include <thread>
 
-class CAN  {
+#include "can/mcp_can_dfs.h"
+#include "spi.h"
+
+class CAN {
 	enum class State {
 		init,
 		readRegister,
@@ -76,7 +76,7 @@ class CAN  {
 
 	volatile bool stop;
 
-public:
+   public:
 	CAN();
 	~CAN();
 

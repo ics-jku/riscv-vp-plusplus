@@ -1,8 +1,8 @@
 #pragma once
 
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
+
+#include <systemc>
 
 #include "irq_if.h"
 #include "tlm_map.h"

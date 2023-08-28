@@ -1,40 +1,38 @@
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "basic_timer.h"
 #include "core/common/clint.h"
+#include "debug_memory.h"
 #include "display.hpp"
 #include "dma.h"
 #include "elf_loader.h"
 #include "ethernet.h"
 #include "fe310_plic.h"
 #include "flash.h"
-#include "debug_memory.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
 #include "memory_mapped_file.h"
+#include "platform/common/options.h"
+#include "platform/common/terminal.h"
 #include "sensor.h"
 #include "sensor2.h"
 #include "syscall.h"
 #include "uart.h"
 #include "util/options.h"
-#include "platform/common/options.h"
-#include "platform/common/terminal.h"
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
-
 
 using namespace rv32;
 namespace po = boost::program_options;
 
 class BasicOptions : public Options {
-public:
+   public:
 	typedef unsigned int addr_t;
 
 	std::string mram_image;
@@ -78,7 +76,7 @@ public:
 	OptionValue<unsigned long> entry_point;
 
 	BasicOptions(void) {
-        	// clang-format off
+		// clang-format off
 		add_options()
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
@@ -90,14 +88,14 @@ public:
 			("flash-device", po::value<std::string>(&flash_device)->default_value(""),"blockdevice for flash emulation")
 			("network-device", po::value<std::string>(&network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
 			("signature", po::value<std::string>(&test_signature)->default_value(""),"output filename for the test execution signature");
-        	// clang-format on
+		// clang-format on
 	};
 
-	void printValues(std::ostream& os) const override {
+	void printValues(std::ostream &os) const override {
 		os << std::hex;
 		os << "mem_start_addr:\t" << +mem_start_addr << std::endl;
-		os << "mem_end_addr:\t"   << +mem_end_addr   << std::endl;
-		static_cast <const Options&>( *this ).printValues(os);
+		os << "mem_end_addr:\t" << +mem_end_addr << std::endl;
+		static_cast<const Options &>(*this).printValues(os);
 	}
 
 	void parse(int argc, char **argv) override {
@@ -111,7 +109,6 @@ public:
 		assert(mram_end_addr < dma_start_addr && "MRAM too big, would overlap memory");
 	}
 };
-
 
 int sc_main(int argc, char **argv) {
 	BasicOptions opt;
@@ -160,7 +157,7 @@ int sc_main(int argc, char **argv) {
 		entry_point = opt.entry_point.value;
 	try {
 		loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
-	} catch(ELFLoader::load_executable_exception& e) {
+	} catch (ELFLoader::load_executable_exception &e) {
 		std::cerr << e.what() << std::endl;
 		std::cerr << "Memory map: " << std::endl;
 		opt.printValues(std::cerr);

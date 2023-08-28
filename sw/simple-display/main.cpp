@@ -1,11 +1,12 @@
-#include "libDisplay.hpp"
-
 #include <math.h>
+
 #include <climits>
 #include <cstring>
 #include <iostream>
 
-Framebuffer* volatile const framebuffer = (Framebuffer * volatile const)(0x72000000);
+#include "libDisplay.hpp"
+
+Framebuffer* volatile const framebuffer = (Framebuffer* volatile const)(0x72000000);
 
 typedef Framebuffer::Point Point;
 typedef Framebuffer::PointF PointF;
@@ -41,9 +42,7 @@ void drawFunnyRects() {
 		// drawLine(framebuffer->getInactiveFrame(), getRandomPoint(),
 		// getRandomPoint(), getRandomColor());
 		display::drawRect(Framebuffer::Type::foreground, Point(m % screenWidth, m % screenHeight),
-		                  Point(
-				   (screenWidth - (m + 1) % screenWidth), (screenHeight - (m + 1) % screenHeight)
-				  ),
+		                  Point((screenWidth - (m + 1) % screenWidth), (screenHeight - (m + 1) % screenHeight)),
 		                  fromRGB(255 - (m % 255), (m % 255), i % 255));
 		display::applyFrame();
 		activeWait(.005);
@@ -54,7 +53,8 @@ void drawFunnyRects() {
 /**
  * @param completion Values between 0..1
  */
-void progressBar(bool horizontal, Framebuffer::PointF base, Framebuffer::PointF extent, Color fg, Color bg, float completion) {
+void progressBar(bool horizontal, Framebuffer::PointF base, Framebuffer::PointF extent, Color fg, Color bg,
+                 float completion) {
 	PointF progress = horizontal ? PointF(extent.x * completion, extent.y) : PointF(extent.x, extent.y * completion);
 
 	display::fillRect(Framebuffer::Type::foreground, base, base + progress, fg);

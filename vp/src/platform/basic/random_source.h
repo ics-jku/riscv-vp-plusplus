@@ -1,11 +1,10 @@
 #ifndef RISCV_ISA_RANDOM_SOURCE_H
 #define RISCV_ISA_RANDOM_SOURCE_H
 
-#include <cstdlib>
-
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
+
+#include <cstdlib>
+#include <systemc>
 
 struct RandomSource : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<RandomSource> tsock;

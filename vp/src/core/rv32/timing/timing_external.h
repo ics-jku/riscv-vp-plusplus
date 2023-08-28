@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../iss.h"
-
 #include <dlfcn.h>
+
 #include <boost/io/ios_state.hpp>
 #include <iomanip>
+
+#include "../iss.h"
 
 std::string RISCV_TIMING_SIM_LIB = "riscv-timing-sim.so";
 std::string RISCV_TIMING_DB = "riscv-timing-db.xml";

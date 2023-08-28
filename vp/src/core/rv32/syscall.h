@@ -58,6 +58,7 @@
 #define SYS_host_test_fail 3  // RISC-V test execution failed
 
 #include <tlm_utils/simple_target_socket.h>
+
 #include <systemc>
 
 #include "iss.h"

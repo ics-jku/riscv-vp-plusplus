@@ -8,42 +8,36 @@
  */
 
 #pragma once
+#include <functional>
+#include <map>
+
 #include "common.hpp"
 
-#include <map>
-#include <functional>
-
 class SS1106 {
-public:
+   public:
 	typedef std::function<bool()> GetDCPin_function;
-private:
 
+   private:
 	static const std::map<ss1106::Operator, uint8_t> opcode;
 
-	struct Command
-	{
+	struct Command {
 		ss1106::Operator op;
 		uint8_t payload;
 	};
 
-	enum class Mode : uint_fast8_t
-	{
-		normal,
-		second_arg
-	} mode = Mode::normal;
+	enum class Mode : uint_fast8_t { normal, second_arg } mode = Mode::normal;
 
-	void *sharedSegment = nullptr;
+	void* sharedSegment = nullptr;
 	ss1106::State* state;
 
 	Command last_cmd = Command{ss1106::Operator::NOP, 0};
 
 	GetDCPin_function getDCPin;
 
-
 	uint8_t mask(ss1106::Operator op);
 	Command match(uint8_t cmd);
 
-public:
+   public:
 	SS1106(GetDCPin_function getDCPin, ss1106::State* state_memory_override = nullptr);
 	~SS1106();
 

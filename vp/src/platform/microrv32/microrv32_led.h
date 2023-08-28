@@ -1,11 +1,10 @@
 #pragma once
 
+#include <tlm_utils/simple_target_socket.h>
+
 #include <cstdlib>
 #include <cstring>
-
 #include <systemc>
-
-#include <tlm_utils/simple_target_socket.h>
 
 struct MicroRV32LED : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<MicroRV32LED> tsock;
@@ -24,16 +23,16 @@ struct MicroRV32LED : public sc_core::sc_module {
 		auto cmd = trans.get_command();
 		// auto len = trans.get_data_length();
 		auto ptr = trans.get_data_ptr();
-		
+
 		if (cmd == tlm::TLM_WRITE_COMMAND) {
-		    if (addr == 0) {
-		        led_vals = *ptr;
+			if (addr == 0) {
+				led_vals = *ptr;
 				// printf("\n[TLM] LED write : %X \n", *ptr);
-		    }
+			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
-		    if (addr == 0) {
-		    	 *((uint32_t*)ptr) = led_vals;
-		    }
+			if (addr == 0) {
+				*((uint32_t *)ptr) = led_vals;
+			}
 		}
 
 		(void)delay;  // zero delay

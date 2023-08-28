@@ -1,20 +1,19 @@
+#include "slip.h"
+
 #include <errno.h>
+#include <fcntl.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <termios.h>
-#include <unistd.h>
-#include <systemc>
-#include <fcntl.h>
-
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
 
-#include <linux/if.h>
-#include <linux/if_tun.h>
-
-#include "slip.h"
+#include <systemc>
 
 // SLIP (as defined in RFC 1055) doesn't specify an MTU. We therefore
 // subsequently allocate memory for the packet buffer using realloc(3).

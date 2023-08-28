@@ -1,13 +1,12 @@
 #ifndef RISCV_ISA_DMA_H
 #define RISCV_ISA_DMA_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/simple_target_socket.h>
 
-#include <unordered_map>
 #include <array>
+#include <systemc>
+#include <unordered_map>
 
 struct SimpleDMA : public sc_core::sc_module {
 	tlm_utils::simple_initiator_socket<SimpleDMA> isock;

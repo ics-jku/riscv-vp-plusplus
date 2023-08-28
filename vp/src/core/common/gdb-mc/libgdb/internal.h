@@ -2,9 +2,8 @@
 #define GDB_PROTOCOL_FNS
 
 #include <assert.h>
-#include <stddef.h>
-
 #include <libgdb/parser2.h>
+#include <stddef.h>
 
 #ifdef NDEBUG
 #define xassert(X) ((void)(X)) /* prevent -Wunused-parameter warning */

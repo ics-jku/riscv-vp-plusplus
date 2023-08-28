@@ -31,7 +31,7 @@ std::vector<std::string> splitString(std::string str, char sep = ',');
 	E operator++(E &enumTmp);                                                     \
 	bool valid##E(T value);                                                       \
 	bool operator==(E left, E right);                                             \
-	template<typename Other>                                                      \
+	template <typename Other>                                                     \
 	bool operator<(E left, Other right) {                                         \
 		return static_cast<T>(left) < right;                                      \
 	}
@@ -77,7 +77,6 @@ std::vector<std::string> splitString(std::string str, char sep = ',');
 		return static_cast<T>(left) == static_cast<T>(right);                \
 	}
 
-
 #define IMPL_ENUM(E) IMPL_ENUM_WITH_TYPE(E, int32_t)
 
 template <typename T>
@@ -93,7 +92,7 @@ std::map<T, std::string> generateEnumMap(std::string strMap) {
 	for (auto iter = enumTokens.begin(); iter != enumTokens.end(); ++iter) {
 		// Token: [EnumName | EnumName=EnumValue]
 		std::string enumName;
-		//T enumValue;
+		// T enumValue;
 		if (iter->find('=') == std::string::npos) {
 			enumName = *iter;
 		} else {

@@ -1,18 +1,18 @@
 #ifndef RISCV_GDB_REGISTER
 #define RISCV_GDB_REGISTER
 
-#include <sstream>
-
 #include <stdint.h>
+
+#include <sstream>
 
 #include "core_defs.h"
 
 class RegisterFormater {
-  private:
+   private:
 	Architecture arch;
 	std::ostringstream stream;
 
-  public:
+   public:
 	RegisterFormater(Architecture);
 	void formatRegister(uint64_t);
 	std::string str(void);

@@ -8,7 +8,6 @@
 
 #include "core_defs.h"
 
-
 struct debug_target_if {
 	virtual ~debug_target_if() {}
 

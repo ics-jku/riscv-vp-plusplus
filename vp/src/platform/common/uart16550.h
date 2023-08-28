@@ -1,13 +1,13 @@
 #pragma once
 
+#include <fcntl.h>
+#include <termios.h>
 #include <tlm_utils/simple_target_socket.h>
+
+#include <deque>
 #include <systemc>
 
 #include "util/memory_map.h"
-
-#include <fcntl.h>
-#include <termios.h>
-#include <deque>
 
 struct UART16550 : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<UART16550> tsock;

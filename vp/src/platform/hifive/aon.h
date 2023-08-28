@@ -1,9 +1,9 @@
 #ifndef RISCV_VP_AON_H
 #define RISCV_VP_AON_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
+
+#include <systemc>
 
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
@@ -70,7 +70,7 @@ struct AON : public sc_core::sc_module {
 		RTC_COUNT_LO_REG_ADDR = 0x048,
 		RTC_COUNT_HI_REG_ADDR = 0x04C,
 		RTC_S_REG_ADDR = 0x050,
-		RTC_CMP0 =0x060,
+		RTC_CMP0 = 0x060,
 
 		LFROSCCFG_REG_ADDR = 0x70,
 
@@ -117,31 +117,53 @@ struct AON : public sc_core::sc_module {
 
 		router
 		    .add_register_bank({
-			{WDOG_CFG_REG_ADDR, &wdogcfg},
-			{WDOG_CNT_REG_ADDR, &wdogcount},
-			{WDOG_FEED_REG_ADDR, &wdogfeed},
-			{WDOG_KEY_REG_ADDR, &wdogkey},
-			{WDOG_CMP0_REG_ADDR, &wdogcmp0},
+		        {WDOG_CFG_REG_ADDR, &wdogcfg},
+		        {WDOG_CNT_REG_ADDR, &wdogcount},
+		        {WDOG_FEED_REG_ADDR, &wdogfeed},
+		        {WDOG_KEY_REG_ADDR, &wdogkey},
+		        {WDOG_CMP0_REG_ADDR, &wdogcmp0},
 
 		        {RTC_CFG_REG_ADDR, &rtccfg},
 		        {RTC_COUNT_LO_REG_ADDR, &rtccountlo},
-			{RTC_COUNT_HI_REG_ADDR, &rtccounthi},
-			{RTC_S_REG_ADDR, &rtcs},
-			{RTC_CMP0, &rtccmp0},
+		        {RTC_COUNT_HI_REG_ADDR, &rtccounthi},
+		        {RTC_S_REG_ADDR, &rtcs},
+		        {RTC_CMP0, &rtccmp0},
 
-		        {LFROSCCFG_REG_ADDR, &lfrosccfg}, {PMUCAUSE_REG_ADDR, &pmucause},
+		        {LFROSCCFG_REG_ADDR, &lfrosccfg},
+		        {PMUCAUSE_REG_ADDR, &pmucause},
 
-		        {BACKUP0_REG_ADDR, &backup0},     {BACKUP1_REG_ADDR, &backup1},   {BACKUP2_REG_ADDR, &backup2},
-		        {BACKUP3_REG_ADDR, &backup3},     {BACKUP4_REG_ADDR, &backup4},   {BACKUP5_REG_ADDR, &backup5},
-		        {BACKUP6_REG_ADDR, &backup6},     {BACKUP7_REG_ADDR, &backup7},   {BACKUP8_REG_ADDR, &backup8},
-		        {BACKUP9_REG_ADDR, &backup9},     {BACKUP10_REG_ADDR, &backup10}, {BACKUP11_REG_ADDR, &backup11},
-		        {BACKUP12_REG_ADDR, &backup12},   {BACKUP13_REG_ADDR, &backup13}, {BACKUP14_REG_ADDR, &backup14},
-		        {BACKUP15_REG_ADDR, &backup15},   {BACKUP16_REG_ADDR, &backup16}, {BACKUP17_REG_ADDR, &backup17},
-		        {BACKUP18_REG_ADDR, &backup18},   {BACKUP19_REG_ADDR, &backup19}, {BACKUP20_REG_ADDR, &backup20},
-		        {BACKUP21_REG_ADDR, &backup21},   {BACKUP22_REG_ADDR, &backup22}, {BACKUP23_REG_ADDR, &backup23},
-		        {BACKUP24_REG_ADDR, &backup24},   {BACKUP25_REG_ADDR, &backup25}, {BACKUP26_REG_ADDR, &backup26},
-		        {BACKUP27_REG_ADDR, &backup27},   {BACKUP28_REG_ADDR, &backup28}, {BACKUP29_REG_ADDR, &backup29},
-		        {BACKUP30_REG_ADDR, &backup30},   {BACKUP31_REG_ADDR, &backup31},
+		        {BACKUP0_REG_ADDR, &backup0},
+		        {BACKUP1_REG_ADDR, &backup1},
+		        {BACKUP2_REG_ADDR, &backup2},
+		        {BACKUP3_REG_ADDR, &backup3},
+		        {BACKUP4_REG_ADDR, &backup4},
+		        {BACKUP5_REG_ADDR, &backup5},
+		        {BACKUP6_REG_ADDR, &backup6},
+		        {BACKUP7_REG_ADDR, &backup7},
+		        {BACKUP8_REG_ADDR, &backup8},
+		        {BACKUP9_REG_ADDR, &backup9},
+		        {BACKUP10_REG_ADDR, &backup10},
+		        {BACKUP11_REG_ADDR, &backup11},
+		        {BACKUP12_REG_ADDR, &backup12},
+		        {BACKUP13_REG_ADDR, &backup13},
+		        {BACKUP14_REG_ADDR, &backup14},
+		        {BACKUP15_REG_ADDR, &backup15},
+		        {BACKUP16_REG_ADDR, &backup16},
+		        {BACKUP17_REG_ADDR, &backup17},
+		        {BACKUP18_REG_ADDR, &backup18},
+		        {BACKUP19_REG_ADDR, &backup19},
+		        {BACKUP20_REG_ADDR, &backup20},
+		        {BACKUP21_REG_ADDR, &backup21},
+		        {BACKUP22_REG_ADDR, &backup22},
+		        {BACKUP23_REG_ADDR, &backup23},
+		        {BACKUP24_REG_ADDR, &backup24},
+		        {BACKUP25_REG_ADDR, &backup25},
+		        {BACKUP26_REG_ADDR, &backup26},
+		        {BACKUP27_REG_ADDR, &backup27},
+		        {BACKUP28_REG_ADDR, &backup28},
+		        {BACKUP29_REG_ADDR, &backup29},
+		        {BACKUP30_REG_ADDR, &backup30},
+		        {BACKUP31_REG_ADDR, &backup31},
 		    })
 		    .register_handler(this, &AON::register_access_callback);
 	}

@@ -2,6 +2,7 @@
 #include <atomic>
 #include <functional>
 #include <thread>
+
 #include "framebuffer.h"
 
 class VPDisplayserver {

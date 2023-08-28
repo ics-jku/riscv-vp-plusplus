@@ -1,22 +1,21 @@
 /*
-* utility functions for embedded usage where c-libs are too big
-*/
+ * utility functions for embedded usage where c-libs are too big
+ */
 
 //----------------------------
 // integer to ascii (itoa) with util functions
 //----------------------------
 
 // function to swap two numbers
-void swap(char *x, char *y) {
+void swap(char* x, char* y) {
 	char t = *x;
 	*x = *y;
 	*y = t;
 }
 
 // function to reverse buffer[i..j]
-char* reverse(char *buffer, int i, int j) {
-	while (i < j)
-		swap(&buffer[i++], &buffer[j--]);
+char* reverse(char* buffer, int i, int j) {
+	while (i < j) swap(&buffer[i++], &buffer[j--]);
 	return buffer;
 }
 
@@ -47,7 +46,7 @@ char* itoa(int value, char* buffer, int base) {
 	if (value < 0 && base == 10)
 		buffer[i++] = '-';
 
-	buffer[i] = '\0'; // null terminate string
+	buffer[i] = '\0';  // null terminate string
 
 	// reverse the string and return it
 	return reverse(buffer, 0, i - 1);

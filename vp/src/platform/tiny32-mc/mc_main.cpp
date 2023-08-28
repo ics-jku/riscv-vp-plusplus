@@ -1,27 +1,25 @@
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "core/common/clint.h"
 #include "elf_loader.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
-#include "syscall.h"
 #include "platform/common/options.h"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
+#include "syscall.h"
 
 using namespace rv32;
 namespace po = boost::program_options;
 
 struct TinyOptions : public Options {
-public:
+   public:
 	typedef unsigned int addr_t;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
@@ -43,8 +41,8 @@ public:
 			("memory-start", po::value<unsigned int>(&mem_start_addr), "set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA");
-        	// clang-format on
-        }
+		// clang-format on
+	}
 
 	void parse(int argc, char **argv) override {
 		Options::parse(argc, argv);

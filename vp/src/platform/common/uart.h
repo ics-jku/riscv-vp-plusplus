@@ -1,16 +1,17 @@
 #ifndef RISCV_VP_UART_H
 #define RISCV_VP_UART_H
 
-#include <stdint.h>
 #include <fd_abstract_uart.h>
+#include <stdint.h>
+
 #include <systemc>
 
 class UART : public FD_ABSTRACT_UART {
-public:
+   public:
 	UART(const sc_core::sc_module_name&, uint32_t);
 	virtual ~UART(void);
 
-private:
+   private:
 	typedef enum {
 		STATE_COMMAND,
 		STATE_NORMAL,

@@ -28,16 +28,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
  */
 
-#include <system_error>
+#include "rawmode.h"
 
-#include <stdlib.h>
 #include <errno.h>
-#include <termios.h>
-#include <unistd.h>
 #include <signal.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <termios.h>
+#include <unistd.h>
 
-#include "rawmode.h"
+#include <system_error>
 
 static int rawfd = -1;
 static struct termios orig_termios;
@@ -84,7 +84,7 @@ void enableRawMode(int fd) {
 		return;
 
 	if (!isatty(STDIN_FILENO))
-		return; // not a tty, nothing to do
+		return;  // not a tty, nothing to do
 
 	if (tcgetattr(fd, &orig_termios) == -1)
 		goto fatal;

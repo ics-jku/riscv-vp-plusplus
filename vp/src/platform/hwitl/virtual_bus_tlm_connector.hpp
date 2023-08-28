@@ -5,10 +5,10 @@
  *      Author: dwd
  */
 
-
 #include <tlm_utils/simple_target_socket.h>
-#include <systemc>
+
 #include <functional>
+#include <systemc>
 
 #include "bus.h"
 #include "virtual-bus/initiator.hpp"
@@ -29,13 +29,13 @@ struct VirtualBusMember : public sc_core::sc_module {
 	/**
 	 * @input base_address will be added to the local (!) address
 	 */
-	VirtualBusMember(sc_core::sc_module_name, Initiator& virtual_bus_connector,
-			hwitl::Address base_address = 0);
+	VirtualBusMember(sc_core::sc_module_name, Initiator& virtual_bus_connector, hwitl::Address base_address = 0);
 
 	void setDelayTimes(sc_core::sc_time read_delay, sc_core::sc_time write_delay);
-	void setInterruptRoutine(std::function<void(void)> trigger_target, sc_core::sc_time polling_time = sc_core::sc_time(10, sc_core::SC_MS));
+	void setInterruptRoutine(std::function<void(void)> trigger_target,
+	                         sc_core::sc_time polling_time = sc_core::sc_time(10, sc_core::SC_MS));
 
-	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay);
+	void transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay);
 
 	SC_HAS_PROCESS(VirtualBusMember);
 	void interrupt_service();

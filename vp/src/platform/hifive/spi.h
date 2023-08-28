@@ -1,15 +1,14 @@
 #ifndef RISCV_VP_SPI_H
 #define RISCV_VP_SPI_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
-
-#include "core/common/irq_if.h"
-#include "util/tlm_map.h"
 
 #include <map>
 #include <queue>
+#include <systemc>
+
+#include "core/common/irq_if.h"
+#include "util/tlm_map.h"
 
 typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
 
@@ -18,7 +17,7 @@ typedef uint32_t Pin;
 struct SPI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<SPI> tsock;
 
-	//single queue for all targets
+	// single queue for all targets
 	static constexpr uint_fast8_t queue_size = 16;
 	std::queue<uint8_t> rxqueue;
 	std::map<Pin, SpiWriteFunction> targets;
@@ -62,7 +61,6 @@ struct SPI : public sc_core::sc_module {
 
 	static constexpr uint_fast8_t SPI_IP_TXWM = 0x1;
 	static constexpr uint_fast8_t SPI_IP_RXWM = 0x2;
-
 
 	vp::map::LocalRouter router = {"SPI"};
 
@@ -112,19 +110,19 @@ struct SPI : public sc_core::sc_module {
 
 		if (r.write) {
 			if (r.vptr == &csid) {
-				//std::cout << "Chip select " << csid << std::endl;
+				// std::cout << "Chip select " << csid << std::endl;
 			} else if (r.vptr == &txdata) {
-				//std::cout << std::hex << txdata << " ";
+				// std::cout << std::hex << txdata << " ";
 				auto target = targets.find(csid);
 				if (target != targets.end()) {
 					rxqueue.push(target->second(txdata));
 
-					//TODO: Model RX-Watermark IP
-					if(rxqueue.size() > queue_size)
+					// TODO: Model RX-Watermark IP
+					if (rxqueue.size() > queue_size)
 						rxqueue.pop();
 
-					//TODO: Model latency.
-					if(txmark > 0 && (ie & SPI_IP_TXWM))
+					// TODO: Model latency.
+					if (txmark > 0 && (ie & SPI_IP_TXWM))
 						ip |= SPI_IP_TXWM;
 				} else {
 					std::cerr << "Write on unregistered Chip-Select " << csid << std::endl;
@@ -139,9 +137,8 @@ struct SPI : public sc_core::sc_module {
 	}
 
 	void connect(Pin cs, SpiWriteFunction interface) {
-		if(cs == 1 || cs > 3)
-		{
-			std::cerr << "SPI: Unsupported chip select " << cs  << std::endl;
+		if (cs == 1 || cs > 3) {
+			std::cerr << "SPI: Unsupported chip select " << cs << std::endl;
 			return;
 		}
 		targets.insert(std::pair<const Pin, SpiWriteFunction>(cs, interface));

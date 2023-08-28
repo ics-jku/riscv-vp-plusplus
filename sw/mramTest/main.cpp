@@ -1,4 +1,5 @@
 #include <string.h>
+
 #include "stdio.h"
 
 static char* const MRAM_START_ADDR = reinterpret_cast<char* const>(0x60000000);

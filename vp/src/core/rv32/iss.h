@@ -1,32 +1,31 @@
 #pragma once
 
-#include "core/common/bus_lock_if.h"
-#include "core/common/clint_if.h"
-#include "core/common/instr.h"
-#include "core/common/irq_if.h"
-#include "core/common/trap.h"
-#include "core/common/debug.h"
-#include "csr.h"
-#include "fp.h"
-#include "mem_if.h"
-#include "syscall_if.h"
-#include "util/common.h"
-
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/tlm_quantumkeeper.h>
 
 #include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <systemc>
 #include <unordered_set>
 #include <vector>
 
-#include <tlm_utils/simple_initiator_socket.h>
-#include <tlm_utils/tlm_quantumkeeper.h>
-#include <systemc>
+#include "core/common/bus_lock_if.h"
+#include "core/common/clint_if.h"
+#include "core/common/debug.h"
+#include "core/common/instr.h"
+#include "core/common/irq_if.h"
+#include "core/common/trap.h"
+#include "csr.h"
+#include "fp.h"
+#include "mem_if.h"
+#include "syscall_if.h"
+#include "util/common.h"
 
 namespace rv32 {
 
@@ -152,7 +151,10 @@ struct PendingInterrupts {
 	uint32_t pending;
 };
 
-struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if, public debug_target_if {
+struct ISS : public external_interrupt_target,
+             public clint_interrupt_target,
+             public iss_syscall_if,
+             public debug_target_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -163,8 +165,8 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	uint32_t last_pc = 0;
 	bool trace = false;
 	bool shall_exit = false;
-    bool ignore_wfi = false;
-    bool error_on_zero_traphandler = false;
+	bool ignore_wfi = false;
+	bool error_on_zero_traphandler = false;
 	csr_table csrs;
 	PrivilegeLevel prv = MachineMode;
 	int64_t lr_sc_counter = 0;
@@ -187,7 +189,7 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
 	static constexpr int32_t REG_MIN = INT32_MIN;
-    static constexpr unsigned xlen = 32;
+	static constexpr unsigned xlen = 32;
 
 	ISS(uint32_t hart_id, bool use_E_base_isa = false);
 
@@ -205,29 +207,27 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 
 	void trigger_software_interrupt(bool status) override;
 
-
 	void sys_exit() override;
 	unsigned get_syscall_register_index() override;
 	uint64_t read_register(unsigned idx) override;
 	void write_register(unsigned idx, uint64_t value) override;
 
-    std::vector<uint64_t> get_registers(void) override;
+	std::vector<uint64_t> get_registers(void) override;
 
-    Architecture get_architecture(void) override {
-        return RV32;
-    }
+	Architecture get_architecture(void) override {
+		return RV32;
+	}
 
-    uint64_t get_progam_counter(void) override;
-    void enable_debug(void) override;
-    CoreExecStatus get_status(void) override;
-    void set_status(CoreExecStatus) override;
-    void block_on_wfi(bool) override;
+	uint64_t get_progam_counter(void) override;
+	void enable_debug(void) override;
+	CoreExecStatus get_status(void) override;
+	void set_status(CoreExecStatus) override;
+	void block_on_wfi(bool) override;
 
-    void insert_breakpoint(uint64_t) override;
-    void remove_breakpoint(uint64_t) override;
+	void insert_breakpoint(uint64_t) override;
+	void remove_breakpoint(uint64_t) override;
 
 	uint64_t get_hart_id() override;
-
 
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;

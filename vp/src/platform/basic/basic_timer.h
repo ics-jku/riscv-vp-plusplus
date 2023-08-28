@@ -1,9 +1,9 @@
 #ifndef RISCV_ISA_BASIC_TIMER_H
 #define RISCV_ISA_BASIC_TIMER_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
+
+#include <systemc>
 
 #include "core/common/irq_if.h"
 

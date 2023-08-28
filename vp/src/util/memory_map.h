@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <vector>
+
 #include "common.h"
 
 struct RegisterRange {

@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 
 #define GDB_CSUM_LEN 2
 

@@ -1,10 +1,10 @@
-#include "stdint.h"
-#include "irq.h"
-#include "stdio.h"
 #include "assert.h"
+#include "irq.h"
+#include "stdint.h"
+#include "stdio.h"
 
 static void set_next_timer_interrupt() {
-	assert (mtime && mtimecmp);
+	assert(mtime && mtimecmp);
 	*mtimecmp = *mtime + 1000;  // 1000 timer ticks, corresponds to 1 MS delay with current CLINT configuration
 }
 

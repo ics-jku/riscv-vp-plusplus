@@ -4,6 +4,7 @@
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
 
 ### Key features of *RISCV-VP++*
+ * Harmonized coding style (make codestyle)
  * Based on [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp) (commit 9418b8abb5)
 
 More related information can be found at http://www.systemc-verification.org/riscv-vp.

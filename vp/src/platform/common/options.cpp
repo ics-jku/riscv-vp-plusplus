@@ -1,8 +1,9 @@
 #include "options.h"
 
-#include <iostream>
 #include <unistd.h>
+
 #include <boost/program_options.hpp>
+#include <iostream>
 
 namespace po = boost::program_options;
 
@@ -46,21 +47,20 @@ void Options::parse(int argc, char **argv) {
 		}
 		if (vm["intercept-syscalls"].as<bool>() && vm.count("error-on-zero-traphandler") == 0) {
 			// intercept syscalls active, but no overriding error-on-zero-traphandler switch
-			std::cerr << "[Options] Info: switch 'intercept-syscalls' also activates 'error-on-zero-traphandler' if unset." << std::endl;
+			std::cerr
+			    << "[Options] Info: switch 'intercept-syscalls' also activates 'error-on-zero-traphandler' if unset."
+			    << std::endl;
 			error_on_zero_traphandler = true;
 		}
 	} catch (po::error &e) {
-		std::cerr
-			<< "Error parsing command line options: "
-			<< e.what()
-			<< std::endl;
+		std::cerr << "Error parsing command line options: " << e.what() << std::endl;
 
 		std::cout << *this << std::endl;
 		exit(1);
 	}
 }
 
-void Options::printValues(std::ostream& os) const {
+void Options::printValues(std::ostream &os) const {
 	os << std::dec;
 	os << "intercept_syscalls: " << intercept_syscalls << std::endl;
 	os << "error-on-zero-traphandler: " << error_on_zero_traphandler << std::endl;

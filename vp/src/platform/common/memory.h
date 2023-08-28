@@ -2,14 +2,14 @@
 #define RISCV_ISA_MEMORY_H
 
 #include <stdint.h>
+#include <tlm_utils/simple_target_socket.h>
+
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <iostream>
+#include <systemc>
 
 #include "bus.h"
 #include "load_if.h"
-
-#include <tlm_utils/simple_target_socket.h>
-#include <systemc>
 
 struct SimpleMemory : public sc_core::sc_module, public load_if {
 	tlm_utils::simple_target_socket<SimpleMemory> tsock;

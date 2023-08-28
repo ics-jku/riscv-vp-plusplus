@@ -1,9 +1,9 @@
 #ifndef RISCV_VP_PRCI_H
 #define RISCV_VP_PRCI_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
+
+#include <systemc>
 
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"

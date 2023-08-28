@@ -1,7 +1,7 @@
+#include "real_clint.h"
+
 #include <assert.h>
 #include <stddef.h>
-
-#include "real_clint.h"
 
 enum {
 	MSIP_BASE = 0,
@@ -15,36 +15,34 @@ enum {
 };
 
 enum {
-	MSIP_MASK = 0x1, // The upper MSIP bits are tied to zero
+	MSIP_MASK = 0x1,  // The upper MSIP bits are tied to zero
 };
 
 /* This is used to quantize a 1MHz value to the closest 32768Hz value */
-#define DIVIDEND (uint64_t(15625)/uint64_t(512))
+#define DIVIDEND (uint64_t(15625) / uint64_t(512))
 
-static void
-timercb(void *arg) {
+static void timercb(void *arg) {
 	AsyncEvent *event = (AsyncEvent *)arg;
 	event->notify();
 }
 
-RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target*> &_harts)
-	: regs_msip(MSIP_BASE, MSIP_SIZE * _harts.size()),
-	  regs_mtimecmp(MTIMECMP_BASE, MTIMECMP_SIZE * _harts.size()),
-	  regs_mtime(MTIME_BASE, MTIME_SIZE),
+RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target *> &_harts)
+    : regs_msip(MSIP_BASE, MSIP_SIZE * _harts.size()),
+      regs_mtimecmp(MTIMECMP_BASE, MTIMECMP_SIZE * _harts.size()),
+      regs_mtime(MTIME_BASE, MTIME_SIZE),
 
-	  msip(regs_msip),
-	  mtimecmp(regs_mtimecmp),
-	  mtime(regs_mtime),
+      msip(regs_msip),
+      mtimecmp(regs_mtimecmp),
+      mtime(regs_mtime),
 
-	  harts(_harts) {
+      harts(_harts) {
 	for (size_t i = 0; i < harts.size(); i++) {
 		Timer *timer = new Timer(timercb, &event);
 		timers.push_back(timer);
 	}
 
 	register_ranges.insert(register_ranges.end(), {&regs_mtimecmp, &regs_msip, &regs_mtime});
-	for (auto reg : register_ranges)
-		reg->alignment = 4;
+	for (auto reg : register_ranges) reg->alignment = 4;
 
 	regs_mtimecmp.post_write_callback = std::bind(&RealCLINT::post_write_mtimecmp, this, std::placeholders::_1);
 	regs_msip.post_write_callback = std::bind(&RealCLINT::post_write_msip, this, std::placeholders::_1);
@@ -61,8 +59,7 @@ RealCLINT::RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target
 }
 
 RealCLINT::~RealCLINT(void) {
-	for (auto timer : timers)
-		delete timer;
+	for (auto timer : timers) delete timer;
 }
 
 uint64_t RealCLINT::update_and_get_mtime(void) {

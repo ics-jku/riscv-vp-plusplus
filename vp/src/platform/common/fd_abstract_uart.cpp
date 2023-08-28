@@ -1,19 +1,19 @@
+#include "fd_abstract_uart.h"
+
+#include <err.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <semaphore.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <mutex>
 #include <queue>
 #include <thread>
-#include <err.h>
-
-#include "fd_abstract_uart.h"
 
 #define stop_fd (stop_pipe[0])
-#define newpollfd(FD) \
-	(struct pollfd){.fd = FD, .events = POLLIN | POLLERR, .revents = 0};
+#define newpollfd(FD) (struct pollfd){.fd = FD, .events = POLLIN | POLLERR, .revents = 0};
 
 FD_ABSTRACT_UART::FD_ABSTRACT_UART(sc_core::sc_module_name name, uint32_t irqsrc) : UART_IF(name, irqsrc) {
 	stop = false;
@@ -39,16 +39,16 @@ void FD_ABSTRACT_UART::stop_threads(void) {
 	stop = true;
 
 	if (txthr) {
-		spost(&txfull); // unblock transmit thread
+		spost(&txfull);  // unblock transmit thread
 		txthr->join();
 		delete txthr;
 	}
 
 	if (rcvthr) {
 		uint8_t byte = 0;
-		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
+		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1)  // unblock receive thread
 			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
-		spost(&rxempty); // unblock receive thread
+		spost(&rxempty);  // unblock receive thread
 		rcvthr->join();
 		delete rcvthr;
 	}
@@ -59,7 +59,7 @@ void FD_ABSTRACT_UART::transmit(void) {
 
 	while (!stop) {
 		data = txpull();
-		if(stop)
+		if (stop)
 			break;
 		asyncEvent.notify();
 		write_data(data);

@@ -3,11 +3,11 @@
 
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/simple_target_socket.h>
-#include <systemc>
 
 #include <map>
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
+#include <systemc>
 
 struct PortMapping {
 	uint64_t start;

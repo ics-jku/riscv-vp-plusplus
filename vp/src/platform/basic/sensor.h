@@ -1,12 +1,11 @@
 #ifndef RISCV_ISA_SENSOR_H
 #define RISCV_ISA_SENSOR_H
 
+#include <tlm_utils/simple_target_socket.h>
+
 #include <cstdlib>
 #include <cstring>
-
 #include <systemc>
-
-#include <tlm_utils/simple_target_socket.h>
 
 #include "core/common/irq_if.h"
 

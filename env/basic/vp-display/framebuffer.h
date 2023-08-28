@@ -1,5 +1,6 @@
 #pragma once
 #include <inttypes.h>
+
 #include <cassert>
 #include <cstring>
 
@@ -41,12 +42,12 @@ struct Framebuffer {
 	} volatile command;
 	union Parameter {
 		struct {
-			//fillframe
+			// fillframe
 			Type frame;
 			Color color;
 		} fill;
 		struct {
-			//drawLine
+			// drawLine
 			Type frame;
 			PointF from;
 			PointF to;
@@ -78,7 +79,6 @@ struct Framebuffer {
 		return background;
 	}
 };
-
 
 inline Framebuffer::PointF operator+(const Framebuffer::PointF l, Framebuffer::PointF const r) {
 	return Framebuffer::PointF(l.x + r.x, l.y + r.y);

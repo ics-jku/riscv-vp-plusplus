@@ -1,16 +1,23 @@
 #pragma once
 
 #include <stdint.h>
+#include <tlm_utils/simple_target_socket.h>
+
 #include <map>
+#include <systemc>
+
+#include "core/common/irq_if.h"
+#include "util/memory_map.h"
+#include "util/tlm_map.h"
 
 /**
  * This class implements a Platform-Level Interrupt Controller (PLIC) as
  * defined in chapter 10 of the SiFive FU540-C000 manual.
  */
 struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
-public:
-	static constexpr int      NUMIRQ   = 53;
-	static constexpr uint32_t MAX_THR  = 7;
+   public:
+	static constexpr int NUMIRQ = 53;
+	static constexpr uint32_t MAX_THR = 7;
 	static constexpr uint32_t MAX_PRIO = 7;
 
 	static constexpr uint32_t ENABLE_BASE = 0x2000;
@@ -27,9 +34,9 @@ public:
 
 	SC_HAS_PROCESS(FU540_PLIC);
 
-private:
+   private:
 	class HartConfig {
-	  public:
+	   public:
 		ArrayView<uint32_t> m_mode;
 		ArrayView<uint32_t> s_mode; /* same as m_mode for hart0 */
 
@@ -43,10 +50,10 @@ private:
 	sc_core::sc_event e_run;
 	sc_core::sc_time clock_cycle;
 
-	std::vector<RegisterRange*> register_ranges;
+	std::vector<RegisterRange *> register_ranges;
 
 	/* hart_id (0..4) → hart_config */
-	typedef std::map<unsigned int, HartConfig*> hartmap;
+	typedef std::map<unsigned int, HartConfig *> hartmap;
 	hartmap enabled_irqs;
 	hartmap hart_context;
 
@@ -57,16 +64,16 @@ private:
 	/* See Section 10.4 */
 	RegisterRange regs_pending_interrupts{0x1000, sizeof(uint32_t) * 2};
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
-	
+
 	void create_registers(void);
-	void create_hart_regs(uint64_t, uint64_t, hartmap&);
-	void transport(tlm::tlm_generic_payload&, sc_core::sc_time&);
+	void create_hart_regs(uint64_t, uint64_t, hartmap &);
+	void transport(tlm::tlm_generic_payload &, sc_core::sc_time &);
 	bool read_hartctx(RegisterRange::ReadInfo, unsigned int, PrivilegeLevel);
 	void write_hartctx(RegisterRange::WriteInfo, unsigned int, PrivilegeLevel);
 	void write_irq_prios(RegisterRange::WriteInfo);
 	void run(void);
 	unsigned int next_pending_irq(unsigned int, PrivilegeLevel, bool);
-	bool has_pending_irq(unsigned int, PrivilegeLevel*);
+	bool has_pending_irq(unsigned int, PrivilegeLevel *);
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);
 	void clear_pending(unsigned int);
 	bool is_pending(unsigned int);

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <exception>
 #include <cstdint>
+#include <exception>
 #include <vector>
 
 #include "load_if.h"
@@ -21,7 +21,7 @@ struct GenericElfLoader {
 	const Elf_Ehdr *hdr;
 
 	struct load_executable_exception : public std::exception {
-		const char * what () const throw () {
+		const char *what() const throw() {
 			return "Tried loading invalid elf layout";
 		}
 	};
@@ -45,10 +45,10 @@ struct GenericElfLoader {
 			if ((p->p_filesz == 0) && (p->p_memsz == 0))
 				continue;
 
-			//If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
-			// -> still, the memory needs to be zero initialized in this case!
-//			if (p->p_memsz > p->p_filesz)
-//				continue;
+			// If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
+			//  -> still, the memory needs to be zero initialized in this case!
+			//			if (p->p_memsz > p->p_filesz)
+			//				continue;
 
 			sections.push_back(p);
 		}
@@ -56,18 +56,17 @@ struct GenericElfLoader {
 		return sections;
 	}
 
-	std::ostream& print_phdr(std::ostream& os, const Elf_Phdr& h, unsigned tabs = 0)
-	{
+	std::ostream &print_phdr(std::ostream &os, const Elf_Phdr &h, unsigned tabs = 0) {
 		std::string tab(tabs, '\t');
-		os << tab << "p_type "  << h.p_type   << std::endl;
-		os << tab << "p_offset "<< h.p_offset << std::endl;
-		os << tab << "p_vaddr " << h.p_vaddr  << std::endl;
-		os << tab << "p_paddr " << h.p_paddr  << std::endl;
-		os << tab << "p_filesz "<< h.p_filesz << std::endl;
-		os << tab << "p_memsz " << h.p_memsz  << std::endl;
-		os << tab << "p_flags " << h.p_flags  << std::endl;
-		os << tab << "p_align " << h.p_align  << std::endl;
-	    return os;
+		os << tab << "p_type " << h.p_type << std::endl;
+		os << tab << "p_offset " << h.p_offset << std::endl;
+		os << tab << "p_vaddr " << h.p_vaddr << std::endl;
+		os << tab << "p_paddr " << h.p_paddr << std::endl;
+		os << tab << "p_filesz " << h.p_filesz << std::endl;
+		os << tab << "p_memsz " << h.p_memsz << std::endl;
+		os << tab << "p_flags " << h.p_flags << std::endl;
+		os << tab << "p_align " << h.p_align << std::endl;
+		return os;
 	}
 
 	void load_executable_image(load_if &load_if, addr_t size, addr_t offset, bool use_vaddr = true) {
@@ -107,7 +106,7 @@ struct GenericElfLoader {
 
 			load_if.load_data(src, idx, to_copy);
 
-			assert (p->p_memsz >= p->p_filesz);
+			assert(p->p_memsz >= p->p_filesz);
 			idx = idx + p->p_filesz;
 			to_copy = p->p_memsz - p->p_filesz;
 
@@ -176,10 +175,10 @@ struct GenericElfLoader {
 		return p->st_value;
 	}
 
-    addr_t get_to_host_address() {
-        auto p = get_symbol("tohost");
-        return p->st_value;
-    }
+	addr_t get_to_host_address() {
+		auto p = get_symbol("tohost");
+		return p->st_value;
+	}
 
 	std::vector<const Elf_Shdr *> get_sections(void) {
 		if (hdr->e_shoff == 0) {

@@ -25,7 +25,7 @@ struct InstrMemoryProxy : public instr_memory_if {
 struct CombinedMemoryInterface : public sc_core::sc_module,
                                  public instr_memory_if,
                                  public data_memory_if,
-                                 public mmu_memory_if  {
+                                 public mmu_memory_if {
 	ISS &iss;
 	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;
@@ -38,17 +38,16 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
 	std::vector<MemoryDMI> dmi_ranges;
 
-    MMU *mmu;
+	MMU *mmu;
 
 	CombinedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU *mmu = nullptr)
-	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
-	}
+	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {}
 
-    uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {
-	    if (mmu == nullptr)
-	        return vaddr;
-        return mmu->translate_virtual_to_physical_addr(vaddr, type);
-    }
+	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {
+		if (mmu == nullptr)
+			return vaddr;
+		return mmu->translate_virtual_to_physical_addr(vaddr, type);
+	}
 
 	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
 		tlm::tlm_generic_payload trans;
@@ -66,8 +65,9 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 		quantum_keeper.set(local_delay);
 
 		if (trans.is_response_error()) {
-			if (iss.trace || iss.sys)	// if iss has syscall interface, it likely has no traphandler for this
-				std::cout << "WARNING: core memory transaction failed for address 0x" << std::hex << addr << std::dec << std::endl;
+			if (iss.trace || iss.sys)  // if iss has syscall interface, it likely has no traphandler for this
+				std::cout << "WARNING: core memory transaction failed for address 0x" << std::hex << addr << std::dec
+				          << std::endl;
 			if (cmd == tlm::TLM_READ_COMMAND)
 				raise_trap(EXC_LOAD_PAGE_FAULT, addr);
 			else if (cmd == tlm::TLM_WRITE_COMMAND)
@@ -113,38 +113,37 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 		atomic_unlock();
 	}
 
+	template <typename T>
+	inline T _load_data(uint64_t addr) {
+		return _raw_load_data<T>(v2p(addr, LOAD));
+	}
 
-    template <typename T>
-    inline T _load_data(uint64_t addr) {
-        return _raw_load_data<T>(v2p(addr, LOAD));
-    }
+	template <typename T>
+	inline void _store_data(uint64_t addr, T value) {
+		_raw_store_data(v2p(addr, STORE), value);
+	}
 
-    template <typename T>
-    inline void _store_data(uint64_t addr, T value) {
-        _raw_store_data(v2p(addr, STORE), value);
-    }
+	uint64_t mmu_load_pte64(uint64_t addr) override {
+		return _raw_load_data<uint64_t>(addr);
+	}
+	uint64_t mmu_load_pte32(uint64_t addr) override {
+		return _raw_load_data<uint32_t>(addr);
+	}
+	void mmu_store_pte32(uint64_t addr, uint32_t value) override {
+		_raw_store_data(addr, value);
+	}
 
-    uint64_t mmu_load_pte64(uint64_t addr) override {
-        return _raw_load_data<uint64_t>(addr);
-    }
-    uint64_t mmu_load_pte32(uint64_t addr) override {
-        return _raw_load_data<uint32_t>(addr);
-    }
-    void mmu_store_pte32(uint64_t addr, uint32_t value) override {
-        _raw_store_data(addr, value);
-    }
+	void flush_tlb() override {
+		mmu->flush_tlb();
+	}
 
-    void flush_tlb() override {
-        mmu->flush_tlb();
-    }
+	uint32_t load_instr(uint64_t addr) override {
+		return _raw_load_data<uint32_t>(v2p(addr, FETCH));
+	}
 
-    uint32_t load_instr(uint64_t addr) override {
-        return _raw_load_data<uint32_t>(v2p(addr, FETCH));
-    }
-
-    int64_t load_double(uint64_t addr) override {
-        return _load_data<int64_t>(addr);
-    }
+	int64_t load_double(uint64_t addr) override {
+		return _load_data<int64_t>(addr);
+	}
 	int32_t load_word(uint64_t addr) override {
 		return _load_data<int32_t>(addr);
 	}
@@ -161,9 +160,9 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 		return _load_data<uint8_t>(addr);
 	}
 
-    void store_double(uint64_t addr, uint64_t value) override {
-        _store_data(addr, value);
-    }
+	void store_double(uint64_t addr, uint64_t value) override {
+		_store_data(addr, value);
+	}
 	void store_word(uint64_t addr, uint32_t value) override {
 		_store_data(addr, value);
 	}

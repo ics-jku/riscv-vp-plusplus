@@ -1,6 +1,7 @@
 #pragma once
 #include <QMainWindow>
 #include <cassert>
+
 #include "vpdisplayserver.h"
 
 namespace Ui {

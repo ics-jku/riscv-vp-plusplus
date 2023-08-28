@@ -1,34 +1,32 @@
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <memory>
 
 #include "aon.h"
 #include "can.h"
-#include "oled/oled.hpp"
 #include "core/common/clint.h"
 #include "core/rv32/syscall.h"
+#include "debug_memory.h"
 #include "elf_loader.h"
 #include "fe310_plic.h"
-#include "debug_memory.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "gpio.h"
 #include "iss.h"
 #include "maskROM.h"
 #include "mem.h"
 #include "memory.h"
+#include "oled/oled.hpp"
+#include "platform/common/options.h"
 #include "prci.h"
 #include "slip.h"
 #include "spi.h"
 #include "uart.h"
-#include "platform/common/options.h"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <functional>
 
 // Interrupt numbers	(see platform.h)
 #define INT_RESERVED 0
@@ -48,7 +46,7 @@ using namespace rv32;
 namespace po = boost::program_options;
 
 class HifiveOptions : public Options {
-public:
+   public:
 	typedef unsigned int addr_t;
 
 	addr_t maskROM_start_addr = 0x00001000;
@@ -66,7 +64,7 @@ public:
 	addr_t uart0_start_addr = 0x10013000;
 	addr_t uart0_end_addr = 0x10013FFF;
 	addr_t uart1_start_addr = 0x10023000;
-	addr_t uart1_end_addr = 0x10023FFF;		// not routed on Hifive1 Rev. A
+	addr_t uart1_end_addr = 0x10023FFF;  // not routed on Hifive1 Rev. A
 	addr_t spi0_start_addr = 0x10014000;
 	addr_t spi0_end_addr = 0x10014FFF;
 	addr_t spi1_start_addr = 0x10024000;
@@ -75,10 +73,10 @@ public:
 	addr_t spi2_end_addr = 0x10034FFF;
 	addr_t gpio0_start_addr = 0x10012000;
 	addr_t gpio0_end_addr = 0x10012FFF;
-	addr_t flash_size = 1024 * 1024 * 512;	// 512 MB flash
+	addr_t flash_size = 1024 * 1024 * 512;  // 512 MB flash
 	addr_t flash_start_addr = 0x20000000;
 	addr_t flash_end_addr = flash_start_addr + flash_size - 1;
-	addr_t dram_size = 1024 * 16;			// 16 KB dram
+	addr_t dram_size = 1024 * 16;  // 16 KB dram
 	addr_t dram_start_addr = 0x80000000;
 	addr_t dram_end_addr = dram_start_addr + dram_size - 1;
 
@@ -101,13 +99,13 @@ public:
 		// clang-format on
 	}
 
-	void printValues(std::ostream& os) const override {
+	void printValues(std::ostream &os) const override {
 		os << std::hex;
 		os << "flash_start_addr:\t" << +flash_start_addr << std::endl;
-		os << "flash_end_addr:\t"   << +flash_end_addr   << std::endl;
+		os << "flash_end_addr:\t" << +flash_end_addr << std::endl;
 		os << "dram_start_addr:\t" << +dram_start_addr << std::endl;
-		os << "dram_end_addr:\t"   << +dram_end_addr   << std::endl;
-		static_cast <const Options&>( *this ).printValues(os);
+		os << "dram_end_addr:\t" << +dram_end_addr << std::endl;
+		static_cast<const Options &>(*this).printValues(os);
 	}
 };
 
@@ -144,9 +142,10 @@ int sc_main(int argc, char **argv) {
 		spi1.connect(0, gpio0.getSPIwriteFunction(0));
 	}
 	std::shared_ptr<SS1106> oled;
-	if(!opt.disable_inline_oled) {
-		std::cout << "[hifive_main] using internal SS1106 oled controller on SPI CS 2 (with DC as Pin 16, Bit 10)" << std::endl;
-		oled = std::make_shared<SS1106>([&gpio0]{return gpio0.value & (1 << 10);});		// custom pin 16 is offset 10
+	if (!opt.disable_inline_oled) {
+		std::cout << "[hifive_main] using internal SS1106 oled controller on SPI CS 2 (with DC as Pin 16, Bit 10)"
+		          << std::endl;
+		oled = std::make_shared<SS1106>([&gpio0] { return gpio0.value & (1 << 10); });  // custom pin 16 is offset 10
 		spi1.connect(2, std::bind(&SS1106::write, oled, std::placeholders::_1));
 	} else {
 		// pass through to gpio server
@@ -157,22 +156,24 @@ int sc_main(int argc, char **argv) {
 	SPI spi2("SPI2");
 	std::shared_ptr<UART> uart0;
 	std::shared_ptr<Tunnel_UART> uart0_tunnel;
-	if(opt.forward_uart_0) {
+	if (opt.forward_uart_0) {
 		std::cout << "[hifive_main] tunneling UART0 over virtual breadboard protocol" << std::endl;
 		uart0_tunnel = std::make_shared<Tunnel_UART>("UART0", 3);
 		uart0_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(17));
-		gpio0.registerUartReceiveFunction(16, std::bind(&Tunnel_UART::nonblock_receive, uart0_tunnel, std::placeholders::_1));
+		gpio0.registerUartReceiveFunction(
+		    16, std::bind(&Tunnel_UART::nonblock_receive, uart0_tunnel, std::placeholders::_1));
 	} else {
 		uart0 = std::make_shared<UART>("UART0", 3);
 	}
 	std::shared_ptr<SLIP> slip;
 	std::shared_ptr<Tunnel_UART> uart1_tunnel;
-	if(opt.forward_uart_1) {
+	if (opt.forward_uart_1) {
 		std::cout << "[hifive_main] tunneling UART1 over virtual breadboard protocol" << std::endl;
 		uart1_tunnel = std::make_shared<Tunnel_UART>("UART1", 4);
 		// following pins only connected on RevB
 		uart1_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(23));
-		gpio0.registerUartReceiveFunction(18, std::bind(&Tunnel_UART::nonblock_receive, uart1_tunnel, std::placeholders::_1));
+		gpio0.registerUartReceiveFunction(
+		    18, std::bind(&Tunnel_UART::nonblock_receive, uart1_tunnel, std::placeholders::_1));
 	} else {
 		slip = std::make_shared<SLIP>("SLIP", 4, opt.tun_device);
 	}
@@ -193,20 +194,20 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_data_dmi)
 		iss_mem_if.dmi_ranges.emplace_back(dram_dmi);
 
-	bus.ports[ 0] = new PortMapping(opt.flash_start_addr,  opt.flash_end_addr);
-	bus.ports[ 1] = new PortMapping(opt.dram_start_addr,   opt.dram_end_addr);
-	bus.ports[ 2] = new PortMapping(opt.plic_start_addr,   opt.plic_end_addr);
-	bus.ports[ 3] = new PortMapping(opt.clint_start_addr,  opt.clint_end_addr);
-	bus.ports[ 4] = new PortMapping(opt.aon_start_addr,    opt.aon_end_addr);
-	bus.ports[ 5] = new PortMapping(opt.prci_start_addr,   opt.prci_end_addr);
-	bus.ports[ 6] = new PortMapping(opt.spi0_start_addr,   opt.spi0_end_addr);
-	bus.ports[ 7] = new PortMapping(opt.uart0_start_addr,  opt.uart0_end_addr);
-	bus.ports[ 8] = new PortMapping(opt.maskROM_start_addr,opt.maskROM_end_addr);
-	bus.ports[ 9] = new PortMapping(opt.gpio0_start_addr,  opt.gpio0_end_addr);
-	bus.ports[10] = new PortMapping(opt.sys_start_addr,    opt.sys_end_addr);
-	bus.ports[11] = new PortMapping(opt.spi1_start_addr,   opt.spi1_end_addr);
-	bus.ports[12] = new PortMapping(opt.spi2_start_addr,   opt.spi2_end_addr);
-	bus.ports[13] = new PortMapping(opt.uart1_start_addr,  opt.uart1_end_addr);
+	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
+	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr);
+	bus.ports[2] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
+	bus.ports[3] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
+	bus.ports[4] = new PortMapping(opt.aon_start_addr, opt.aon_end_addr);
+	bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
+	bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr);
+	bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
+	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
+	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
+	bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+	bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr);
+	bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
+	bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(dram, dram.size, opt.dram_start_addr, false);
@@ -228,7 +229,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[4].bind(aon.tsock);
 	bus.isocks[5].bind(prci.tsock);
 	bus.isocks[6].bind(spi0.tsock);
-	if(uart0) {
+	if (uart0) {
 		bus.isocks[7].bind(uart0->tsock);
 	} else if (uart0_tunnel) {
 		bus.isocks[7].bind(uart0_tunnel->tsock);
@@ -238,7 +239,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[10].bind(sys.tsock);
 	bus.isocks[11].bind(spi1.tsock);
 	bus.isocks[12].bind(spi2.tsock);
-	if(slip) {
+	if (slip) {
 		bus.isocks[13].bind(slip->tsock);
 	} else if (uart1_tunnel) {
 		bus.isocks[13].bind(uart1_tunnel->tsock);
@@ -248,13 +249,13 @@ int sc_main(int argc, char **argv) {
 	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
-	if(uart0)
+	if (uart0)
 		uart0->plic = &plic;
-	if(uart0_tunnel)
+	if (uart0_tunnel)
 		uart0_tunnel->plic = &plic;
-	if(slip)
+	if (slip)
 		slip->plic = &plic;
-	if(uart1_tunnel)
+	if (uart1_tunnel)
 		uart1_tunnel->plic = &plic;
 
 	std::vector<debug_target_if *> threads;
@@ -268,9 +269,9 @@ int sc_main(int argc, char **argv) {
 		new DirectCoreRunner(core);
 	}
 
-	if(opt.wait_for_gpio_connection) {
+	if (opt.wait_for_gpio_connection) {
 		std::cout << "[hifive_main] Waiting for virtual breadboard protocol connection" << std::endl;
-		while(!gpio0.isServerConnected()) {
+		while (!gpio0.isServerConnected()) {
 			usleep(2000);
 		}
 	}

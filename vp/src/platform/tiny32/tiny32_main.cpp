@@ -1,28 +1,26 @@
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "core/common/real_clint.h"
-#include "elf_loader.h"
 #include "debug_memory.h"
+#include "elf_loader.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
-#include "syscall.h"
 #include "platform/common/options.h"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
+#include "syscall.h"
 
 using namespace rv32;
 namespace po = boost::program_options;
 
 struct TinyOptions : public Options {
-public:
+   public:
 	typedef unsigned int addr_t;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
@@ -44,8 +42,8 @@ public:
 			("memory-start", po::value<unsigned int>(&mem_start_addr), "set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA");
-        	// clang-format on
-        }
+		// clang-format on
+	}
 
 	void parse(int argc, char **argv) override {
 		Options::parse(argc, argv);
@@ -62,7 +60,7 @@ int sc_main(int argc, char **argv) {
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	ISS core(0, opt.use_E_base_isa);
-    MMU mmu(core);
+	MMU mmu(core);
 	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
@@ -70,7 +68,7 @@ int sc_main(int argc, char **argv) {
 	SyscallHandler sys("SyscallHandler");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	std::vector<clint_interrupt_target*> clint_targets {&core};
+	std::vector<clint_interrupt_target *> clint_targets{&core};
 	RealCLINT clint("CLINT", clint_targets);
 
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
@@ -122,7 +120,7 @@ int sc_main(int argc, char **argv) {
 	}
 
 	if (opt.quiet)
-		 sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
+		sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);
 
 	sc_core::sc_start();
 	if (!opt.quiet) {

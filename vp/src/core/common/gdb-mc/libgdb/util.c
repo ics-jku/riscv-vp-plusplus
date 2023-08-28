@@ -1,14 +1,12 @@
 #include <err.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
 #include <libgdb/parser1.h>
 #include <libgdb/parser2.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "internal.h"
 
@@ -18,21 +16,16 @@
 #define GDB_ESCAPE_CHAR '}'
 #define GDB_ESCAPE_BYTE 0x20
 
-int
-calc_csum(const char *data)
-{
+int calc_csum(const char *data) {
 	size_t i;
 	int csum = 0;
 
-	for (i = 0; i < strlen(data); i++)
-		csum += (int)data[i];
+	for (i = 0; i < strlen(data); i++) csum += (int)data[i];
 
 	return csum % 256;
 }
 
-char *
-gdb_decode_runlen(char *data)
-{
+char *gdb_decode_runlen(char *data) {
 	int rcount, j;
 	size_t i, nlen, nrem;
 	int runlen;
@@ -82,9 +75,7 @@ err:
 	return NULL;
 }
 
-char *
-gdb_unescape(char *data)
-{
+char *gdb_unescape(char *data) {
 	size_t i, nlen;
 	char *ndat;
 	bool esc;
@@ -109,9 +100,7 @@ gdb_unescape(char *data)
 	return ndat;
 }
 
-bool
-gdb_is_valid(gdb_packet_t *pkt)
-{
+bool gdb_is_valid(gdb_packet_t *pkt) {
 	int ret;
 	int expcsum;
 	char strcsum[GDB_CSUM_LEN + 1]; /* +1 for snprintf nullbyte */
@@ -126,9 +115,7 @@ gdb_is_valid(gdb_packet_t *pkt)
 	return !strncmp(pkt->csum, strcsum, GDB_CSUM_LEN);
 }
 
-gdb_command_t *
-gdb_new_cmd(char *name, gdb_argument_t type)
-{
+gdb_command_t *gdb_new_cmd(char *name, gdb_argument_t type) {
 	gdb_command_t *cmd;
 
 	cmd = xmalloc(sizeof(*cmd));
@@ -138,9 +125,7 @@ gdb_new_cmd(char *name, gdb_argument_t type)
 	return cmd;
 }
 
-void
-gdb_free_cmd(gdb_command_t *cmd)
-{
+void gdb_free_cmd(gdb_command_t *cmd) {
 	gdb_vcont_t *parent, *next;
 
 	if (cmd->type == GDB_ARG_MEMORYW)
@@ -159,9 +144,7 @@ gdb_free_cmd(gdb_command_t *cmd)
 	free(cmd);
 }
 
-void *
-xrealloc(void *ptr, size_t size)
-{
+void *xrealloc(void *ptr, size_t size) {
 	void *r;
 
 	if (!(r = realloc(ptr, size)))
@@ -170,9 +153,7 @@ xrealloc(void *ptr, size_t size)
 	return r;
 }
 
-void *
-xmalloc(size_t size)
-{
+void *xmalloc(size_t size) {
 	void *r;
 
 	if (!(r = malloc(size)))
@@ -181,9 +162,7 @@ xmalloc(size_t size)
 	return r;
 }
 
-char *
-xstrdup(char *s)
-{
+char *xstrdup(char *s) {
 	char *r;
 
 	if (!(r = strdup(s)))
@@ -192,9 +171,7 @@ xstrdup(char *s)
 	return r;
 }
 
-void
-gdb_free_packet(gdb_packet_t *pkt)
-{
+void gdb_free_packet(gdb_packet_t *pkt) {
 	if (pkt->data)
 		free(pkt->data);
 	free(pkt);

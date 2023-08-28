@@ -6,19 +6,17 @@
 #include <sys/types.h>
 // for debug
 #include <arpa/inet.h>
+#include <linux/if_packet.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
-
-#include <linux/if_packet.h>
 //#include <netpacket/packet.h>
 #include <net/if.h>
 //#include <linux/if_ether.h>
 #include <fcntl.h>
-#include <linux/if_tun.h>
-#include <sys/ioctl.h>
-
 #include <ifaddrs.h>
+#include <linux/if_tun.h>
 #include <netdb.h>
+#include <sys/ioctl.h>
 
 using namespace std;
 
@@ -160,7 +158,9 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
 				cout << endl;
 			}
 			cout << "\t|-Operation : "
-			     << (ntohs(arp->oper) == 1 ? "REQUEST" : ntohs(arp->oper) == 2 ? "REPLY" : "INVALID");
+			     << (ntohs(arp->oper) == 1   ? "REQUEST"
+			         : ntohs(arp->oper) == 2 ? "REPLY"
+			                                 : "INVALID");
 			return;
 			break;
 		}

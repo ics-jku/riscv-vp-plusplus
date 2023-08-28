@@ -1,32 +1,30 @@
+#include <termios.h>
+#include <unistd.h>
+
+#include <boost/io/ios_state.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 
 #include "core/common/clint.h"
+#include "debug.h"
+#include "debug_memory.h"
 #include "elf_loader.h"
 #include "fu540_plic.h"
-#include "debug_memory.h"
+#include "gdb-mc/gdb_runner.h"
+#include "gdb-mc/gdb_server.h"
 #include "iss.h"
 #include "mem.h"
 #include "memory.h"
 #include "mmu.h"
+#include "platform/common/options.h"
 #include "platform/common/slip.h"
 #include "platform/common/uart.h"
 #include "prci.h"
 #include "syscall.h"
-#include "debug.h"
 #include "util/options.h"
-#include "platform/common/options.h"
-
-#include "gdb-mc/gdb_server.h"
-#include "gdb-mc/gdb_runner.h"
-
-#include <boost/io/ios_state.hpp>
-#include <boost/program_options.hpp>
-#include <iomanip>
-#include <iostream>
-
-#include <termios.h>
-#include <unistd.h>
 
 enum {
 	NUM_CORES = 5,
@@ -36,7 +34,7 @@ using namespace rv32;
 namespace po = boost::program_options;
 
 struct LinuxOptions : public Options {
-public:
+   public:
 	typedef unsigned int addr_t;
 
 	addr_t mem_size = 1024u * 1024u * 1024u;  // 1024 MB ram
@@ -63,14 +61,14 @@ public:
 	std::string tun_device = "tun0";
 
 	LinuxOptions(void) {
-        	// clang-format off
+		// clang-format off
 		add_options()
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
 			("dtb-file", po::value<std::string>(&dtb_file)->required(), "dtb file for boot loading")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP");
-        	// clang-format on
+		// clang-format on
 	}
 
 	void parse(int argc, char **argv) override {
@@ -200,7 +198,7 @@ int sc_main(int argc, char **argv) {
 
 		// configure supported instructions
 		cores[i]->iss.csrs.misa.fields.extensions |= cores[i]->iss.csrs.misa.M | cores[i]->iss.csrs.misa.A |
-			cores[i]->iss.csrs.misa.F | cores[i]->iss.csrs.misa.D;
+		                                             cores[i]->iss.csrs.misa.F | cores[i]->iss.csrs.misa.D;
 	}
 
 	// OpenSBI boots all harts except hart 0 by default.
@@ -215,8 +213,8 @@ int sc_main(int argc, char **argv) {
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	std::vector<mmu_memory_if*> mmus;
-	std::vector<debug_target_if*> dharts;
+	std::vector<mmu_memory_if *> mmus;
+	std::vector<debug_target_if *> dharts;
 	if (opt.use_debug_runner) {
 		for (size_t i = 0; i < NUM_CORES; i++) {
 			dharts.push_back(&cores[i]->iss);

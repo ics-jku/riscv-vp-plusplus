@@ -1,15 +1,14 @@
 #include "can.h"
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <unistd.h>
 
 #include <endian.h>
+#include <inttypes.h>
+#include <linux/can.h>
+#include <linux/can/raw.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <inttypes.h>
 
 CAN::CAN() {
 	state = State::init;
@@ -446,7 +445,8 @@ void CAN::enqueueIncomingCanFrame(const struct can_frame& frame) {
 		{
 			// empty buffer
 			memset(&rxBuf[i], 0, sizeof(MCPFrame));
-			mcp2515_id_to_buf(frame.can_id, rxBuf[i].fields.id);  // FIXME: This will break if extended frame or stuff happens
+			mcp2515_id_to_buf(frame.can_id,
+			                  rxBuf[i].fields.id);  // FIXME: This will break if extended frame or stuff happens
 			rxBuf[i].fields.length = frame.can_dlc;
 			memcpy(rxBuf[i].fields.payload, frame.data, frame.can_dlc);
 			status |= 1 << i;

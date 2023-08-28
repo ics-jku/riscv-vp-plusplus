@@ -1,23 +1,22 @@
 #pragma once
 
-#include <stdint.h>
 #include <poll.h>
 #include <semaphore.h>
 #include <stdbool.h>
-
-#include <systemc>
+#include <stdint.h>
 #include <tlm_utils/simple_target_socket.h>
 
-#include <thread>
 #include <mutex>
 #include <queue>
+#include <systemc>
+#include <thread>
 
 #include "core/common/irq_if.h"
-#include "util/tlm_map.h"
 #include "platform/common/async_event.h"
+#include "util/tlm_map.h"
 
 class UART_IF : public sc_core::sc_module {
-public:
+   public:
 	typedef uint32_t Register;
 	static constexpr Register UART_TXWM = 1 << 0;
 	static constexpr Register UART_RXWM = 1 << 1;
@@ -27,7 +26,9 @@ public:
 	static constexpr unsigned UART_FIFO_DEPTH = 8;
 
 	/* Extracts the interrupt trigger threshold from a control register */
-	static constexpr Register UART_CTRL_CNT(Register REG){ return REG >> 16;};
+	static constexpr Register UART_CTRL_CNT(Register REG) {
+		return REG >> 16;
+	};
 
 	static constexpr uint8_t TXDATA_REG_ADDR = 0x0;
 	static constexpr uint8_t RXDATA_REG_ADDR = 0x4;
@@ -43,10 +44,9 @@ public:
 	UART_IF(sc_core::sc_module_name, uint32_t irqsrc);
 	virtual ~UART_IF(void);
 
-	SC_HAS_PROCESS(UART_IF);	// interrupt
+	SC_HAS_PROCESS(UART_IF);  // interrupt
 
-private:
-
+   private:
 	void register_access_callback(const vp::map::register_access_t &);
 	void transport(tlm::tlm_generic_payload &, sc_core::sc_time &);
 	void interrupt(void);
@@ -64,7 +64,7 @@ private:
 
 	vp::map::LocalRouter router = {"UART"};
 
-protected:
+   protected:
 	std::queue<uint8_t> tx_fifo;
 	sem_t txfull;
 	std::queue<uint8_t> rx_fifo;

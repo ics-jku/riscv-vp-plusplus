@@ -1,22 +1,22 @@
 #include "uart.h"
-#include "core/common/rawmode.h"
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
+
 #include <systemc>
 
-#include <sys/types.h>
+#include "core/common/rawmode.h"
 
 /* character → control key */
-#define CTRL(c) ((c) & 0x1f)
+#define CTRL(c) ((c)&0x1f)
 
-#define KEY_ESC  CTRL('a')  /* Ctrl-a (character to enter command mode) */
-#define KEY_EXIT 'x'        /* x (character to exit in command mode) */
+#define KEY_ESC CTRL('a')        /* Ctrl-a (character to enter command mode) */
+#define KEY_EXIT 'x'             /* x (character to exit in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
-UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc)
-		: FD_ABSTRACT_UART(name, irqsrc) {
+UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc) : FD_ABSTRACT_UART(name, irqsrc) {
 	// If stdin isn't a tty, it doesn't make much sense to poll from it.
 	// In this case, we will run the UART in write-only mode.
 	bool write_only = !isatty(STDIN_FILENO);
@@ -41,13 +41,13 @@ void UART::handle_input(int fd) {
 		throw std::runtime_error("short read");
 
 	switch (state) {
-	case STATE_NORMAL:
-		if(buf != KEY_ESC)	// filter out first esc sequence
-			rxpush(buf);
-		break;
-	case STATE_COMMAND:
-		handle_cmd(buf);
-		break;
+		case STATE_NORMAL:
+			if (buf != KEY_ESC)  // filter out first esc sequence
+				rxpush(buf);
+			break;
+		case STATE_COMMAND:
+			handle_cmd(buf);
+			break;
 	}
 
 	/* update state of input state machine for next run */
@@ -60,15 +60,15 @@ void UART::handle_input(int fd) {
 
 void UART::handle_cmd(uint8_t cmd) {
 	switch (cmd) {
-	case KEY_ESC: /* double escape */
-		rxpush(cmd);
-		break;
-	case KEY_EXIT:
-	case KEY_CEXIT:
-		exit(EXIT_SUCCESS);
-		break;
-	default:
-		return; /* unknown command → ignore */
+		case KEY_ESC: /* double escape */
+			rxpush(cmd);
+			break;
+		case KEY_EXIT:
+		case KEY_CEXIT:
+			exit(EXIT_SUCCESS);
+			break;
+		default:
+			return; /* unknown command → ignore */
 	}
 }
 

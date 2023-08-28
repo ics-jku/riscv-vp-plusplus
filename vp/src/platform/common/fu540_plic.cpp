@@ -1,17 +1,15 @@
-#include <assert.h>
-#include <stdint.h>
-#include <stddef.h>
-
-#include <tlm_utils/simple_target_socket.h>
-#include <systemc>
-
-#include "core/common/irq_if.h"
-#include "util/memory_map.h"
-#include "util/tlm_map.h"
 #include "fu540_plic.h"
 
-inline uint32_t GET_IDX(uint32_t& irq) { return irq / 32; }
-inline uint32_t GET_OFF(uint32_t& irq) { return 1 << irq % 32; }
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+inline uint32_t GET_IDX(uint32_t &irq) {
+	return irq / 32;
+}
+inline uint32_t GET_OFF(uint32_t &irq) {
+	return 1 << irq % 32;
+}
 
 /**
  * TODO: Ensure that irq 0 is hardwired to zero
@@ -36,11 +34,10 @@ FU540_PLIC::FU540_PLIC(sc_core::sc_module_name, unsigned harts) {
 
 void FU540_PLIC::create_registers(void) {
 	regs_interrupt_priorities.post_write_callback =
-		std::bind(&FU540_PLIC::write_irq_prios, this, std::placeholders::_1);
+	    std::bind(&FU540_PLIC::write_irq_prios, this, std::placeholders::_1);
 
 	/* make pending interrupts read-only */
-	regs_pending_interrupts.pre_write_callback =
-		[] (RegisterRange::WriteInfo) { return false; };
+	regs_pending_interrupts.pre_write_callback = [](RegisterRange::WriteInfo) { return false; };
 
 	/* The priorities end address, as documented in the FU540-C000
 	 * manual, is incorrect <https://github.com/riscv/opensbi/pull/138> */
@@ -55,12 +52,11 @@ void FU540_PLIC::create_registers(void) {
 	create_hart_regs(CONTEXT_BASE, CONTEXT_PER_HART, hart_context);
 
 	/* only supports "naturally aligned 32-bit memory accesses" */
-	for (size_t i = 0; i < register_ranges.size(); i++)
-		register_ranges[i]->alignment = sizeof(uint32_t);
+	for (size_t i = 0; i < register_ranges.size(); i++) register_ranges[i]->alignment = sizeof(uint32_t);
 }
 
 void FU540_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
-	auto add_reg = [this, addr] (unsigned int h, PrivilegeLevel l, uint64_t a) {
+	auto add_reg = [this, addr](unsigned int h, PrivilegeLevel l, uint64_t a) {
 		RegisterRange *r = new RegisterRange(a, HART_REG_SIZE);
 		if (addr == CONTEXT_BASE) {
 			r->pre_read_callback = std::bind(&FU540_PLIC::read_hartctx, this, std::placeholders::_1, h, l);
@@ -112,15 +108,15 @@ bool FU540_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Priv
 		 * this case so no special handling required. */
 
 		switch (level) {
-		case MachineMode:
-			hart_context[hart]->m_mode[1] = irq;
-			break;
-		case SupervisorMode:
-			hart_context[hart]->s_mode[1] = irq;
-			break;
-		default:
-			assert(0);
-			break;
+			case MachineMode:
+				hart_context[hart]->m_mode[1] = irq;
+				break;
+			case SupervisorMode:
+				hart_context[hart]->s_mode[1] = irq;
+				break;
+			default:
+				assert(0);
+				break;
 		}
 
 		/* successful claim also clears the pending bit */
@@ -141,15 +137,15 @@ void FU540_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, Pr
 		uint32_t *thr;
 
 		switch (level) {
-		case MachineMode:
-			thr = &hart_context[hart]->m_mode[0];
-			break;
-		case SupervisorMode:
-			thr = &hart_context[hart]->s_mode[0];
-			break;
-		default:
-			assert(0);
-			break;
+			case MachineMode:
+				thr = &hart_context[hart]->m_mode[0];
+				break;
+			case SupervisorMode:
+				thr = &hart_context[hart]->s_mode[0];
+				break;
+			default:
+				assert(0);
+				break;
 		}
 
 		*thr = std::min(*thr, uint32_t(MAX_THR));
@@ -219,14 +215,14 @@ uint32_t FU540_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
 
 	HartConfig *conf = hart_context[hart];
 	switch (level) {
-	case MachineMode:
-		return conf->m_mode[0];
-		break;
-	case SupervisorMode:
-		return conf->s_mode[0];
-		break;
-	default:
-		throw std::invalid_argument("Invalid PrivilegeLevel");
+		case MachineMode:
+			return conf->m_mode[0];
+			break;
+		case SupervisorMode:
+			return conf->s_mode[0];
+			break;
+		default:
+			throw std::invalid_argument("Invalid PrivilegeLevel");
 	}
 }
 
@@ -252,12 +248,12 @@ bool FU540_PLIC::HartConfig::is_enabled(unsigned int irq, PrivilegeLevel level) 
 	unsigned int off = GET_OFF(irq);
 
 	switch (level) {
-	case MachineMode:
-		return m_mode[idx] & off;
-	case SupervisorMode:
-		return s_mode[idx] & off;
-	default:
-		assert(0);
+		case MachineMode:
+			return m_mode[idx] & off;
+		case SupervisorMode:
+			return s_mode[idx] & off;
+		default:
+			assert(0);
 	}
 
 	return false;

@@ -1,5 +1,5 @@
-#include "stdio.h"
 #include "errno.h"
+#include "stdio.h"
 #include "string.h"
 #include "unistd.h"
 
@@ -8,9 +8,9 @@ int main(int argc, char **argv) {
 	int e = errno;
 	puts(strerror(e));
 
-	puts ("Hello World!");
-	puts ("  Hello World!");
-	puts (" X A ");
+	puts("Hello World!");
+	puts("  Hello World!");
+	puts(" X A ");
 	putchar('a');
 	putchar('b');
 	putchar('c');

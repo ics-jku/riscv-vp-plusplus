@@ -1,9 +1,9 @@
 #ifndef RISCV_VP_PRCI_H
 #define RISCV_VP_PRCI_H
 
-#include <systemc>
-
 #include <tlm_utils/simple_target_socket.h>
+
+#include <systemc>
 
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
@@ -42,14 +42,14 @@ struct PRCI : public sc_core::sc_module {
 		router
 		    .add_register_bank({
 		        {HFROSCCFG_REG_ADDR, &hfrosccfg},
-			{CORE_PLLCFG0_REG_ADDR, &core_pllcfg0},
-			{DDR_PLLCFG0_REG_ADDR, &ddr_pllcfg0},
-			{CORE_PLLCFG1_REG_ADDR, &core_pllcfg1},
-			{GEMGXL_PLLCFG0_REG_ADDR, &gemgxl_pllcfg0},
-			{GEMGXL_PLLCFG1_REG_ADDR, &gemgxl_pllcfg1},
-			{CORE_CLKSEL_REG_ADDR, &core_clksel},
-			{RESET_REG_ADDR, &reset},
-			{CLKMUX_STATUS_REG_ADDR, &clkmux_status},
+		        {CORE_PLLCFG0_REG_ADDR, &core_pllcfg0},
+		        {DDR_PLLCFG0_REG_ADDR, &ddr_pllcfg0},
+		        {CORE_PLLCFG1_REG_ADDR, &core_pllcfg1},
+		        {GEMGXL_PLLCFG0_REG_ADDR, &gemgxl_pllcfg0},
+		        {GEMGXL_PLLCFG1_REG_ADDR, &gemgxl_pllcfg1},
+		        {CORE_CLKSEL_REG_ADDR, &core_clksel},
+		        {RESET_REG_ADDR, &reset},
+		        {CLKMUX_STATUS_REG_ADDR, &clkmux_status},
 		    })
 		    .register_handler(this, &PRCI::register_access_callback);
 	}

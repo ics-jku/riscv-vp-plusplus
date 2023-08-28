@@ -3,21 +3,23 @@
 #include <stdlib.h>
 #include <uart_if.h>
 #include <unistd.h>
+
 #include <mutex>
 #include <queue>
 
-UART_IF::UART_IF(sc_core::sc_module_name, uint32_t irqsrc) : plic(nullptr){
+UART_IF::UART_IF(sc_core::sc_module_name, uint32_t irqsrc) : plic(nullptr) {
 	irq = irqsrc;
 	tsock.register_b_transport(this, &UART_IF::transport);
 
-	router.add_register_bank({
-		{TXDATA_REG_ADDR, &txdata},
-		{RXDATA_REG_ADDR, &rxdata},
-		{TXCTRL_REG_ADDR, &txctrl},
-		{RXCTRL_REG_ADDR, &rxctrl},
-		{IE_REG_ADDR, &ie},
-		{IP_REG_ADDR, &ip},
-		{DIV_REG_ADDR, &div},
+	router
+	    .add_register_bank({
+	        {TXDATA_REG_ADDR, &txdata},
+	        {RXDATA_REG_ADDR, &rxdata},
+	        {TXCTRL_REG_ADDR, &txctrl},
+	        {RXCTRL_REG_ADDR, &rxctrl},
+	        {IE_REG_ADDR, &ie},
+	        {IP_REG_ADDR, &ip},
+	        {DIV_REG_ADDR, &div},
 	    })
 	    .register_handler(this, &UART_IF::register_access_callback);
 
@@ -47,7 +49,7 @@ void UART_IF::rxpush(uint8_t data) {
 uint8_t UART_IF::txpull() {
 	uint8_t data;
 	swait(&txfull);
-	if(tx_fifo.size() == 0) // Other thread will only increase count, not decrease
+	if (tx_fifo.size() == 0)  // Other thread will only increase count, not decrease
 		return 0;
 	txmtx.lock();
 	data = tx_fifo.front();

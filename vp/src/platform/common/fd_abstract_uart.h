@@ -1,24 +1,24 @@
 #pragma once
 
-#include <stdint.h>
 #include <poll.h>
 #include <semaphore.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <thread>
 
 #include "uart_if.h"
 
 class FD_ABSTRACT_UART : public UART_IF {
-public:
+   public:
 	FD_ABSTRACT_UART(sc_core::sc_module_name, uint32_t);
 	virtual ~FD_ABSTRACT_UART(void);
 
-protected:
+   protected:
 	void start_threads(int fd, bool write_only = false);
 	void stop_threads(void);
 
-private:
+   private:
 	virtual void write_data(uint8_t) = 0;
 	virtual void handle_input(int fd) = 0;
 

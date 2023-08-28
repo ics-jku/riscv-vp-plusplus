@@ -9,9 +9,9 @@ using namespace rv32;
 
 #define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
-#define REQUIRE_ISA(X)          \
-    if (!(csrs.misa.reg & X))   \
-        RAISE_ILLEGAL_INSTRUCTION()
+#define REQUIRE_ISA(X)        \
+	if (!(csrs.misa.reg & X)) \
+	RAISE_ILLEGAL_INSTRUCTION()
 
 #define RD instr.rd()
 #define RS1 instr.rs1()
@@ -33,8 +33,7 @@ int regcolors[] = {
     100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 153, 154, 155, 156, 157, 158,
     116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131,
 #else
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 #endif
 };
 
@@ -131,9 +130,9 @@ void ISS::exec_step() {
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed(RV32);
 		pc += 2;
-        if (op != Opcode::UNDEF)
-            REQUIRE_ISA(C_ISA_EXT);
-    } else {
+		if (op != Opcode::UNDEF)
+			REQUIRE_ISA(C_ISA_EXT);
+	} else {
 		op = instr.decode_normal(RV32);
 		pc += 4;
 	}
@@ -395,7 +394,7 @@ void ISS::exec_step() {
 		case Opcode::CSRRW: {
 			auto addr = instr.csr();
 			if (is_invalid_csr_access(addr, true)) {
-                RAISE_ILLEGAL_INSTRUCTION();
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[instr.rs1()];
@@ -411,7 +410,7 @@ void ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
 			if (is_invalid_csr_access(addr, write)) {
-                RAISE_ILLEGAL_INSTRUCTION();
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[rs1];
@@ -428,7 +427,7 @@ void ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
 			if (is_invalid_csr_access(addr, write)) {
-                RAISE_ILLEGAL_INSTRUCTION();
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[rs1];
@@ -443,7 +442,7 @@ void ISS::exec_step() {
 		case Opcode::CSRRWI: {
 			auto addr = instr.csr();
 			if (is_invalid_csr_access(addr, true)) {
-                RAISE_ILLEGAL_INSTRUCTION();
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				if (rd != RegFile::zero) {
@@ -458,7 +457,7 @@ void ISS::exec_step() {
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
 			if (is_invalid_csr_access(addr, write)) {
-                RAISE_ILLEGAL_INSTRUCTION();
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
@@ -474,7 +473,7 @@ void ISS::exec_step() {
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
 			if (is_invalid_csr_access(addr, write)) {
-                RAISE_ILLEGAL_INSTRUCTION();
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
@@ -486,31 +485,31 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::MUL: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
 			regs[instr.rd()] = ans & 0xFFFFFFFF;
 		} break;
 
 		case Opcode::MULH: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHU: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHSU: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::DIV: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -523,7 +522,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::DIVU: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -534,7 +533,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::REM: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -547,7 +546,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::REMU: {
-            REQUIRE_ISA(M_ISA_EXT);
+			REQUIRE_ISA(M_ISA_EXT);
 			auto a = regs[instr.rs1()];
 			auto b = regs[instr.rs2()];
 			if (b == 0) {
@@ -558,26 +557,28 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::LR_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
 			if (lr_sc_counter == 0)
-			    lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
+				lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the
+				                     // RISC-V forward progress property
 		} break;
 
 		case Opcode::SC_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, false>(addr);
 			uint32_t val = regs[instr.rs2()];
 			regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
-			regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;  // overwrite result (in case no trap is thrown)
+			regs[instr.rd()] =
+			    mem->atomic_store_conditional_word(addr, val) ? 0 : 1;  // overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
 		} break;
 
 		case Opcode::AMOSWAP_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) {
 				(void)a;
 				return b;
@@ -585,63 +586,63 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::AMOADD_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a + b; });
 		} break;
 
 		case Opcode::AMOXOR_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a ^ b; });
 		} break;
 
 		case Opcode::AMOAND_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a & b; });
 		} break;
 
 		case Opcode::AMOOR_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return a | b; });
 		} break;
 
 		case Opcode::AMOMIN_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::min(a, b); });
 		} break;
 
 		case Opcode::AMOMINU_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::min((uint32_t)a, (uint32_t)b); });
 		} break;
 
 		case Opcode::AMOMAX_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::max(a, b); });
 		} break;
 
 		case Opcode::AMOMAXU_W: {
-            REQUIRE_ISA(A_ISA_EXT);
+			REQUIRE_ISA(A_ISA_EXT);
 			execute_amo(instr, [](int32_t a, int32_t b) { return std::max((uint32_t)a, (uint32_t)b); });
 		} break;
 
 			// RV32F Extension
 
 		case Opcode::FLW: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
 			fp_regs.write(RD, float32_t{(uint32_t)mem->load_word(addr)});
 		} break;
 
 		case Opcode::FSW: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
-            mem->store_word(addr, fp_regs.u32(RS2));
+			mem->store_word(addr, fp_regs.u32(RS2));
 		} break;
 
 		case Opcode::FADD_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_add(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -649,7 +650,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSUB_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_sub(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -657,7 +658,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMUL_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mul(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -665,7 +666,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FDIV_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_div(fp_regs.f32(RS1), fp_regs.f32(RS2)));
@@ -673,7 +674,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSQRT_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_sqrt(fp_regs.f32(RS1)));
@@ -681,7 +682,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMIN_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 
 			bool rs1_smaller = f32_lt_quiet(fp_regs.f32(RS1), fp_regs.f32(RS2)) ||
@@ -700,7 +701,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMAX_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 
 			bool rs1_greater = f32_lt_quiet(fp_regs.f32(RS2), fp_regs.f32(RS1)) ||
@@ -719,7 +720,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMADD_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(fp_regs.f32(RS1), fp_regs.f32(RS2), fp_regs.f32(RS3)));
@@ -727,7 +728,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMSUB_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(fp_regs.f32(RS1), fp_regs.f32(RS2), f32_neg(fp_regs.f32(RS3))));
@@ -735,7 +736,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FNMADD_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(f32_neg(fp_regs.f32(RS1)), fp_regs.f32(RS2), f32_neg(fp_regs.f32(RS3))));
@@ -743,7 +744,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FNMSUB_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, f32_mulAdd(f32_neg(fp_regs.f32(RS1)), fp_regs.f32(RS2), fp_regs.f32(RS3)));
@@ -751,7 +752,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_W_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			regs[RD] = f32_to_i32(fp_regs.f32(RS1), softfloat_roundingMode, true);
@@ -759,7 +760,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_WU_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			regs[RD] = f32_to_ui32(fp_regs.f32(RS1), softfloat_roundingMode, true);
@@ -767,7 +768,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_S_W: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, i32_to_f32(regs[RS1]));
@@ -775,7 +776,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FCVT_S_WU: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_setup_rm();
 			fp_regs.write(RD, ui32_to_f32(regs[RS1]));
@@ -783,7 +784,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSGNJ_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			auto f1 = fp_regs.f32(RS1);
 			auto f2 = fp_regs.f32(RS2);
@@ -792,7 +793,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSGNJN_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			auto f1 = fp_regs.f32(RS1);
 			auto f2 = fp_regs.f32(RS2);
@@ -801,7 +802,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FSGNJX_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			auto f1 = fp_regs.f32(RS1);
 			auto f2 = fp_regs.f32(RS2);
@@ -810,361 +811,361 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::FMV_W_X: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			fp_regs.write(RD, float32_t{(uint32_t)regs[RS1]});
 			fp_set_dirty();
 		} break;
 
 		case Opcode::FMV_X_W: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = fp_regs.u32(RS1);
 		} break;
 
 		case Opcode::FEQ_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
 		} break;
 
 		case Opcode::FLT_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_lt(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
 		} break;
 
 		case Opcode::FLE_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_le(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
 		} break;
 
 		case Opcode::FCLASS_S: {
-            REQUIRE_ISA(F_ISA_EXT);
+			REQUIRE_ISA(F_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = f32_classify(fp_regs.f32(RS1));
 		} break;
 
 			// RV32D Extension
 
-        case Opcode::FLD: {
-            REQUIRE_ISA(D_ISA_EXT);
-            uint32_t addr = regs[instr.rs1()] + instr.I_imm();
-            trap_check_addr_alignment<8, true>(addr);
-            fp_regs.write(RD, float64_t{(uint64_t)mem->load_double(addr)});
-        } break;
+		case Opcode::FLD: {
+			REQUIRE_ISA(D_ISA_EXT);
+			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			trap_check_addr_alignment<8, true>(addr);
+			fp_regs.write(RD, float64_t{(uint64_t)mem->load_double(addr)});
+		} break;
 
-        case Opcode::FSD: {
-            REQUIRE_ISA(D_ISA_EXT);
-            uint32_t addr = regs[instr.rs1()] + instr.S_imm();
-            trap_check_addr_alignment<8, false>(addr);
-            mem->store_double(addr, fp_regs.f64(RS2).v);
-        } break;
+		case Opcode::FSD: {
+			REQUIRE_ISA(D_ISA_EXT);
+			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			trap_check_addr_alignment<8, false>(addr);
+			mem->store_double(addr, fp_regs.f64(RS2).v);
+		} break;
 
-        case Opcode::FADD_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_add(fp_regs.f64(RS1), fp_regs.f64(RS2)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FADD_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_add(fp_regs.f64(RS1), fp_regs.f64(RS2)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FSUB_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_sub(fp_regs.f64(RS1), fp_regs.f64(RS2)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FSUB_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_sub(fp_regs.f64(RS1), fp_regs.f64(RS2)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FMUL_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_mul(fp_regs.f64(RS1), fp_regs.f64(RS2)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FMUL_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_mul(fp_regs.f64(RS1), fp_regs.f64(RS2)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FDIV_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_div(fp_regs.f64(RS1), fp_regs.f64(RS2)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FDIV_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_div(fp_regs.f64(RS1), fp_regs.f64(RS2)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FSQRT_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_sqrt(fp_regs.f64(RS1)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FSQRT_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_sqrt(fp_regs.f64(RS1)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FMIN_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
+		case Opcode::FMIN_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
 
-            bool rs1_smaller = f64_lt_quiet(fp_regs.f64(RS1), fp_regs.f64(RS2)) ||
-                               (f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2)) && f64_isNegative(fp_regs.f64(RS1)));
+			bool rs1_smaller = f64_lt_quiet(fp_regs.f64(RS1), fp_regs.f64(RS2)) ||
+			                   (f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2)) && f64_isNegative(fp_regs.f64(RS1)));
 
-            if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
-                fp_regs.write(RD, f64_defaultNaN);
-            } else {
-                if (rs1_smaller)
-                    fp_regs.write(RD, fp_regs.f64(RS1));
-                else
-                    fp_regs.write(RD, fp_regs.f64(RS2));
-            }
+			if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
+				fp_regs.write(RD, f64_defaultNaN);
+			} else {
+				if (rs1_smaller)
+					fp_regs.write(RD, fp_regs.f64(RS1));
+				else
+					fp_regs.write(RD, fp_regs.f64(RS2));
+			}
 
-            fp_finish_instr();
-        } break;
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FMAX_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
+		case Opcode::FMAX_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
 
-            bool rs1_greater = f64_lt_quiet(fp_regs.f64(RS2), fp_regs.f64(RS1)) ||
-                               (f64_eq(fp_regs.f64(RS2), fp_regs.f64(RS1)) && f64_isNegative(fp_regs.f64(RS2)));
+			bool rs1_greater = f64_lt_quiet(fp_regs.f64(RS2), fp_regs.f64(RS1)) ||
+			                   (f64_eq(fp_regs.f64(RS2), fp_regs.f64(RS1)) && f64_isNegative(fp_regs.f64(RS2)));
 
-            if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
-                fp_regs.write(RD, f64_defaultNaN);
-            } else {
-                if (rs1_greater)
-                    fp_regs.write(RD, fp_regs.f64(RS1));
-                else
-                    fp_regs.write(RD, fp_regs.f64(RS2));
-            }
+			if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
+				fp_regs.write(RD, f64_defaultNaN);
+			} else {
+				if (rs1_greater)
+					fp_regs.write(RD, fp_regs.f64(RS1));
+				else
+					fp_regs.write(RD, fp_regs.f64(RS2));
+			}
 
-            fp_finish_instr();
-        } break;
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FMADD_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_mulAdd(fp_regs.f64(RS1), fp_regs.f64(RS2), fp_regs.f64(RS3)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FMADD_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_mulAdd(fp_regs.f64(RS1), fp_regs.f64(RS2), fp_regs.f64(RS3)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FMSUB_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_mulAdd(fp_regs.f64(RS1), fp_regs.f64(RS2), f64_neg(fp_regs.f64(RS3))));
-            fp_finish_instr();
-        } break;
+		case Opcode::FMSUB_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_mulAdd(fp_regs.f64(RS1), fp_regs.f64(RS2), f64_neg(fp_regs.f64(RS3))));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FNMADD_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_mulAdd(f64_neg(fp_regs.f64(RS1)), fp_regs.f64(RS2), f64_neg(fp_regs.f64(RS3))));
-            fp_finish_instr();
-        } break;
+		case Opcode::FNMADD_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_mulAdd(f64_neg(fp_regs.f64(RS1)), fp_regs.f64(RS2), f64_neg(fp_regs.f64(RS3))));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FNMSUB_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_mulAdd(f64_neg(fp_regs.f64(RS1)), fp_regs.f64(RS2), fp_regs.f64(RS3)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FNMSUB_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_mulAdd(f64_neg(fp_regs.f64(RS1)), fp_regs.f64(RS2), fp_regs.f64(RS3)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FSGNJ_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            auto f1 = fp_regs.f64(RS1);
-            auto f2 = fp_regs.f64(RS2);
-            fp_regs.write(RD, float64_t{(f1.v & ~F64_SIGN_BIT) | (f2.v & F64_SIGN_BIT)});
-            fp_set_dirty();
-        } break;
+		case Opcode::FSGNJ_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			auto f1 = fp_regs.f64(RS1);
+			auto f2 = fp_regs.f64(RS2);
+			fp_regs.write(RD, float64_t{(f1.v & ~F64_SIGN_BIT) | (f2.v & F64_SIGN_BIT)});
+			fp_set_dirty();
+		} break;
 
-        case Opcode::FSGNJN_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            auto f1 = fp_regs.f64(RS1);
-            auto f2 = fp_regs.f64(RS2);
-            fp_regs.write(RD, float64_t{(f1.v & ~F64_SIGN_BIT) | (~f2.v & F64_SIGN_BIT)});
-            fp_set_dirty();
-        } break;
+		case Opcode::FSGNJN_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			auto f1 = fp_regs.f64(RS1);
+			auto f2 = fp_regs.f64(RS2);
+			fp_regs.write(RD, float64_t{(f1.v & ~F64_SIGN_BIT) | (~f2.v & F64_SIGN_BIT)});
+			fp_set_dirty();
+		} break;
 
-        case Opcode::FSGNJX_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            auto f1 = fp_regs.f64(RS1);
-            auto f2 = fp_regs.f64(RS2);
-            fp_regs.write(RD, float64_t{f1.v ^ (f2.v & F64_SIGN_BIT)});
-            fp_set_dirty();
-        } break;
+		case Opcode::FSGNJX_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			auto f1 = fp_regs.f64(RS1);
+			auto f2 = fp_regs.f64(RS2);
+			fp_regs.write(RD, float64_t{f1.v ^ (f2.v & F64_SIGN_BIT)});
+			fp_set_dirty();
+		} break;
 
-        case Opcode::FCVT_S_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f64_to_f32(fp_regs.f64(RS1)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FCVT_S_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_to_f32(fp_regs.f64(RS1)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FCVT_D_S: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, f32_to_f64(fp_regs.f32(RS1)));
-            fp_finish_instr();
-        } break;
+		case Opcode::FCVT_D_S: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f32_to_f64(fp_regs.f32(RS1)));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FEQ_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            regs[RD] = f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2));
-            fp_update_exception_flags();
-        } break;
+		case Opcode::FEQ_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			regs[RD] = f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2));
+			fp_update_exception_flags();
+		} break;
 
-        case Opcode::FLT_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            regs[RD] = f64_lt(fp_regs.f64(RS1), fp_regs.f64(RS2));
-            fp_update_exception_flags();
-        } break;
+		case Opcode::FLT_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			regs[RD] = f64_lt(fp_regs.f64(RS1), fp_regs.f64(RS2));
+			fp_update_exception_flags();
+		} break;
 
-        case Opcode::FLE_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            regs[RD] = f64_le(fp_regs.f64(RS1), fp_regs.f64(RS2));
-            fp_update_exception_flags();
-        } break;
+		case Opcode::FLE_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			regs[RD] = f64_le(fp_regs.f64(RS1), fp_regs.f64(RS2));
+			fp_update_exception_flags();
+		} break;
 
-        case Opcode::FCLASS_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            regs[RD] = (int64_t)f64_classify(fp_regs.f64(RS1));
-        } break;
+		case Opcode::FCLASS_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			regs[RD] = (int64_t)f64_classify(fp_regs.f64(RS1));
+		} break;
 
-        case Opcode::FCVT_W_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            regs[RD] = f64_to_i32(fp_regs.f64(RS1), softfloat_roundingMode, true);
-            fp_finish_instr();
-        } break;
+		case Opcode::FCVT_W_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			regs[RD] = f64_to_i32(fp_regs.f64(RS1), softfloat_roundingMode, true);
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FCVT_WU_D: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            regs[RD] = (int32_t)f64_to_ui32(fp_regs.f64(RS1), softfloat_roundingMode, true);
-            fp_finish_instr();
-        } break;
+		case Opcode::FCVT_WU_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			regs[RD] = (int32_t)f64_to_ui32(fp_regs.f64(RS1), softfloat_roundingMode, true);
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FCVT_D_W: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, i32_to_f64((int32_t)regs[RS1]));
-            fp_finish_instr();
-        } break;
+		case Opcode::FCVT_D_W: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, i32_to_f64((int32_t)regs[RS1]));
+			fp_finish_instr();
+		} break;
 
-        case Opcode::FCVT_D_WU: {
-            REQUIRE_ISA(D_ISA_EXT);
-            fp_prepare_instr();
-            fp_setup_rm();
-            fp_regs.write(RD, ui32_to_f64((int32_t)regs[RS1]));
-            fp_finish_instr();
-        } break;
+		case Opcode::FCVT_D_WU: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, ui32_to_f64((int32_t)regs[RS1]));
+			fp_finish_instr();
+		} break;
 
-        // privileged instructions
+			// privileged instructions
 
-        case Opcode::WFI:
-            // NOTE: only a hint, can be implemented as NOP
-            // std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
-            release_lr_sc_reservation();
+		case Opcode::WFI:
+			// NOTE: only a hint, can be implemented as NOP
+			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
+			release_lr_sc_reservation();
 
-            if (s_mode() && csrs.mstatus.fields.tw)
-                raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			if (s_mode() && csrs.mstatus.fields.tw)
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
-            if (u_mode() && csrs.misa.has_supervisor_mode_extension())
-                raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 
-            if (!ignore_wfi && !has_local_pending_enabled_interrupts())
-                sc_core::wait(wfi_event);
-            break;
+			if (!ignore_wfi && !has_local_pending_enabled_interrupts())
+				sc_core::wait(wfi_event);
+			break;
 
-        case Opcode::SFENCE_VMA:
-            if (s_mode() && csrs.mstatus.fields.tvm)
-                raise_trap(EXC_ILLEGAL_INSTR, instr.data());
-            mem->flush_tlb();
-            break;
+		case Opcode::SFENCE_VMA:
+			if (s_mode() && csrs.mstatus.fields.tvm)
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			mem->flush_tlb();
+			break;
 
-        case Opcode::URET:
-            if (!csrs.misa.has_user_mode_extension())
-                raise_trap(EXC_ILLEGAL_INSTR, instr.data());
-            return_from_trap_handler(UserMode);
-            break;
+		case Opcode::URET:
+			if (!csrs.misa.has_user_mode_extension())
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			return_from_trap_handler(UserMode);
+			break;
 
-        case Opcode::SRET:
-            if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.fields.tsr))
-                raise_trap(EXC_ILLEGAL_INSTR, instr.data());
-            return_from_trap_handler(SupervisorMode);
-            break;
+		case Opcode::SRET:
+			if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.fields.tsr))
+				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			return_from_trap_handler(SupervisorMode);
+			break;
 
-        case Opcode::MRET:
-            return_from_trap_handler(MachineMode);
-            break;
+		case Opcode::MRET:
+			return_from_trap_handler(MachineMode);
+			break;
 
-            // instructions accepted by decoder but not by this RV32IMACF ISS -> do normal trap
-            // RV64I
-        case Opcode::LWU:
-        case Opcode::LD:
-        case Opcode::SD:
-        case Opcode::ADDIW:
-        case Opcode::SLLIW:
-        case Opcode::SRLIW:
-        case Opcode::SRAIW:
-        case Opcode::ADDW:
-        case Opcode::SUBW:
-        case Opcode::SLLW:
-        case Opcode::SRLW:
-        case Opcode::SRAW:
-            // RV64M
-        case Opcode::MULW:
-        case Opcode::DIVW:
-        case Opcode::DIVUW:
-        case Opcode::REMW:
-        case Opcode::REMUW:
-            // RV64A
-        case Opcode::LR_D:
-        case Opcode::SC_D:
-        case Opcode::AMOSWAP_D:
-        case Opcode::AMOADD_D:
-        case Opcode::AMOXOR_D:
-        case Opcode::AMOAND_D:
-        case Opcode::AMOOR_D:
-        case Opcode::AMOMIN_D:
-        case Opcode::AMOMAX_D:
-        case Opcode::AMOMINU_D:
-        case Opcode::AMOMAXU_D:
-            // RV64F
-        case Opcode::FCVT_L_S:
-        case Opcode::FCVT_LU_S:
-        case Opcode::FCVT_S_L:
-        case Opcode::FCVT_S_LU:
-            // RV64D
-        case Opcode::FCVT_L_D:
-        case Opcode::FCVT_LU_D:
-        case Opcode::FMV_X_D:
-        case Opcode::FCVT_D_L:
-        case Opcode::FCVT_D_LU:
-        case Opcode::FMV_D_X:
-            RAISE_ILLEGAL_INSTRUCTION();
-            break;
+			// instructions accepted by decoder but not by this RV32IMACF ISS -> do normal trap
+			// RV64I
+		case Opcode::LWU:
+		case Opcode::LD:
+		case Opcode::SD:
+		case Opcode::ADDIW:
+		case Opcode::SLLIW:
+		case Opcode::SRLIW:
+		case Opcode::SRAIW:
+		case Opcode::ADDW:
+		case Opcode::SUBW:
+		case Opcode::SLLW:
+		case Opcode::SRLW:
+		case Opcode::SRAW:
+			// RV64M
+		case Opcode::MULW:
+		case Opcode::DIVW:
+		case Opcode::DIVUW:
+		case Opcode::REMW:
+		case Opcode::REMUW:
+			// RV64A
+		case Opcode::LR_D:
+		case Opcode::SC_D:
+		case Opcode::AMOSWAP_D:
+		case Opcode::AMOADD_D:
+		case Opcode::AMOXOR_D:
+		case Opcode::AMOAND_D:
+		case Opcode::AMOOR_D:
+		case Opcode::AMOMIN_D:
+		case Opcode::AMOMAX_D:
+		case Opcode::AMOMINU_D:
+		case Opcode::AMOMAXU_D:
+			// RV64F
+		case Opcode::FCVT_L_S:
+		case Opcode::FCVT_LU_S:
+		case Opcode::FCVT_S_L:
+		case Opcode::FCVT_S_LU:
+			// RV64D
+		case Opcode::FCVT_L_D:
+		case Opcode::FCVT_LU_D:
+		case Opcode::FMV_X_D:
+		case Opcode::FCVT_D_L:
+		case Opcode::FCVT_D_LU:
+		case Opcode::FMV_D_X:
+			RAISE_ILLEGAL_INSTRUCTION();
+			break;
 
-        default:
-            throw std::runtime_error("unknown opcode");
+		default:
+			throw std::runtime_error("unknown opcode");
 	}
 }
 
@@ -1177,18 +1178,16 @@ uint64_t ISS::_compute_and_get_current_cycles() {
 	return num_cycles;
 }
 
-
 bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
-    if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
-        REQUIRE_ISA(F_ISA_EXT);
-    }
-    PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
-    bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
-    bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension();
-    bool u_invalid = (csr_prv == UserMode) && !csrs.misa.has_user_mode_extension();
-    return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid;
+	if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
+		REQUIRE_ISA(F_ISA_EXT);
+	}
+	PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
+	bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
+	bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension();
+	bool u_invalid = (csr_prv == UserMode) && !csrs.misa.has_user_mode_extension();
+	return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid;
 }
-
 
 void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
@@ -1277,17 +1276,17 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 		case FRM_ADDR:
 			return csrs.fcsr.fields.frm;
 
-        // debug CSRs not supported, thus hardwired
-        case TSELECT_ADDR:
-            return 1; // if a zero write by SW is preserved, then debug mode is supported (thus hardwire to non-zero)
-        case TDATA1_ADDR:
-        case TDATA2_ADDR:
-        case TDATA3_ADDR:
-        case DCSR_ADDR:
-        case DPC_ADDR:
-        case DSCRATCH0_ADDR:
-        case DSCRATCH1_ADDR:
-            return 0;
+		// debug CSRs not supported, thus hardwired
+		case TSELECT_ADDR:
+			return 1;  // if a zero write by SW is preserved, then debug mode is supported (thus hardwire to non-zero)
+		case TDATA1_ADDR:
+		case TDATA2_ADDR:
+		case TDATA3_ADDR:
+		case DCSR_ADDR:
+		case DPC_ADDR:
+		case DSCRATCH0_ADDR:
+		case DSCRATCH1_ADDR:
+			return 0;
 	}
 
 	if (!csrs.is_valid_csr32_addr(addr))
@@ -1306,12 +1305,12 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV32:  // not implemented
 			break;
 
-        case SATP_ADDR: {
-            if (csrs.mstatus.fields.tvm)
-                RAISE_ILLEGAL_INSTRUCTION();
-            write(csrs.satp, SATP_MASK);
-            // std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
-        } break;
+		case SATP_ADDR: {
+			if (csrs.mstatus.fields.tvm)
+				RAISE_ILLEGAL_INSTRUCTION();
+			write(csrs.satp, SATP_MASK);
+			// std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
+		} break;
 
 		case MTVEC_ADDR:
 			write(csrs.mtvec, MTVEC_MASK);
@@ -1403,16 +1402,16 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			csrs.fcsr.fields.frm = value;
 			break;
 
-        // debug CSRs not supported, thus hardwired
-        case TSELECT_ADDR:
-        case TDATA1_ADDR:
-        case TDATA2_ADDR:
-        case TDATA3_ADDR:
-        case DCSR_ADDR:
-        case DPC_ADDR:
-        case DSCRATCH0_ADDR:
-        case DSCRATCH1_ADDR:
-            break;
+		// debug CSRs not supported, thus hardwired
+		case TSELECT_ADDR:
+		case TDATA1_ADDR:
+		case TDATA2_ADDR:
+		case TDATA3_ADDR:
+		case DCSR_ADDR:
+		case DPC_ADDR:
+		case DSCRATCH0_ADDR:
+		case DSCRATCH1_ADDR:
+			break;
 
 		default:
 			if (!csrs.is_valid_csr32_addr(addr))
@@ -1442,9 +1441,8 @@ unsigned ISS::get_syscall_register_index() {
 		return RegFile::a7;
 }
 
-
 uint64_t ISS::read_register(unsigned idx) {
-	return (uint32_t)regs.read(idx);    //NOTE: zero extend
+	return (uint32_t)regs.read(idx);  // NOTE: zero extend
 }
 
 void ISS::write_register(unsigned idx, uint64_t value) {
@@ -1459,46 +1457,44 @@ void ISS::write_register(unsigned idx, uint64_t value) {
 }
 
 uint64_t ISS::get_progam_counter(void) {
-    return pc;
+	return pc;
 }
 
 void ISS::block_on_wfi(bool block) {
-    ignore_wfi = !block;
+	ignore_wfi = !block;
 }
 
 CoreExecStatus ISS::get_status(void) {
-    return status;
+	return status;
 }
 
 void ISS::set_status(CoreExecStatus s) {
-    status = s;
+	status = s;
 }
 
 void ISS::enable_debug(void) {
-    debug_mode = true;
+	debug_mode = true;
 }
 
 void ISS::insert_breakpoint(uint64_t addr) {
-    breakpoints.insert(addr);
+	breakpoints.insert(addr);
 }
 
 void ISS::remove_breakpoint(uint64_t addr) {
-    breakpoints.erase(addr);
+	breakpoints.erase(addr);
 }
 
 uint64_t ISS::get_hart_id() {
-    return csrs.mhartid.reg;
+	return csrs.mhartid.reg;
 }
 
 std::vector<uint64_t> ISS::get_registers(void) {
-    std::vector<uint64_t> regvals;
+	std::vector<uint64_t> regvals;
 
-    for (auto v : regs.regs)
-        regvals.push_back((uint32_t)v); //NOTE: zero extend
+	for (auto v : regs.regs) regvals.push_back((uint32_t)v);  // NOTE: zero extend
 
-    return regvals;
+	return regvals;
 }
-
 
 void ISS::fp_finish_instr() {
 	fp_set_dirty();
@@ -1736,7 +1732,8 @@ PendingInterrupts ISS::compute_pending_interrupts() {
 void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 	if (trace) {
 		printf("[vp::iss] switch to trap handler, time %s, last_pc %8x, pc %8x, irq %u, t-prv %1x\n",
-		       quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.fields.interrupt, target_mode);
+		       quantum_keeper.get_current_time().to_string().c_str(), last_pc, pc, csrs.mcause.fields.interrupt,
+		       target_mode);
 	}
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
@@ -1755,13 +1752,15 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			pc = csrs.mtvec.get_base_address();
 
-			if(pc == 0) {
-				if(error_on_zero_traphandler) {
+			if (pc == 0) {
+				if (error_on_zero_traphandler) {
 					throw std::runtime_error("[ISS] Took null trap handler in machine mode");
 				} else {
 					static bool once = true;
 					if (once)
-						std::cout << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error." << std::endl;
+						std::cout
+						    << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error."
+						    << std::endl;
 					once = false;
 				}
 			}
@@ -1805,16 +1804,16 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 }
 
 void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
-    ++total_num_instr;
+	++total_num_instr;
 
 	if (!csrs.mcountinhibit.fields.IR)
 		++csrs.instret.reg;
 
 	if (lr_sc_counter != 0) {
 		--lr_sc_counter;
-		assert (lr_sc_counter >= 0);
+		assert(lr_sc_counter >= 0);
 		if (lr_sc_counter == 0)
-            release_lr_sc_reservation();
+			release_lr_sc_reservation();
 	}
 
 	auto new_cycles = instr_cycles[executed_op];
@@ -1824,8 +1823,8 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
-	    if (lr_sc_counter == 0) // match SystemC sync with bus unlocking in a tight LR_W/SC_W loop
-		    quantum_keeper.sync();
+		if (lr_sc_counter == 0)  // match SystemC sync with bus unlocking in a tight LR_W/SC_W loop
+			quantum_keeper.sync();
 	}
 }
 

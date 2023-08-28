@@ -1,35 +1,30 @@
 #include <err.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <stdio.h>
-
 #include <libgdb/parser1.h>
 #include <libgdb/response.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "internal.h"
 
-static char
-kind_to_char(gdb_kind_t kind)
-{
+static char kind_to_char(gdb_kind_t kind) {
 	switch (kind) {
-	case GDB_KIND_NOTIFY:
-		return '#';
-	case GDB_KIND_PACKET:
-		return '$';
-	case GDB_KIND_NACK:
-		return '-';
-	case GDB_KIND_ACK:
-		return '+';
-	default:
-		xassert(0);
-		return -1;
+		case GDB_KIND_NOTIFY:
+			return '#';
+		case GDB_KIND_PACKET:
+			return '$';
+		case GDB_KIND_NACK:
+			return '-';
+		case GDB_KIND_ACK:
+			return '+';
+		default:
+			xassert(0);
+			return -1;
 	}
 }
 
-char *
-gdb_serialize(gdb_kind_t kind, const char *data)
-{
+char *gdb_serialize(gdb_kind_t kind, const char *data) {
 	size_t pktlen;
 	char *serialized;
 	char pktkind;

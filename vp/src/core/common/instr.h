@@ -2,6 +2,7 @@
 #define RISCV_ISA_INSTR_H
 
 #include <stdint.h>
+
 #include <array>
 #include <iostream>
 

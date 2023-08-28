@@ -1,11 +1,11 @@
-#include <assert.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <errno.h>
-#include <err.h>
-
 #include "timer.h"
+
+#include <assert.h>
+#include <err.h>
+#include <errno.h>
+#include <limits.h>
+#include <signal.h>
+#include <stdlib.h>
 
 /* As defined in nanosleep(3) */
 #define NS_MAX 999999999UL
@@ -14,8 +14,7 @@
 /* Signal used to unblock nanosleep in thread */
 #define SIGNUM SIGUSR1
 
-static int
-xnanosleep(const struct timespec *timespec) {
+static int xnanosleep(const struct timespec *timespec) {
 	if (nanosleep(timespec, NULL) == 0)
 		return 0; /* success */
 
@@ -25,11 +24,9 @@ xnanosleep(const struct timespec *timespec) {
 	err(EXIT_FAILURE, "nanosleep failed"); /* EFAULT, EINVAL, … */
 }
 
-static void *
-callback(void *arg)
-{
+static void *callback(void *arg) {
 	struct timespec timespec;
-	Timer::Context *ctx = (Timer::Context*)arg;
+	Timer::Context *ctx = (Timer::Context *)arg;
 
 	/* Initialize the seconds field, we use nanoseconds though */
 	timespec.tv_sec = 0;
@@ -46,7 +43,7 @@ callback(void *arg)
 	uint64_t ns = count * 1000;
 	assert(ns > count);
 
-	assert(ns <= LONG_MAX); // tv_nsec is a long
+	assert(ns <= LONG_MAX);  // tv_nsec is a long
 	timespec.tv_nsec = ns;
 	if (xnanosleep(&timespec))
 		return NULL; /* pthread_kill */
@@ -55,8 +52,7 @@ callback(void *arg)
 	return NULL;
 }
 
-Timer::Timer(Callback fn, void *arg)
-  : ctx(usecs(0), fn, arg) {
+Timer::Timer(Callback fn, void *arg) : ctx(usecs(0), fn, arg) {
 	running = false;
 }
 

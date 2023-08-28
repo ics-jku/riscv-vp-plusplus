@@ -1,8 +1,8 @@
-#include <iomanip>
+#include "register_format.h"
 
 #include <byteswap.h>
 
-#include "register_format.h"
+#include <iomanip>
 
 RegisterFormater::RegisterFormater(Architecture arch) {
 	this->arch = arch;
@@ -11,14 +11,14 @@ RegisterFormater::RegisterFormater(Architecture arch) {
 
 void RegisterFormater::formatRegister(uint64_t value) {
 	switch (arch) {
-	case RV32:
-		stream << std::setw(8) << bswap_32(value);
-		break;
-	case RV64:
-		stream << std::setw(16) << bswap_64(value);
-		break;
-	default:
-		throw std::invalid_argument("Architecture not implemented");
+		case RV32:
+			stream << std::setw(8) << bswap_32(value);
+			break;
+		case RV64:
+			stream << std::setw(16) << bswap_64(value);
+			break;
+		default:
+			throw std::invalid_argument("Architecture not implemented");
 	}
 }
 

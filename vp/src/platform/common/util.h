@@ -1,9 +1,10 @@
 #pragma once
 
-#include "util/common.h"
-
 #include <tlm_utils/simple_target_socket.h>
+
 #include <systemc>
+
+#include "util/common.h"
 
 /* A simple memory block that provides arbitrary read/write access. */
 struct BlankDevice : public sc_core::sc_module {

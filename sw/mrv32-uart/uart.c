@@ -1,8 +1,10 @@
 #include "uart.h"
-#include "platform.h"
+
 #include <stdint.h>
 
-int sendString(char* str, long len) {
+#include "platform.h"
+
+int sendString(char *str, long len) {
 	long cnt = len;
 	const char *s = (const char *)str;
 	while (cnt > 0) {
@@ -22,7 +24,7 @@ void putChr(char chr) {
 	do {
 		// read uart tx status
 		tx_rdy = UART->TXCTRL;
-		asm volatile ("nop");
-	} while(!tx_rdy);
+		asm volatile("nop");
+	} while (!tx_rdy);
 	return;
 }

@@ -4,17 +4,17 @@
  *  Created on: 22 Mar 2019
  *      Author: dwd
  */
+#include <endian.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <cstring>
-#include <iostream>
-
-#include <endian.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <cstring>
+#include <iostream>
 
 using namespace std;
 

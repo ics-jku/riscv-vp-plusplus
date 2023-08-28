@@ -1,12 +1,12 @@
 #ifndef RISCV_ISA_CLINT_H
 #define RISCV_ISA_CLINT_H
 
-#include "clint_if.h"
-#include "irq_if.h"
-
 #include <tlm_utils/simple_target_socket.h>
+
 #include <systemc>
 
+#include "clint_if.h"
+#include "irq_if.h"
 #include "util/memory_map.h"
 
 template <unsigned NumberOfCores>

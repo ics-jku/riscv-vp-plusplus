@@ -6,13 +6,14 @@
  */
 
 #include "libDisplay.hpp"
+
 #include <math.h>
+
 #include <algorithm>
 
 typedef Framebuffer::Point Point;
 typedef Framebuffer::PointF PointF;
 typedef Framebuffer::Color Color;
-
 
 namespace display {
 

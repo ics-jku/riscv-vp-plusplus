@@ -2,17 +2,17 @@
 #define RISCV_VP_REAL_CLINT_H
 
 #include <stdint.h>
-
-#include <chrono>
-#include <systemc>
-#include <map>
 #include <tlm_utils/simple_target_socket.h>
 
-#include "platform/common/async_event.h"
-#include "util/memory_map.h"
+#include <chrono>
+#include <map>
+#include <systemc>
+
 #include "clint_if.h"
 #include "irq_if.h"
+#include "platform/common/async_event.h"
 #include "timer.h"
+#include "util/memory_map.h"
 
 // This class implements a CLINT as specified in the FE310-G000 manual
 // and the RISC-V Privileged Specification. As per the FE310-G000
@@ -22,15 +22,16 @@
 // Contrary to the CLINT class, also provided in this directory, this
 // CLINT is based on "real time" instead of SystemC simulation time.
 class RealCLINT : public clint_if, public sc_core::sc_module {
-public:
-	RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target*>&);
+   public:
+	RealCLINT(sc_core::sc_module_name, std::vector<clint_interrupt_target *> &);
 	~RealCLINT(void);
 
 	tlm_utils::simple_target_socket<RealCLINT> tsock;
 	uint64_t update_and_get_mtime(void) override;
 
 	SC_HAS_PROCESS(RealCLINT);
-public:
+
+   public:
 	typedef std::chrono::high_resolution_clock::time_point time_point;
 	typedef Timer::usecs usecs;
 
@@ -42,11 +43,11 @@ public:
 	ArrayView<uint64_t> mtimecmp;
 	IntegerView<uint64_t> mtime;
 
-	std::vector<RegisterRange*> register_ranges;
-	std::vector<clint_interrupt_target*> &harts;
+	std::vector<RegisterRange *> register_ranges;
+	std::vector<clint_interrupt_target *> &harts;
 
 	AsyncEvent event;
-	std::vector<Timer*> timers;
+	std::vector<Timer *> timers;
 
 	time_point first_mtime;
 

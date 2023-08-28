@@ -1,4 +1,4 @@
-#ifndef  UART_H
+#ifndef UART_H
 
 #include <stdint.h>
 

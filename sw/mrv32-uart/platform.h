@@ -23,7 +23,7 @@ typedef struct {
 	volatile uint32_t RXEMPT;
 } UART_REGS;
 
-#define UART        ((UART_REGS *)0x82000000)
+#define UART ((UART_REGS *)0x82000000)
 
 /* #else
 // // UART

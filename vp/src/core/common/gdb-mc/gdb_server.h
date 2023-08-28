@@ -1,28 +1,27 @@
 #ifndef RISCV_GDB_NG
 #define RISCV_GDB_NG
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-
-#include <queue>
-#include <mutex>
-#include <systemc>
-#include <thread>
-#include <map>
-#include <tuple>
-#include <functional>
-
 #include <core/common/mmu_mem_if.h>
 #include <libgdb/parser2.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "debug.h"
+#include <functional>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <systemc>
+#include <thread>
+#include <tuple>
+
 #include "core_defs.h"
+#include "debug.h"
+#include "debug_memory.h"  // DebugMemoryInterface
 #include "platform/common/async_event.h"
-#include "debug_memory.h" // DebugMemoryInterface
 
 SC_MODULE(GDBServer) {
-public:
+   public:
 	typedef void (GDBServer::*packet_handler)(int, gdb_command_t *);
 
 	void haltReason(int, gdb_command_t *);
@@ -44,11 +43,8 @@ public:
 
 	SC_HAS_PROCESS(GDBServer);
 
-	GDBServer(sc_core::sc_module_name,
-	          std::vector<debug_target_if*>,
-	          DebugMemoryInterface*,
-	          uint16_t,
-	          std::vector<mmu_memory_if*> mmus = {});
+	GDBServer(sc_core::sc_module_name, std::vector<debug_target_if *>, DebugMemoryInterface *, uint16_t,
+	          std::vector<mmu_memory_if *> mmus = {});
 
 	/* Used by GDBRunner to determine whether run() or run_step()
 	 * should be used when receiving a run event for a debug_target_if.
@@ -59,7 +55,7 @@ public:
 	sc_core::sc_event *get_stop_event(debug_target_if *);
 	void set_run_event(debug_target_if *, sc_core::sc_event *);
 
-private:
+   private:
 	typedef std::function<void(debug_target_if *)> thread_func;
 	typedef std::tuple<int, gdb_packet_t *> ctx;
 	typedef std::tuple<sc_core::sc_event *, sc_core::sc_event *> hart_event;
@@ -67,7 +63,7 @@ private:
 	DebugMemoryInterface *memory;
 	AsyncEvent asyncEvent;
 	Architecture arch;
-	std::vector<debug_target_if*> harts;
+	std::vector<debug_target_if *> harts;
 	std::thread thr;
 	char *prevpkt;
 	std::queue<ctx> pktq;

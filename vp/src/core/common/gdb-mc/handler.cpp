@@ -1,8 +1,7 @@
 #include <assert.h>
-#include <stdlib.h>
-#include <limits.h>
-
 #include <libgdb/parser2.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "debug.h"
 #include "gdb_server.h"
@@ -13,23 +12,23 @@ enum {
 	GDB_PC_REG = 32,
 };
 
-std::map<std::string, GDBServer::packet_handler> handlers {
-	{ "?", &GDBServer::haltReason },
-	{ "g", &GDBServer::getRegisters },
-	{ "H", &GDBServer::setThread },
-	{ "k", &GDBServer::killServer },
-	{ "m", &GDBServer::readMemory },
-	{ "M", &GDBServer::writeMemory },
-	{ "p", &GDBServer::readRegister },
-	{ "qAttached", &GDBServer::qAttached },
-	{ "qSupported", &GDBServer::qSupported },
-	{ "qfThreadInfo", &GDBServer::threadInfo },
-	{ "qsThreadInfo", &GDBServer::threadInfoEnd },
-	{ "T", &GDBServer::isAlive },
-	{ "vCont", &GDBServer::vCont },
-	{ "vCont?", &GDBServer::vContSupported },
-	{ "z", &GDBServer::removeBreakpoint },
-	{ "Z", &GDBServer::setBreakpoint },
+std::map<std::string, GDBServer::packet_handler> handlers{
+    {"?", &GDBServer::haltReason},
+    {"g", &GDBServer::getRegisters},
+    {"H", &GDBServer::setThread},
+    {"k", &GDBServer::killServer},
+    {"m", &GDBServer::readMemory},
+    {"M", &GDBServer::writeMemory},
+    {"p", &GDBServer::readRegister},
+    {"qAttached", &GDBServer::qAttached},
+    {"qSupported", &GDBServer::qSupported},
+    {"qfThreadInfo", &GDBServer::threadInfo},
+    {"qsThreadInfo", &GDBServer::threadInfoEnd},
+    {"T", &GDBServer::isAlive},
+    {"vCont", &GDBServer::vCont},
+    {"vCont?", &GDBServer::vContSupported},
+    {"z", &GDBServer::removeBreakpoint},
+    {"Z", &GDBServer::setBreakpoint},
 };
 
 void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
@@ -47,9 +46,8 @@ void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	(void)cmd;
 
 	auto formatter = new RegisterFormater(arch);
-	auto fn = [formatter] (debug_target_if *hart) {
-		for (uint64_t v : hart->get_registers())
-			formatter->formatRegister(v);
+	auto fn = [formatter](debug_target_if *hart) {
+		for (uint64_t v : hart->get_registers()) formatter->formatRegister(v);
 	};
 
 	exec_thread(fn);
@@ -90,14 +88,14 @@ void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
 	assert(mem->length <= UINT_MAX);
 
 	std::string retval;
-	auto fn = [this, &retval, mem] (debug_target_if *hart) {
+	auto fn = [this, &retval, mem](debug_target_if *hart) {
 		uint64_t addr = translate_addr(hart, mem->addr, LOAD);
 		retval += memory->read_memory(addr, (unsigned)mem->length);
 	};
 
 	try {
 		exec_thread(fn);
-	} catch (const std::runtime_error&) { /* exception raised in fn */
+	} catch (const std::runtime_error &) { /* exception raised in fn */
 		send_packet(conn, "E01");
 		return;
 	}
@@ -115,14 +113,14 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 	assert(loc->addr <= UINT64_MAX);
 	assert(loc->length <= UINT_MAX);
 
-	auto fn = [this, loc, mem] (debug_target_if *hart) {
+	auto fn = [this, loc, mem](debug_target_if *hart) {
 		uint64_t addr = translate_addr(hart, loc->addr, STORE);
 		memory->write_memory(addr, (unsigned)loc->length, mem->data);
 	};
 
 	try {
 		exec_thread(fn);
-	} catch (const std::runtime_error&) {
+	} catch (const std::runtime_error &) {
 		send_packet(conn, "E01");
 		return;
 	}
@@ -135,7 +133,7 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 	auto formatter = new RegisterFormater(arch);
 
 	reg = cmd->v.ival;
-	auto fn = [formatter, reg] (debug_target_if *hart) {
+	auto fn = [formatter, reg](debug_target_if *hart) {
 		uint64_t regval;
 		if (reg == GDB_PC_REG) {
 			regval = hart->get_progam_counter();
@@ -150,7 +148,7 @@ void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
 
 	try {
 		exec_thread(fn);
-	} catch (const std::out_of_range&) { /* exception raised in fn */
+	} catch (const std::out_of_range &) { /* exception raised in fn */
 		send_packet(conn, "E01");
 		goto ret;
 	}
@@ -211,7 +209,7 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 	thr = &cmd->v.tval;
 	try {
 		get_threads(thr->tid);
-	} catch (const std::out_of_range&) {
+	} catch (const std::out_of_range &) {
 		send_packet(conn, "E01");
 		return;
 	}
@@ -248,27 +246,27 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 			}
 
 			selected_harts = run_threads(run, single);
-		} catch (const std::out_of_range&) {
+		} catch (const std::out_of_range &) {
 			send_packet(conn, "E01");
 			return;
 		}
 
 		for (debug_target_if *hart : selected_harts) {
 			switch (hart->get_status()) {
-			case CoreExecStatus::HitBreakpoint:
-				stop_reason = "05";
-				stopped_thread = hart->get_hart_id() + 1;
+				case CoreExecStatus::HitBreakpoint:
+					stop_reason = "05";
+					stopped_thread = hart->get_hart_id() + 1;
 
-				/* mark runnable again */
-				hart->set_status(CoreExecStatus::Runnable);
+					/* mark runnable again */
+					hart->set_status(CoreExecStatus::Runnable);
 
-				break;
-			case CoreExecStatus::Terminated:
-				stop_reason = "03";
-				stopped_thread = hart->get_hart_id() + 1;
-				break;
-			case CoreExecStatus::Runnable:
-				continue;
+					break;
+				case CoreExecStatus::Terminated:
+					stop_reason = "03";
+					stopped_thread = hart->get_hart_id() + 1;
+					break;
+				case CoreExecStatus::Runnable:
+					continue;
 			}
 		}
 
@@ -294,8 +292,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	 * XXX: No idea if the stub is really required to do this. */
 	thread_ops['g'] = stopped_thread;
 
-	const std::string msg = std::string("T") + stop_reason + "thread:" +
-	                        std::to_string(stopped_thread) + ";";
+	const std::string msg = std::string("T") + stop_reason + "thread:" + std::to_string(stopped_thread) + ";";
 	send_packet(conn, msg.c_str());
 }
 
@@ -316,8 +313,7 @@ void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	for (debug_target_if *hart : harts)
-		hart->remove_breakpoint(bpoint->address);
+	for (debug_target_if *hart : harts) hart->remove_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
 }
 
@@ -330,7 +326,6 @@ void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
 		return;
 	}
 
-	for (debug_target_if *hart : harts)
-		hart->insert_breakpoint(bpoint->address);
+	for (debug_target_if *hart : harts) hart->insert_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
 }

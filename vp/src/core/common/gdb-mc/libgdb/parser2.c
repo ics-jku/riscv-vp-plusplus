@@ -1,17 +1,15 @@
+#include "parser2.h"
+
 #include <errno.h>
+#include <libgdb/parser1.h>
+#include <libgdb/parser2.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <libgdb/parser1.h>
-#include <libgdb/parser2.h>
-
-#include "mpc.h"
-#include "parser2.h"
 #include "internal.h"
+#include "mpc.h"
 
-static mpc_val_t *
-gdbf_ignarg(mpc_val_t* xs)
-{
+static mpc_val_t *gdbf_ignarg(mpc_val_t *xs) {
 	char *str, *sep;
 	gdb_command_t *cmd;
 
@@ -25,30 +23,24 @@ gdbf_ignarg(mpc_val_t* xs)
 	return cmd;
 }
 
-static mpc_val_t *
-gdbf_address(mpc_val_t *x)
-{
+static mpc_val_t *gdbf_address(mpc_val_t *x) {
 	int r;
 	gdb_addr_t *v;
 
 	v = xmalloc(sizeof(*v));
 
-	r = sscanf((char *)x, "%"LIBGDB_ADDR_FORMAT, v);
+	r = sscanf((char *)x, "%" LIBGDB_ADDR_FORMAT, v);
 	xassert(r == 1);
 
 	free(x);
 	return v;
 }
 
-static mpc_parser_t *
-gdb_address(void)
-{
+static mpc_parser_t *gdb_address(void) {
 	return mpc_expect(mpc_apply(mpc_hexdigits(), gdbf_address), "hexadecimal address");
 }
 
-static mpc_val_t *
-gdbf_uhex(mpc_val_t *x)
-{
+static mpc_val_t *gdbf_uhex(mpc_val_t *x) {
 	int r;
 	size_t *v;
 
@@ -56,23 +48,19 @@ gdbf_uhex(mpc_val_t *x)
 
 	r = sscanf((char *)x, "%zx", v);
 	xassert(r == 1);
-	
+
 	free(x);
 	return v;
 }
 
-static mpc_parser_t *
-gdb_uhex(void)
-{
+static mpc_parser_t *gdb_uhex(void) {
 	return mpc_apply(mpc_hexdigits(), gdbf_uhex);
 }
 
-static mpc_val_t *
-gdbf_negative(mpc_val_t *val)
-{
+static mpc_val_t *gdbf_negative(mpc_val_t *val) {
 	int *neg;
 
-	xassert(!strcmp((char*)val, "-1"));
+	xassert(!strcmp((char *)val, "-1"));
 	neg = xmalloc(sizeof(*neg));
 	*neg = -1;
 
@@ -80,9 +68,7 @@ gdbf_negative(mpc_val_t *val)
 	return neg;
 }
 
-static mpc_val_t *
-gdbf_memory(int n, mpc_val_t **xs)
-{
+static mpc_val_t *gdbf_memory(int n, mpc_val_t **xs) {
 	gdb_memory_t *mem;
 
 	xassert(n == 3);
@@ -99,25 +85,19 @@ gdbf_memory(int n, mpc_val_t **xs)
 	return mem;
 }
 
-static mpc_parser_t *
-gdb_memory(void)
-{
-	return mpc_and(3, gdbf_memory, gdb_address(),
-	               mpc_char(','), gdb_uhex(),
-	               free, free);
+static mpc_parser_t *gdb_memory(void) {
+	return mpc_and(3, gdbf_memory, gdb_address(), mpc_char(','), gdb_uhex(), free, free);
 }
 
-static mpc_val_t *
-gdbf_thread_id(int n, mpc_val_t** xs)
-{
+static mpc_val_t *gdbf_thread_id(int n, mpc_val_t **xs) {
 	int *arg1, *arg2;
 	gdb_thread_t *id;
 
 	xassert(n == 2);
 
 	id = xmalloc(sizeof(*id));
-	arg1 = (int*)xs[0];
-	arg2 = (int*)xs[1];
+	arg1 = (int *)xs[0];
+	arg2 = (int *)xs[1];
 
 	if (arg1 != NULL)
 		id->pid = *arg1;
@@ -131,33 +111,25 @@ gdbf_thread_id(int n, mpc_val_t** xs)
 	return id;
 }
 
-static mpc_parser_t *
-gdb_hexid(void)
-{
+static mpc_parser_t *gdb_hexid(void) {
 	/* Positive numbers with a target-specific interpretation,
 	 * formatted as big-endian hex strings. Can also be a literal
 	 * '-1' to indicate all threads, or '0' to pick any thread. */
-	return mpc_or(2, mpc_hex(),
-	              mpc_apply(mpc_string("-1"), gdbf_negative));
+	return mpc_or(2, mpc_hex(), mpc_apply(mpc_string("-1"), gdbf_negative));
 }
 
-static mpc_parser_t *
-gdb_thread_id(void)
-{
+static mpc_parser_t *gdb_thread_id(void) {
 	mpc_parser_t *pid, *tid;
 
 	tid = gdb_hexid();
-	pid = mpc_and(3, mpcf_snd_free, mpc_char('p'),
-	              gdb_hexid(), mpc_char('.'), free, free);
+	pid = mpc_and(3, mpcf_snd_free, mpc_char('p'), gdb_hexid(), mpc_char('.'), free, free);
 
 	return mpc_and(2, gdbf_thread_id, mpc_maybe(pid), tid, free);
 }
 
 gdbf_fold(h, GDB_ARG_H, GDBF_ARG_HCMD)
 
-static mpc_parser_t *
-gdb_packet_h(void)
-{
+    static mpc_parser_t *gdb_packet_h(void) {
 	mpc_parser_t *op, *id;
 
 	op = mpc_any(); /* (‘m’, ‘M’, ‘g’, ‘G’, et.al.). */
@@ -168,15 +140,11 @@ gdb_packet_h(void)
 
 gdbf_fold(p, GDB_ARG_INT, GDBF_ARG_INT)
 
-static mpc_parser_t *
-gdb_packet_p(void)
-{
+    static mpc_parser_t *gdb_packet_p(void) {
 	return mpc_and(2, gdbf_packet_p, mpc_char('p'), mpc_hex(), free);
 }
 
-static mpc_val_t *
-gdbf_vcont_action(int n, mpc_val_t **xs)
-{
+static mpc_val_t *gdbf_vcont_action(int n, mpc_val_t **xs) {
 	char *actstr;
 	size_t actlen;
 	gdb_vcont_t *vcont;
@@ -211,9 +179,7 @@ gdbf_vcont_action(int n, mpc_val_t **xs)
 	return vcont;
 }
 
-static mpc_val_t *
-gdbf_vcont(int n, mpc_val_t **xs)
-{
+static mpc_val_t *gdbf_vcont(int n, mpc_val_t **xs) {
 	size_t i;
 	gdb_vcont_t *vcont;
 
@@ -228,9 +194,7 @@ gdbf_vcont(int n, mpc_val_t **xs)
 
 gdbf_fold(vcont, GDB_ARG_VCONT, GDBF_ARG_VCONT)
 
-static mpc_parser_t *
-gdb_packet_vcont(void)
-{
+    static mpc_parser_t *gdb_packet_vcont(void) {
 	mpc_parser_t *action0, *action1, *action, *args, *thread;
 
 	/* TODO: add support for r command */
@@ -239,8 +203,8 @@ gdb_packet_vcont(void)
 	action1 = mpc_and(2, mpcf_strfold, mpc_oneof("CS"), mpc_hexdigits());
 
 	thread = mpc_and(2, mpcf_snd_free, mpc_char(':'), gdb_thread_id(), free);
-	action = mpc_and(2, gdbf_vcont_action, mpc_or(2, action0, action1),
-	                 mpc_maybe(thread), free); /* destructor incorrect but unused */
+	action = mpc_and(2, gdbf_vcont_action, mpc_or(2, action0, action1), mpc_maybe(thread),
+	                 free); /* destructor incorrect but unused */
 
 	args = mpc_many1(gdbf_vcont, mpc_and(2, mpcf_snd_free, mpc_char(';'), action, free));
 	return mpc_and(2, gdbf_packet_vcont, mpc_string("vCont"), args, free);
@@ -248,33 +212,23 @@ gdb_packet_vcont(void)
 
 gdbf_fold(m, GDB_ARG_MEMORY, GDBF_ARG_MEMORY)
 
-static mpc_parser_t *
-gdb_packet_m(void)
-{
+    static mpc_parser_t *gdb_packet_m(void) {
 	return mpc_and(2, gdbf_packet_m, mpc_char('m'), gdb_memory(), free);
 }
 
 gdbf_fold(M, GDB_ARG_MEMORYW, GDBF_ARG_MEMORYW)
 
-static mpc_parser_t *
-gdb_packet_M(void)
-{
-	return mpc_and(4, gdbf_packet_M, mpc_char('M'),
-	               gdb_memory(), mpc_char(':'), mpc_hexdigits(),
-	               free, free, free);
+    static mpc_parser_t *gdb_packet_M(void) {
+	return mpc_and(4, gdbf_packet_M, mpc_char('M'), gdb_memory(), mpc_char(':'), mpc_hexdigits(), free, free, free);
 }
 
-static mpc_parser_t *
-gdb_arg(mpc_parser_t *par)
-{
+static mpc_parser_t *gdb_arg(mpc_parser_t *par) {
 	return mpc_and(2, mpcf_fst_free, par, mpc_char(','), free);
 }
 
 gdbf_fold(z, GDB_ARG_BREAK, GDBF_ARG_BREAK)
 
-static mpc_parser_t *
-gdb_packet_z(void)
-{
+    static mpc_parser_t *gdb_packet_z(void) {
 	mpc_parser_t *name, *type;
 
 	/* TODO: parse cond_list */
@@ -282,49 +236,30 @@ gdb_packet_z(void)
 	name = mpc_or(2, mpc_char('z'), mpc_char('Z'));
 	type = mpc_apply(mpc_re("[0-4]"), mpcf_int);
 
-	return mpc_and(4, gdbf_packet_z, name,
-	               gdb_arg(type), gdb_arg(gdb_address()),
-	               gdb_uhex(), free, free, free);
+	return mpc_and(4, gdbf_packet_z, name, gdb_arg(type), gdb_arg(gdb_address()), gdb_uhex(), free, free, free);
 }
 
 gdbf_fold(T, GDB_ARG_THREAD, GDBF_ARG_THREAD)
 
-static mpc_parser_t *
-gdb_packet_T(void)
-{
-	return mpc_and(2, gdbf_packet_T, mpc_char('T'),
-	               gdb_thread_id(), free);
+    static mpc_parser_t *gdb_packet_T(void) {
+	return mpc_and(2, gdbf_packet_T, mpc_char('T'), gdb_thread_id(), free);
 }
 
-static mpc_parser_t *
-gdb_any(void)
-{
+static mpc_parser_t *gdb_any(void) {
 	return mpc_apply(mpc_many1(mpcf_strfold, mpc_any()), gdbf_ignarg);
 }
 
-static mpc_parser_t *
-gdb_cmd(mpc_parser_t *cmd)
-{
+static mpc_parser_t *gdb_cmd(mpc_parser_t *cmd) {
 	return mpc_and(2, mpcf_fst_free, cmd, mpc_eoi(), gdb_free_cmd);
 }
 
-static mpc_parser_t *
-gdb_parse_stage2(void)
-{
-	return mpc_or(8,
-	              gdb_cmd(gdb_packet_h()),
-	              gdb_cmd(gdb_packet_p()),
-	              gdb_cmd(gdb_packet_vcont()),
-	              gdb_cmd(gdb_packet_m()),
-	              gdb_cmd(gdb_packet_M()),
-	              gdb_cmd(gdb_packet_z()),
-	              gdb_cmd(gdb_packet_T()),
+static mpc_parser_t *gdb_parse_stage2(void) {
+	return mpc_or(8, gdb_cmd(gdb_packet_h()), gdb_cmd(gdb_packet_p()), gdb_cmd(gdb_packet_vcont()),
+	              gdb_cmd(gdb_packet_m()), gdb_cmd(gdb_packet_M()), gdb_cmd(gdb_packet_z()), gdb_cmd(gdb_packet_T()),
 	              gdb_any());
 }
 
-gdb_command_t *
-gdb_parse_cmd(gdb_packet_t *pkt)
-{
+gdb_command_t *gdb_parse_cmd(gdb_packet_t *pkt) {
 	mpc_result_t r;
 	mpc_parser_t *par;
 	char *data, *unesc;

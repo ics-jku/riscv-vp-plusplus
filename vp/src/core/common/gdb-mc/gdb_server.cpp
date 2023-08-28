@@ -1,31 +1,28 @@
-#include <err.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include "gdb_server.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
+#include <assert.h>
+#include <err.h>
 #include <libgdb/parser2.h>
 #include <libgdb/response.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <systemc>
 
-#include "gdb_server.h"
 #include "platform/common/async_event.h"
 
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 
-GDBServer::GDBServer(sc_core::sc_module_name name,
-                     std::vector<debug_target_if*> targets,
-                     DebugMemoryInterface *mm,
-                     uint16_t port,
-                     std::vector<mmu_memory_if*> mmus) {
-        (void)name;
+GDBServer::GDBServer(sc_core::sc_module_name name, std::vector<debug_target_if *> targets, DebugMemoryInterface *mm,
+                     uint16_t port, std::vector<mmu_memory_if *> mmus) {
+	(void)name;
 
 	if (targets.size() <= 0)
 		throw std::invalid_argument("no harts specified");
@@ -47,7 +44,7 @@ GDBServer::GDBServer(sc_core::sc_module_name name,
 	}
 
 	memory = mm;
-	arch = harts.at(0)->get_architecture(); // assuming all harts use the same
+	arch = harts.at(0)->get_architecture();  // assuming all harts use the same
 	prevpkt = NULL;
 	create_sock(port);
 
@@ -116,7 +113,7 @@ uint64_t GDBServer::translate_addr(debug_target_if *hart, uint64_t addr, MemoryA
 	mmu_memory_if *mmu_if;
 	try {
 		mmu_if = mmu.at(hart);
-	} catch (const std::out_of_range&) {
+	} catch (const std::out_of_range &) {
 		mmu_if = NULL;
 	}
 
@@ -133,13 +130,12 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 
 	try {
 		thread = thread_ops.at(op);
-	} catch (const std::out_of_range&) {
+	} catch (const std::out_of_range &) {
 		thread = GDB_THREAD_ANY;
 	}
 
 	threads = get_threads(thread);
-	for (debug_target_if *thread : threads)
-		fn(thread);
+	for (debug_target_if *thread : threads) fn(thread);
 }
 
 std::vector<debug_target_if *> GDBServer::run_threads(std::vector<debug_target_if *> hartsrun, bool single) {
@@ -152,7 +148,7 @@ std::vector<debug_target_if *> GDBServer::run_threads(std::vector<debug_target_i
 	sc_core::sc_event_or_list allharts;
 	for (debug_target_if *hart : hartsrun) {
 		sc_core::sc_event *stop_event, *run_event;
-		std::tie (stop_event, run_event) = this->events.at(hart);
+		std::tie(stop_event, run_event) = this->events.at(hart);
 
 		run_event->notify();
 		allharts |= *stop_event;
@@ -177,8 +173,7 @@ std::vector<debug_target_if *> GDBServer::run_threads(std::vector<debug_target_i
 
 	/* restore original hart status */
 	assert(orig_status.size() == hartsrun.size());
-	for (size_t i = 0; i < hartsrun.size(); i++)
-		hartsrun[i]->set_status(orig_status[i]);
+	for (size_t i = 0; i < hartsrun.size(); i++) hartsrun[i]->set_status(orig_status[i]);
 
 	return hartsrun;
 }
@@ -204,7 +199,7 @@ void GDBServer::send_packet(int conn, const char *data, gdb_kind_t kind) {
 
 	try {
 		writeall(conn, serialized, strlen(serialized));
-	} catch (const std::system_error& e) {
+	} catch (const std::system_error &e) {
 		warnx("writeall failed: %s", e.what());
 		goto ret;
 	}
@@ -230,7 +225,7 @@ void GDBServer::retransmit(int conn) {
 
 	try {
 		writeall(conn, prevpkt, strlen(prevpkt));
-	} catch (const std::system_error& e) {
+	} catch (const std::system_error &e) {
 		warnx("writeall failed: %s", e.what());
 	}
 
@@ -290,16 +285,16 @@ void GDBServer::run(void) {
 		sc_core::wait(asyncEvent);
 
 		auto ctx = pktq.front();
-		std::tie (conn, pkt) = ctx;
+		std::tie(conn, pkt) = ctx;
 
 		switch (pkt->kind) {
-		case GDB_KIND_NACK:
-			retransmit(conn);
-			/* fall through */
-		case GDB_KIND_ACK:
-			goto next1;
-		default:
-			break;
+			case GDB_KIND_NACK:
+				retransmit(conn);
+				/* fall through */
+			case GDB_KIND_ACK:
+				goto next1;
+			default:
+				break;
 		}
 
 		if (!(cmd = gdb_parse_cmd(pkt))) {
@@ -310,7 +305,7 @@ void GDBServer::run(void) {
 		send_packet(conn, NULL, GDB_KIND_ACK);
 		try {
 			handler = handlers.at(cmd->name);
-		} catch (const std::out_of_range&) {
+		} catch (const std::out_of_range &) {
 			// For any command not supported by the stub, an
 			// empty response (‘$#00’) should be returned.
 			send_packet(conn, "");
@@ -319,9 +314,9 @@ void GDBServer::run(void) {
 
 		(this->*handler)(conn, cmd);
 
-next2:
+	next2:
 		gdb_free_cmd(cmd);
-next1:
+	next1:
 		gdb_free_packet(pkt);
 		pktq.pop();
 		mtx.unlock();

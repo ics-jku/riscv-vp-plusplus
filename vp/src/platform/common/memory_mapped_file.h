@@ -1,11 +1,11 @@
 #pragma once
 
 #include <stdint.h>
-#include <unistd.h>  //truncate
-#include <fstream>   //file IO
-#include <iostream>
-
 #include <tlm_utils/simple_target_socket.h>
+#include <unistd.h>  //truncate
+
+#include <fstream>  //file IO
+#include <iostream>
 #include <systemc>
 
 #include "bus.h"

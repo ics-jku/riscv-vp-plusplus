@@ -6,6 +6,7 @@
  */
 
 #include "display.hpp"
+
 #include <math.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -15,7 +16,6 @@ typedef Framebuffer::Point Point;
 typedef Framebuffer::PointF PointF;
 typedef Framebuffer::Color Color;
 typedef Framebuffer::Frame Frame;
-
 
 Display::Display(sc_module_name) {
 	tsock.register_b_transport(this, &Display::transport);

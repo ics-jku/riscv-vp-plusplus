@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <string.h>
+
 #include <iostream>
 
 // From flash.h
@@ -9,7 +10,7 @@ static constexpr unsigned int FLASH_SIZE_REG = sizeof(uint64_t);
 static constexpr unsigned int DATA_ADDR = FLASH_SIZE_REG + sizeof(uint64_t);
 // static constexpr unsigned int ADDR_SPACE = DATA_ADDR + BLOCKSIZE;
 
-static uint8_t* volatile const FLASH_CONTROLLER = (uint8_t * volatile const)(0x71000000);
+static uint8_t* volatile const FLASH_CONTROLLER = (uint8_t* volatile const)(0x71000000);
 
 using namespace std;
 

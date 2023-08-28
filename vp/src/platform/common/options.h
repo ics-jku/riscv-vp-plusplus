@@ -5,10 +5,10 @@
 #include <iostream>
 
 class Options : public boost::program_options::options_description {
-public:
+   public:
 	Options(void);
 	virtual ~Options();
-	virtual void parse(int argc, char **argv);
+	virtual void parse(int argc, char** argv);
 
 	std::string input_program;
 
@@ -23,11 +23,9 @@ public:
 
 	virtual void printValues(std::ostream& os = std::cout) const;
 
-private:
-
+   private:
 	boost::program_options::positional_options_description pos;
 	boost::program_options::variables_map vm;
 };
-
 
 #endif
