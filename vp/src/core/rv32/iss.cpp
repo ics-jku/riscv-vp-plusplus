@@ -4441,9 +4441,6 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 		case FRM_ADDR:
 			return csrs.fcsr.fields.frm;
 
-		case VLENB_ADDR:
-			return VLEN / 8;
-
 		// debug CSRs not supported, thus hardwired
 		case TSELECT_ADDR:
 			return 1;  // if a zero write by SW is preserved, then debug mode is supported (thus hardwire to non-zero)

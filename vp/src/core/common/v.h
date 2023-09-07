@@ -65,6 +65,7 @@ class VExtension {
 	VExtension(iss_type& iss) : iss(iss) {
 		assert(ELEN >= 8 && isPowerOfTwo(ELEN));
 		assert(VLEN >= ELEN && isPowerOfTwo(VLEN) && VLEN <= 1 << 16);  // TODO: is last limit realistic?
+		iss.csrs.vlenb.reg = VLENB;
 		v_regs = malloc(NUM_REGS * VLENB);
 		memset(v_regs, 0, NUM_REGS * VLENB);
 	}
