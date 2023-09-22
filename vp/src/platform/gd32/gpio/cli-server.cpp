@@ -6,6 +6,7 @@
  */
 
 #include <unistd.h>
+
 #include <csignal>
 #include <functional>
 #include <iostream>
@@ -61,14 +62,14 @@ int main(int argc, char* argv[]) {
 		usleep(100000);
 		// here was a bitshift, implement this for lulz?
 
-		cout << " SPI Command " << (int)sumbyte << " returned " << (int) gpio.pushSPI(spi_cs, sumbyte++) << endl;
+		cout << " SPI Command " << (int)sumbyte << " returned " << (int)gpio.pushSPI(spi_cs, sumbyte++) << endl;
 
 		auto pin = reinterpret_cast<uint8_t*>(&gpio.state.pins[11]);
 		(*pin)++;
-		if(*pin > 6)
+		if (*pin > 6)
 			*pin = 0;
 
-		cout << " SPI Command " << (int)sumbyte << " returned " << (int) gpio.pushSPI(spi_cs, sumbyte++) << endl;
+		cout << " SPI Command " << (int)sumbyte << " returned " << (int)gpio.pushSPI(spi_cs, sumbyte++) << endl;
 	}
 	gpio.quit();
 	server.join();

@@ -7,24 +7,24 @@
 
 #pragma once
 
-#include "gpiocommon.hpp"
-
-#include <functional>
 #include <atomic>
+#include <functional>
 #include <unordered_map>
 
+#include "gpiocommon.hpp"
+
 class GpioServer : public GpioCommon {
-public:
+   public:
 	typedef std::function<void(gpio::PinNumber pin, gpio::Tristate val)> OnChangeCallback;
 
-private:
+   private:
 	typedef int Socket;
 	Socket listener_socket_fd;
 	Socket control_channel_fd;
 	Socket data_channel_fd;
 	uint16_t data_channel_port;
 
-	const char *base_port;
+	const char* base_port;
 	std::atomic<bool> stop;
 	OnChangeCallback onchange_fun;
 	void handleConnection(Socket conn);
@@ -32,7 +32,7 @@ private:
 	// TODO: Performance testing. Better as static array?
 	struct IOF_Channelinfo {
 		gpio::IOF_Channel_ID id;
-		gpio::IOFunction requested_iof;		// Requested IO-Function to avoid protocol mismatch
+		gpio::IOFunction requested_iof;  // Requested IO-Function to avoid protocol mismatch
 	};
 	std::unordered_map<gpio::PinNumber, IOF_Channelinfo> active_IOF_channels;
 
@@ -44,7 +44,7 @@ private:
 
 	static int awaitConnection(int socket);
 
-public:
+   public:
 	GpioServer();
 	~GpioServer();
 	bool setupConnection(const char* port);

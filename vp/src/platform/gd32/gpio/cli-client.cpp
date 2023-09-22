@@ -6,17 +6,17 @@
  */
 
 #include <unistd.h>
-#include <iostream>
+
 #include <functional>
+#include <iostream>
 
 #include "gpio-client.hpp"
 
 using namespace std;
 using namespace gpio;
 
-
 int justPrint(GpioClient& gpio) {
-	while (true) { //just update the view
+	while (true) {  // just update the view
 		if (!gpio.update()) {
 			cerr << "Error updating" << endl;
 			return -1;
@@ -58,21 +58,19 @@ int setPins(GpioClient& gpio) {
 }
 
 int registerForSPI(GpioClient& gpio) {
-
 	if (!gpio.update()) {
 		cerr << "Error updating" << endl;
 		return -1;
 	}
 
 	PinNumber spi_pin;
-	//looking for all available SPI pins
-	for(spi_pin = 0; spi_pin < max_num_pins; spi_pin++){
-		if(gpio.state.pins[spi_pin] == Pinstate::IOF_SPI) {
-			if(gpio.registerSPIOnChange(spi_pin,
-					[spi_pin](SPI_Command c){
-						cout << "Pin " << (int)spi_pin << " got SPI command " << (int)c << endl; return c%4;
-					}
-				)){
+	// looking for all available SPI pins
+	for (spi_pin = 0; spi_pin < max_num_pins; spi_pin++) {
+		if (gpio.state.pins[spi_pin] == Pinstate::IOF_SPI) {
+			if (gpio.registerSPIOnChange(spi_pin, [spi_pin](SPI_Command c) {
+				    cout << "Pin " << (int)spi_pin << " got SPI command " << (int)c << endl;
+				    return c % 4;
+			    })) {
 				cout << "Registered SPI on Pin " << (int)spi_pin << endl;
 			} else {
 				cerr << "Could not register SPI onchange" << endl;
@@ -81,7 +79,7 @@ int registerForSPI(GpioClient& gpio) {
 		}
 	}
 
-	while(gpio.update()){
+	while (gpio.update()) {
 		usleep(1000000);
 		GpioCommon::printState(gpio.state);
 	}
@@ -96,7 +94,7 @@ int main(int argc, char* argv[]) {
 
 	GpioClient gpio;
 
-	while(!gpio.setupConnection(argv[1], argv[2])) {
+	while (!gpio.setupConnection(argv[1], argv[2])) {
 		cout << "connecting..." << endl;
 		usleep(1000000);
 	}
@@ -108,15 +106,15 @@ int main(int argc, char* argv[]) {
 
 	cout << "Running test nr " << test << endl;
 
-	switch(test){
-	case 0:
-		return justPrint(gpio);
-	case 1:
-		return setPins(gpio);
-	case 2:
-		return registerForSPI(gpio);
-	default:
-		cerr << "Invalid test number given." << endl;
-		return -1;
+	switch (test) {
+		case 0:
+			return justPrint(gpio);
+		case 1:
+			return setPins(gpio);
+		case 2:
+			return registerForSPI(gpio);
+		default:
+			cerr << "Invalid test number given." << endl;
+			return -1;
 	}
 }

@@ -6,14 +6,12 @@
  */
 
 #include "gpio-server.hpp"
-#include "gpio-client.hpp" // for force quit of listening switch
 
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>	// for TCP_NODELAY
-#include <set>
+#include <netinet/tcp.h>  // for TCP_NODELAY
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,8 +19,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
 #include <iostream>
+#include <set>
 #include <thread>
+
+#include "gpio-client.hpp"  // for force quit of listening switch
 
 #define ENABLE_DEBUG (0)
 #include "debug.h"
@@ -33,27 +35,31 @@ using namespace gpio;
 // get sockaddr, IPv4 or IPv6:
 /*
 static void *get_in_addr(struct sockaddr *sa) {
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in *)sa)->sin_addr);
-	}
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in *)sa)->sin_addr);
+    }
 
-	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 */
 
-template<typename T>
-bool writeStruct(int handle, T* s){
+template <typename T>
+bool writeStruct(int handle, T* s) {
 	return write(handle, s, sizeof(T)) == sizeof(T);
 }
-template<typename T>
-bool readStruct(int handle, T* s){
+template <typename T>
+bool readStruct(int handle, T* s) {
 	return read(handle, s, sizeof(T)) == sizeof(T);
 }
 
-GpioServer::GpioServer() :
-		listener_socket_fd(-1), control_channel_fd(-1), data_channel_fd(-1),
-		data_channel_port(0),
-		base_port(""), stop(false), onchange_fun(nullptr){}
+GpioServer::GpioServer()
+    : listener_socket_fd(-1),
+      control_channel_fd(-1),
+      data_channel_fd(-1),
+      data_channel_port(0),
+      base_port(""),
+      stop(false),
+      onchange_fun(nullptr) {}
 
 GpioServer::~GpioServer() {
 	if (listener_socket_fd >= 0) {
@@ -69,21 +75,21 @@ GpioServer::~GpioServer() {
 }
 
 IOF_Channel_ID GpioServer::findNewID() {
-	if(active_IOF_channels.size() < numeric_limits<gpio::IOF_Channel_ID>::max()) {
+	if (active_IOF_channels.size() < numeric_limits<gpio::IOF_Channel_ID>::max()) {
 		return active_IOF_channels.size();
 	}
 	set<IOF_Channel_ID> used_ids;
-	for(const auto& [pin, channelinfo] : active_IOF_channels) {
+	for (const auto& [pin, channelinfo] : active_IOF_channels) {
 		used_ids.insert(channelinfo.id);
 	}
 	IOF_Channel_ID ret = 0;
-	for(const auto& id : used_ids) {
-		if(id > ret)
+	for (const auto& id : used_ids) {
+		if (id > ret)
 			return ret;
 		ret++;
 	}
-	cerr << "[GPIO-Server] No new channel ID could be found! "
-			<< active_IOF_channels.size() << " items in use, what are you doing?" << endl;
+	cerr << "[GPIO-Server] No new channel ID could be found! " << active_IOF_channels.size()
+	     << " items in use, what are you doing?" << endl;
 	return ret;
 }
 
@@ -92,7 +98,7 @@ void GpioServer::closeAndInvalidate(Socket& fd) {
 	fd = -1;
 }
 
-int GpioServer::openSocket(const char *port) {
+int GpioServer::openSocket(const char* port) {
 	int new_fd = -1;
 
 	struct addrinfo hints, *servinfo, *p;
@@ -103,7 +109,7 @@ int GpioServer::openSocket(const char *port) {
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;	// use my IP
+	hints.ai_flags = AI_PASSIVE;  // use my IP
 
 	if ((rv = getaddrinfo(NULL, port, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
@@ -124,7 +130,7 @@ int GpioServer::openSocket(const char *port) {
 			continue;
 		}
 
-		if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &disable_nagle_buffering, sizeof(int)) == -1){
+		if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &disable_nagle_buffering, sizeof(int)) == -1) {
 			cerr << "[gpio-server] WARN: setup TCP_NODELAY unsuccessful " << strerror(errno) << endl;
 		}
 
@@ -138,7 +144,7 @@ int GpioServer::openSocket(const char *port) {
 		break;
 	}
 
-	if(!found) {
+	if (!found) {
 		return -1;
 	}
 
@@ -158,13 +164,13 @@ int GpioServer::openSocket(const char *port) {
 	return new_fd;
 }
 
-bool GpioServer::setupConnection(const char *port) {
+bool GpioServer::setupConnection(const char* port) {
 	if (!(this->base_port = strdup(port))) {
 		perror("[gpio-server] strdup");
 		return false;
 	}
 
-	if((listener_socket_fd = openSocket(base_port)) < 0) {
+	if ((listener_socket_fd = openSocket(base_port)) < 0) {
 		cerr << "[gpio-server] Could not setup control channel" << endl;
 		return false;
 	}
@@ -180,16 +186,16 @@ void GpioServer::quit() {
 	closeAndInvalidate(control_channel_fd);
 	closeAndInvalidate(data_channel_fd);
 
-
 	/* The startAccepting() loop only checks the stop member
-	* variable after accept() returned. However, accept() is a
-	* blocking system call and may not return unless a new
-	* connection is established. For this reason, we set the stop
-	* variable and afterwards connect() to the server socket to make
-	* sure the receive loop terminates. */
+	 * variable after accept() returned. However, accept() is a
+	 * blocking system call and may not return unless a new
+	 * connection is established. For this reason, we set the stop
+	 * variable and afterwards connect() to the server socket to make
+	 * sure the receive loop terminates. */
 
 	GpioClient client;
-	if (base_port) client.setupConnection(NULL, base_port);
+	if (base_port)
+		client.setupConnection(NULL, base_port);
 }
 
 void GpioServer::registerOnChange(OnChangeCallback fun) {
@@ -201,25 +207,24 @@ int GpioServer::awaitConnection(int socket) {
 	socklen_t sin_size = sizeof their_addr;
 	// char s[INET6_ADDRSTRLEN];
 
-	int new_connection = accept(socket, (struct sockaddr *)&their_addr, &sin_size);
+	int new_connection = accept(socket, (struct sockaddr*)&their_addr, &sin_size);
 	if (new_connection < 0) {
 		cerr << "[gpio-server] accept return " << strerror(errno) << endl;
 		return -1;
 	}
 
-	//inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-	//DEBUG("gpio-server: got connection from %s\n", s);
+	// inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
+	// DEBUG("gpio-server: got connection from %s\n", s);
 
 	return new_connection;
 }
-
 
 void GpioServer::startAccepting() {
 	// printf("gpio-server: accepting connections (%d)\n", fd);
 
 	while (!stop)  // this would block a bit
 	{
-		if((control_channel_fd = awaitConnection(listener_socket_fd)) < 0) {
+		if ((control_channel_fd = awaitConnection(listener_socket_fd)) < 0) {
 			cerr << "[gpio-server] could not accept new connection" << endl;
 			continue;
 		}
@@ -252,7 +257,7 @@ void GpioServer::handleConnection(Socket conn) {
 					break;
 				}
 
-				if (isIOF(state.pins[req.setBit.pin])){
+				if (isIOF(state.pins[req.setBit.pin])) {
 					cerr << "[gpio-server] Ignoring setPin on IOF" << endl;
 					break;
 				}
@@ -266,15 +271,14 @@ void GpioServer::handleConnection(Socket conn) {
 				}
 				break;
 			}
-			case Request::Type::REQ_IOF:
-			{
+			case Request::Type::REQ_IOF: {
 				Req_IOF_Response response{0};
-				response.id = findNewID();			// ignoring the fact that IDs may run out
-				response.port = data_channel_port;	// will be overwritten if channel not existing
+				response.id = findNewID();          // ignoring the fact that IDs may run out
+				response.port = data_channel_port;  // will be overwritten if channel not existing
 
-				if(data_channel_fd < 0) {
+				if (data_channel_fd < 0) {
 					// need to offer and connect new connection
-					Socket data_channel_listener = openSocket("0");	// zero requests random port
+					Socket data_channel_listener = openSocket("0");  // zero requests random port
 					if (data_channel_listener < 0) {
 						cerr << "[gpio-server] Could not setup IOF data channel socket" << endl;
 						// no break, so that response is 0
@@ -283,7 +287,7 @@ void GpioServer::handleConnection(Socket conn) {
 					{
 						struct sockaddr_in sin;
 						socklen_t len = sizeof(sin);
-						if (getsockname(data_channel_listener, (struct sockaddr *)&sin, &len) == -1) {
+						if (getsockname(data_channel_listener, (struct sockaddr*)&sin, &len) == -1) {
 							cerr << "[gpio-server] Could not get port with sockname" << endl;
 							closeAndInvalidate(data_channel_listener);
 						}
@@ -300,9 +304,8 @@ void GpioServer::handleConnection(Socket conn) {
 
 					// TODO: set socket nonblock with timeout (~1s)
 					data_channel_fd = awaitConnection(data_channel_listener);
-					closeAndInvalidate(data_channel_listener);	// accepting just the first connection
-				}
-				else {
+					closeAndInvalidate(data_channel_listener);  // accepting just the first connection
+				} else {
 					if (!writeStruct(conn, &response)) {
 						cerr << "[gpio-server] could not write IOF-Req answer" << endl;
 						closeAndInvalidate(control_channel_fd);
@@ -310,24 +313,22 @@ void GpioServer::handleConnection(Socket conn) {
 					}
 				}
 
-				cout << "[gpio-server] Started IOF channel type " << (int)req.reqIOF.iof <<
-						" on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
-				IOF_Channelinfo info = {.id = response.id, .requested_iof = req.reqIOF.iof };
+				cout << "[gpio-server] Started IOF channel type " << (int)req.reqIOF.iof << " on pin "
+				     << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
+				IOF_Channelinfo info = {.id = response.id, .requested_iof = req.reqIOF.iof};
 				active_IOF_channels.emplace(req.reqIOF.pin, info);
 
 				break;
 			}
-			case Request::Type::END_IOF:
-				{
+			case Request::Type::END_IOF: {
 				auto channel = active_IOF_channels.find(req.reqIOF.pin);
-				if(channel == active_IOF_channels.end()) {
+				if (channel == active_IOF_channels.end()) {
 					cerr << "[gpio-server] IOF quit on non active pin " << (int)req.reqIOF.pin << endl;
 					return;
 				}
-				//cout << "[gpio-server] IOF quit on pin " << (int)req.reqIOF.pin << endl;
+				// cout << "[gpio-server] IOF quit on pin " << (int)req.reqIOF.pin << endl;
 				active_IOF_channels.erase(channel);
-				}
-				break;
+			} break;
 			default:
 				cerr << "[gpio-server] invalid request operation" << endl;
 				return;
@@ -340,11 +341,11 @@ void GpioServer::handleConnection(Socket conn) {
 void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
 	// TODO: Maybe add redundant array with active PIN subscriptions to speed up this check
 	auto channel = active_IOF_channels.find(pin);
-	if(channel == active_IOF_channels.end()) {
+	if (channel == active_IOF_channels.end()) {
 		return;
 	}
 
-	if(channel->second.requested_iof != IOFunction::BITSYNC) {
+	if (channel->second.requested_iof != IOFunction::BITSYNC) {
 		// requested different IOF
 		return;
 	}
@@ -353,7 +354,7 @@ void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
 	update.id = channel->second.id;
 	update.payload.pin = state;
 
-	if(!writeStruct(data_channel_fd, &update)) {
+	if (!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write PIN update to pin " << (int)pin << endl;
 		closeAndInvalidate(data_channel_fd);
 		active_IOF_channels.clear();
@@ -362,7 +363,7 @@ void GpioServer::pushPin(gpio::PinNumber pin, gpio::Tristate state) {
 
 SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	auto channel = active_IOF_channels.find(pin);
-	if(channel == active_IOF_channels.end()) {
+	if (channel == active_IOF_channels.end()) {
 		return 0;
 	}
 	/*
@@ -370,8 +371,8 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	 * It should receive all SPI data, not just the CS activated ones
 	 */
 
-	if(channel->second.requested_iof != IOFunction::SPI &&
-	   channel->second.requested_iof != IOFunction::SPI_NORESPONSE) {
+	if (channel->second.requested_iof != IOFunction::SPI &&
+	    channel->second.requested_iof != IOFunction::SPI_NORESPONSE) {
 		// requested different IOF
 		return 0;
 	}
@@ -382,7 +383,7 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	update.id = channel->second.id;
 	update.payload.spi = byte;
 
-	if(!writeStruct(data_channel_fd, &update)) {
+	if (!writeStruct(data_channel_fd, &update)) {
 		cerr << "[gpio-server] Could not write SPI command to cs " << (int)pin << endl;
 		closeAndInvalidate(data_channel_fd);
 		active_IOF_channels.clear();
@@ -390,7 +391,7 @@ SPI_Response GpioServer::pushSPI(gpio::PinNumber pin, gpio::SPI_Command byte) {
 	}
 
 	SPI_Response response = 0;
-	if(!noResponse && !readStruct(data_channel_fd, &response)) {
+	if (!noResponse && !readStruct(data_channel_fd, &response)) {
 		cerr << "[gpio-server] Could not read SPI response to cs " << (int)pin << endl;
 		closeAndInvalidate(data_channel_fd);
 		active_IOF_channels.clear();
