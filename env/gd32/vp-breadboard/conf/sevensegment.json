@@ -1,0 +1,111 @@
+{
+  "devices": 
+   [
+    { 
+      "class" : "rgb",
+      "id" : "rgb",
+      "graphics" : 
+      {
+        "offs" : [170, 0],
+        "scale" : 2
+      },
+      "pins" : 
+      [
+        {
+          "device_pin" : 0,
+          "global_pin" : 6,
+          "name" : "r" 
+        },
+        {
+          "device_pin" : 1,
+          "global_pin" : 3,
+          "name" : "g" 
+        },
+        {
+          "device_pin" : 2,
+          "global_pin" : 5,
+          "name" : "b" 
+        }
+      ]
+    },
+    { 
+      "class" : "button",
+      "id" : "reverse_count",
+      "graphics" : 
+      { 
+        "offs" : [100, 0],
+        "scale" : 1
+      },
+      "pins" : 
+      [
+        {
+          "device_pin" : 1,
+          "global_pin" : 3,
+          "name" : "output",
+          "synchronous": false 
+        } 
+      ],
+      "keybindings" : [ "UP" ]
+    },
+    {
+      "class" : "sevensegment",
+      "id"    : "display",
+      "pins"  :
+      [
+        {
+          "device_pin" : 0,
+          "global_pin" : 15,
+          "name": "top",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 1,
+          "global_pin" : 16,
+          "name": "top_right",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 2,
+          "global_pin" : 17,
+          "name": "bottom_right",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 3,
+          "global_pin" : 18,
+          "name": "bottom",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 4,
+          "global_pin" : 19,
+          "name": "bottom_left",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 5,
+          "global_pin" : 7,
+          "name": "top_left",
+          "synchronous" : false
+        },
+        {
+          "device_pin" : 6,
+          "global_pin" : 6,
+          "name": "center",
+          "synchronous" : false
+        },
+        { 
+          "device_pin" : 7,
+          "global_pin" : 5,
+          "name" : "dot",
+          "synchronous" : false
+        }
+      ],
+     "graphics" :
+     {
+       "offs" : [0, 0],
+       "scale" : 2
+     }
+    }
+  ]
+}

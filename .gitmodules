@@ -13,3 +13,6 @@
 [submodule "vp/src/vendor/systemc"]
 	path = vp/src/vendor/systemc
 	url = https://github.com/accellera-official/systemc.git
+[submodule "env/gd32/vp-breadboard/LuaBridge3"]
+	path = env/gd32/vp-breadboard/LuaBridge3
+	url = https://github.com/kunitoki/LuaBridge3

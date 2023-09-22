@@ -52,6 +52,7 @@ codestyle:
 		\) -and								\
 		-not \(								\
 			-path "./.git/*" -or					\
+			-path "./env/gd32/vp-breadboard/LuaBridge3/*" -or	\
 			-path "./vp/src/core/common/gdb-mc/libgdb/mpc/*" -or	\
 			-path "./vp/src/platform/hifive/vbb-protocol/*" -or	\
 			-path "./vp/src/platform/hwitl/virtual-bus/*" -or	\
