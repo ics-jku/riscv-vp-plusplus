@@ -3,8 +3,7 @@
 #include "devices/factory/cFactory.h"
 
 class Sevensegment : public CDevice {
-
-public:
+   public:
 	Sevensegment(DeviceID id);
 	~Sevensegment();
 
@@ -13,13 +12,13 @@ public:
 	void draw_segment(PinNumber num, bool val);
 
 	class Segment_PIN : public CDevice::PIN_Interface_C {
-	public:
+	   public:
 		Segment_PIN(CDevice* device);
 		void setPin(PinNumber num, gpio::Tristate val);
 	};
 
 	class Segment_Graph : public CDevice::Graphbuf_Interface_C {
-	public:
+	   public:
 		Segment_Graph(CDevice* device);
 		void initializeBufferMaybe();
 	};

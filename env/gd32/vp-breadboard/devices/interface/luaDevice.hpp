@@ -7,34 +7,32 @@
 
 #pragma once
 
-extern "C"
-{
-	#if __has_include(<lua5.3/lua.h>)
-		#include <lua5.3/lua.h>
-		#include <lua5.3/lualib.h>
-		#include <lua5.3/lauxlib.h>
-	#elif  __has_include(<lua.h>)
-		#include <lua.h>
-		#include <lualib.h>
-		#include <lauxlib.h>
-	#else
-		#error("No lua libraries found")
-	#endif
+extern "C" {
+#if __has_include(<lua5.3/lua.h>)
+#include <lua5.3/lauxlib.h>
+#include <lua5.3/lua.h>
+#include <lua5.3/lualib.h>
+#elif __has_include(<lua.h>)
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+#else
+#error("No lua libraries found")
+#endif
 }
 #include <LuaBridge/LuaBridge.h>
 
 #include <cstring>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "devices/device.hpp"
 
 class LuaDevice : public Device {
 	luabridge::LuaRef m_env;
 
-public:
-
+   public:
 	const DeviceClass getClass() const;
 
 	class PIN_Interface_Lua : public Device::PIN_Interface {
@@ -42,7 +40,7 @@ public:
 		luabridge::LuaRef m_getPin;
 		luabridge::LuaRef m_setPin;
 
-	public:
+	   public:
 		PIN_Interface_Lua(luabridge::LuaRef& ref);
 		~PIN_Interface_Lua();
 		PinLayout getPinLayout();
@@ -53,7 +51,8 @@ public:
 
 	class SPI_Interface_Lua : public Device::SPI_Interface {
 		luabridge::LuaRef m_send;
-	public:
+
+	   public:
 		SPI_Interface_Lua(luabridge::LuaRef& ref);
 		~SPI_Interface_Lua();
 		gpio::SPI_Response send(gpio::SPI_Command byte);
@@ -63,8 +62,8 @@ public:
 	class Config_Interface_Lua : public Device::Config_Interface {
 		luabridge::LuaRef m_getConf;
 		luabridge::LuaRef m_setConf;
-		luabridge::LuaRef& m_env;	// for building table
-	public:
+		luabridge::LuaRef& m_env;  // for building table
+	   public:
 		Config_Interface_Lua(luabridge::LuaRef& ref);
 		~Config_Interface_Lua();
 		Config* getConfig();
@@ -76,18 +75,19 @@ public:
 		luabridge::LuaRef m_getGraphBufferLayout;
 		luabridge::LuaRef m_initializeGraphBuffer;
 		luabridge::LuaRef m_env;
-		DeviceID m_deviceId;		// Redundant to Device's ID member
-		lua_State* L;				// to register functions and Format
+		DeviceID m_deviceId;  // Redundant to Device's ID member
+		lua_State* L;         // to register functions and Format
 
 		static void declarePixelFormat(lua_State* L);
-	public:
+
+	   public:
 		Graphbuf_Interface_Lua(luabridge::LuaRef& ref, DeviceID device_id, lua_State* L);
 		~Graphbuf_Interface_Lua();
 		Layout getLayout();
 		void initializeBufferMaybe();
 		void registerBuffer(QImage& image);
 
-		template<typename FunctionFootprint>
+		template <typename FunctionFootprint>
 		void registerGlobalFunctionAndInsertLocalAlias(const std::string name, FunctionFootprint fun);
 
 		static bool implementsInterface(const luabridge::LuaRef& ref);
@@ -96,8 +96,8 @@ public:
 	class Input_Interface_Lua : public Device::Input_Interface {
 		luabridge::LuaRef m_onClick;
 		luabridge::LuaRef m_onKeypress;
-		luabridge::LuaRef& m_env; // for building table
-	public:
+		luabridge::LuaRef& m_env;  // for building table
+	   public:
 		Input_Interface_Lua(luabridge::LuaRef& ref);
 		~Input_Interface_Lua();
 		void onClick(bool active);
@@ -109,4 +109,3 @@ public:
 	LuaDevice(DeviceID id, luabridge::LuaRef env, lua_State* L);
 	~LuaDevice();
 };
-

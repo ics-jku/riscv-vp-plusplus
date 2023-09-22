@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QMainWindow>
 #include <QLabel>
+#include <QMainWindow>
 #include <QMenu>
 
 #include "central.h"
@@ -12,22 +12,23 @@ class MainWindow : public QMainWindow {
 	Central *central;
 
 	QMenu *config;
-	std::vector<QMenu*> json_dirs;
-//	QMenu *devices;
+	std::vector<QMenu *> json_dirs;
+	//	QMenu *devices;
 
 	QLabel *debug_label;
 	QLabel *connection_label;
 
 	void createDropdown();
 
-public:
-	MainWindow(QString configfile, std::string additional_device_dir, const std::string host, const std::string port, bool overwrite_integrated_devices=false, QWidget *parent=0);
+   public:
+	MainWindow(QString configfile, std::string additional_device_dir, const std::string host, const std::string port,
+	           bool overwrite_integrated_devices = false, QWidget *parent = 0);
 	~MainWindow();
 
-public slots:
+   public slots:
 	void quit();
 
-private slots:
+   private slots:
 	void toggleDebug();
 	void connectionUpdate(bool active);
 	void saveJSON(QString file);

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
-#include <unordered_map>
 #include <functional>
 #include <set>
+#include <string>
+#include <unordered_map>
 
 // Input Interface
 
@@ -18,18 +18,14 @@ typedef std::string DeviceClass;
 typedef unsigned PinNumber;
 
 struct PinDesc {
-	enum class Dir {
-		input,
-		output,
-		inout
-	} dir;
+	enum class Dir { input, output, inout } dir;
 	// TODO: In future, add 'type' for analog values/pwm?
 	std::string name;
 };
 
-typedef std::unordered_map<PinNumber,PinDesc> PinLayout; // device pin
+typedef std::unordered_map<PinNumber, PinDesc> PinLayout;  // device pin
 
-//ConfigInterface
+// ConfigInterface
 
 struct ConfigElem {
 	enum class Type {
@@ -47,21 +43,20 @@ struct ConfigElem {
 	ConfigElem() : type(Type::invalid){};
 	ConfigElem(const ConfigElem& e) {
 		type = e.type;
-		if(type == Type::string) {
-			value.string = new char[strlen(e.value.string)+1];
+		if (type == Type::string) {
+			value.string = new char[strlen(e.value.string) + 1];
 			strcpy(value.string, e.value.string);
-		}
-		else {
+		} else {
 			value = e.value;
 		}
 	}
 	~ConfigElem() {
-		if(type == Type::string) {
+		if (type == Type::string) {
 			delete[] value.string;
 		}
 	}
 
-	ConfigElem(int64_t val){
+	ConfigElem(int64_t val) {
 		type = Type::integer;
 		value.integer = val;
 	};
@@ -69,21 +64,21 @@ struct ConfigElem {
 		type = Type::boolean;
 		value.boolean = val;
 	};
-	ConfigElem(char* val){
+	ConfigElem(char* val) {
 		type = Type::string;
-		value.string = new char[strlen(val)+1];
+		value.string = new char[strlen(val) + 1];
 		strcpy(value.string, val);
 	};
 };
 typedef std::string ConfigDescription;
-typedef std::unordered_map<ConfigDescription,ConfigElem> Config;
+typedef std::unordered_map<ConfigDescription, ConfigElem> Config;
 
 // GraphBufInterface
 
 struct Layout {
 	unsigned width;
 	unsigned height;
-	std::string data_type;	// Currently ignored and always RGBA8888
+	std::string data_type;  // Currently ignored and always RGBA8888
 };
 
 // TODO: Add a scheme that only alpha channel is changed?

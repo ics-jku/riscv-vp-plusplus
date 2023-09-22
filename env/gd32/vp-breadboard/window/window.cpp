@@ -1,17 +1,17 @@
 #include "window.h"
 
-#include "actions/get_dir.h"
-#include "actions/json_entry.h"
-
 #include <QApplication>
 #include <QDirIterator>
+#include <QLayout>
 #include <QMenuBar>
 #include <QStatusBar>
 
-#include <QLayout>
+#include "actions/get_dir.h"
+#include "actions/json_entry.h"
 
-MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
-		const std::string host, const std::string port, bool overwrite_integrated_devices, QWidget *parent) : QMainWindow(parent) {
+MainWindow::MainWindow(QString configfile, std::string additional_device_dir, const std::string host,
+                       const std::string port, bool overwrite_integrated_devices, QWidget* parent)
+    : QMainWindow(parent) {
 	setWindowTitle("MainWindow");
 
 	central = new Central(host, port, this);
@@ -26,8 +26,7 @@ MainWindow::MainWindow(QString configfile, std::string additional_device_dir,
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-MainWindow::~MainWindow() {
-}
+MainWindow::~MainWindow() {}
 
 void MainWindow::quit() {
 	central->destroyConnection();
@@ -51,8 +50,10 @@ void MainWindow::saveJSON(QString file) {
 }
 
 void MainWindow::removeJsonDir(QString dir) {
-	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;});
-	if(dir_menu == json_dirs.end()) return;
+	auto dir_menu =
+	    std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu) { return menu->title() == dir; });
+	if (dir_menu == json_dirs.end())
+		return;
 	statusBar()->showMessage("Remove JSON directory", 10000);
 	QAction* json_dir_action = (*dir_menu)->menuAction();
 	config->removeAction(json_dir_action);
@@ -61,37 +62,41 @@ void MainWindow::removeJsonDir(QString dir) {
 
 void MainWindow::loadJsonDirEntries(QString dir) {
 	QString title = dir.startsWith(":") ? "Integrated" : dir;
-	auto dir_menu = std::find_if(json_dirs.begin(), json_dirs.end(), [title](QMenu* menu){ return menu->title() == title; });
-	if(dir_menu == json_dirs.end()) return;
+	auto dir_menu =
+	    std::find_if(json_dirs.begin(), json_dirs.end(), [title](QMenu* menu) { return menu->title() == title; });
+	if (dir_menu == json_dirs.end())
+		return;
 	QDirIterator it(dir, {"*.json"}, QDir::Files);
-	if(!it.hasNext()) {
+	if (!it.hasNext()) {
 		removeJsonDir(dir);
 		return;
 	}
-	for(QAction* action : (*dir_menu)->actions()) {
-		if(action->text().endsWith(".json")) {
+	for (QAction* action : (*dir_menu)->actions()) {
+		if (action->text().endsWith(".json")) {
 			(*dir_menu)->removeAction(action);
 		}
 	}
-	while(it.hasNext()) {
+	while (it.hasNext()) {
 		QString file = it.next();
-		JsonEntry *cur = new JsonEntry(file, file.right(file.size()-(dir.size() + 1)));
+		JsonEntry* cur = new JsonEntry(file, file.right(file.size() - (dir.size() + 1)));
 		connect(cur, &JsonEntry::triggered, central, &Central::loadJSON);
 		(*dir_menu)->addAction(cur);
 	}
 }
 
 void MainWindow::addJsonDir(QString dir) {
-	if(std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu){return menu->title() == dir;}) != json_dirs.end()) return;
+	if (std::find_if(json_dirs.begin(), json_dirs.end(), [dir](QMenu* menu) { return menu->title() == dir; }) !=
+	    json_dirs.end())
+		return;
 	statusBar()->showMessage("Add JSON directory " + dir, 10000);
 	QMenu* dir_menu = new QMenu(dir.startsWith(":") ? "Integrated" : dir);
 	json_dirs.push_back(dir_menu);
 	config->addMenu(dir_menu);
-	if(!dir.startsWith(":")) {
-		JsonEntry *remove_dir = new JsonEntry(dir, "Remove Directory");
+	if (!dir.startsWith(":")) {
+		JsonEntry* remove_dir = new JsonEntry(dir, "Remove Directory");
 		connect(remove_dir, &JsonEntry::triggered, this, &MainWindow::removeJsonDir);
 		dir_menu->addAction(remove_dir);
-		JsonEntry *reload_dir = new JsonEntry(dir, "Reload Directory");
+		JsonEntry* reload_dir = new JsonEntry(dir, "Reload Directory");
 		connect(reload_dir, &JsonEntry::triggered, this, &MainWindow::loadJsonDirEntries);
 		dir_menu->addAction(reload_dir);
 		dir_menu->addSeparator();
@@ -136,8 +141,8 @@ void MainWindow::createDropdown() {
 	connection_label = new QLabel("Disconnected");
 	statusBar()->addPermanentWidget(connection_label);
 
-//	devices = menuBar()->addMenu("&Devices");
-//	Load *load_lua_dir = new Load("&LUA");
-//	connect(load_lua_dir, &Load::triggered, central, &Central::loadLUA);
-//	devices->addAction(load_lua_dir);
+	//	devices = menuBar()->addMenu("&Devices");
+	//	Load *load_lua_dir = new Load("&LUA");
+	//	connect(load_lua_dir, &Load::triggered, central, &Central::loadLUA);
+	//	devices->addAction(load_lua_dir);
 }

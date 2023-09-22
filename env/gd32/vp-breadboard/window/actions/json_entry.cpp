@@ -7,4 +7,3 @@ JsonEntry::JsonEntry(QString file, QString title) : QAction(title), file(file) {
 void JsonEntry::JsonEntrySelected() {
 	emit(triggered(file));
 }
-

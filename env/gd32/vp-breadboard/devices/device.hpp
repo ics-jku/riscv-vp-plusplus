@@ -1,23 +1,21 @@
 #pragma once
 
-#include <cstring>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <memory>
-
 #include <QImage>
 #include <QJsonObject>
+#include <cstring>
+#include <gpio/gpio-client.hpp>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "configurations.h"
-#include <gpio/gpio-client.hpp>
 
 class Device {
-protected:
+   protected:
 	DeviceID m_id;
 
-public:
-
+   public:
 	const DeviceID& getID() const;
 	virtual const DeviceClass getClass() const = 0;
 
@@ -25,7 +23,7 @@ public:
 	QJsonObject toJSON();
 
 	class PIN_Interface {
-	public:
+	   public:
 		virtual ~PIN_Interface();
 		virtual PinLayout getPinLayout() = 0;
 		virtual gpio::Tristate getPin(PinNumber num) = 0;
@@ -33,20 +31,20 @@ public:
 	};
 
 	class SPI_Interface {
-	public:
+	   public:
 		virtual ~SPI_Interface();
 		virtual gpio::SPI_Response send(gpio::SPI_Command byte) = 0;
 	};
 
 	class Config_Interface {
-	public:
+	   public:
 		virtual ~Config_Interface();
 		virtual Config* getConfig() = 0;
 		virtual bool setConfig(Config* conf) = 0;
 	};
 
 	class Graphbuf_Interface {
-	public:
+	   public:
 		virtual ~Graphbuf_Interface();
 		virtual Layout getLayout() = 0;
 		virtual void initializeBufferMaybe() = 0;
@@ -56,7 +54,7 @@ public:
 	};
 
 	class Input_Interface {
-	public:
+	   public:
 		Keys keybindings;
 		virtual ~Input_Interface();
 		virtual void onClick(bool active) = 0;
@@ -64,7 +62,6 @@ public:
 		void setKeys(Keys bindings);
 		Keys getKeys();
 	};
-
 
 	std::unique_ptr<PIN_Interface> pin;
 	std::unique_ptr<SPI_Interface> spi;

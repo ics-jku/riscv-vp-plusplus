@@ -8,12 +8,12 @@ class JsonEntry : public QAction {
 
 	QString file;
 
-public:
+   public:
 	JsonEntry(QString file, QString title);
 
-private slots:
+   private slots:
 	void JsonEntrySelected();
 
-signals:
+   signals:
 	void triggered(QString file);
 };

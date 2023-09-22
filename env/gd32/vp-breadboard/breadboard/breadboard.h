@@ -1,13 +1,12 @@
 #pragma once
 
-#include <QWidget>
-#include <QMouseEvent>
 #include <QKeyEvent>
+#include <QMouseEvent>
 #include <QPaintEvent>
-
-#include <unordered_map>
+#include <QWidget>
 #include <list>
-#include <mutex> // TODO: FIXME: Create one Lua state per device that uses asyncs like SPI and synchronous pins
+#include <mutex>  // TODO: FIXME: Create one Lua state per device that uses asyncs like SPI and synchronous pins
+#include <unordered_map>
 
 #include "configurations.h"
 #include "embedded/gpio-helpers.h"
@@ -17,14 +16,14 @@ const static QString default_bkgnd = ":/img/virtual_breadboard.png";
 class Breadboard : public QWidget {
 	Q_OBJECT
 
-	std::mutex lua_access;		//TODO: Use multiple Lua states per 'async called' device
+	std::mutex lua_access;  // TODO: Use multiple Lua states per 'async called' device
 	Factory factory;
-	std::unordered_map<DeviceID,std::unique_ptr<Device>> devices;
-	std::unordered_map<DeviceID,SPI_IOF_Request> spi_channels;
-	std::unordered_map<DeviceID,PIN_IOF_Request> pin_channels;
-	std::unordered_map<DeviceID,DeviceGraphic> device_graphics;
+	std::unordered_map<DeviceID, std::unique_ptr<Device>> devices;
+	std::unordered_map<DeviceID, SPI_IOF_Request> spi_channels;
+	std::unordered_map<DeviceID, PIN_IOF_Request> pin_channels;
+	std::unordered_map<DeviceID, DeviceGraphic> device_graphics;
 
-	std::list<PinMapping> reading_connections;		// Semantic subject to change
+	std::list<PinMapping> reading_connections;  // Semantic subject to change
 	std::list<PinMapping> writing_connections;
 
 	bool debugmode = false;
@@ -44,7 +43,7 @@ class Breadboard : public QWidget {
 	void mousePressEvent(QMouseEvent* e) override;
 	void mouseReleaseEvent(QMouseEvent* e) override;
 
-public:
+   public:
 	Breadboard();
 	~Breadboard();
 
@@ -61,10 +60,10 @@ public:
 	void timerUpdate(gpio::State state);
 	bool isBreadboard();
 
-public slots:
+   public slots:
 	void connectionUpdate(bool active);
 
-signals:
+   signals:
 	void registerIOF_PIN(gpio::PinNumber gpio_offs, GpioClient::OnChange_PIN fun);
 	void registerIOF_SPI(gpio::PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool noresponse);
 	void closeIOF(gpio::PinNumber gpio_offs);

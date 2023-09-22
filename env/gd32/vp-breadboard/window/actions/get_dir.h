@@ -6,12 +6,12 @@
 class GetDir : public QAction {
 	Q_OBJECT
 
-public:
+   public:
 	GetDir(QString name);
 
-private slots:
+   private slots:
 	void getDirName();
 
-signals:
+   signals:
 	void triggered(QString path);
 };

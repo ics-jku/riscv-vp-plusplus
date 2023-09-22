@@ -1,7 +1,7 @@
 #include "central.h"
 
-#include <QVBoxLayout>
 #include <QTimer>
+#include <QVBoxLayout>
 
 /* Constructor */
 
@@ -27,8 +27,7 @@ Central::Central(const std::string host, const std::string port, QWidget *parent
 	connect(this, &Central::connectionUpdate, breadboard, &Breadboard::connectionUpdate);
 }
 
-Central::~Central() {
-}
+Central::~Central() {}
 
 void Central::connectionLost() {
 	emit(connectionUpdate(false));
@@ -43,7 +42,7 @@ bool Central::toggleDebug() {
 }
 
 void Central::closeIOFs(std::vector<gpio::PinNumber> gpio_offs) {
-	for(gpio::PinNumber gpio : gpio_offs) {
+	for (gpio::PinNumber gpio : gpio_offs) {
 		embedded->closeIOF(gpio);
 	}
 	breadboard->clearConnections();
@@ -54,16 +53,15 @@ void Central::closeIOFs(std::vector<gpio::PinNumber> gpio_offs) {
 void Central::loadJSON(QString file) {
 	emit(sendStatus("Loading config file " + file, 10000));
 	breadboard->clear();
-	if(!breadboard->loadConfigFile(file)) {
+	if (!breadboard->loadConfigFile(file)) {
 		emit(sendStatus("Config file " + file + " invalid.", 10000));
 	}
-	if(breadboard->isBreadboard()) {
+	if (breadboard->isBreadboard()) {
 		embedded->show();
-	}
-	else {
+	} else {
 		embedded->hide();
 	}
-	if(embedded->gpioConnected()) {
+	if (embedded->gpioConnected()) {
 		breadboard->connectionUpdate(true);
 	}
 }
@@ -85,11 +83,11 @@ void Central::loadLUA(std::string dir, bool overwrite_integrated_devices) {
 /* Timer */
 
 void Central::timerUpdate() {
- 	bool reconnect = embedded->timerUpdate();
-	if(reconnect) {
+	bool reconnect = embedded->timerUpdate();
+	if (reconnect) {
 		emit(connectionUpdate(true));
 	}
-	if(embedded->gpioConnected()) {
+	if (embedded->gpioConnected()) {
 		breadboard->timerUpdate(embedded->getState());
 	}
 }

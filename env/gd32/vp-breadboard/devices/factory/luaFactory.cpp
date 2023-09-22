@@ -5,24 +5,23 @@
  *      Author: pp
  */
 
-
-#include <filesystem>
-#include <exception>
-#include <QDirIterator>
 #include "luaFactory.hpp"
 
-extern "C"
-{
+#include <QDirIterator>
+#include <exception>
+#include <filesystem>
+
+extern "C" {
 #if __has_include(<lua5.3/lua.h>)
-	#include <lua5.3/lua.h>
-	#include <lua5.3/lualib.h>
-	#include <lua5.3/lauxlib.h>
-#elif  __has_include(<lua.h>)
-	#include <lua.h>
-	#include <lualib.h>
-	#include <lauxlib.h>
+#include <lua5.3/lauxlib.h>
+#include <lua5.3/lua.h>
+#include <lua5.3/lualib.h>
+#elif __has_include(<lua.h>)
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
 #else
-	#error("No lua libraries found")
+#error("No lua libraries found")
 #endif
 }
 
@@ -30,11 +29,9 @@ extern "C"
 
 #include "configurations.h"
 
-
 using namespace std;
 using namespace luabridge;
 using std::filesystem::directory_iterator;
-
 
 static lua_State* L;
 
@@ -45,21 +42,21 @@ LuaRef loadScriptFromFile(lua_State* L, filesystem::path p) {
 	LuaRef scriptloader = getGlobal(L, "scriptloader_file");
 	try {
 		LuaResult r = scriptloader(p.c_str());
-		if(!r.wasOk()) {
+		if (!r.wasOk()) {
 			cerr << p << ": " << r.errorMessage() << endl;
 			return LuaRef(L);
 		}
-		if(r.size() != 1) {
-			//cerr << p << " failed." << endl;
+		if (r.size() != 1) {
+			// cerr << p << " failed." << endl;
 			return LuaRef(L);
 		}
-		if(!r[0].isTable()) {
+		if (!r[0].isTable()) {
 			cerr << p << ": " << r[0] << endl;
 			return LuaRef(L);
 		}
 		return r[0];
 
-	} catch(LuaException& e)	{
+	} catch (LuaException& e) {
 		cerr << "serious shit got down in file " << p << endl;
 		cerr << e.what() << endl;
 		return LuaRef(L);
@@ -73,21 +70,21 @@ LuaRef loadScriptFromString(lua_State* L, std::string p, std::string name = "ext
 	LuaRef scriptloader = getGlobal(L, "scriptloader_string");
 	try {
 		LuaResult r = scriptloader(p, name);
-		if(!r.wasOk()) {
+		if (!r.wasOk()) {
 			cerr << p << ": " << r.errorMessage() << endl;
 			return LuaRef(L);
 		}
-		if(r.size() != 1) {
-			//cerr << p << " failed." << endl;
+		if (r.size() != 1) {
+			// cerr << p << " failed." << endl;
 			return LuaRef(L);
 		}
-		if(!r[0].isTable()) {
+		if (!r[0].isTable()) {
 			cerr << p << ": " << r[0] << endl;
 			return LuaRef(L);
 		}
 		return r[0];
 
-	} catch(LuaException& e)	{
+	} catch (LuaException& e) {
 		cerr << "serious shit got down in string \n" << p << endl;
 		cerr << e.what() << endl;
 		return LuaRef(L);
@@ -95,18 +92,18 @@ LuaRef loadScriptFromString(lua_State* L, std::string p, std::string name = "ext
 }
 
 bool isScriptValidDevice(LuaRef& chunk, std::string name = "") {
-	if(chunk.isNil()) {
+	if (chunk.isNil()) {
 		cerr << "[lua]\tScript " << name << " could not be loaded" << endl;
 		return false;
 	}
-	if(chunk["classname"].isNil() || !chunk["classname"].isString()) {
+	if (chunk["classname"].isNil() || !chunk["classname"].isString()) {
 		cerr << "[lua]\tScript " << name << " does not contain a (valid) classname" << endl;
 		return false;
 	}
 	return true;
 }
 
-LuaFactory::LuaFactory(){
+LuaFactory::LuaFactory() {
 	L = luaL_newstate();
 	luaL_openlibs(L);
 
@@ -116,20 +113,18 @@ LuaFactory::LuaFactory(){
 	}
 	QByteArray loader_content = loader.readAll();
 
-	if( luaL_dostring( L, loader_content) )
-	{
-		cerr << "Error loading loadscript:\n" <<
-				 lua_tostring( L, lua_gettop( L ) ) << endl;
-		lua_pop( L, 1 );
+	if (luaL_dostring(L, loader_content)) {
+		cerr << "Error loading loadscript:\n" << lua_tostring(L, lua_gettop(L)) << endl;
+		lua_pop(L, 1);
 		throw(runtime_error("Loadscript not valid"));
 	}
 
-	//cout << "Scanning built-in devices..." << endl;
+	// cout << "Scanning built-in devices..." << endl;
 
 	QDirIterator it(":/devices/lua");
 	while (it.hasNext()) {
 		it.next();
-		//cout << "\t" << it.fileName().toStdString() << endl;
+		// cout << "\t" << it.fileName().toStdString() << endl;
 		QFile script_file(it.filePath());
 		if (!script_file.open(QIODevice::ReadOnly)) {
 			throw(runtime_error("Could not open file " + it.fileName().toStdString()));
@@ -138,12 +133,14 @@ LuaFactory::LuaFactory(){
 		const auto filepath = it.filePath().toStdString();
 
 		auto chunk = loadScriptFromString(L, script.toStdString(), it.fileName().toStdString());
-		if(!isScriptValidDevice(chunk, filepath))
+		if (!isScriptValidDevice(chunk, filepath))
 			continue;
 		const auto classname = chunk["classname"].cast<string>();
-		if(available_devices.find(classname) != available_devices.end()) {
-			cerr << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
-					"would overwrite device from '" << available_devices.at(classname) << "'" << endl;
+		if (available_devices.find(classname) != available_devices.end()) {
+			cerr << "[lua] Warn: '" << classname << "' from '" << filepath
+			     << "' "
+			        "would overwrite device from '"
+			     << available_devices.at(classname) << "'" << endl;
 			continue;
 		}
 		available_devices.emplace(classname, filepath);
@@ -154,34 +151,36 @@ LuaFactory::LuaFactory(){
 void LuaFactory::scanAdditionalDir(std::string dir, bool overwrite_existing) {
 	cout << "[lua] Scanning additional devices at '" << dir << "'." << endl;
 
-	QDirIterator it(dir.c_str(),
-			QStringList() << "*.lua",
-			QDir::Files, QDirIterator::Subdirectories);
+	QDirIterator it(dir.c_str(), QStringList() << "*.lua", QDir::Files, QDirIterator::Subdirectories);
 	while (it.hasNext()) {
 		it.next();
-		//cout << "\t" << it.fileName().toStdString() << endl;
+		// cout << "\t" << it.fileName().toStdString() << endl;
 		const auto filepath = it.filePath().toStdString();
-		auto chunk = loadScriptFromFile(L,  filepath);
-		if(!isScriptValidDevice(chunk, filepath))
+		auto chunk = loadScriptFromFile(L, filepath);
+		if (!isScriptValidDevice(chunk, filepath))
 			continue;
 		const auto classname = chunk["classname"].cast<string>();
-		if(available_devices.find(classname) != available_devices.end()) {
-			if(!overwrite_existing) {
-			cerr << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
-					"would overwrite device from '" << available_devices.at(classname) << "'" << endl;
-			continue;
+		if (available_devices.find(classname) != available_devices.end()) {
+			if (!overwrite_existing) {
+				cerr << "[lua] Warn: '" << classname << "' from '" << filepath
+				     << "' "
+				        "would overwrite device from '"
+				     << available_devices.at(classname) << "'" << endl;
+				continue;
 			} else {
-				cout << "[lua] Warn: '" << classname << "' from '" << filepath << "' "
-						"overwrites device from '" << available_devices.at(classname) << "'" << endl;
+				cout << "[lua] Warn: '" << classname << "' from '" << filepath
+				     << "' "
+				        "overwrites device from '"
+				     << available_devices.at(classname) << "'" << endl;
 			}
 		}
 		available_devices.emplace(classname, filepath);
 	}
 }
 
-void LuaFactory::printAvailableDevices(){
+void LuaFactory::printAvailableDevices() {
 	cout << "Available devices: " << endl;
-	for(const auto& [name, file] : available_devices) {
+	for (const auto& [name, file] : available_devices) {
 		cout << "\t" << name << " from " << file << endl;
 	}
 }
@@ -191,8 +190,8 @@ bool LuaFactory::deviceExists(DeviceClass classname) {
 }
 
 unique_ptr<LuaDevice> LuaFactory::instantiateDevice(DeviceID id, DeviceClass classname) {
-	if(!deviceExists(classname)) {
-		throw (device_not_found_error(classname));
+	if (!deviceExists(classname)) {
+		throw(device_not_found_error(classname));
 	}
 	QFile script_file(available_devices[classname].c_str());
 	if (!script_file.open(QIODevice::ReadOnly)) {
@@ -202,4 +201,3 @@ unique_ptr<LuaDevice> LuaFactory::instantiateDevice(DeviceID id, DeviceClass cla
 
 	return std::make_unique<LuaDevice>(id, loadScriptFromString(L, script.toStdString(), classname), L);
 }
-

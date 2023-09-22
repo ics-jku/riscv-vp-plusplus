@@ -21,14 +21,14 @@ Embedded::~Embedded() {}
 
 /* GPIO */
 
-bool Embedded::timerUpdate() { // return: new connection?
-	if(connected && !gpio.update()) {
+bool Embedded::timerUpdate() {  // return: new connection?
+	if (connected && !gpio.update()) {
 		emit(connectionLost());
 		connected = false;
 	}
-	if(!connected) {
+	if (!connected) {
 		connected = gpio.setupConnection(host.c_str(), port.c_str());
-		if(connected) {
+		if (connected) {
 			return true;
 		}
 	}
@@ -44,13 +44,13 @@ bool Embedded::gpioConnected() {
 }
 
 void Embedded::registerIOF_PIN(PinNumber gpio_offs, GpioClient::OnChange_PIN fun) {
-	if(!gpio.isIOFactive(gpio_offs)) {
-		const bool success= gpio.registerPINOnChange(gpio_offs, fun);
+	if (!gpio.isIOFactive(gpio_offs)) {
+		const bool success = gpio.registerPINOnChange(gpio_offs, fun);
 	}
 }
 
 void Embedded::registerIOF_SPI(PinNumber gpio_offs, GpioClient::OnChange_SPI fun, bool no_response) {
-	if(!gpio.isIOFactive(gpio_offs)) {
+	if (!gpio.isIOFactive(gpio_offs)) {
 		const bool success = gpio.registerSPIOnChange(gpio_offs, fun, no_response);
 	}
 }
@@ -64,7 +64,7 @@ void Embedded::destroyConnection() {
 }
 
 void Embedded::setBit(gpio::PinNumber gpio_offs, gpio::Tristate state) {
-	if(connected) {
+	if (connected) {
 		gpio.setBit(gpio_offs, state);
 	}
 }
