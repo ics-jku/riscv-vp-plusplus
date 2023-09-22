@@ -5,10 +5,10 @@
 #include <systemc>
 #include <thread>
 
-#include "gpio/gpio-server.hpp"
 #include "afio.h"
 #include "exmc.h"
 #include "exti.h"
+#include "gpio/gpio-server.hpp"
 #include "nuclei_core/nuclei_irq_if.h"
 #include "platform/common/async_event.h"
 #include "spi.h"
