@@ -34,7 +34,7 @@ include(CMake/GenerateResourceFiles.cmake)
 add_git_submodule(LuaBridge3)
 	
 include_directories(
-    ../../../vp/src/platform/hifive/
+    ../../../vp/src/platform/gd32/
     ../../../vp/src/
 )
 
@@ -63,11 +63,11 @@ set(SOURCES
     breadboard/breadboard.cpp
     breadboard/breadboard-json.cpp
     breadboard/raster.cpp
-    ../../../vp/src/platform/hifive/gpio/gpiocommon.cpp
-    ../../../vp/src/platform/hifive/gpio/gpio-client.cpp
+    ../../../vp/src/platform/gd32/gpio/gpiocommon.cpp
+    ../../../vp/src/platform/gd32/gpio/gpio-client.cpp
     ../../../vp/src/util/elegantEnums.cpp
-    ../../../vp/src/platform/hifive/oled/common.cpp
-    ../../../vp/src/platform/hifive/oled/oled.cpp
+    ../../../vp/src/platform/gd32/oled/common.cpp
+    ../../../vp/src/platform/gd32/oled/oled.cpp
     devices/interface/luaDevice.cpp
     devices/factory/luaFactory.cpp
     devices/device.cpp
