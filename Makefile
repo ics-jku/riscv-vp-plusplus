@@ -15,7 +15,7 @@ vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c vp/build/Makefile
 vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c:
 	git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
 
-all: vps vp-display
+all: vps vp-display gd32-breadboard
 
 vp/build/Makefile:
 	mkdir -p vp/build
@@ -32,11 +32,19 @@ env/basic/vp-display/build/Makefile:
 vp-display: env/basic/vp-display/build/Makefile
 	$(MAKE) -C env/basic/vp-display/build
 
+env/gd32/vp-breadboard/build/Makefile:
+	mkdir -p env/gd32/vp-breadboard/build
+	cd env/gd32/vp-breadboard/build && cmake ..
+
+gd32-breadboard: env/gd32/vp-breadboard/build/Makefile
+	$(MAKE) -C env/gd32/vp-breadboard/build
+
 vp-clean:
 	rm -rf vp/build
 
 qt-clean:
 	rm -rf env/basic/vp-display/build
+	rm -rf env/gd32/vp-breadboard/build
 
 clean-all: vp-clean qt-clean
 
