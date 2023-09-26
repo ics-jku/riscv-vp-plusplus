@@ -4,6 +4,8 @@
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
 
 ### Key features of *RISCV-VP++*
+ * Support for the *GD32VF103VBT6* microcontroller (*Nuclei N205*) including UI
+   * More detailed information can be found [here](doc/GD32/README.md)
  * Support for *RISC-V "V" Vector Extension* (RVV) version 1.0
    * Documentation is work in progress
  * Full integration of [GUI-VP](https://github.com/ics-jku/GUI-VP), which enables the simulation of interactive graphical Linux applications.
