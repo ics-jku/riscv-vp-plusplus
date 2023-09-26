@@ -1,16 +1,10 @@
-# RISCV-VP++
+# RISC-V based Virtual Prototype (VP)
 
-*RISCV-VP++* is a extended and improved successor of the RISC-V based Virtual Prototype (VP) [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp).
-It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
+<p align="center">
+  <img src="./img/riscv-vp_logo.png" alt="RISC-V based Virtual Prototype (VP)" width="250"/>
+</p>
 
-### Key features of *RISCV-VP++*
- * Based on [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp) (commit 9418b8abb5)
-
-More related information can be found at http://www.systemc-verification.org/riscv-vp.
-
-
-### Key features of the original *RISC-V VP*
-(commit 9418b8abb5)
+### Key features of our VP:
 
  - RV32GC and RV64GC core support (i.e. RV32IMAFDC and RV64IMAFDC)
  - Implemented in SystemC TLM-2.0
@@ -26,7 +20,12 @@ More related information can be found at http://www.systemc-verification.org/ris
  - Machine-, Supervisor- and User-mode (including user traps) privilege levels and CSRs
  - Virtual memory support (Sv32, Sv39, Sv48)
 
-The original documentation of *RISC-V VP* can be found [here](doc/RISCV-VP/README.md)
+For related information, e.g. verification, please visit https://www.informatik.uni-bremen.de/agra/projects/risc-v/ or contact <riscv@informatik.uni-bremen.de>. 
+We accept pull requests and in general contributions are very welcome.
+If you are using the RISC-V VP in a scientific paper, please cite https://doi.org/10.1016/j.sysarc.2020.101756. For the Virtual Breadboard GUI, please refer to https://www.mdpi.com/2079-9268/12/4/52.
+
+
+In the following we provide build instructions and how to compile and run software on the VP.
 
 
 #### 1) Build requirements
@@ -68,6 +67,10 @@ Check out all submodules (`git submodule update --init --recursive`), and type `
 >cmake ..
 >make install
 >```
+
+#### 3) Building the interactive environment GUI (`vp-breadboard`)
+
+The GUI for interacting with the VP has moved to [https://github.com/agra-uni-bremen/virtual-breadboard](https://github.com/agra-uni-bremen/virtual-breadboard).
 
 #### 3) Building SW examples using the GNU toolchain
 
@@ -142,3 +145,6 @@ exit the VP.
 **A:** Enter control mode using Ctrl-a and press Ctrl-a again to send a
 literal Ctrl-a control character to the guest.
 
+#### Acknowledgements:
+
+This work was supported in part by the German Federal Ministry of Education and Research (BMBF) within the project CONFIRM under contract no. 16ES0565 and within the project SATiSFy under contract no. 16KIS0821K and within the project VerSys under contract no. 01IW19001 and within the project Scale4Edge under contract no. 16ME0127, and by the University of Bremen’s graduate school SyDe, funded by the German Excellence Initiative.
