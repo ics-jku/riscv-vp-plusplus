@@ -392,8 +392,12 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::EBREAK: {
-			// TODO: also raise trap and let the SW deal with it?
-			status = CoreExecStatus::HitBreakpoint;
+			if (debug_mode) {
+				status = CoreExecStatus::HitBreakpoint;
+			} else {
+				// TODO: also raise trap if we are in debug mode?
+				raise_trap(EXC_BREAKPOINT, last_pc);
+			}
 		} break;
 
 		case Opcode::CSRRW: {
