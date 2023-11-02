@@ -4441,6 +4441,12 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 		case FRM_ADDR:
 			return csrs.fcsr.fields.frm;
 
+		case VCSR_ADDR:
+			/* mirror vxrm and vxsat in vcsr */
+			csrs.vcsr.fields.vxrm = csrs.vxrm.fields.vxrm;
+			csrs.vcsr.fields.vxsat = csrs.vxsat.fields.vxsat;
+			return csrs.vcsr.reg;
+
 		// debug CSRs not supported, thus hardwired
 		case TSELECT_ADDR:
 			return 1;  // if a zero write by SW is preserved, then debug mode is supported (thus hardwire to non-zero)
@@ -4565,6 +4571,25 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 
 		case FRM_ADDR:
 			csrs.fcsr.fields.frm = value;
+			break;
+
+		case VXSAT_ADDR:
+			write(csrs.vxsat, VXSAT_MASK);
+			/* mirror vxsat in vcsr */
+			csrs.vcsr.fields.vxsat = csrs.vxsat.fields.vxsat;
+			break;
+
+		case VXRM_ADDR:
+			write(csrs.vxrm, VXRM_MASK);
+			/* mirror vxrm in vcsr */
+			csrs.vcsr.fields.vxrm = csrs.vxrm.fields.vxrm;
+			break;
+
+		case VCSR_ADDR:
+			write(csrs.vxrm, VCSR_MASK);
+			/* mirror vxrm and vxsat in vcsr */
+			csrs.vxrm.fields.vxrm = csrs.vcsr.fields.vxrm;
+			csrs.vxsat.fields.vxsat = csrs.vcsr.fields.vxsat;
 			break;
 
 		case VTYPE_ADDR:

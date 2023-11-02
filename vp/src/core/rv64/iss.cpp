@@ -4529,6 +4529,12 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
 
 		case FRM_ADDR:
 			return csrs.fcsr.fields.frm;
+
+		case VCSR_ADDR:
+			/* mirror vxrm and vxsat in vcsr */
+			csrs.vcsr.fields.vxrm = csrs.vxrm.fields.vxrm;
+			csrs.vcsr.fields.vxsat = csrs.vxsat.fields.vxsat;
+			return csrs.vcsr.reg;
 	}
 
 	if (!csrs.is_valid_csr64_addr(addr))
@@ -4648,8 +4654,23 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 			csrs.fcsr.fields.frm = value;
 			break;
 
+		case VXSAT_ADDR:
+			write(csrs.vxsat, VXSAT_MASK);
+			/* mirror vxsat in vcsr */
+			csrs.vcsr.fields.vxsat = csrs.vxsat.fields.vxsat;
+			break;
+
 		case VXRM_ADDR:
 			write(csrs.vxrm, VXRM_MASK);
+			/* mirror vxrm in vcsr */
+			csrs.vcsr.fields.vxrm = csrs.vxrm.fields.vxrm;
+			break;
+
+		case VCSR_ADDR:
+			write(csrs.vxrm, VCSR_MASK);
+			/* mirror vxrm and vxsat in vcsr */
+			csrs.vxrm.fields.vxrm = csrs.vcsr.fields.vxrm;
+			csrs.vxsat.fields.vxsat = csrs.vcsr.fields.vxsat;
 			break;
 
 		default:

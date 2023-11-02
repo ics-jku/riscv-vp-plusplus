@@ -401,6 +401,7 @@ constexpr uint32_t FCSR_MASK = 0b11111111;
 
 constexpr uint32_t VTYPE_MASK = 0b10000000000000000000000001111111;
 constexpr uint32_t VXRM_MASK = 0b11;
+constexpr uint64_t VXSAT_MASK = 0b1;
 constexpr uint32_t VCSR_MASK = 0b111;
 
 // 64 bit timer csrs
