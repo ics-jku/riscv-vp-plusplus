@@ -1658,6 +1658,10 @@ class VExtension {
 		xlen_reg_t sew = getIntVSew();
 		xlen_reg_t evl = nreg * VLEN / sew;
 
+		/* check, if registers are aligned */
+		v_assert(v_is_aligned(iss.instr.rd(), nreg), "rd is not aligned");
+		v_assert(v_is_aligned(iss.instr.rs2(), nreg), "v2 is not aligned");
+
 		if (iss.instr.rd() != iss.instr.rs2()) {
 			for (xlen_reg_t idx = start; idx < evl; idx++) {
 				xlen_reg_t reg = idx / (VLEN / sew);
