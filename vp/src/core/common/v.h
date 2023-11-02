@@ -216,8 +216,6 @@ class VExtension {
 	}
 
 	void v_set_operation(xlen_reg_t rd, xlen_reg_t rs1, xlen_reg_t vtype_new, xlen_reg_t avl) {
-		bool vill;
-
 		xlen_reg_t vlmul = BIT_RANGE(vtype_new, 2, 0);
 		xlen_reg_t intVSew = 1 << (BIT_SLICE(vtype_new, 5, 3) + 3);
 
@@ -239,16 +237,23 @@ class VExtension {
 		}
 		// VL strategy: always set to maximum allowed value
 		iss.csrs.vl.reg = avl <= vlmax ? avl : vlmax;
-		vill = ((rd == 0 && rs1 == 0) && (iss.csrs.vl.reg != avl)) || lmul * ELEN < SEW_MIN || intVSew > 64;
 
-		if (vill) {
-			// TODO
-			// csrs.vtype.reg = 1 << (xlen - 1);
+		/* write new value (incl. possible vill) */
+		iss.csrs.vtype.reg = vtype_new;
+		/* check -> set possible vill */
+		iss.csrs.vtype.fields.vill |= (lmul * ELEN < SEW_MIN) ||
+		                              /* check reserved bits */
+		                              (vtype_new & ~0xff) ||
+		                              /* check reserved values */
+		                              (intVSew > 64 || vlmul == (1 << 2)) ||
+		                              /* check fractional lmul (see table in spec chapter 4.4.) */
+		                              (intVSew / lmul > ELEN);
+
+		/* reset values, if vill */
+		if (iss.csrs.vtype.fields.vill) {
 			iss.csrs.vl.reg = 0;
-		} else {
-			if (iss.csrs.vtype.reg != vtype_new) {
-				iss.csrs.vtype.reg = vtype_new;
-			}
+			iss.csrs.vtype.reg = 0;
+			iss.csrs.vtype.fields.vill = 1;
 		}
 
 		if ((!is_vsetivli && !(rd == 0 && rs1 == 0)) || is_vsetivli) {
