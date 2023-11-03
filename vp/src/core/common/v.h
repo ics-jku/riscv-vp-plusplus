@@ -63,6 +63,7 @@ class VExtension {
 	bool ignoreEmul;
 	bool vd_is_mask;
 	bool vd_is_scalar;
+	bool v1_is_scalar;
 
 	VExtension(iss_type& iss) : iss(iss) {
 		assert(ELEN >= 8 && isPowerOfTwo(ELEN));
@@ -190,6 +191,7 @@ class VExtension {
 		ignoreEmul = false;
 		vd_is_mask = false;
 		vd_is_scalar = false;
+		v1_is_scalar = false;
 	}
 
 	void requireNotOff() {
@@ -434,7 +436,7 @@ class VExtension {
 					v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
 				}
 				v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
-				if (param_sel == param_sel_t::vv) {
+				if (param_sel == param_sel_t::vv && !v1_is_scalar) {
 					v_assert(v_is_aligned(iss.instr.rs1(), v1_emul), "v1 is not aligned");
 				}
 			}
@@ -780,6 +782,7 @@ class VExtension {
 		op_reg_t res = 0;
 		bool added_first = false;
 		vd_is_scalar = true;
+		v1_is_scalar = true;
 		genericVLoop(
 		    [=, &res, &added_first](xlen_reg_t i) {
 			    auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
