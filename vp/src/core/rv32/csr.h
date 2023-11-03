@@ -313,8 +313,8 @@ struct csr_vxrm {
 	union {
 		uint32_t reg = 0;
 		struct {
-			unsigned zero : 30;
 			unsigned vxrm : 2;
+			unsigned zero : 30;
 		} fields;
 	};
 };
@@ -323,8 +323,8 @@ struct csr_vxsat {
 	union {
 		uint32_t reg = 0;
 		struct {
-			unsigned zero : 31;
 			unsigned vxsat : 1;
+			unsigned zero : 31;
 		} fields;
 	};
 };
@@ -333,9 +333,9 @@ struct csr_vcsr {
 	union {
 		uint32_t reg = 0;
 		struct {
-			unsigned reserved : 29;
-			unsigned vxrm : 2;
 			unsigned vxsat : 1;
+			unsigned vxrm : 2;
+			unsigned reserved : 29;
 		} fields;
 	};
 };
