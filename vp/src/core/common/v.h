@@ -62,6 +62,7 @@ class VExtension {
 	bool ignoreAlignment;
 	bool ignoreEmul;
 	bool vd_is_mask;
+	bool vd_is_scalar;
 
 	VExtension(iss_type& iss) : iss(iss) {
 		assert(ELEN >= 8 && isPowerOfTwo(ELEN));
@@ -188,6 +189,7 @@ class VExtension {
 		ignoreAlignment = false;
 		ignoreEmul = false;
 		vd_is_mask = false;
+		vd_is_scalar = false;
 	}
 
 	void requireNotOff() {
@@ -428,7 +430,7 @@ class VExtension {
 			v_assert(v1_emul <= 8, "v1_emul > 8");
 
 			if (!ignoreAlignment) {
-				if (!vd_is_mask) {
+				if (!vd_is_mask && !vd_is_scalar) {
 					v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
 				}
 				v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
@@ -766,11 +768,12 @@ class VExtension {
 		    elem, param, true);
 	}
 
+	/* used for reduction instructions */
 	void vLoopRed(std::function<void(op_reg_t, op_reg_t, xlen_reg_t, op_reg_t&)> func, elem_sel_t elem,
 	              param_sel_t param) {
 		op_reg_t res = 0;
 		bool added_first = false;
-		ignoreEmul = true;
+		vd_is_scalar = true;
 		genericVLoop(
 		    [=, &res, &added_first](xlen_reg_t i) {
 			    auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
