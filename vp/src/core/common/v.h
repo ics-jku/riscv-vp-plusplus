@@ -62,6 +62,7 @@ class VExtension {
 	bool ignoreAlignment;
 	bool ignoreEmul;
 	bool vd_is_mask;
+	bool v2_is_mask;
 	bool vd_is_scalar;
 	bool v1_is_scalar;
 
@@ -190,6 +191,7 @@ class VExtension {
 		ignoreAlignment = false;
 		ignoreEmul = false;
 		vd_is_mask = false;
+		v2_is_mask = false;
 		vd_is_scalar = false;
 		v1_is_scalar = false;
 	}
@@ -435,7 +437,9 @@ class VExtension {
 				if (!vd_is_mask && !vd_is_scalar) {
 					v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
 				}
-				v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
+				if (!v2_is_mask) {
+					v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
+				}
 				if (param_sel == param_sel_t::vv && !v1_is_scalar) {
 					v_assert(v_is_aligned(iss.instr.rs1(), v1_emul), "v1 is not aligned");
 				}
@@ -1434,6 +1438,7 @@ class VExtension {
 
 	void vIota() {
 		op_reg_t count = 0;
+		v2_is_mask = true;
 		genericVLoop([=, &count](xlen_reg_t i) {
 			elem_sel = elem_sel_t::xxxuuu;
 			auto [reg_idx, reg_pos] = getCarryElements(i);
