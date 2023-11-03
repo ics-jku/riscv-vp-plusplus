@@ -61,6 +61,7 @@ class VExtension {
 	op_reg_t o1_eew_overwrite;
 	bool ignoreAlignment;
 	bool ignoreEmul;
+	bool vd_is_mask;
 
 	VExtension(iss_type& iss) : iss(iss) {
 		assert(ELEN >= 8 && isPowerOfTwo(ELEN));
@@ -186,6 +187,7 @@ class VExtension {
 		o2_eew_overwrite = 0;
 		ignoreAlignment = false;
 		ignoreEmul = false;
+		vd_is_mask = false;
 	}
 
 	void requireNotOff() {
@@ -426,7 +428,9 @@ class VExtension {
 			v_assert(v1_emul <= 8, "v1_emul > 8");
 
 			if (!ignoreAlignment) {
-				v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
+				if (!vd_is_mask) {
+					v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
+				}
 				v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
 				if (param_sel == param_sel_t::vv) {
 					v_assert(v_is_aligned(iss.instr.rs1(), v1_emul), "v1 is not aligned");
@@ -689,6 +693,7 @@ class VExtension {
 
 	void vLoopVdExtVoid(std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> func, elem_sel_t elem,
 	                    param_sel_t param) {
+		vd_is_mask = true;
 		genericVLoop(
 		    [=](xlen_reg_t i) {
 			    auto [op1, op2, vd] = getOperandsAll(i);
@@ -716,15 +721,19 @@ class VExtension {
 		genericVLoop([=](xlen_reg_t i) { func(i); });
 	}
 
+	/* TODO: used for mask generation operations -> rename??? */
 	void vLoopVoidAll(std::function<void(xlen_reg_t)> func) {
+		vd_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, true);
 	}
 
 	void vLoopVoidAll(std::function<void(xlen_reg_t)> func, param_sel_t param) {
+		vd_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, elem_sel_t::xxxsss, param, true);
 	}
 
 	void vLoopVoidAll(std::function<void(xlen_reg_t)> func, elem_sel_t elem, param_sel_t param) {
+		vd_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, elem, param, true);
 	}
 
@@ -1374,6 +1383,7 @@ class VExtension {
 	enum vms_type_t { sbf, sif, sof };
 	void vMs(vms_type_t type) {
 		bool hit = false;
+		vd_is_mask = true;
 		genericVLoop([=, &hit](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
