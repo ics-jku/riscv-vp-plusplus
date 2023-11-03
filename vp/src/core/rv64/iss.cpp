@@ -4228,42 +4228,42 @@ void ISS::exec_step() {
 		} break;
 		case Opcode::VMAND_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_and));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_and));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMNAND_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_nand));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_nand));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMANDN_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_andn));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_andn));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMXOR_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_xor));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_xor));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMOR_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_or));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_or));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMNOR_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_nor));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_nor));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMORN_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_orn));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_orn));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMXNOR_MM: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoidAll(v_ext.vMask(v_ext.maskOperation::m_xnor));
+			v_ext.vLoopVoidAllMask(v_ext.vMask(v_ext.maskOperation::m_xnor));
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VCPOP_M: {

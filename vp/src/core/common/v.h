@@ -729,6 +729,12 @@ class VExtension {
 		genericVLoop([=](xlen_reg_t i) { func(i); }, true);
 	}
 
+	/* TODO: used for 15.1. Vector Mask-Register Logical Instructions -> rename??? */
+	void vLoopVoidAllMask(std::function<void(xlen_reg_t)> func) {
+		ignoreEmul = true;
+		genericVLoop([=](xlen_reg_t i) { func(i); }, true);
+	}
+
 	void vLoopVoidAll(std::function<void(xlen_reg_t)> func, param_sel_t param) {
 		vd_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, elem_sel_t::xxxsss, param, true);
