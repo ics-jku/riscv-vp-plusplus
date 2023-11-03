@@ -422,10 +422,15 @@ class VExtension {
 			v_assert(vd_emul <= 8, "vd_emul > 8");
 			op_reg_t v2_emul = lmul * op2_eew / sew;
 			v_assert(v2_emul <= 8, "v2_emul > 8");
+			op_reg_t v1_emul = lmul * op1_eew / sew;
+			v_assert(v1_emul <= 8, "v1_emul > 8");
 
 			if (!ignoreAlignment) {
 				v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
 				v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
+				if (param_sel == param_sel_t::vv) {
+					v_assert(v_is_aligned(iss.instr.rs1(), v1_emul), "v1 is not aligned");
+				}
 			}
 		}
 	}
