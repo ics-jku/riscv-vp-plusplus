@@ -4135,7 +4135,7 @@ void ISS::exec_step() {
 		} break;
 		case Opcode::VID_V: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoid(v_ext.vId());
+			v_ext.vLoopVoid(v_ext.vId(), v_ext.param_sel_t::vi);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VMV_X_S: {
