@@ -1392,7 +1392,7 @@ class VExtension {
 	enum vms_type_t { sbf, sif, sof };
 	void vMs(vms_type_t type) {
 		bool hit = false;
-		vd_is_mask = true;
+		ignoreAlignment = true;
 		genericVLoop([=, &hit](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
