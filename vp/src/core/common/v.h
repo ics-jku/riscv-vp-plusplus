@@ -419,29 +419,94 @@ class VExtension {
 	}
 
 	void applyChecks() {
-		auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
-		v_assert(vd_eew >= 8 && vd_eew <= 64 && op2_eew >= 8 && op2_eew <= 64 && op1_eew >= 8 && op1_eew <= 64,
+		auto [vd_eew, vd_signed, v2_eew, v2_signed, v1_eew, v1_signed] = getSignedEew();
+		v_assert(vd_eew >= 8 && vd_eew <= 64 && v2_eew >= 8 && v2_eew <= 64 && v1_eew >= 8 && v1_eew <= 64,
 		         "EEW out of range");
-		if (!ignoreEmul) {
-			double lmul = getVlmul();
-			op_reg_t sew = getIntVSew();
 
-			op_reg_t vd_emul = lmul * vd_eew / sew;
+		double lmul = getVlmul();
+		op_reg_t sew = getIntVSew();
+
+		/* For the purpose of determining register group overlap constraints, mask elements have EEW=1. */
+		if (vd_is_mask) {
+			vd_eew = 1;
+		}
+		if (v2_is_mask) {
+			v2_eew = 1;
+		}
+
+		unsigned int vd = iss.instr.rd();
+		double vd_emul = lmul * vd_eew / sew;
+
+		int vop_start = 1;  // check only v2
+		unsigned int vop[2], vop_eew[2];
+		vop[1] = iss.instr.rs2();
+		double vop_emul[2];
+		vop_eew[1] = v2_eew;
+		vop_emul[1] = lmul * v2_eew / sew;
+		if (param_sel == param_sel_t::vv && !v1_is_scalar) {
+			/* v1 used */
+			vop[0] = iss.instr.rs1();
+			vop_emul[0] = lmul * v1_eew / sew;
+			vop_eew[0] = v1_eew;
+			vop_start = 0;
+		}
+
+		for (int i = vop_start; i < 2; i++) {
+			if (vd <= vop[i] + std::ceil(vop_emul[i]) - 1 && vop[i] <= vd + std::ceil(vd_emul) - 1) {
+				bool overlap_valid = false;
+
+				if (vd_eew == vop_eew[i]) {
+					/* C1: The destination EEW equals the source EEW. */
+
+					overlap_valid = true;
+					// std::cout << "OVERLAP OK C1" << std::endl;
+
+				} else if (vd_eew < vop_eew[i]) {
+					/*
+					 * C2:
+					 * The destination EEW is smaller than the source EEW and the overlap
+					 * is in the lowest-numbered part of the source register group
+					 */
+					if (vd == vop[i]) {
+						overlap_valid = true;
+						// std::cout << "OVERLAP OK C2" << std::endl;
+					}
+
+				} else if (vd_eew > vop_eew[i] && vop_emul[i] >= 1) {
+					/*
+					 * C3:
+					 * The destination EEW is greater than the source EEW, the source EMUL
+					 * is at least 1, and the overlap is in the highest-numbered part of
+					 * the destination register group
+					 */
+					if (vop[i] + vop_emul[i] - 1 >= vd + vd_emul - 1) {
+						overlap_valid = true;
+						// std::cout << "OVERLAP OK C3" << std::endl;
+					}
+				}
+
+				if (i == 0) {
+					v_assert(overlap_valid == true, "vd overlaps source vector v1");
+				} else {
+					v_assert(overlap_valid == true, "vd overlaps source vector v2");
+				}
+			}
+		}
+
+		if (!ignoreEmul) {
 			v_assert(vd_emul <= 8, "vd_emul > 8");
-			op_reg_t v2_emul = lmul * op2_eew / sew;
-			v_assert(v2_emul <= 8, "v2_emul > 8");
-			op_reg_t v1_emul = lmul * op1_eew / sew;
-			v_assert(v1_emul <= 8, "v1_emul > 8");
+			v_assert(vop_emul[1] <= 8, "v2_emul > 8");
+			v_assert(vop_emul[0] <= 8, "v1_emul > 8");
 
 			if (!ignoreAlignment) {
 				if (!vd_is_mask && !vd_is_scalar) {
-					v_assert(v_is_aligned(iss.instr.rd(), vd_emul), "rd is not aligned");
+					v_assert(v_is_aligned(vd, vd_emul), "rd is not aligned");
 				}
 				if (!v2_is_mask) {
-					v_assert(v_is_aligned(iss.instr.rs2(), v2_emul), "v2 is not aligned");
+					v_assert(v_is_aligned(vop[1], vop_emul[1]), "v2 is not aligned");
 				}
 				if (param_sel == param_sel_t::vv && !v1_is_scalar) {
-					v_assert(v_is_aligned(iss.instr.rs1(), v1_emul), "v1 is not aligned");
+					v_assert(v_is_aligned(vop[0], vop_emul[0]), "v1 is not aligned");
 				}
 			}
 		}
