@@ -1465,6 +1465,9 @@ class VExtension {
 	void vMs(vms_type_t type) {
 		bool hit = false;
 		ignoreAlignment = true;
+
+		v_assert(iss.instr.rd() != iss.instr.rs2(), "vd overlaps source vector v2");
+
 		genericVLoop([=, &hit](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
 
