@@ -60,8 +60,8 @@ class VExtension {
 	op_reg_t o2_eew_overwrite;
 	op_reg_t o1_eew_overwrite;
 	bool ignoreAlignment;
-	bool ignoreEmul;
 	bool vd_is_mask;
+	bool v1_is_mask;
 	bool v2_is_mask;
 	bool vd_is_scalar;
 	bool v1_is_scalar;
@@ -189,8 +189,8 @@ class VExtension {
 		o1_eew_overwrite = 0;
 		o2_eew_overwrite = 0;
 		ignoreAlignment = false;
-		ignoreEmul = false;
 		vd_is_mask = false;
+		v1_is_mask = false;
 		v2_is_mask = false;
 		vd_is_scalar = false;
 		v1_is_scalar = false;
@@ -430,6 +430,9 @@ class VExtension {
 		if (vd_is_mask) {
 			vd_eew = 1;
 		}
+		if (v1_is_mask) {
+			v1_eew = 1;
+		}
 		if (v2_is_mask) {
 			v2_eew = 1;
 		}
@@ -450,6 +453,10 @@ class VExtension {
 			vop_eew[0] = v1_eew;
 			vop_start = 0;
 		}
+
+		v_assert(vd_emul <= 8, "vd_emul > 8");
+		v_assert(vop_emul[1] <= 8, "v2_emul > 8");
+		v_assert(vop_emul[0] <= 8, "v1_emul > 8");
 
 		for (int i = vop_start; i < 2; i++) {
 			if (vd <= vop[i] + std::ceil(vop_emul[i]) - 1 && vop[i] <= vd + std::ceil(vd_emul) - 1) {
@@ -493,21 +500,15 @@ class VExtension {
 			}
 		}
 
-		if (!ignoreEmul) {
-			v_assert(vd_emul <= 8, "vd_emul > 8");
-			v_assert(vop_emul[1] <= 8, "v2_emul > 8");
-			v_assert(vop_emul[0] <= 8, "v1_emul > 8");
-
-			if (!ignoreAlignment) {
-				if (!vd_is_mask && !vd_is_scalar) {
-					v_assert(v_is_aligned(vd, vd_emul), "rd is not aligned");
-				}
-				if (!v2_is_mask) {
-					v_assert(v_is_aligned(vop[1], vop_emul[1]), "v2 is not aligned");
-				}
-				if (param_sel == param_sel_t::vv && !v1_is_scalar) {
-					v_assert(v_is_aligned(vop[0], vop_emul[0]), "v1 is not aligned");
-				}
+		if (!ignoreAlignment) {
+			if (!vd_is_mask && !vd_is_scalar) {
+				v_assert(v_is_aligned(vd, vd_emul), "rd is not aligned");
+			}
+			if (!v2_is_mask) {
+				v_assert(v_is_aligned(vop[1], vop_emul[1]), "v2 is not aligned");
+			}
+			if (param_sel == param_sel_t::vv && !v1_is_mask && !v1_is_scalar) {
+				v_assert(v_is_aligned(vop[0], vop_emul[0]), "v1 is not aligned");
 			}
 		}
 	}
@@ -802,7 +803,9 @@ class VExtension {
 
 	/* TODO: used for 15.1. Vector Mask-Register Logical Instructions -> rename??? */
 	void vLoopVoidAllMask(std::function<void(xlen_reg_t)> func) {
-		ignoreEmul = true;
+		vd_is_mask = true;
+		v1_is_mask = true;
+		v2_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, true);
 	}
 
