@@ -108,28 +108,6 @@ Please note, if *make* is called without the *install* argument in step 2, then 
 
 This will also copy the VP binaries into the *vp/build/bin* folder.
 
-#### Alternative Setup: Docker
-
-Instead of compiling the riscv-vp manually, a `Dockerfile` is also
-provided which eases this process. In order to build a Docker image from
-this file run the following command:
-
-	$ docker build -t riscv-vp .
-
-Afterwards, start a new Docker container using:
-
-	$ docker run --rm -it riscv-vp
-
-Within this Docker container, the riscv-vp source tree is available in
-`/home/riscv-vp/riscv-vp/`. A RISC-V cross compiler toolchain is also
-part of the container. As such, it is possible to compile and run any of
-the examples from the `./sw` subdirectory in this container. For
-example:
-
-	$ cd /home/riscv-vp/riscv-vp/sw/basic-c/
-	$ make
-	$ make sim
-
 #### FAQ
 
 **Q:** How do I exit the VP?
