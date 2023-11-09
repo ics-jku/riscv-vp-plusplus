@@ -60,6 +60,7 @@ class VExtension {
 	op_reg_t o2_eew_overwrite;
 	op_reg_t o1_eew_overwrite;
 	bool ignoreAlignment;
+	bool ignoreOverlap;
 	bool vd_is_mask;
 	bool v1_is_mask;
 	bool v2_is_mask;
@@ -189,6 +190,7 @@ class VExtension {
 		o1_eew_overwrite = 0;
 		o2_eew_overwrite = 0;
 		ignoreAlignment = false;
+		ignoreOverlap = false;
 		vd_is_mask = false;
 		v1_is_mask = false;
 		v2_is_mask = false;
@@ -446,7 +448,7 @@ class VExtension {
 		double vop_emul[2];
 		vop_eew[1] = v2_eew;
 		vop_emul[1] = lmul * v2_eew / sew;
-		if (param_sel == param_sel_t::vv && !v1_is_scalar) {
+		if (param_sel == param_sel_t::vv) {
 			/* v1 used */
 			vop[0] = iss.instr.rs1();
 			vop_emul[0] = lmul * v1_eew / sew;
@@ -454,48 +456,52 @@ class VExtension {
 			vop_start = 0;
 		}
 
-		v_assert(vd_emul <= 8, "vd_emul > 8");
+		if (!vd_is_scalar)
+			v_assert(vd_emul <= 8, "vd_emul > 8");
 		v_assert(vop_emul[1] <= 8, "v2_emul > 8");
-		v_assert(vop_emul[0] <= 8, "v1_emul > 8");
+		if (!v1_is_scalar)
+			v_assert(vop_emul[0] <= 8, "v1_emul > 8");
 
-		for (int i = vop_start; i < 2; i++) {
-			if (vd <= vop[i] + std::ceil(vop_emul[i]) - 1 && vop[i] <= vd + std::ceil(vd_emul) - 1) {
-				bool overlap_valid = false;
+		if (!ignoreOverlap) {
+			for (int i = vop_start; i < 2; i++) {
+				if (vd <= vop[i] + std::ceil(vop_emul[i]) - 1 && vop[i] <= vd + std::ceil(vd_emul) - 1) {
+					bool overlap_valid = false;
 
-				if (vd_eew == vop_eew[i]) {
-					/* C1: The destination EEW equals the source EEW. */
+					if (vd_eew == vop_eew[i]) {
+						/* C1: The destination EEW equals the source EEW. */
 
-					overlap_valid = true;
-					// std::cout << "OVERLAP OK C1" << std::endl;
-
-				} else if (vd_eew < vop_eew[i]) {
-					/*
-					 * C2:
-					 * The destination EEW is smaller than the source EEW and the overlap
-					 * is in the lowest-numbered part of the source register group
-					 */
-					if (vd == vop[i]) {
 						overlap_valid = true;
-						// std::cout << "OVERLAP OK C2" << std::endl;
+						// std::cout << "OVERLAP OK C1" << std::endl;
+
+					} else if (vd_eew < vop_eew[i]) {
+						/*
+						 * C2:
+						 * The destination EEW is smaller than the source EEW and the overlap
+						 * is in the lowest-numbered part of the source register group
+						 */
+						if (vd == vop[i]) {
+							overlap_valid = true;
+							// std::cout << "OVERLAP OK C2" << std::endl;
+						}
+
+					} else if (vd_eew > vop_eew[i] && vop_emul[i] >= 1) {
+						/*
+						 * C3:
+						 * The destination EEW is greater than the source EEW, the source EMUL
+						 * is at least 1, and the overlap is in the highest-numbered part of
+						 * the destination register group
+						 */
+						if (vop[i] + vop_emul[i] - 1 >= vd + vd_emul - 1) {
+							overlap_valid = true;
+							// std::cout << "OVERLAP OK C3" << std::endl;
+						}
 					}
 
-				} else if (vd_eew > vop_eew[i] && vop_emul[i] >= 1) {
-					/*
-					 * C3:
-					 * The destination EEW is greater than the source EEW, the source EMUL
-					 * is at least 1, and the overlap is in the highest-numbered part of
-					 * the destination register group
-					 */
-					if (vop[i] + vop_emul[i] - 1 >= vd + vd_emul - 1) {
-						overlap_valid = true;
-						// std::cout << "OVERLAP OK C3" << std::endl;
+					if (i == 0) {
+						v_assert(overlap_valid == true, "vd overlaps source vector v1");
+					} else {
+						v_assert(overlap_valid == true, "vd overlaps source vector v2");
 					}
-				}
-
-				if (i == 0) {
-					v_assert(overlap_valid == true, "vd overlaps source vector v1");
-				} else {
-					v_assert(overlap_valid == true, "vd overlaps source vector v2");
 				}
 			}
 		}
@@ -853,6 +859,7 @@ class VExtension {
 	              param_sel_t param) {
 		op_reg_t res = 0;
 		bool added_first = false;
+		ignoreOverlap = true;
 		vd_is_scalar = true;
 		v1_is_scalar = true;
 		genericVLoop(
