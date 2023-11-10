@@ -790,16 +790,6 @@ class VExtension {
 		    elem, param);
 	}
 
-	void vLoopVdExtVoidAll(std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> func, elem_sel_t elem,
-	                       param_sel_t param) {
-		genericVLoop(
-		    [=](xlen_reg_t i) {
-			    auto [op1, op2, vd] = getOperandsAll(i);
-			    func(op2, op1, vd, i);
-		    },
-		    elem, param, true);
-	}
-
 	void vLoopVoid(std::function<void(xlen_reg_t)> func, param_sel_t param) {
 		genericVLoop([=](xlen_reg_t i) { func(i); }, elem_sel_t::xxxsss, param);
 	}
@@ -821,11 +811,6 @@ class VExtension {
 		v1_is_mask = true;
 		v2_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, true);
-	}
-
-	void vLoopVoidAll(std::function<void(xlen_reg_t)> func, param_sel_t param) {
-		vd_is_mask = true;
-		genericVLoop([=](xlen_reg_t i) { func(i); }, elem_sel_t::xxxsss, param, true);
 	}
 
 	void vLoopVoidAll(std::function<void(xlen_reg_t)> func, elem_sel_t elem, param_sel_t param) {
