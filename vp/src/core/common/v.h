@@ -118,6 +118,8 @@ class VExtension {
 			case 0:
 				actual_val = raw_val;
 				break;
+			default:
+				v_assert(false, "invalid sew");
 		}
 		return actual_val;
 	}
@@ -133,6 +135,8 @@ class VExtension {
 			case 64:
 				iss.fp_regs.write(addr, f64(value));
 				break;
+			default:
+				v_assert(false, "invalid sew");
 		}
 	}
 
@@ -191,9 +195,7 @@ class VExtension {
 		iss.csrs.vstart.reg = 0;
 
 		if (is_fp) {
-			op_reg_t exception_flags = softfloat_exceptionFlags;
 			iss.fp_finish_instr();
-			op_reg_t current_fcsr = iss.csrs.fcsr.reg;
 		}
 	}
 
@@ -354,7 +356,9 @@ class VExtension {
 			} break;
 			case param_sel_t::vf: {
 				op1 = fp_reg_read(iss.instr.rs1(), op1_eew);
-			}
+			} break;
+			default:
+				v_assert(false, "invalid param_sel");
 		}
 
 		return std::make_pair(op1, op2);
@@ -450,7 +454,7 @@ class VExtension {
 		xlen_reg_t vec_idx = addr + index / num_elem_per_reg;
 		xlen_reg_t elem_num = index % num_elem_per_reg;
 		xlen_reg_t elem_num_64 = elem_num / (64 / sew);
-		op_reg_t out = getSewSingleOperand(64, vec_idx, elem_num_64, false);
+		getSewSingleOperand(64, vec_idx, elem_num_64, false);
 	};
 
 	void writeGeneric(op_reg_t result, unsigned i) {
@@ -1098,6 +1102,8 @@ class VExtension {
 				case int_compare_t::gt:
 					comp = op2_signed ? signExtend(op2, op2_eew) > signExtend(op1, op1_eew) : op2 > op1;
 					break;
+				default:
+					v_assert(false, "invalid compare type");
 			}
 			op_reg_t vd_out = setSingleBitUnmasked<op_reg_t>(vd_mask, comp, i % ELEN);
 			writeSewSingleOperand(ELEN, iss.instr.rd(), elem_pos, vd_out);
@@ -1316,6 +1322,8 @@ class VExtension {
 				case maskOperation::m_xnor:
 					res = vs2 ^ ~vs1;
 					break;
+				default:
+					v_assert(false, "invalid vMask operation");
 			}
 			res &= 0b1;
 
