@@ -59,6 +59,7 @@ class VExtension {
 	op_reg_t vd_eew_overwrite;
 	op_reg_t o2_eew_overwrite;
 	op_reg_t o1_eew_overwrite;
+	bool require_vd_not_v0;
 	bool ignoreAlignment;
 	bool ignoreOverlap;
 	bool vd_is_mask;
@@ -189,6 +190,7 @@ class VExtension {
 		vd_eew_overwrite = 0;
 		o1_eew_overwrite = 0;
 		o2_eew_overwrite = 0;
+		require_vd_not_v0 = true;
 		ignoreAlignment = false;
 		ignoreOverlap = false;
 		vd_is_mask = false;
@@ -427,6 +429,11 @@ class VExtension {
 
 		double lmul = getVlmul();
 		op_reg_t sew = getIntVSew();
+
+		/* see spec 5.3 */
+		if (require_vd_not_v0 && !iss.instr.vm()) {
+			v_assert(iss.instr.rd() != 0, "rd: v0 not allowed for masked");
+		}
 
 		/* For the purpose of determining register group overlap constraints, mask elements have EEW=1. */
 		if (vd_is_mask) {
@@ -773,6 +780,7 @@ class VExtension {
 
 	void vLoopVdExtVoid(std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> func, elem_sel_t elem,
 	                    param_sel_t param) {
+		require_vd_not_v0 = false;
 		vd_is_mask = true;
 		genericVLoop(
 		    [=](xlen_reg_t i) {
@@ -821,6 +829,7 @@ class VExtension {
 	}
 
 	void vLoopVoidAll(std::function<void(xlen_reg_t)> func, elem_sel_t elem, param_sel_t param) {
+		require_vd_not_v0 = false;
 		vd_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, elem, param, true);
 	}
@@ -859,6 +868,7 @@ class VExtension {
 	              param_sel_t param) {
 		op_reg_t res = 0;
 		bool added_first = false;
+		require_vd_not_v0 = false;
 		ignoreOverlap = true;
 		vd_is_scalar = true;
 		v1_is_scalar = true;
@@ -1445,6 +1455,7 @@ class VExtension {
 	}
 
 	void vCpop() {
+		require_vd_not_v0 = false;
 		op_reg_t count = 0;
 		ignoreAlignment = true;
 		genericVLoop([=, &count](xlen_reg_t i) {
@@ -1457,6 +1468,7 @@ class VExtension {
 	}
 
 	void vFirst() {
+		require_vd_not_v0 = false;
 		ignoreAlignment = true;
 		op_reg_t initial_position = -1;
 		op_reg_t position = initial_position;
