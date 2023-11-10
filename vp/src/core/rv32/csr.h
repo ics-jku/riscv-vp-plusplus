@@ -661,7 +661,7 @@ constexpr unsigned VCSR_ADDR = 0x00F;
 constexpr unsigned VL_ADDR = 0xC20;
 constexpr unsigned VTYPE_ADDR = 0xC21;
 constexpr unsigned VLENB_ADDR = 0xC22;
-};  // namespace csr
+}  // namespace csr
 
 struct csr_table {
 	csr_64 cycle;
