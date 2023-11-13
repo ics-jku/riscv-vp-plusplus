@@ -1634,6 +1634,7 @@ class VExtension {
 
 	void vCompress() {
 		op_reg_t current_position = 0;
+		v1_is_mask = true;
 		genericVLoop([=, &current_position](xlen_reg_t i) {
 			elem_sel = elem_sel_t::xxxuuu;
 
