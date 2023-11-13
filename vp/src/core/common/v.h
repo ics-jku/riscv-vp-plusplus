@@ -59,6 +59,7 @@ class VExtension {
 	op_reg_t vd_eew_overwrite;
 	op_reg_t o2_eew_overwrite;
 	op_reg_t o1_eew_overwrite;
+	bool require_no_overlap;
 	bool require_vd_not_v0;
 	bool ignoreAlignment;
 	bool ignoreOverlap;
@@ -190,6 +191,7 @@ class VExtension {
 		vd_eew_overwrite = 0;
 		o1_eew_overwrite = 0;
 		o2_eew_overwrite = 0;
+		require_no_overlap = false;
 		require_vd_not_v0 = true;
 		ignoreAlignment = false;
 		ignoreOverlap = false;
@@ -474,7 +476,11 @@ class VExtension {
 				if (vd <= vop[i] + std::ceil(vop_emul[i]) - 1 && vop[i] <= vd + std::ceil(vd_emul) - 1) {
 					bool overlap_valid = false;
 
-					if (vd_eew == vop_eew[i]) {
+					if (require_no_overlap) {
+						/* overlap strictly forbidden */
+						overlap_valid = false;
+
+					} else if (vd_eew == vop_eew[i]) {
 						/* C1: The destination EEW equals the source EEW. */
 
 						overlap_valid = true;
@@ -794,6 +800,11 @@ class VExtension {
 		genericVLoop([=](xlen_reg_t i) { func(i); }, elem_sel_t::xxxsss, param);
 	}
 
+	void vLoopVoidNoOverlap(std::function<void(xlen_reg_t)> func, param_sel_t param) {
+		require_no_overlap = true;
+		vLoopVoid(func, param);
+	}
+
 	void vLoopVoid(std::function<void(xlen_reg_t)> func) {
 		// TODO this version can probably be removed
 		genericVLoop([=](xlen_reg_t i) { func(i); });
@@ -820,6 +831,7 @@ class VExtension {
 	}
 
 	void vLoopExt(std::function<op_reg_t(op_reg_t, op_reg_t, xlen_reg_t)> func, elem_sel_t elem, param_sel_t param) {
+		require_no_overlap = true;
 		genericVLoop(
 		    [=](xlen_reg_t i) {
 			    auto [op1, op2] = getOperands(i);
@@ -1634,6 +1646,7 @@ class VExtension {
 
 	void vCompress() {
 		op_reg_t current_position = 0;
+		require_no_overlap = true;
 		v1_is_mask = true;
 		genericVLoop([=, &current_position](xlen_reg_t i) {
 			elem_sel = elem_sel_t::xxxuuu;

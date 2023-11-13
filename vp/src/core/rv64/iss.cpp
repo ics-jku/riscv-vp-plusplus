@@ -4323,12 +4323,12 @@ void ISS::exec_step() {
 		} break;
 		case Opcode::VSLIDEUP_VX: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoid(v_ext.vSlideUp(regs[instr.rs1()]), v_ext.param_sel_t::vx);
+			v_ext.vLoopVoidNoOverlap(v_ext.vSlideUp(regs[instr.rs1()]), v_ext.param_sel_t::vx);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VSLIDEUP_VI: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoid(v_ext.vSlideUp(instr.rs1()), v_ext.param_sel_t::vi);
+			v_ext.vLoopVoidNoOverlap(v_ext.vSlideUp(instr.rs1()), v_ext.param_sel_t::vi);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VSLIDEDOWN_VX: {
@@ -4343,12 +4343,12 @@ void ISS::exec_step() {
 		} break;
 		case Opcode::VSLIDE1UP_VX: {
 			v_ext.prepInstr(true, true, false);
-			v_ext.vLoopVoid(v_ext.vSlide1Up(v_ext.param_sel_t::vx), v_ext.param_sel_t::vx);
+			v_ext.vLoopVoidNoOverlap(v_ext.vSlide1Up(v_ext.param_sel_t::vx), v_ext.param_sel_t::vx);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VFSLIDE1UP_VF: {
 			v_ext.prepInstr(true, true, true);
-			v_ext.vLoopVoid(v_ext.vSlide1Up(v_ext.param_sel_t::vf));
+			v_ext.vLoopVoidNoOverlap(v_ext.vSlide1Up(v_ext.param_sel_t::vf), v_ext.param_sel_t::vf);
 			v_ext.finishInstr(true);
 		} break;
 		case Opcode::VSLIDE1DOWN_VX: {
