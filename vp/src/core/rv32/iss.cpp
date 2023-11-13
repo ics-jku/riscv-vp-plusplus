@@ -4586,7 +4586,7 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			break;
 
 		case VCSR_ADDR:
-			write(csrs.vxrm, VCSR_MASK);
+			write(csrs.vcsr, VCSR_MASK);
 			/* mirror vxrm and vxsat in vcsr */
 			csrs.vxrm.fields.vxrm = csrs.vcsr.fields.vxrm;
 			csrs.vxsat.fields.vxsat = csrs.vcsr.fields.vxsat;
