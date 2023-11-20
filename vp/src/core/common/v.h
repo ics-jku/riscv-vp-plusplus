@@ -171,6 +171,57 @@ class VExtension {
 		return alignment == 0 || (addr & (alignment - 1)) == 0;
 	}
 
+	/* check, if the overlap of two registers is allowed */
+	bool vreg_overlap_valid(op_reg_t vd, double vd_emul, unsigned int vd_eew, op_reg_t vs, double vs_emul,
+	                        unsigned int vs_eew, bool strict) {
+		if ((vd > vs + std::ceil(vs_emul) - 1) || (vs > vd + std::ceil(vd_emul) - 1)) {
+			/* no overlap at all -> valid */
+			// std::cout << "NO OVERLAP" << std::endl;
+			return true;
+		}
+
+		if (strict) {
+			/* overlap strictly forbidden -> invalid */
+			// std::cout << "OVERLAP AND STRICTLY FORBIDDEN" << std::endl;
+			return false;
+		}
+
+		if (vd_eew == vs_eew) {
+			/* C1: The destination EEW equals the source EEW. */
+			// std::cout << "OVERLAP OK C1" << std::endl;
+			return true;
+		}
+
+		if (vd_eew < vs_eew) {
+			/*
+			 * C2:
+			 * The destination EEW is smaller than the source EEW and the overlap
+			 * is in the lowest-numbered part of the source register group
+			 */
+			if (vd == vs) {
+				// std::cout << "OVERLAP OK C2" << std::endl;
+				return true;
+			}
+		}
+
+		if (vd_eew > vs_eew && vs_emul >= 1) {
+			/*
+			 * C3:
+			 * The destination EEW is greater than the source EEW, the source EMUL
+			 * is at least 1, and the overlap is in the highest-numbered part of
+			 * the destination register group
+			 */
+			if (vs + vs_emul - 1 >= vd + vd_emul - 1) {
+				// std::cout << "OVERLAP OK C3" << std::endl;
+				return true;
+			}
+		}
+
+		/* invalid */
+		// std::cout << "OVERLAP AND INVALID" << std::endl;
+		return false;
+	}
+
 	void prepInstr(bool require_not_off, bool require_vill, bool is_fp) {
 		if (require_not_off) {
 			requireNotOff();
@@ -473,48 +524,12 @@ class VExtension {
 
 		if (!ignoreOverlap) {
 			for (int i = vop_start; i < 2; i++) {
-				if (vd <= vop[i] + std::ceil(vop_emul[i]) - 1 && vop[i] <= vd + std::ceil(vd_emul) - 1) {
-					bool overlap_valid = false;
-
-					if (require_no_overlap) {
-						/* overlap strictly forbidden */
-						overlap_valid = false;
-
-					} else if (vd_eew == vop_eew[i]) {
-						/* C1: The destination EEW equals the source EEW. */
-
-						overlap_valid = true;
-						// std::cout << "OVERLAP OK C1" << std::endl;
-
-					} else if (vd_eew < vop_eew[i]) {
-						/*
-						 * C2:
-						 * The destination EEW is smaller than the source EEW and the overlap
-						 * is in the lowest-numbered part of the source register group
-						 */
-						if (vd == vop[i]) {
-							overlap_valid = true;
-							// std::cout << "OVERLAP OK C2" << std::endl;
-						}
-
-					} else if (vd_eew > vop_eew[i] && vop_emul[i] >= 1) {
-						/*
-						 * C3:
-						 * The destination EEW is greater than the source EEW, the source EMUL
-						 * is at least 1, and the overlap is in the highest-numbered part of
-						 * the destination register group
-						 */
-						if (vop[i] + vop_emul[i] - 1 >= vd + vd_emul - 1) {
-							overlap_valid = true;
-							// std::cout << "OVERLAP OK C3" << std::endl;
-						}
-					}
-
-					if (i == 0) {
-						v_assert(overlap_valid == true, "vd overlaps source vector vs1");
-					} else {
-						v_assert(overlap_valid == true, "vd overlaps source vector vs2");
-					}
+				bool overlap_valid =
+				    vreg_overlap_valid(vd, vd_emul, vd_eew, vop[i], vop_emul[i], vop_eew[i], require_no_overlap);
+				if (i == 0) {
+					v_assert(overlap_valid == true, "vd overlaps source vector vs1");
+				} else {
+					v_assert(overlap_valid == true, "vd overlaps source vector vs2");
 				}
 			}
 		}
