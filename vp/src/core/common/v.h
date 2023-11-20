@@ -687,6 +687,55 @@ class VExtension {
 		bool break_loop = false;
 		xlen_reg_t switchElem = (ldstType == load_store_type_t::indexed) ? getIntVSew() : numBits;
 
+		/* check overlap destination with mask */
+		if (ldst == load_store_t::load && !iss.instr.vm()) {
+			v_assert(iss.instr.rd() != 0, "rd: v0 not allowed for masked on load");
+		}
+
+		if (ldstType == load_store_type_t::indexed) {
+			double lmul = getVlmul();
+
+			/* check data vector reg alignement */
+			unsigned int vd = iss.instr.rd();
+			unsigned int vd_eew = getIntVSew();
+			double vd_emul = lmul;
+			v_assert(v_is_aligned(vd, vd_emul), "vd is not aligned");
+
+			/* check index vector reg alignment */
+			unsigned int vs2 = iss.instr.rs2();
+			unsigned int vs2_eew = numBits;
+			unsigned int sew = getIntVSew();
+			double vs2_emul = lmul * vs2_eew / sew;
+			v_assert(v_is_aligned(vs2, vs2_emul), "vs2 is not aligned");
+
+			/* check overlap of index vector with data (groups(emul) and fields) vector on load */
+			if (ldst == load_store_t::load) {
+				for (xlen_reg_t field = 0; field < iss.instr.nf() + 1; field++) {
+					unsigned int vdfield = vd + field * std::ceil(vd_emul);
+					if (!vreg_overlap_valid(vdfield, vd_emul, vd_eew, vs2, vs2_emul, vs2_eew, iss.instr.nf() > 0)) {
+						v_assert(false, "vd field overlaps source vector vs2");
+					}
+				}
+			}
+
+		} else if (ldstType != load_store_type_t::masked) {
+			double lmul;
+			unsigned int sew;
+			if (ldstType == load_store_type_t::whole) {
+				lmul = iss.instr.nf() + 1;
+				sew = numBits;
+			} else {
+				lmul = getVlmul();
+				sew = getIntVSew();
+			}
+
+			/* check data vector reg alignment */
+			unsigned int vd = iss.instr.rd();
+			unsigned int vd_eew = numBits;
+			double vd_emul = lmul * vd_eew / sew;
+			v_assert(v_is_aligned(vd, vd_emul), "vd is not aligned");
+		}
+
 		for (xlen_reg_t i = 0; i < evl; ++i) {
 			bool is_inactive = vInactiveHandling(i, evl);
 			if (!is_inactive) {
@@ -752,6 +801,10 @@ class VExtension {
 				}
 			}
 		}
+
+		// if (!break_loop) {
+		//      std::cout << "LOAD/STORE OK " << Opcode::mappingStr.at(iss.op) << std::endl;
+		// }
 	}
 
 	void genericVLoop(std::function<void(xlen_reg_t)> func) {

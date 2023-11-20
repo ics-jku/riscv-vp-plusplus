@@ -2717,102 +2717,102 @@ void ISS::exec_step() {
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL1RE8_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL1RE16_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL1RE32_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL1RE64_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VS1R_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL2RE8_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL2RE16_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL2RE32_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL2RE64_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VS2R_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL4RE8_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL4RE16_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL4RE32_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL4RE64_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VS4R_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL8RE8_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL8RE16_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 16, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL8RE32_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 32, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VL8RE64_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::load, 64, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
 		case Opcode::VS8R_V: {
-			v_ext.prepInstr(true, true, false);
+			v_ext.prepInstr(true, false, false);
 			v_ext.vLoadStore(v_ext.load_store_t::store, 8, v_ext.load_store_type_t::whole);
 			v_ext.finishInstr(false);
 		} break;
