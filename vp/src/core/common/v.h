@@ -64,10 +64,10 @@ class VExtension {
 	bool ignoreAlignment;
 	bool ignoreOverlap;
 	bool vd_is_mask;
-	bool v1_is_mask;
-	bool v2_is_mask;
+	bool vs1_is_mask;
+	bool vs2_is_mask;
 	bool vd_is_scalar;
-	bool v1_is_scalar;
+	bool vs1_is_scalar;
 
 	VExtension(iss_type& iss) : iss(iss) {
 		assert(ELEN >= 8 && isPowerOfTwo(ELEN));
@@ -196,10 +196,10 @@ class VExtension {
 		ignoreAlignment = false;
 		ignoreOverlap = false;
 		vd_is_mask = false;
-		v1_is_mask = false;
-		v2_is_mask = false;
+		vs1_is_mask = false;
+		vs2_is_mask = false;
 		vd_is_scalar = false;
-		v1_is_scalar = false;
+		vs1_is_scalar = false;
 	}
 
 	void requireNotOff() {
@@ -425,8 +425,8 @@ class VExtension {
 	}
 
 	void applyChecks() {
-		auto [vd_eew, vd_signed, v2_eew, v2_signed, v1_eew, v1_signed] = getSignedEew();
-		v_assert(vd_eew >= 8 && vd_eew <= 64 && v2_eew >= 8 && v2_eew <= 64 && v1_eew >= 8 && v1_eew <= 64,
+		auto [vd_eew, vd_signed, vs2_eew, vs2_signed, vs1_eew, vs1_signed] = getSignedEew();
+		v_assert(vd_eew >= 8 && vd_eew <= 64 && vs2_eew >= 8 && vs2_eew <= 64 && vs1_eew >= 8 && vs1_eew <= 64,
 		         "EEW out of range");
 
 		double lmul = getVlmul();
@@ -434,42 +434,42 @@ class VExtension {
 
 		/* see spec 5.3 */
 		if (require_vd_not_v0 && !iss.instr.vm()) {
-			v_assert(iss.instr.rd() != 0, "rd: v0 not allowed for masked");
+			v_assert(iss.instr.rd() != 0, "vd: v0 not allowed for masked");
 		}
 
 		/* For the purpose of determining register group overlap constraints, mask elements have EEW=1. */
 		if (vd_is_mask) {
 			vd_eew = 1;
 		}
-		if (v1_is_mask) {
-			v1_eew = 1;
+		if (vs1_is_mask) {
+			vs1_eew = 1;
 		}
-		if (v2_is_mask) {
-			v2_eew = 1;
+		if (vs2_is_mask) {
+			vs2_eew = 1;
 		}
 
 		unsigned int vd = iss.instr.rd();
 		double vd_emul = lmul * vd_eew / sew;
 
-		int vop_start = 1;  // check only v2
+		int vop_start = 1;  // check only vs2
 		unsigned int vop[2], vop_eew[2];
 		vop[1] = iss.instr.rs2();
 		double vop_emul[2];
-		vop_eew[1] = v2_eew;
-		vop_emul[1] = lmul * v2_eew / sew;
+		vop_eew[1] = vs2_eew;
+		vop_emul[1] = lmul * vs2_eew / sew;
 		if (param_sel == param_sel_t::vv) {
-			/* v1 used */
+			/* vs1 used */
 			vop[0] = iss.instr.rs1();
-			vop_emul[0] = lmul * v1_eew / sew;
-			vop_eew[0] = v1_eew;
+			vop_emul[0] = lmul * vs1_eew / sew;
+			vop_eew[0] = vs1_eew;
 			vop_start = 0;
 		}
 
 		if (!vd_is_scalar)
 			v_assert(vd_emul <= 8, "vd_emul > 8");
-		v_assert(vop_emul[1] <= 8, "v2_emul > 8");
-		if (!v1_is_scalar)
-			v_assert(vop_emul[0] <= 8, "v1_emul > 8");
+		v_assert(vop_emul[1] <= 8, "vs2_emul > 8");
+		if (!vs1_is_scalar)
+			v_assert(vop_emul[0] <= 8, "vs1_emul > 8");
 
 		if (!ignoreOverlap) {
 			for (int i = vop_start; i < 2; i++) {
@@ -511,9 +511,9 @@ class VExtension {
 					}
 
 					if (i == 0) {
-						v_assert(overlap_valid == true, "vd overlaps source vector v1");
+						v_assert(overlap_valid == true, "vd overlaps source vector vs1");
 					} else {
-						v_assert(overlap_valid == true, "vd overlaps source vector v2");
+						v_assert(overlap_valid == true, "vd overlaps source vector vs2");
 					}
 				}
 			}
@@ -521,13 +521,13 @@ class VExtension {
 
 		if (!ignoreAlignment) {
 			if (!vd_is_mask && !vd_is_scalar) {
-				v_assert(v_is_aligned(vd, vd_emul), "rd is not aligned");
+				v_assert(v_is_aligned(vd, vd_emul), "vd is not aligned");
 			}
-			if (!v2_is_mask) {
-				v_assert(v_is_aligned(vop[1], vop_emul[1]), "v2 is not aligned");
+			if (!vs2_is_mask) {
+				v_assert(v_is_aligned(vop[1], vop_emul[1]), "vs2 is not aligned");
 			}
-			if (param_sel == param_sel_t::vv && !v1_is_mask && !v1_is_scalar) {
-				v_assert(v_is_aligned(vop[0], vop_emul[0]), "v1 is not aligned");
+			if (param_sel == param_sel_t::vv && !vs1_is_mask && !vs1_is_scalar) {
+				v_assert(v_is_aligned(vop[0], vop_emul[0]), "vs1 is not aligned");
 			}
 		}
 	}
@@ -819,8 +819,8 @@ class VExtension {
 	/* TODO: used for 15.1. Vector Mask-Register Logical Instructions -> rename??? */
 	void vLoopVoidAllMask(std::function<void(xlen_reg_t)> func) {
 		vd_is_mask = true;
-		v1_is_mask = true;
-		v2_is_mask = true;
+		vs1_is_mask = true;
+		vs2_is_mask = true;
 		genericVLoop([=](xlen_reg_t i) { func(i); }, true);
 	}
 
@@ -868,7 +868,7 @@ class VExtension {
 		require_vd_not_v0 = false;
 		ignoreOverlap = true;
 		vd_is_scalar = true;
-		v1_is_scalar = true;
+		vs1_is_scalar = true;
 		genericVLoop(
 		    [=, &res, &added_first](xlen_reg_t i) {
 			    auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
@@ -1485,7 +1485,7 @@ class VExtension {
 		bool hit = false;
 		ignoreAlignment = true;
 
-		v_assert(iss.instr.rd() != iss.instr.rs2(), "vd overlaps source vector v2");
+		v_assert(iss.instr.rd() != iss.instr.rs2(), "vd overlaps source vector vs2");
 
 		genericVLoop([=, &hit](xlen_reg_t i) {
 			auto [reg_idx, reg_pos] = getCarryElements(i);
@@ -1525,7 +1525,7 @@ class VExtension {
 
 	void vIota() {
 		op_reg_t count = 0;
-		v2_is_mask = true;
+		vs2_is_mask = true;
 		genericVLoop([=, &count](xlen_reg_t i) {
 			elem_sel = elem_sel_t::xxxuuu;
 			auto [reg_idx, reg_pos] = getCarryElements(i);
@@ -1647,7 +1647,7 @@ class VExtension {
 	void vCompress() {
 		op_reg_t current_position = 0;
 		require_no_overlap = true;
-		v1_is_mask = true;
+		vs1_is_mask = true;
 		genericVLoop([=, &current_position](xlen_reg_t i) {
 			elem_sel = elem_sel_t::xxxuuu;
 
@@ -1671,7 +1671,7 @@ class VExtension {
 
 		/* check, if registers are aligned */
 		v_assert(v_is_aligned(iss.instr.rd(), nreg), "rd is not aligned");
-		v_assert(v_is_aligned(iss.instr.rs2(), nreg), "v2 is not aligned");
+		v_assert(v_is_aligned(iss.instr.rs2(), nreg), "vs2 is not aligned");
 
 		if (iss.instr.rd() != iss.instr.rs2()) {
 			for (xlen_reg_t idx = start; idx < evl; idx++) {
