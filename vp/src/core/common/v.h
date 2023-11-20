@@ -3,6 +3,13 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 
+/*
+ * print unmet traps (reasons) to stdout
+ * (see v_assert)
+ */
+//#define DEBUG_PRINT_TRAPS
+#undef DEBUG_PRINT_TRAPS
+
 // TODO these should be compile arguments
 constexpr unsigned VLEN = 512;
 constexpr unsigned ELEN = 64;
@@ -162,7 +169,9 @@ class VExtension {
 
 	void v_assert(bool cond, std::string error_message) {
 		if (!(cond)) {
+#ifdef DEBUG_PRINT_TRAPS
 			std::cout << error_message << std::endl;
+#endif
 			raise_trap(EXC_ILLEGAL_INSTR, iss.instr.data());
 		}
 	}
