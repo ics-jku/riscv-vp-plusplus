@@ -223,6 +223,7 @@ int sc_main(int argc, char **argv) {
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
+	uart.plic = &plic;
 	sensor.plic = &plic;
 	dma.plic = &plic;
 	timer.plic = &plic;
