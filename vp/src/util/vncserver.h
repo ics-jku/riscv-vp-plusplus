@@ -16,8 +16,9 @@ class VNCInputKbd_if {
 
 class VNCServer {
    public:
-	VNCServer(const char *desktopName)
+	VNCServer(const char *desktopName, unsigned int vncPort = 5900)
 	    : desktopName(desktopName),
+	      vncPort(vncPort),
 	      width(0),
 	      height(0),
 	      bitsPerSample(0),
@@ -87,6 +88,7 @@ class VNCServer {
 
    private:
 	const char *desktopName;
+	unsigned int vncPort;
 	int width, height, bitsPerSample, samplesPerPixel, bytesPerPixel;
 	rfbScreenInfoPtr rfbScreen;
 	VNCInputPtr_if *vncInputPtr;

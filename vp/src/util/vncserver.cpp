@@ -229,6 +229,8 @@ bool VNCServer::start(void) {
 	rfbScreen = rfbGetScreen(nullptr, nullptr, width, height, bitsPerSample, samplesPerPixel, bytesPerPixel);
 	if (!rfbScreen)
 		return false;
+	rfbScreen->port = vncPort;
+	rfbScreen->ipv6port = vncPort;
 	rfbScreen->desktopName = desktopName;
 	rfbScreen->screenData = (void *)this;
 	rfbScreen->newClientHook = c_newClient;
