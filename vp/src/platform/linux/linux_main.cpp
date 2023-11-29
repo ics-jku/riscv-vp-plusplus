@@ -104,6 +104,8 @@ struct LinuxOptions : public Options {
 	std::string mram_root_image;
 	std::string mram_data_image;
 
+	unsigned int vnc_port = 5900;
+
 	LinuxOptions(void) {
 		// clang-format off
 		add_options()
@@ -115,7 +117,8 @@ struct LinuxOptions : public Options {
 			("mram-root-image", po::value<std::string>(&mram_root_image)->default_value(""),"MRAM root image file")
 			("mram-root-image-size", po::value<unsigned int>(&mram_root_size), "MRAM root image size")
 			("mram-data-image", po::value<std::string>(&mram_data_image)->default_value(""),"MRAM data image file for persistency")
-			("mram-data-image-size", po::value<unsigned int>(&mram_data_size), "MRAM data image size");
+			("mram-data-image-size", po::value<unsigned int>(&mram_data_size), "MRAM data image size")
+			("vnc-port", po::value<unsigned int>(&vnc_port), "select port number to connect with VNC");
 		// clang-format on
 	}
 
@@ -166,8 +169,7 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	VNCServer vncServer("RISC-V VP++ VNCServer");
-	;
+	VNCServer vncServer("RISC-V VP++ VNCServer", opt.vnc_port);
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
