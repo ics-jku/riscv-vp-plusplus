@@ -58,26 +58,44 @@ STORE	x29, 28 * REGBYTES(sp)
 STORE	x30, 29 * REGBYTES(sp)
 STORE	x31, 30 * REGBYTES(sp)
 
-// load interrupt/trap reason and call external C function to handle it
+// read mcause
 csrr    t2, mcause
+
+// is interrupt
 srli    t3, t2, 31
 bnez    t3, handle_irq
 
+// is syscall
+li	t0, 11			// ecall machine mode
+beq	t2, t0, handle_syscall
+li	t0, 9			// ecall supervisor mode
+beq	t2, t0, handle_syscall
+li	t0, 8			// ecall user mode
+beq	t2, t0, handle_syscall
+
+// is fault
+handle_fault:
+SYS_EXIT 1
+j handle_fault
+
+handle_syscall:
+// route to syscall module
 li      t0, SYSCALL_ADDR
 csrr    t1, mhartid
-csrr    a7, mcause
 sw      t1, 0(t0)
+sw      a0, 9 * REGBYTES(sp)	// save return value
+// skip ecall instruction
 csrr    t0, mepc
 addi    t0, t0, 4
 csrw    mepc, t0
-sw      a0, 9 * REGBYTES(sp)
-
 j       done_trap
+
 handle_irq:
+// load interrupt/trap reason and call external C function to handle it
 mv      a0, t2
 jal     level_1_interrupt_handler
-done_trap:
 
+done_trap:
 // re-store the saved context
 LOAD	x1, 0x0(sp)
 LOAD	x4, 3 * REGBYTES(sp)
