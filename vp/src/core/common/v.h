@@ -114,7 +114,9 @@ class VExtension {
 	}
 
 	void set_fp_rm() {
-		softfloat_roundingMode = iss.csrs.fcsr.fields.frm;
+		auto frm = iss.csrs.fcsr.fields.frm;
+		v_assert(frm <= FRM_RMM, "invalid frm");
+		softfloat_roundingMode = frm;
 	}
 
 	op_reg_t fp_reg_read(xlen_reg_t addr, op_reg_t sew) {
