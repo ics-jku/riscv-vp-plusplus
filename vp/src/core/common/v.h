@@ -246,6 +246,12 @@ class VExtension {
 		}
 
 		if (is_fp) {
+			/*
+			 * Half-precision fp is implemented, but disabled for now
+			 * Simply remove the v_assert as soon as the Zfh extension is supported
+			 */
+			v_assert(getIntVSew() >= 32, "half-precision fp not supported");
+
 			iss.fp_prepare_instr();
 			set_fp_rm();
 		}
