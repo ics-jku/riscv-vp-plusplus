@@ -24,13 +24,14 @@ static irq_handler_t timer_irq_handler = 0;
 void level_1_interrupt_handler(uint32_t cause) {
 	switch (cause & 0xf) {
 		case RISCV_MACHINE_EXTERNAL_INTERRUPT: {
-			asm volatile("csrc mip, %0" : : "r"(0x800));
-
+			// claim and get interrupt number from PLIC
 			uint32_t irq_id = *PLIC_CLAIM_AND_RESPONSE_REGISTER;
 
+			// call interrupt associated with irq_id
 			irq_handler_table[irq_id]();
 
-			*PLIC_CLAIM_AND_RESPONSE_REGISTER = 1;
+			// signal interrupt completion to PLIC (resets pending)
+			*PLIC_CLAIM_AND_RESPONSE_REGISTER = irq_id;
 
 			return;
 		}
@@ -55,12 +56,16 @@ void level_1_interrupt_handler(uint32_t cause) {
 
 void register_interrupt_handler(uint32_t irq_id, irq_handler_t fn) {
 	assert(irq_id < IRQ_TABLE_NUM_ENTRIES);
+
+	// register handler
+	irq_handler_table[irq_id] = fn;
+
+	// set a prio different to zero (which means do-not-interrupt)
+	*((uint32_t*)(PLIC_BASE + irq_id * sizeof(uint32_t))) = 1;
+
 	// enable interrupt
 	volatile uint32_t* const reg = (PLIC_INTERRUPT_ENABLE_START + irq_id / 32);
 	*reg |= 1 << (irq_id % 32);
-	// set a prio different to zero (which means do-not-interrupt)
-	*((uint32_t*)(PLIC_BASE + irq_id * sizeof(uint32_t))) = 1;
-	irq_handler_table[irq_id] = fn;
 }
 
 void register_timer_interrupt_handler(irq_handler_t fn) {

@@ -15,15 +15,21 @@ sw   a6, 0(t0)
 
 
 _start:
+// Set mtvec (direct; level_0_interrupt_handler)
 la t0, level_0_interrupt_handler
 csrw mtvec, t0
+
+/*
+ * enable machine-level interrupts: external (mie.MEIP),
+ * timer (mie.MTIP) and software (mie.MSIP)
+ */
 li t1, 0x888
 csrw mie, t1
+
+// set global (machine) interrupt enable (mstatus.MIE)
 csrsi mstatus, 8
-li t0, PLIC_ENABLED_IRQ_ADDR
-li t1, -1
-sw t1, 0(t0)
-sw t1, 4(t0)
+
+// jump to main
 jal main
 
 # call exit (SYS_EXIT=93) with exit code 0 (argument in a0)
@@ -31,7 +37,8 @@ SYS_EXIT 0
 
 
 /*
- * Interrupt handler for non-nested interrupts. Only selected registers are stored/re-stored, i.e. those not preserved on function calls.
+ * Interrupt handler for non-nested interrupts.
+ * Only selected registers are stored/re-stored, i.e. those not preserved on function calls.
  */
 #define STORE    sw
 #define LOAD     lw
@@ -75,6 +82,7 @@ beq	t2, t0, handle_syscall
 
 // is fault
 handle_fault:
+// exit(1) on fault
 SYS_EXIT 1
 j handle_fault
 
