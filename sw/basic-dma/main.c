@@ -18,13 +18,11 @@ void dma_irq_handler() {
 	dma_completed = 1;
 }
 
-void init() {
-	register_interrupt_handler(4, dma_irq_handler);
-}
-
 int main() {
 	uint8_t src[32] = {[0 ... 31] = 70};
 	uint8_t dst[32] = {0};
+
+	register_interrupt_handler(4, dma_irq_handler);
 
 	dma_completed = 0;
 	*DMA_SRC_ADDR = (uint32_t)(&src[0]);
