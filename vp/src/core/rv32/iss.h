@@ -129,24 +129,6 @@ struct timing_if {
 	virtual void update_timing(Instruction instr, Opcode::Mapping op, ISS &iss) = 0;
 };
 
-/* Buffer to be used between the ISS and instruction memory interface to cache compressed instructions.
- * In case the ISS does not support compressed instructions, then this buffer is not necessary and the ISS
- * can use the memory interface directly. */
-struct InstructionBuffer {
-	instr_memory_if *instr_mem = nullptr;
-	uint32_t last_fetch_addr = 0;
-	uint32_t buffer = 0;
-
-	uint32_t load_instr(uint64_t addr) {
-		if (addr == (last_fetch_addr + 2))
-			return (buffer >> 16);
-
-		last_fetch_addr = addr;
-		buffer = instr_mem->load_instr(addr);
-		return buffer;
-	}
-};
-
 struct PendingInterrupts {
 	PrivilegeLevel target_mode;
 	uint32_t pending;
