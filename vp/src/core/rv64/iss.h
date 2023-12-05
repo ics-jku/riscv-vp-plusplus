@@ -17,12 +17,11 @@
 
 #include "core/common/bus_lock_if.h"
 #include "core/common/clint_if.h"
-#include "core/common/core_defs.h"
+#include "core/common/debug.h"
 #include "core/common/instr.h"
 #include "core/common/irq_if.h"
 #include "core/common/trap.h"
 #include "csr.h"
-#include "debug.h"
 #include "fp.h"
 #include "mem_if.h"
 #include "syscall_if.h"
@@ -139,8 +138,8 @@ struct PendingInterrupts {
 
 struct ISS : public external_interrupt_target,
              public clint_interrupt_target,
-             public debug_target_if,
-             public iss_syscall_if {
+             public iss_syscall_if,
+             public debug_target_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	data_memory_if *mem = nullptr;
@@ -183,15 +182,6 @@ struct ISS : public external_interrupt_target,
 		return RV64;
 	}
 
-	uint64_t get_progam_counter(void) override;
-	void enable_debug(void) override;
-	CoreExecStatus get_status(void) override;
-	void set_status(CoreExecStatus) override;
-	void block_on_wfi(bool) override;
-
-	void insert_breakpoint(uint64_t) override;
-	void remove_breakpoint(uint64_t) override;
-
 	void exec_step();
 
 	uint64_t _compute_and_get_current_cycles();
@@ -199,7 +189,6 @@ struct ISS : public external_interrupt_target,
 	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint64_t entrypoint, uint64_t sp);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
-
 	void clear_external_interrupt(PrivilegeLevel level) override;
 
 	void trigger_timer_interrupt() override;
@@ -211,12 +200,20 @@ struct ISS : public external_interrupt_target,
 	void sys_exit() override;
 
 	uint64_t read_register(unsigned idx) override;
-
 	void write_register(unsigned idx, uint64_t value) override;
 
-	uint64_t get_hart_id() override;
-
 	std::vector<uint64_t> get_registers(void) override;
+
+	uint64_t get_progam_counter(void) override;
+	void enable_debug(void) override;
+	CoreExecStatus get_status(void) override;
+	void set_status(CoreExecStatus) override;
+	void block_on_wfi(bool) override;
+
+	void insert_breakpoint(uint64_t) override;
+	void remove_breakpoint(uint64_t) override;
+
+	uint64_t get_hart_id() override;
 
 	void release_lr_sc_reservation() {
 		lr_sc_counter = 0;
@@ -232,7 +229,6 @@ struct ISS : public external_interrupt_target,
 
 	virtual csr_table *get_csr_table();
 	uint64_t get_csr_value(uint64_t addr);
-
 	void set_csr_value(uint64_t addr, uint64_t value);
 
 	inline bool is_invalid_csr_access(uint64_t csr_addr, bool is_write) {
@@ -240,7 +236,6 @@ struct ISS : public external_interrupt_target,
 		bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
 		return (is_write && csr_readonly) || (prv < csr_prv);
 	}
-
 	void validate_csr_counter_read_access_rights(uint64_t addr);
 
 	uint64_t pc_alignment_mask() {

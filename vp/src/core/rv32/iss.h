@@ -49,7 +49,7 @@ struct RegFile {
 
 	void show();
 
-	enum e : uint16_t {
+	enum e {
 		x0 = 0,
 		x1,
 		x2,
@@ -177,6 +177,10 @@ struct ISS : public external_interrupt_target,
 
 	ISS(uint32_t hart_id, bool use_E_base_isa = false);
 
+	Architecture get_architecture(void) override {
+		return RV32;
+	}
+
 	void exec_step();
 
 	uint64_t _compute_and_get_current_cycles();
@@ -198,10 +202,6 @@ struct ISS : public external_interrupt_target,
 	void write_register(unsigned idx, uint64_t value) override;
 
 	std::vector<uint64_t> get_registers(void) override;
-
-	Architecture get_architecture(void) override {
-		return RV32;
-	}
 
 	uint64_t get_progam_counter(void) override;
 	void enable_debug(void) override;

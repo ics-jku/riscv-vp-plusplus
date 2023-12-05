@@ -118,8 +118,9 @@ ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : v_ext(*this), systemc_name("Co
 void ISS::exec_step() {
 	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
+	uint32_t mem_word;
 	try {
-		uint32_t mem_word = instr_mem->load_instr(pc);
+		mem_word = instr_mem->load_instr(pc);
 		instr = Instruction(mem_word);
 	} catch (SimulationTrap &e) {
 		op = Opcode::UNDEF;
@@ -138,12 +139,20 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("core %2u: prv %1x: pc %8x: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr[op]);
+		printf("core %2u: prv %1x: pc %8x (%8x): %s ", csrs.mhartid.reg, prv, last_pc, mem_word,
+		       Opcode::mappingStr.at(op));
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
 				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
 				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
 				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
+				break;
+			case Opcode::Type::R4:
+				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT ", " COLORFRMT,
+				       COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]),
+				       COLORPRINT(regcolors[instr.rs3()], regnames[instr.rs3()]));
 				break;
 			case Opcode::Type::I:
 				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
@@ -163,12 +172,7 @@ void ISS::exec_step() {
 			case Opcode::Type::J:
 				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
 				break;
-			case Opcode::Type::V:
-				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
-				break;
-			default:
-				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.data());
-				break;
+			default:;
 		}
 		puts("");
 	}
@@ -178,7 +182,7 @@ void ISS::exec_step() {
 			if (trace)
 				std::cout << "[ISS] WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
 				          << std::to_string(last_pc) << "'" << std::endl;
-			raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			RAISE_ILLEGAL_INSTRUCTION();
 			break;
 
 		case Opcode::ADDI:
@@ -368,7 +372,7 @@ void ISS::exec_step() {
 
 		case Opcode::FENCE:
 		case Opcode::FENCE_I: {
-			// not using out of order execution so can be ignored
+			// not using out of order execution/caches so can be ignored
 		} break;
 
 		case Opcode::ECALL: {
@@ -1012,22 +1016,6 @@ void ISS::exec_step() {
 			fp_set_dirty();
 		} break;
 
-		case Opcode::FCVT_S_D: {
-			REQUIRE_ISA(D_ISA_EXT);
-			fp_prepare_instr();
-			fp_setup_rm();
-			fp_regs.write(RD, f64_to_f32(fp_regs.f64(RS1)));
-			fp_finish_instr();
-		} break;
-
-		case Opcode::FCVT_D_S: {
-			REQUIRE_ISA(D_ISA_EXT);
-			fp_prepare_instr();
-			fp_setup_rm();
-			fp_regs.write(RD, f32_to_f64(fp_regs.f32(RS1)));
-			fp_finish_instr();
-		} break;
-
 		case Opcode::FEQ_D: {
 			REQUIRE_ISA(D_ISA_EXT);
 			fp_prepare_instr();
@@ -1053,6 +1041,22 @@ void ISS::exec_step() {
 			REQUIRE_ISA(D_ISA_EXT);
 			fp_prepare_instr();
 			regs[RD] = (int64_t)f64_classify(fp_regs.f64(RS1));
+		} break;
+
+		case Opcode::FCVT_S_D: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f64_to_f32(fp_regs.f64(RS1)));
+			fp_finish_instr();
+		} break;
+
+		case Opcode::FCVT_D_S: {
+			REQUIRE_ISA(D_ISA_EXT);
+			fp_prepare_instr();
+			fp_setup_rm();
+			fp_regs.write(RD, f32_to_f64(fp_regs.f32(RS1)));
+			fp_finish_instr();
 		} break;
 
 		case Opcode::FCVT_W_D: {
@@ -4238,10 +4242,10 @@ void ISS::exec_step() {
 			release_lr_sc_reservation();
 
 			if (s_mode() && csrs.mstatus.fields.tw)
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 
 			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 
 			if (!ignore_wfi) {
 				while (!has_local_pending_enabled_interrupts()) {
@@ -4252,19 +4256,19 @@ void ISS::exec_step() {
 
 		case Opcode::SFENCE_VMA:
 			if (s_mode() && csrs.mstatus.fields.tvm)
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			mem->flush_tlb();
 			break;
 
 		case Opcode::URET:
 			if (!csrs.misa.has_user_mode_extension())
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			return_from_trap_handler(UserMode);
 			break;
 
 		case Opcode::SRET:
 			if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.fields.tsr))
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			return_from_trap_handler(SupervisorMode);
 			break;
 
@@ -5054,7 +5058,8 @@ void ISS::run_step() {
 		}
 	} catch (SimulationTrap &e) {
 		if (trace)
-			std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
+			std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval
+			          << ", pc=" << boost::format("%x") % last_pc << std::endl;
 		auto target_mode = prepare_trap(e);
 		switch_to_trap_handler(target_mode);
 	}
@@ -5074,8 +5079,7 @@ void ISS::run_step() {
 }
 
 void ISS::run() {
-	// run a single step until either a breakpoint is hit or the execution
-	// terminates
+	// run a single step until either a breakpoint is hit or the execution terminates
 	do {
 		run_step();
 	} while (status == CoreExecStatus::Runnable);

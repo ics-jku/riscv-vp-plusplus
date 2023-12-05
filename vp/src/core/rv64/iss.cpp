@@ -184,9 +184,9 @@ void ISS::exec_step() {
 	switch (op) {
 		case Opcode::UNDEF:
 			if (trace)
-				std::cout << "WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
+				std::cout << "[ISS] WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
 				          << std::to_string(last_pc) << "'" << std::endl;
-			raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+			RAISE_ILLEGAL_INSTRUCTION();
 			break;
 
 		case Opcode::ADDI:
@@ -465,7 +465,7 @@ void ISS::exec_step() {
 		case Opcode::CSRRW: {
 			auto addr = instr.csr();
 			if (is_invalid_csr_access(addr, true)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[instr.rs1()];
@@ -481,7 +481,7 @@ void ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[rs1];
@@ -498,7 +498,7 @@ void ISS::exec_step() {
 			auto rs1 = instr.rs1();
 			auto write = rs1 != RegFile::zero;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				auto rs1_val = regs[rs1];
@@ -513,7 +513,7 @@ void ISS::exec_step() {
 		case Opcode::CSRRWI: {
 			auto addr = instr.csr();
 			if (is_invalid_csr_access(addr, true)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto rd = instr.rd();
 				if (rd != RegFile::zero) {
@@ -528,7 +528,7 @@ void ISS::exec_step() {
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
@@ -544,7 +544,7 @@ void ISS::exec_step() {
 			auto zimm = instr.zimm();
 			auto write = zimm != 0;
 			if (is_invalid_csr_access(addr, write)) {
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
@@ -4397,14 +4397,14 @@ void ISS::exec_step() {
 
 		case Opcode::WFI:
 			// NOTE: only a hint, can be implemented as NOP
-			// std::cout << "[sim:wfi] CSR mstatus.fields.mie " << csrs.mstatus->mie << std::endl;
+			// std::cout << "[sim:wfi] CSR mstatus.mie " << csrs.mstatus->mie << std::endl;
 			release_lr_sc_reservation();
 
 			if (s_mode() && csrs.mstatus.fields.tw)
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 
 			if (u_mode() && csrs.misa.has_supervisor_mode_extension())
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 
 			if (!ignore_wfi) {
 				while (!has_local_pending_enabled_interrupts()) {
@@ -4418,19 +4418,19 @@ void ISS::exec_step() {
 
 		case Opcode::SFENCE_VMA:
 			if (s_mode() && csrs.mstatus.fields.tvm)
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			mem->flush_tlb();
 			break;
 
 		case Opcode::URET:
 			if (!csrs.misa.has_user_mode_extension())
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			return_from_trap_handler(UserMode);
 			break;
 
 		case Opcode::SRET:
 			if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.fields.tsr))
-				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+				RAISE_ILLEGAL_INSTRUCTION();
 			return_from_trap_handler(SupervisorMode);
 			break;
 
@@ -4561,7 +4561,7 @@ void ISS::set_csr_value(uint64_t addr, uint64_t value) {
 			if (csrs.satp.fields.mode != SATP_MODE_BARE && csrs.satp.fields.mode != SATP_MODE_SV39 &&
 			    csrs.satp.fields.mode != SATP_MODE_SV48)
 				csrs.satp.fields.mode = mode;
-			// std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.fields.reg << std::endl;
+			// std::cout << "[iss] satp=" << boost::format("%x") % csrs.satp.reg << std::endl;
 		} break;
 
 		case MTVEC_ADDR:
