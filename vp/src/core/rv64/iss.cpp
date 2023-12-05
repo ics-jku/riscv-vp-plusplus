@@ -4456,6 +4456,12 @@ csr_table *ISS::get_csr_table() {
 	return &csrs;
 }
 
+bool ISS::is_invalid_csr_access(uint64_t csr_addr, bool is_write) {
+	PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
+	bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
+	return (is_write && csr_readonly) || (prv < csr_prv);
+}
+
 void ISS::validate_csr_counter_read_access_rights(uint64_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
 	if ((addr >= 0xC00 && addr <= 0xC1F)) {

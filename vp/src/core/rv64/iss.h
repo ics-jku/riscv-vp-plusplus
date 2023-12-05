@@ -231,11 +231,7 @@ struct ISS : public external_interrupt_target,
 	uint64_t get_csr_value(uint64_t addr);
 	void set_csr_value(uint64_t addr, uint64_t value);
 
-	inline bool is_invalid_csr_access(uint64_t csr_addr, bool is_write) {
-		PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
-		bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
-		return (is_write && csr_readonly) || (prv < csr_prv);
-	}
+	bool is_invalid_csr_access(uint64_t csr_addr, bool is_write);
 	void validate_csr_counter_read_access_rights(uint64_t addr);
 
 	uint64_t pc_alignment_mask() {
