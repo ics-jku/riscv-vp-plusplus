@@ -4344,6 +4344,7 @@ csr_table *ISS::get_csr_table() {
 bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
 	if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
 		REQUIRE_ISA(F_ISA_EXT);
+		fp_require_not_off();
 	}
 	if (csr_addr == csr::VSTART_ADDR || csr_addr == csr::VXSAT_ADDR || csr_addr == csr::VXRM_ADDR ||
 	    csr_addr == csr::VCSR_ADDR || csr_addr == csr::VL_ADDR || csr_addr == csr::VTYPE_ADDR ||
