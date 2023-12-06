@@ -74,7 +74,7 @@ struct csr_misa {
 	};
 
 	void init() {
-		fields.extensions = I | M | A | F | C | N | U | S | V;  // IMACF + NUS
+		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFD + NUS
 		fields.wiri = 0;
 		fields.mxl = 1;  // RV32
 	}
