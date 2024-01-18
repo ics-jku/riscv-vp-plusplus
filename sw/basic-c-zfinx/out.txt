@@ -1,0 +1,9 @@
+riscv32-unknown-elf-gcc  -march=rv32if -mabi=ilp32 -misa-spec=2.2 -c main.c
+riscv32-unknown-elf-gcc  -march=rv32if -mabi=ilp32 -misa-spec=2.2 -c bootstrap.S
+riscv32-unknown-elf-gcc -misa-spec=2.2 -march=rv32if -mabi=ilp32 -misa-spec=2.2 -o main -nostartfiles -Wl,--no-relax main.o bootstrap.o 
+riscv-vp --intercept-syscalls --error-on-zero-traphandler=true main
+6.000000
+
+Error: (E549) uncaught exception: [ISS] Took null trap handler in machine mode
+In file: /home/m/IdeaProjects/riscv-vp-plusplus/vp/build/src/vendor/systemc_project-prefix/src/systemc_project/src/sysc/kernel/sc_except.cpp:101
+In process: run0 @ 211640 ns

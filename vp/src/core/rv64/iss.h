@@ -28,6 +28,14 @@
 #include "util/common.h"
 #include "v.h"
 
+
+#define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+
+#define RD instr.rd()
+#define RS1 instr.rs1()
+#define RS2 instr.rs2()
+#define RS3 instr.rs3()
+
 namespace rv64 {
 
 struct RegFile {
@@ -42,6 +50,10 @@ struct RegFile {
 	void write(uint64_t index, int64_t value);
 
 	int64_t read(uint64_t index);
+
+	void write_f32(uint64_t index, float32_t value);
+
+	float32_t read_f32(uint64_t index);
 
 	uint64_t shamt_w(uint64_t index);
 
@@ -326,6 +338,33 @@ struct ISS : public external_interrupt_target,
 	void run() override;
 
 	void show();
+
+		void flw();
+	void fsw();
+	void fadd_s();
+	void fsub_s();
+	void fmul_s();
+	void fdiv_s();
+	void fsqrt_s();
+	void fmin_s();
+	void fmax_s();
+	void fmadd_s();
+	void fmsub_s();
+	void fnmadd_s();
+	void fnmsub_s();
+	void fcvt_w_s();
+	void fcvt_wu_s();
+	void fcvt_s_w();
+	void fcvt_s_wu();
+	void fsgnj_s();
+	void fsgnjn_s();
+	void fsgnjx_s();
+	void fmv_w_x();
+	void fmv_x_w();
+	void feq_s();
+	void flt_s();
+	void fle_s();
+	void fclass_s();
 };
 
 /* Do not call the run function of the ISS directly but use one of the Runner
