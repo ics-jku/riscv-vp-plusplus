@@ -1,6 +1,6 @@
 #include "iss.h"
 
-#define ZFINX 0
+#define ZFINX 1
 
 #if ZFINX
 #include "iss_zfinx.h"
