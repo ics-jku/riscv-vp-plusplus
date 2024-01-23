@@ -19,7 +19,6 @@ inline void rv32::ISS::fmv_x_w() {
 }
 
 inline void rv32::ISS::fadd_s() {
-	printf("add float");
 	regs.write_f32(RD, f32_add(regs.read_f32(RS1), regs.read_f32(RS2)));
 }
 
