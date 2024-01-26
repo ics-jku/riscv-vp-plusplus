@@ -1,7 +1,6 @@
 #include "iss.h"
 
-#define ZFINX 1
-
+// defined in csr due to requirements
 #if ZFINX
 #include "iss_zfinx.h"
 #else

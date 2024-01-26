@@ -27,7 +27,6 @@ inline void rv32::ISS::fsub_s() {
 }
 
 inline void rv32::ISS::fmul_s() {
-	printf("mul float");
 	regs.write_f32(RD, f32_mul(regs.read_f32(RS1), regs.read_f32(RS2)));
 }
 
