@@ -109,6 +109,18 @@ class VExtension {
 		return val;
 	}
 
+	/*
+	 * we need this only for RV32
+	 * (e.g. for reading addresses without sign-extension to 64 bit)
+	 * for RV64 the result is similar to iss_reg_read
+	 */
+	xlen_reg_t iss_reg_read_unsigned(xlen_reg_t addr) {
+		op_reg_t val = iss.regs[addr];
+		if (sizeof(iss.regs[addr] == 4))
+			val = val & 0xffffffff;
+		return val;
+	}
+
 	void iss_reg_write(xlen_reg_t addr, xlen_reg_t value) {
 		iss.regs[addr] = value;
 	}
@@ -758,7 +770,8 @@ class VExtension {
 			if (!is_inactive) {
 				iss.csrs.vstart.reg = i;
 				for (xlen_reg_t field = 0; field < iss.instr.nf() + 1; field++) {
-					xlen_reg_t addr = iss_reg_read(iss.instr.rs1()) + getShiftWidth(ldstType, numBits, i, field);
+					xlen_reg_t addr =
+					    iss_reg_read_unsigned(iss.instr.rs1()) + getShiftWidth(ldstType, numBits, i, field);
 					auto [vec_idx, elem_num] = vIndices(i, ldstType, field, switchElem, effective_mul_idx);
 
 					op_reg_t value;
