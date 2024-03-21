@@ -1,15 +1,17 @@
-# RISCV-VP++
+# RISC-V VP++
 
-*RISCV-VP++* is a extended and improved successor of the RISC-V based Virtual Prototype (VP) [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp).
+*RISC-V VP++* is a extended and improved successor of the RISC-V based Virtual Prototype (VP) [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp).
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
 
-### Key features of *RISCV-VP++*
+A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf), can be found in the last section.
+
+### Key features of *RISC-V VP++*
  * Support for the *GD32VF103VBT6* microcontroller (*Nuclei N205*) including UI
    * More detailed information can be found [here](doc/GD32/README.md)
  * Support for *RISC-V "V" Vector Extension* (RVV) version 1.0
-   * Documentation is work in progress
+   * [Manfred Schlägl, Moritz Stockinger, and Daniel Große. A RISC-V "V" VP: Unlocking vector processing for evaluation at the system level. In DATE, 2024.](https://ics.jku.at/files/2024DATE_RISCV-VP-plusplus_RVV.pdf)
  * Full integration of [GUI-VP](https://github.com/ics-jku/GUI-VP), which enables the simulation of interactive graphical Linux applications.
-   * All further work on *GUI-VP* will take place here in *RISCV-VP++*.
+   * All further work on *GUI-VP* will take place here in *RISC-V VP++*.
    * More detailed information can be found [here](doc/GUI-VP/README.md)
  * Linux shutdown (stop simulation from within)
  * Linux RV32 and RV64, single and quad-core VPs
@@ -122,3 +124,17 @@ exit the VP.
 **A:** Enter control mode using Ctrl-a and press Ctrl-a again to send a
 literal Ctrl-a control character to the guest.
 
+### *RISC-V VP++: Next generation open-source virtual prototype*
+
+[Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf)
+
+```
+@inproceedings{SHG:2024,
+  author =        {Manfred Schl{\"{a}}gl and Christoph Hazott and
+                   Daniel Gro{\ss}e},
+  booktitle =     {Workshop on Open-Source Design Automation},
+  title =         {{RISC-V VP++}: Next Generation Open-Source Virtual
+                   Prototype},
+  year =          {2024},
+}
+```
