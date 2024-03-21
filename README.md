@@ -13,6 +13,7 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
  * Full integration of [GUI-VP](https://github.com/ics-jku/GUI-VP), which enables the simulation of interactive graphical Linux applications
    * All further work on *GUI-VP* will take place here in *RISC-V VP++*
    * More detailed information can be found [here](doc/GUI-VP/README.md)
+   * **Note: [GUI-VP Kit](https://github.com/ics-jku/GUI-VP_Kit) provides an easy-to-use build system and experimentation platform for RISC-V VP++, Linux and RVV**
  * Linux shutdown (stop simulation from within)
  * Linux RV32 and RV64, single and quad-core VPs
  * Harmonized coding style (make codestyle)
