@@ -10,8 +10,8 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
    * More detailed information can be found [here](doc/GD32/README.md)
  * Support for *RISC-V "V" Vector Extension* (RVV) version 1.0
    * [Manfred Schlägl, Moritz Stockinger, and Daniel Große. A RISC-V "V" VP: Unlocking vector processing for evaluation at the system level. In DATE, 2024.](https://ics.jku.at/files/2024DATE_RISCV-VP-plusplus_RVV.pdf)
- * Full integration of [GUI-VP](https://github.com/ics-jku/GUI-VP), which enables the simulation of interactive graphical Linux applications.
-   * All further work on *GUI-VP* will take place here in *RISC-V VP++*.
+ * Full integration of [GUI-VP](https://github.com/ics-jku/GUI-VP), which enables the simulation of interactive graphical Linux applications
+   * All further work on *GUI-VP* will take place here in *RISC-V VP++*
    * More detailed information can be found [here](doc/GUI-VP/README.md)
  * Linux shutdown (stop simulation from within)
  * Linux RV32 and RV64, single and quad-core VPs
