@@ -46,9 +46,9 @@ The original documentation of *RISC-V VP* can be found [here](doc/RISCV-VP/READM
 
 Mainly the usual build tools and boost is required:
 
-On Ubuntu 20, install these:
+On Ubuntu 22, install these:
 ```bash
-sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev qt5-default libvncserver-dev
+sudo apt install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev qtbase5-dev qt5-qmake libvncserver-dev
 ```
 
 On Fedora, following actions are required:
