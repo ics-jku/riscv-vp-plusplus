@@ -3923,7 +3923,7 @@ void ISS::exec_step() {
 		} break;
 		case Opcode::VFREC7_V: {
 			v_ext.prepInstr(true, true, true);
-			v_ext.vLoopVdExt(v_ext.vfFrec7(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vv);
+			v_ext.vLoopVdExt(v_ext.vfFrec7(), v_ext.elem_sel_t::xxxuuu, v_ext.param_sel_t::vf);
 			v_ext.finishInstr(true);
 		} break;
 		case Opcode::VFMIN_VV: {
