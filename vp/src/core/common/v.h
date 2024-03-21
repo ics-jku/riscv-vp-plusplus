@@ -57,7 +57,7 @@ class VExtension {
 		wwxuuu = 0b110000,
 		wwxsss = 0b110111,
 	};
-	enum param_sel_t { vv, vi, vx, vf };
+	enum param_sel_t { vv, vi, vx, vf, v };
 	enum load_store_type_t { standard, standard_reg, masked, indexed, fofl, whole };
 	enum load_store_t { load, store };
 
@@ -1623,19 +1623,21 @@ class VExtension {
 
 	void vIota() {
 		op_reg_t count = 0;
+		require_no_overlap = true;
 		vs2_is_mask = true;
-		genericVLoop([=, &count](xlen_reg_t i) {
-			elem_sel = elem_sel_t::xxxuuu;
-			auto [reg_idx, reg_pos] = getCarryElements(i);
+		genericVLoop(
+		    [=, &count](xlen_reg_t i) {
+			    auto [reg_idx, reg_pos] = getCarryElements(i);
 
-			bool hit = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
+			    bool hit = (getSewSingleOperand(64, iss.instr.rs2(), reg_idx, false) >> reg_pos) & 1;
 
-			writeGeneric(count, i);
+			    writeGeneric(count, i);
 
-			if (hit) {
-				count++;
-			}
-		});
+			    if (hit) {
+				    count++;
+			    }
+		    },
+		    elem_sel_t::xxxuuu, param_sel_t::v);
 	}
 
 	std::function<void(xlen_reg_t)> vId() {
