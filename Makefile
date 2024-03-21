@@ -2,7 +2,8 @@ MAKEFLAGS += --no-print-directory
 
 # Whether to use a system-wide SystemC library instead of the vendored one.
 USE_SYSTEM_SYSTEMC ?= OFF
-RELEASE_BUILD ?= OFF
+# Release build on by default
+RELEASE_BUILD ?= ON
 ifeq ($(RELEASE_BUILD),ON)
 	CMAKE_BUILD_TYPE = Release
 else

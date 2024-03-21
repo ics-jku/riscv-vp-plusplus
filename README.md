@@ -64,14 +64,14 @@ sudo dnf debuginfo-install boost-iostreams boost-program-options boost-regex bzi
 **Note:** By default the VPs are build without optmization and debug symbols.
 To enable the optimizations set the environment variable `RELEASE_BUILD=ON`.
 
-To create a debug build without optimisations, type
-```
-make vps
-```
-
 To create an optimized release build, type
 ```
 RELEASE_BUILD=ON make vps
+```
+
+To create a debug build without optimisations, type
+```
+RELEASE_BUILD=OFF make vps
 ```
 
 #### 3) Building SW examples using the GNU toolchain
