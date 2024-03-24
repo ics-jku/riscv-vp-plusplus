@@ -1088,15 +1088,13 @@ class VExtension {
 
 	std::function<op_reg_t(op_reg_t, op_reg_t)> vRem() {
 		return [=](op_reg_t op2, op_reg_t op1) -> op_reg_t {
-			xlen_reg_t sew = getIntVSew();
 			auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
 			if (!vd_signed) {
 				return op1 == 0 ? op2 : op2 % op1;
 			}
-			// TODO necessary ?
 			s_op_reg_t op1_s = signExtend(op1, op1_eew);
 			s_op_reg_t op2_s = signExtend(op2, op2_eew);
-			return op1_s == 0 ? op2_s : (op2_s == (INT64_MIN >> (64 - sew)) && op1_s == -1 ? op2_s : op2_s % op1_s);
+			return op1_s == 0 ? op2_s : op2_s % op1_s;
 		};
 	}
 
