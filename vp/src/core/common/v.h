@@ -1737,7 +1737,8 @@ class VExtension {
 			double lmul = getVlmul();
 
 			xlen_reg_t vlmax = lmul * VLEN / getIntVSew();
-			if (op1 >= vlmax) {
+			uint64_t rs1_value = param_sel == param_sel_t::vx ? iss_reg_read(iss.instr.rs1()) : op1;
+			if (rs1_value >= vlmax) {
 				return 0;
 			}
 
