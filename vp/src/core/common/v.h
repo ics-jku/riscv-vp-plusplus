@@ -1678,7 +1678,7 @@ class VExtension {
 			double lmul = getVlmul();
 
 			xlen_reg_t vlmax = lmul * VLEN / getIntVSew();
-			bool is_zero = (index + offset) >= vlmax;
+			bool is_zero = (index + offset) >= vlmax || offset & ((uint64_t)1 << 63);
 
 			op_reg_t res = is_zero ? 0 : getSewSingleOperand(getIntVSew(), iss.instr.rs2(), index + offset, false);
 			writeGeneric(res, index);
