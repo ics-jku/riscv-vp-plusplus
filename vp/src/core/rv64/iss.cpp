@@ -4358,7 +4358,7 @@ void ISS::exec_step() {
 		} break;
 		case Opcode::VFSLIDE1DOWN_VF: {
 			v_ext.prepInstr(true, true, true);
-			v_ext.vLoopVoid(v_ext.vSlide1Down(v_ext.param_sel_t::vf));
+			v_ext.vLoopVoid(v_ext.vSlide1Down(v_ext.param_sel_t::vf), v_ext.param_sel_t::vf);
 			v_ext.finishInstr(true);
 		} break;
 		case Opcode::VRGATHER_VV: {
