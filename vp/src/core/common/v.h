@@ -501,7 +501,9 @@ class VExtension {
 			default:
 				v_assert(false);
 		}
-		return std::clamp(elem_signed, lower_bound, upper_bound);
+		s_op_reg_t clamped = std::clamp(elem_signed, lower_bound, upper_bound);
+		iss.csrs.vxsat.fields.vxsat |= (clamped != elem_signed);
+		return clamped;
 	}
 
 	void applyChecks() {
