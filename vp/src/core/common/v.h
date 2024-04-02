@@ -1081,7 +1081,7 @@ class VExtension {
 			}
 			// TODO necessary ?
 			s_op_reg_t op1_s = signExtend(op1, op1_eew);
-			s_op_reg_t op2_s = signExtend(op2, op1_eew);
+			s_op_reg_t op2_s = signExtend(op2, op2_eew);
 			return op1_s == 0 ? -1 : (op2_s == (INT64_MIN >> (64 - sew)) && op1_s == -1 ? op2_s : op2_s / op1_s);
 		};
 	}
