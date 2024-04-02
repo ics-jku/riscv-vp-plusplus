@@ -1486,7 +1486,7 @@ class VExtension {
 			op_reg_t res = op2 - op1;
 			bool sat = (res & getMask(getIntVSew())) <= op2;
 			res &= -(sat);
-			iss.csrs.vxsat.fields.vxsat |= sat;
+			iss.csrs.vxsat.fields.vxsat |= (!sat);
 			return res;
 		};
 	}
