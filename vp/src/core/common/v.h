@@ -1181,6 +1181,7 @@ class VExtension {
 				if (!vd_signed) {
 					if (result > getMask(vd_eew)) {
 						result = getMask(vd_eew);
+						iss.csrs.vxsat.fields.vxsat |= true;
 					}
 				} else {
 					result = clampSigned(result, op2_eew, vd_eew);
