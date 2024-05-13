@@ -116,7 +116,7 @@ class VExtension {
 	 */
 	xlen_reg_t iss_reg_read_unsigned(xlen_reg_t addr) {
 		op_reg_t val = iss.regs[addr];
-		if (sizeof(iss.regs[addr] == 4))
+		if (sizeof(iss.regs[addr]) == 4)
 			val = val & 0xffffffff;
 		return val;
 	}
