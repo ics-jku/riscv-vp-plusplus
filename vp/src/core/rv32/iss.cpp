@@ -4394,10 +4394,12 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 			return csrs.time.words.high;
 		}
 
+		case CYCLE_ADDR:
 		case MCYCLE_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
 			return csrs.cycle.words.low;
 
+		case CYCLEH_ADDR:
 		case MCYCLEH_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
 			return csrs.cycle.words.high;

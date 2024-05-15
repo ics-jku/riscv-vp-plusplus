@@ -4500,6 +4500,7 @@ uint64_t ISS::get_csr_value(uint64_t addr) {
 			return csrs.time.reg;
 		}
 
+		case CYCLE_ADDR:
 		case MCYCLE_ADDR:
 			csrs.cycle.reg = _compute_and_get_current_cycles();
 			return csrs.cycle.reg;
