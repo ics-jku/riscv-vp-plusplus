@@ -9,6 +9,8 @@
 #include "core/common/trap.h"
 #include "util/common.h"
 
+#define ZFINX 1
+
 namespace rv32 {
 
 constexpr unsigned FS_OFF = 0b00;
@@ -74,7 +76,11 @@ struct csr_misa {
 	};
 
 	void init() {
+#if ZFINX
+		fields.extensions = I | M | A |         C | N | U | S | V;  // no flota + double
+#else
 		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFD + NUS
+#endif
 		fields.wiri = 0;
 		fields.mxl = 1;  // RV32
 	}

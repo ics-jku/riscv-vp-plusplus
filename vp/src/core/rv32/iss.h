@@ -28,6 +28,18 @@
 #include "util/common.h"
 #include "v.h"
 
+
+#define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+
+#define REQUIRE_ISA(X)        \
+	if (!(csrs.misa.reg & X)) \
+	RAISE_ILLEGAL_INSTRUCTION()
+
+#define RD instr.rd()
+#define RS1 instr.rs1()
+#define RS2 instr.rs2()
+#define RS3 instr.rs3()
+
 namespace rv32 {
 
 struct RegFile {
@@ -42,6 +54,14 @@ struct RegFile {
 	void write(uint32_t index, int32_t value);
 
 	int32_t read(uint32_t index);
+
+	void write_f32(uint32_t index, float32_t value);
+
+	float32_t read_f32(uint32_t index);
+
+	/** TODO LATER
+	void write_f64(uint32_t index, float64_t value);
+	float64_t read_f64(uint32_t index); */
 
 	uint32_t shamt(uint32_t index);
 
@@ -309,6 +329,33 @@ struct ISS : public external_interrupt_target,
 	void run() override;
 
 	void show();
+
+	void flw();
+	void fsw();
+	void fadd_s();
+	void fsub_s();
+	void fmul_s();
+	void fdiv_s();
+	void fsqrt_s();
+	void fmin_s();
+	void fmax_s();
+	void fmadd_s();
+	void fmsub_s();
+	void fnmadd_s();
+	void fnmsub_s();
+	void fcvt_w_s();
+	void fcvt_wu_s();
+	void fcvt_s_w();
+	void fcvt_s_wu();
+	void fsgnj_s();
+	void fsgnjn_s();
+	void fsgnjx_s();
+	void fmv_w_x();
+	void fmv_x_w();
+	void feq_s();
+	void flt_s();
+	void fle_s();
+	void fclass_s();
 };
 
 /* Do not call the run function of the ISS directly but use one of the Runner
