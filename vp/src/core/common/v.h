@@ -536,7 +536,7 @@ class VExtension {
 		int vop_start = 1;  // check only vs2
 		unsigned int vop[2], vop_eew[2];
 		vop[1] = iss.instr.rs2();
-		double vop_emul[2];
+		double vop_emul[2]{0};
 		vop_eew[1] = vs2_eew;
 		vop_emul[1] = lmul * vs2_eew / sew;
 		if (param_sel == param_sel_t::vv) {
