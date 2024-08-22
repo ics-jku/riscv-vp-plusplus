@@ -3741,7 +3741,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 		case C_ADDIW:
 			if (instr.c_rd() == 0)
 				return UNDEF;  // reserved
-			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(), instr.c_imm());
+			instr = InstructionFactory::ADDIW(instr.c_rd(), instr.c_rd(), instr.c_imm());
 			return ADDIW;
 
 		case C_LI:
