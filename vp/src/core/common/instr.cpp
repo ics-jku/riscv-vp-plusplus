@@ -2614,6 +2614,12 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case SLLI:
 		case SRLI:
 		case SRAI:
+		case CSRRW:
+		case CSRRS:
+		case CSRRC:
+		case CSRRWI:
+		case CSRRSI:
+		case CSRRCI:
 		case FLW:
 		case FLD:
 			return Type::I;
