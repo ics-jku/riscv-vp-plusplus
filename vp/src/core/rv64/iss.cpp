@@ -300,71 +300,71 @@ void ISS::exec_step() {
 
 		case Opcode::SB: {
 			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
-			mem->store_byte(addr, regs[instr.rs2()]);
+			lscache.store_byte(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SH: {
 			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<2, false>(addr);
-			mem->store_half(addr, regs[instr.rs2()]);
+			lscache.store_half(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SW: {
 			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
-			mem->store_word(addr, regs[instr.rs2()]);
+			lscache.store_word(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SD: {
 			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<8, false>(addr);
-			mem->store_double(addr, regs[instr.rs2()]);
+			lscache.store_double(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::LB: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-			regs[instr.rd()] = mem->load_byte(addr);
+			regs[instr.rd()] = lscache.load_byte(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LH: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
-			regs[instr.rd()] = mem->load_half(addr);
+			regs[instr.rd()] = lscache.load_half(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LW: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
-			regs[instr.rd()] = mem->load_word(addr);
+			regs[instr.rd()] = lscache.load_word(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LD: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<8, true>(addr);
-			regs[instr.rd()] = mem->load_double(addr);
+			regs[instr.rd()] = lscache.load_double(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LBU: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-			regs[instr.rd()] = mem->load_ubyte(addr);
+			regs[instr.rd()] = lscache.load_ubyte(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LHU: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
-			regs[instr.rd()] = mem->load_uhalf(addr);
+			regs[instr.rd()] = lscache.load_uhalf(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LWU: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
-			regs[instr.rd()] = mem->load_uword(addr);
+			regs[instr.rd()] = lscache.load_uword(addr);
 			regs.reset_zero();
 		} break;
 
@@ -447,7 +447,10 @@ void ISS::exec_step() {
 			regs[instr.rd()] = (int32_t)((int32_t)regs[instr.rs1()] >> regs.shamt_w(instr.rs2()));
 			break;
 
-		case Opcode::FENCE:
+		case Opcode::FENCE: {
+			lscache.fence();
+		} break;
+
 		case Opcode::FENCE_I: {
 			// not using out of order execution/caches so can be ignored
 		} break;
@@ -817,13 +820,13 @@ void ISS::exec_step() {
 		case Opcode::FLW: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
-			fp_regs.write(RD, float32_t{(uint32_t)mem->load_uword(addr)});
+			fp_regs.write(RD, float32_t{(uint32_t)lscache.load_uword(addr)});
 		} break;
 
 		case Opcode::FSW: {
 			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
-			mem->store_word(addr, fp_regs.u32(RS2));
+			lscache.store_word(addr, fp_regs.u32(RS2));
 		} break;
 
 		case Opcode::FADD_S: {
@@ -1053,13 +1056,13 @@ void ISS::exec_step() {
 		case Opcode::FLD: {
 			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<8, true>(addr);
-			fp_regs.write(RD, float64_t{(uint64_t)mem->load_double(addr)});
+			fp_regs.write(RD, float64_t{(uint64_t)lscache.load_double(addr)});
 		} break;
 
 		case Opcode::FSD: {
 			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<8, false>(addr);
-			mem->store_double(addr, fp_regs.f64(RS2).v);
+			lscache.store_double(addr, fp_regs.f64(RS2).v);
 		} break;
 
 		case Opcode::FADD_D: {
@@ -4467,7 +4470,7 @@ void ISS::exec_step() {
 		case Opcode::SFENCE_VMA:
 			if (s_mode() && csrs.mstatus.fields.tvm)
 				RAISE_ILLEGAL_INSTRUCTION();
-			mem->flush_tlb();
+			lscache.fence_vma();
 			break;
 
 		case Opcode::URET:
@@ -4752,6 +4755,9 @@ void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *c
 	this->clint = clint;
 	regs[RegFile::sp] = sp;
 	pc = entrypoint;
+
+	uint64_t hartId = get_hart_id();
+	lscache.init(hartId, data_mem);
 }
 
 void ISS::sys_exit() {

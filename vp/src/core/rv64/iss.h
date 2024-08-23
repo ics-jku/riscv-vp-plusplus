@@ -20,6 +20,7 @@
 #include "core/common/debug.h"
 #include "core/common/instr.h"
 #include "core/common/irq_if.h"
+#include "core/common/lscache.h"
 #include "core/common/mem_if.h"
 #include "core/common/regfile.h"
 #include "core/common/trap.h"
@@ -64,6 +65,7 @@ struct ISS : public external_interrupt_target,
              public initiator_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
+	LSCacheDefault_T<sxlen_t, uxlen_t> lscache;
 	data_memory_if *mem = nullptr;
 	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;

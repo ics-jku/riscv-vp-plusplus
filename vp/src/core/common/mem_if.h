@@ -43,6 +43,16 @@ struct data_memory_if_T {
 	virtual int64_t atomic_load_reserved_double(uint64_t addr) = 0;
 	virtual bool atomic_store_conditional_double(uint64_t addr, uint64_t value) = 0;
 
+	/* returns true if the bus is locked */
+	virtual bool is_bus_locked() = 0;
+	/*
+	 * returns the host page start address, if the last access was using dmi
+	 * returns nullptr otherwise
+	 * CAUTION: The result is only valid directly after an access, i.e. no SystemC context switch between the access and
+	 * a call of this method
+	 */
+	virtual void *get_last_dmi_page_host_addr() = 0;
+
 	virtual void flush_tlb() = 0;
 };
 

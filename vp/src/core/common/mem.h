@@ -49,6 +49,9 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 
 	MMU_T<T_RVX_ISS> *mmu;
 
+	bool last_access_was_dmi = false;
+	void *last_dmi_page_host_addr = nullptr;
+
 	CombinedMemoryInterface_T(sc_core::sc_module_name, T_RVX_ISS &owner, MMU_T<T_RVX_ISS> *mmu = nullptr)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
 		ext = new initiator_ext(&owner);  // tlm_generic_payload frees all extension objects in destructor, therefore
@@ -95,15 +98,30 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		// postpone the lock after the dmi access
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 
+		T ans;
+
 		for (auto &e : dmi_ranges) {
 			if (e.contains(addr)) {
 				quantum_keeper.inc(dmi_access_delay);
-				return e.load<T>(addr);
+				ans = e.load<T>(addr);
+
+				/* save the host address of the start of the 4KiB page containing addr */
+				last_access_was_dmi = true;
+				last_dmi_page_host_addr = e.get_mem_ptr_to_global_addr<T>(addr & ~0xFFF);
+
+				return ans;
 			}
 		}
 
-		T ans;
 		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
+
+		/*
+		 * A transaction may lead to a context switch. The other context may issue transaction handled via dmi.
+		 * i.e.: When we come back to this context, it is possible that we end up with last_access_was_dmi set to true!
+		 * Solution: set last_access_was_dmi to false AFTER _do_transaction
+		 */
+		last_access_was_dmi = false;
+
 		return ans;
 	}
 
@@ -111,18 +129,25 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 	inline void _raw_store_data(uint64_t addr, T value) {
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 
-		bool done = false;
 		for (auto &e : dmi_ranges) {
 			if (e.contains(addr)) {
 				quantum_keeper.inc(dmi_access_delay);
 				e.store(addr, value);
-				done = true;
+
+				/* save the host address of the start of the 4KiB page containing addr */
+				last_access_was_dmi = true;
+				last_dmi_page_host_addr = e.get_mem_ptr_to_global_addr<T>(addr & ~0xFFF);
+
+				atomic_unlock();
+				return;
 			}
 		}
 
-		if (!done)
-			_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
+		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
 		atomic_unlock();
+
+		/* see comment in _raw_load_data */
+		last_access_was_dmi = false;
 	}
 
 	template <typename T>
@@ -278,6 +303,18 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 
 	void atomic_unlock() override {
 		bus_lock->unlock(iss.get_hart_id());
+	}
+
+	inline bool is_bus_locked() override {
+		return bus_lock->is_locked();
+	}
+
+	/* see comment in data_memory_if_T */
+	void *get_last_dmi_page_host_addr() override {
+		if (!last_access_was_dmi) {
+			return nullptr;
+		}
+		return last_dmi_page_host_addr;
 	}
 };
 

@@ -783,6 +783,7 @@ class VExtension {
 					op_reg_t value;
 
 					if (ldst == load_store_t::load) {
+						// TODO: implement loads in LSCache able to handle unaligned access and optimized for vector
 						switch (switchElem) {
 							case 8:
 								value = iss.mem->load_byte(addr);
@@ -816,6 +817,7 @@ class VExtension {
 
 					} else {
 						value = getSewSingleOperand(switchElem, vec_idx, elem_num, false);
+						// TODO: implement stores in LSCache able to handle unaligned access and optimized for vector
 						switch (switchElem) {
 							case 8:
 								iss.mem->store_byte(addr, value);
