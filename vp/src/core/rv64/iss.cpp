@@ -4786,7 +4786,7 @@ void ISS::fp_setup_rm() {
 	auto rm = instr.frm();
 	if (rm == FRM_DYN)
 		rm = csrs.fcsr.fields.frm;
-	if (rm >= FRM_RMM)
+	if (rm > FRM_RMM)
 		RAISE_ILLEGAL_INSTRUCTION();
 	softfloat_roundingMode = rm;
 }
