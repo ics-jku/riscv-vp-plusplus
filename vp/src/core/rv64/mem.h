@@ -143,6 +143,33 @@ struct CombinedMemoryInterface : public sc_core::sc_module,
 	}
 
 	uint32_t load_instr(uint64_t addr) override {
+		/*
+		 * We have support for RISC-V Compressed C instructions.
+		 * As a consequence we might have misaligned 32 bit fetches.
+		 *
+		 * This is a problem if
+		 *  1. the fetch happens at a page boundary AND
+		 *  2. virtual memory management is used AND
+		 *  3. the two involved pages are not stored sequentially in physical memory.
+		 *
+		 * e.g.
+		 * <pc>		<instr>		<pc_increment>
+		 * 0x1FF8	fmul ...	4
+		 * 0x1FFC	c.lw ...	2 (compressed)
+		 * 0x1FFE	fmax ...	4				<-- not 32 bit aligned @ page boundary
+		 * 0x2002	fmin ...	4				<-- not 32 bit aligned
+		 *
+		 * -> A non-aligned 32 bit fetch at a 4KiB page boundary has to be split!
+		 *
+		 * TODO: Maybe it would be more realistic to split all misaligned 32 bit accesses
+		 * in two 16 bit (-> no misaligned accesses on the bus) -> Future work
+		 *
+		 */
+		if ((addr & 0xFFF) == 0xFFE) {
+			return (_raw_load_data<uint16_t>(v2p(addr + 2, FETCH)) << 16) |
+			       (_raw_load_data<uint16_t>(v2p(addr + 0, FETCH)) << 0);
+		}
+
 		return _raw_load_data<uint32_t>(v2p(addr, FETCH));
 	}
 
