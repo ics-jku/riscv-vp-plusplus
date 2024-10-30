@@ -21,6 +21,7 @@
 #include "memory.h"
 #include "memory_mapped_file.h"
 #include "mmu.h"
+#include "platform/common/fu540_gpio.h"
 #include "platform/common/options.h"
 #include "platform/common/sifive_test.h"
 #include "platform/common/slip.h"
@@ -79,6 +80,8 @@ struct LinuxOptions : public Options {
 	addr_t uart0_end_addr = 0x10010fff;
 	addr_t uart1_start_addr = 0x10011000;
 	addr_t uart1_end_addr = 0x10011fff;
+	addr_t gpio_start_addr = 0x10060000;
+	addr_t gpio_end_addr = 0x10060FFF;
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x10000000;
 	addr_t prci_start_addr = 0x10000000;
@@ -174,13 +177,18 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<NUM_CORES + 1, 14> bus("SimpleBus");
+	SimpleBus<NUM_CORES + 1, 15> bus("SimpleBus");
 	SyscallHandler sys("SyscallHandler");
 	FU540_PLIC plic("PLIC", NUM_CORES);
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 	PRCI prci("PRCI");
 	UART uart0("UART0", 4);
 	SLIP slip("SLIP", 5, opt.tun_device);
+
+	/* interrupts for gpios (idx -> irqnr) */
+	const int gpioInterrupts[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22};
+	FU540_GPIO gpio("GPIO", gpioInterrupts);
+
 	SIFIVE_Test sifive_test("SIFIVE_Test");
 	VNCSimpleFB vncsimplefb("VNCSimpleFB", vncServer);
 	VNCSimpleInputPtr vncsimpleinputptr("VNCSimpleInputPtr", vncServer, 10);
@@ -222,14 +230,15 @@ int sc_main(int argc, char **argv) {
 	bus.ports[3] = new PortMapping(opt.dtb_rom_start_addr, opt.dtb_rom_end_addr);
 	bus.ports[4] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
 	bus.ports[5] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
-	bus.ports[6] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-	bus.ports[7] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
-	bus.ports[8] = new PortMapping(opt.sifive_test_start_addr, opt.sifive_test_end_addr);
-	bus.ports[9] = new PortMapping(opt.vncsimplefb_start_addr, opt.vncsimplefb_end_addr);
-	bus.ports[10] = new PortMapping(opt.vncsimpleinputptr_start_addr, opt.vncsimpleinputptr_end_addr);
-	bus.ports[11] = new PortMapping(opt.vncsimpleinputkbd_start_addr, opt.vncsimpleinputkbd_end_addr);
-	bus.ports[12] = new PortMapping(opt.mram_root_start_addr, opt.mram_root_end_addr);
-	bus.ports[13] = new PortMapping(opt.mram_data_start_addr, opt.mram_data_end_addr);
+	bus.ports[6] = new PortMapping(opt.gpio_start_addr, opt.gpio_end_addr);
+	bus.ports[7] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
+	bus.ports[8] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
+	bus.ports[9] = new PortMapping(opt.sifive_test_start_addr, opt.sifive_test_end_addr);
+	bus.ports[10] = new PortMapping(opt.vncsimplefb_start_addr, opt.vncsimplefb_end_addr);
+	bus.ports[11] = new PortMapping(opt.vncsimpleinputptr_start_addr, opt.vncsimpleinputptr_end_addr);
+	bus.ports[12] = new PortMapping(opt.vncsimpleinputkbd_start_addr, opt.vncsimpleinputkbd_end_addr);
+	bus.ports[13] = new PortMapping(opt.mram_root_start_addr, opt.mram_root_end_addr);
+	bus.ports[14] = new PortMapping(opt.mram_data_start_addr, opt.mram_data_end_addr);
 
 	// connect TLM sockets
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -242,14 +251,15 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[3].bind(dtb_rom.tsock);
 	bus.isocks[4].bind(uart0.tsock);
 	bus.isocks[5].bind(slip.tsock);
-	bus.isocks[6].bind(plic.tsock);
-	bus.isocks[7].bind(prci.tsock);
-	bus.isocks[8].bind(sifive_test.tsock);
-	bus.isocks[9].bind(vncsimplefb.tsock);
-	bus.isocks[10].bind(vncsimpleinputptr.tsock);
-	bus.isocks[11].bind(vncsimpleinputkbd.tsock);
-	bus.isocks[12].bind(mramRoot.tsock);
-	bus.isocks[13].bind(mramData.tsock);
+	bus.isocks[6].bind(gpio.tsock);
+	bus.isocks[7].bind(plic.tsock);
+	bus.isocks[8].bind(prci.tsock);
+	bus.isocks[9].bind(sifive_test.tsock);
+	bus.isocks[10].bind(vncsimplefb.tsock);
+	bus.isocks[11].bind(vncsimpleinputptr.tsock);
+	bus.isocks[12].bind(vncsimpleinputkbd.tsock);
+	bus.isocks[13].bind(mramRoot.tsock);
+	bus.isocks[14].bind(mramData.tsock);
 
 	// connect interrupt signals/communication
 	for (size_t i = 0; i < NUM_CORES; i++) {
@@ -258,6 +268,7 @@ int sc_main(int argc, char **argv) {
 	}
 	uart0.plic = &plic;
 	slip.plic = &plic;
+	gpio.plic = &plic;
 	vncsimpleinputptr.plic = &plic;
 	vncsimpleinputkbd.plic = &plic;
 
