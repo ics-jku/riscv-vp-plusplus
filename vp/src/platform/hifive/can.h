@@ -7,7 +7,7 @@
 #include <thread>
 
 #include "can/mcp_can_dfs.h"
-#include "spi.h"
+#include "platform/common/sifive_spi.h"
 
 class CAN {
 	enum class State {

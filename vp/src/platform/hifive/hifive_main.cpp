@@ -23,9 +23,9 @@
 #include "memory.h"
 #include "oled/oled.hpp"
 #include "platform/common/options.h"
+#include "platform/common/sifive_spi.h"
 #include "prci.h"
 #include "slip.h"
-#include "spi.h"
 #include "uart.h"
 
 // Interrupt numbers	(see platform.h)
@@ -130,8 +130,8 @@ int sc_main(int argc, char **argv) {
 	AON aon("AON");
 	PRCI prci("PRCI");
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
-	SPI spi0("SPI0");
-	SPI spi1("SPI1");
+	SIFIVE_SPI spi0("SPI0");
+	SIFIVE_SPI spi1("SPI1");
 	std::shared_ptr<CAN> can;
 	if (opt.enable_can) {
 		std::cout << "using internal CAN controller on SPI CS 0" << std::endl;
@@ -153,7 +153,7 @@ int sc_main(int argc, char **argv) {
 	}
 
 	spi1.connect(3, gpio0.getSPIwriteFunction(3));
-	SPI spi2("SPI2");
+	SIFIVE_SPI spi2("SPI2");
 	std::shared_ptr<UART> uart0;
 	std::shared_ptr<Tunnel_UART> uart0_tunnel;
 	if (opt.forward_uart_0) {

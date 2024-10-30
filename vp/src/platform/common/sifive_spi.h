@@ -1,5 +1,9 @@
-#ifndef RISCV_VP_SPI_H
-#define RISCV_VP_SPI_H
+#ifndef RISCV_VP_SIFIVE_SPI_H
+#define RISCV_VP_SIFIVE_SPI_H
+
+/*
+ * SPI Host for SiFive HiFive
+ */
 
 #include <tlm_utils/simple_target_socket.h>
 
@@ -14,8 +18,8 @@ typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
 
 typedef uint32_t Pin;
 
-struct SPI : public sc_core::sc_module {
-	tlm_utils::simple_target_socket<SPI> tsock;
+struct SIFIVE_SPI : public sc_core::sc_module {
+	tlm_utils::simple_target_socket<SIFIVE_SPI> tsock;
 
 	// single queue for all targets
 	static constexpr uint_fast8_t queue_size = 16;
@@ -59,13 +63,13 @@ struct SPI : public sc_core::sc_module {
 		IP_REG_ADDR = 0x74,
 	};
 
-	static constexpr uint_fast8_t SPI_IP_TXWM = 0x1;
-	static constexpr uint_fast8_t SPI_IP_RXWM = 0x2;
+	static constexpr uint_fast8_t SIFIVE_SPI_IP_TXWM = 0x1;
+	static constexpr uint_fast8_t SIFIVE_SPI_IP_RXWM = 0x2;
 
-	vp::map::LocalRouter router = {"SPI"};
+	vp::map::LocalRouter router = {"SIFIVE_SPI"};
 
-	SPI(sc_core::sc_module_name) {
-		tsock.register_b_transport(this, &SPI::transport);
+	SIFIVE_SPI(sc_core::sc_module_name) {
+		tsock.register_b_transport(this, &SIFIVE_SPI::transport);
 
 		router
 		    .add_register_bank({
@@ -86,7 +90,7 @@ struct SPI : public sc_core::sc_module {
 		        {IE_REG_ADDR, &ie},
 		        {IP_REG_ADDR, &ip},
 		    })
-		    .register_handler(this, &SPI::register_access_callback);
+		    .register_handler(this, &SIFIVE_SPI::register_access_callback);
 	}
 
 	void register_access_callback(const vp::map::register_access_t &r) {
@@ -122,8 +126,8 @@ struct SPI : public sc_core::sc_module {
 						rxqueue.pop();
 
 					// TODO: Model latency.
-					if (txmark > 0 && (ie & SPI_IP_TXWM))
-						ip |= SPI_IP_TXWM;
+					if (txmark > 0 && (ie & SIFIVE_SPI_IP_TXWM))
+						ip |= SIFIVE_SPI_IP_TXWM;
 				} else {
 					std::cerr << "Write on unregistered Chip-Select " << csid << std::endl;
 				}
@@ -138,11 +142,11 @@ struct SPI : public sc_core::sc_module {
 
 	void connect(Pin cs, SpiWriteFunction interface) {
 		if (cs == 1 || cs > 3) {
-			std::cerr << "SPI: Unsupported chip select " << cs << std::endl;
+			std::cerr << "SIFIVE_SPI: Unsupported chip select " << cs << std::endl;
 			return;
 		}
 		targets.insert(std::pair<const Pin, SpiWriteFunction>(cs, interface));
 	}
 };
 
-#endif  // RISCV_VP_SPI_H
+#endif  // RISCV_VP_SIFIVE_SPI_H
