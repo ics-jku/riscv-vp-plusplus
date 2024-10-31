@@ -19,6 +19,9 @@ typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
 typedef uint32_t Pin;
 
 struct SIFIVE_SPI : public sc_core::sc_module {
+	const int interrupt = -1;
+	interrupt_gateway *plic = nullptr;
+
 	tlm_utils::simple_target_socket<SIFIVE_SPI> tsock;
 
 	// single queue for all targets
@@ -68,7 +71,7 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 
 	vp::map::LocalRouter router = {"SIFIVE_SPI"};
 
-	SIFIVE_SPI(sc_core::sc_module_name) {
+	SIFIVE_SPI(sc_core::sc_module_name, int interrupt = -1) : interrupt(interrupt) {
 		tsock.register_b_transport(this, &SIFIVE_SPI::transport);
 
 		router
@@ -93,7 +96,16 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 		    .register_handler(this, &SIFIVE_SPI::register_access_callback);
 	}
 
+	void trigger_interrupt() {
+		if (plic == nullptr || interrupt < 0) {
+			return;
+		}
+		plic->gateway_trigger_interrupt(interrupt);
+	}
+
 	void register_access_callback(const vp::map::register_access_t &r) {
+		bool trigger_interrupt = false;
+
 		if (r.read) {
 			if (r.vptr == &rxdata) {
 				auto target = targets.find(csid);
@@ -121,18 +133,39 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 				if (target != targets.end()) {
 					rxqueue.push(target->second(txdata));
 
-					// TODO: Model RX-Watermark IP
-					if (rxqueue.size() > queue_size)
+					// overflow
+					if (rxqueue.size() > queue_size) {
 						rxqueue.pop();
+					}
+
+					if (txmark > 0 && (ie & SIFIVE_SPI_IP_TXWM)) {
+						ip |= SIFIVE_SPI_IP_TXWM;
+						if (ie & SIFIVE_SPI_IP_TXWM) {
+							trigger_interrupt = true;
+						}
+					} else {
+						ip &= ~SIFIVE_SPI_IP_TXWM;
+					}
 
 					// TODO: Model latency.
-					if (txmark > 0 && (ie & SIFIVE_SPI_IP_TXWM))
-						ip |= SIFIVE_SPI_IP_TXWM;
 				} else {
 					std::cerr << "SIFIVE_SPI: Write on unregistered Chip-Select " << csid << std::endl;
 				}
 				txdata = 0;
 			}
+		}
+
+		if (rxqueue.size() > rxmark) {
+			ip |= SIFIVE_SPI_IP_RXWM;
+			if (ie & SIFIVE_SPI_IP_RXWM) {
+				trigger_interrupt = true;
+			}
+		} else {
+			ip &= ~SIFIVE_SPI_IP_RXWM;
+		}
+
+		if (trigger_interrupt) {
+			this->trigger_interrupt();
 		}
 	}
 
