@@ -29,11 +29,14 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 	std::queue<uint8_t> rxqueue;
 	std::map<Pin, SpiWriteFunction> targets;
 
+	// bitmask: maximum number of chip selects
+	const uint32_t csdef_max = 0b1;
+
 	// memory mapped configuration registers
 	uint32_t sckdiv = 0;
 	uint32_t sckmode = 0;
 	uint32_t csid = 0;
-	uint32_t csdef = 1;
+	uint32_t csdef = csdef_max;
 	uint32_t csmode = 0;
 	uint32_t delay0 = 0;
 	uint32_t delay1 = 0;
@@ -125,8 +128,12 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 		r.fn();
 
 		if (r.write) {
-			if (r.vptr == &csid) {
+			if (r.vptr == &csdef) {
+				csdef &= csdef_max;
+
+			} else if (r.vptr == &csid) {
 				// std::cout << "Chip select " << csid << std::endl;
+
 			} else if (r.vptr == &txdata) {
 				// std::cout << std::hex << txdata << " ";
 				auto target = targets.find(csid);
