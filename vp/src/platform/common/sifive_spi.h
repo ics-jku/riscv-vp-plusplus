@@ -98,7 +98,7 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 			if (r.vptr == &rxdata) {
 				auto target = targets.find(csid);
 				if (target == targets.end()) {
-					std::cerr << "Read on unregistered Chip-Select " << csid << std::endl;
+					std::cerr << "SIFIVE_SPI: Read on unregistered Chip-Select " << csid << std::endl;
 				} else {
 					if (rxqueue.empty()) {
 						rxdata = 1 << 31;
@@ -129,7 +129,7 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 					if (txmark > 0 && (ie & SIFIVE_SPI_IP_TXWM))
 						ip |= SIFIVE_SPI_IP_TXWM;
 				} else {
-					std::cerr << "Write on unregistered Chip-Select " << csid << std::endl;
+					std::cerr << "SIFIVE_SPI: Write on unregistered Chip-Select " << csid << std::endl;
 				}
 				txdata = 0;
 			}
