@@ -12,31 +12,30 @@
 #include <systemc>
 
 #include "core/common/irq_if.h"
+#include "platform/common/spi_if.h"
 #include "util/tlm_map.h"
 
-typedef std::function<uint8_t(uint8_t)> SpiWriteFunction;
+/* see code below */
+//#define SIFIVE_SPI_QUEUE_FULL_HANDING_ALT
+#undef SIFIVE_SPI_QUEUE_FULL_HANDING_ALT
 
-typedef uint32_t Pin;
-
-struct SIFIVE_SPI : public sc_core::sc_module {
-	const int interrupt = -1;
-	interrupt_gateway *plic = nullptr;
-
-	tlm_utils::simple_target_socket<SIFIVE_SPI> tsock;
-
+template <unsigned int FIFO_QUEUE_SIZE>
+class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 	// single queue for all targets
-	static constexpr uint_fast8_t queue_size = 16;
+	static constexpr uint_fast8_t queue_size = FIFO_QUEUE_SIZE;
 	std::queue<uint8_t> rxqueue;
-	std::map<Pin, SpiWriteFunction> targets;
 
-	// bitmask: maximum number of chip selects
-	const uint32_t csdef_max = 0b1;
+	// number of chip selects
+	const uint32_t cs_width;
+	uint32_t cs_width_mask;
+
+	const int interrupt = -1;
 
 	// memory mapped configuration registers
 	uint32_t sckdiv = 0;
 	uint32_t sckmode = 0;
 	uint32_t csid = 0;
-	uint32_t csdef = csdef_max;
+	uint32_t csdef = 0;
 	uint32_t csmode = 0;
 	uint32_t delay0 = 0;
 	uint32_t delay1 = 0;
@@ -49,6 +48,12 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 	uint32_t ffmt = 0;
 	uint32_t ie = 0;
 	uint32_t ip = 0;
+
+	// set by csmode
+	// assert chipselect at beginning of each frame
+	bool cs_select;
+	// deassert chipselect at end of each frame
+	bool cs_deselect;
 
 	enum {
 		SCKDIV_REG_ADDR = 0x00,
@@ -69,36 +74,12 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 		IP_REG_ADDR = 0x74,
 	};
 
+	enum CSMODE_VALS { AUTO = 0, RESERVED = 1, HOLD = 2, OFF = 3 };
+
 	static constexpr uint_fast8_t SIFIVE_SPI_IP_TXWM = 0x1;
 	static constexpr uint_fast8_t SIFIVE_SPI_IP_RXWM = 0x2;
 
 	vp::map::LocalRouter router = {"SIFIVE_SPI"};
-
-	SIFIVE_SPI(sc_core::sc_module_name, int interrupt = -1) : interrupt(interrupt) {
-		tsock.register_b_transport(this, &SIFIVE_SPI::transport);
-
-		router
-		    .add_register_bank({
-		        {SCKDIV_REG_ADDR, &sckdiv},
-		        {SCKMODE_REG_ADDR, &sckmode},
-		        {CSID_REG_ADDR, &csid},
-		        {CSDEF_REG_ADDR, &csdef},
-		        {CSMODE_REG_ADDR, &csmode},
-		        {DELAY0_REG_ADDR, &delay0},
-		        {DELAY1_REG_ADDR, &delay1},
-		        {FMT_REG_ADDR, &fmt},
-		        {TXDATA_REG_ADDR, &txdata},
-		        {RXDATA_REG_ADDR, &rxdata},
-		        {TXMARK_REG_ADDR, &txmark},
-		        {RXMARK_REG_ADDR, &rxmark},
-		        {FCTRL_REG_ADDR, &fctrl},
-		        {FFMT_REG_ADDR, &ffmt},
-		        {IE_REG_ADDR, &ie},
-		        {IP_REG_ADDR, &ip},
-		    })
-		    .register_handler(this, &SIFIVE_SPI::register_access_callback);
-	}
-
 	void trigger_interrupt() {
 		if (plic == nullptr || interrupt < 0) {
 			return;
@@ -106,58 +87,102 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 		plic->gateway_trigger_interrupt(interrupt);
 	}
 
+	void update_csmode() {
+		/* reset selected -> TODO: check if behavior correct */
+		device_deselect();
+
+		switch (csmode) {
+			case CSMODE_VALS::AUTO:
+				/* Assert/deassert CS at the beginning/end of each frame */
+				cs_select = true;
+				cs_deselect = true;
+				break;
+			case CSMODE_VALS::HOLD:
+				/* Keep CS continuously asserted after the initial frame */
+				cs_select = true;
+				cs_deselect = false;
+				break;
+			case CSMODE_VALS::OFF:
+				/* Disable hardware control of the CS pin */
+				cs_select = false;
+				cs_deselect = false;
+				break;
+			default:
+				std::cerr << "SIFIVE_SPI: Invalid value for csmod " << csmode << std::endl;
+				cs_select = true;
+				cs_deselect = true;
+				break;
+		}
+	}
+
 	void register_access_callback(const vp::map::register_access_t &r) {
 		bool trigger_interrupt = false;
 
 		if (r.read) {
 			if (r.vptr == &rxdata) {
-				auto target = targets.find(csid);
-				if (target == targets.end()) {
-					std::cerr << "SIFIVE_SPI: Read on unregistered Chip-Select " << csid << std::endl;
+				if (rxqueue.empty()) {
+					rxdata = 1 << 31;
 				} else {
-					if (rxqueue.empty()) {
-						rxdata = 1 << 31;
-					} else {
-						rxdata = rxqueue.front();
-						rxqueue.pop();
+					rxdata = rxqueue.front();
+					rxqueue.pop();
+				}
+			} else {
+				/*
+				 * QUEUE FULL HANDLING ALTERNATIVE - EXPERIMENTAL!
+				 * Uses the rxqueue to model TX FIFO full -> if firmware is implemented correctly drops of rx (see
+				 * below) should never happen
+				 */
+#ifdef SIFIVE_SPI_QUEUE_FULL_HANDING_ALT
+				if (r.vptr == &txdata) {
+					if (rxqueue.size() == queue_size) {
+						txdata = 1 << 31;
 					}
 				}
+#endif /* SIFIVE_SPI_QUEUE_HANDING_ALT */
 			}
 		}
 
+		uint32_t csid_old = csid;
 		r.fn();
 
 		if (r.write) {
 			if (r.vptr == &csdef) {
-				csdef &= csdef_max;
+				csdef &= cs_width_mask;
 
 			} else if (r.vptr == &csid) {
-				// std::cout << "Chip select " << csid << std::endl;
+				/* on change: reset selected -> TODO: check if behavior correct */
+				if (csid_old != csid) {
+					device_deselect();
+				}
+
+			} else if (r.vptr == &csmode) {
+				update_csmode();
 
 			} else if (r.vptr == &txdata) {
-				// std::cout << std::hex << txdata << " ";
-				auto target = targets.find(csid);
-				if (target != targets.end()) {
-					rxqueue.push(target->second(txdata));
+				uint8_t rxdata;
+				transfer(csid, cs_select, cs_deselect, txdata, rxdata);
 
-					// overflow
-					if (rxqueue.size() > queue_size) {
-						rxqueue.pop();
-					}
-
-					if (txmark > 0 && (ie & SIFIVE_SPI_IP_TXWM)) {
-						ip |= SIFIVE_SPI_IP_TXWM;
-						if (ie & SIFIVE_SPI_IP_TXWM) {
-							trigger_interrupt = true;
-						}
-					} else {
-						ip &= ~SIFIVE_SPI_IP_TXWM;
-					}
-
-					// TODO: Model latency.
-				} else {
-					std::cerr << "SIFIVE_SPI: Write on unregistered Chip-Select " << csid << std::endl;
+				// add with overflow
+				rxqueue.push(rxdata);
+				/*
+				 * QUEUE_FULL HANDLING (see above)
+				 * drop oldest element in rxqueue if too many rx (i.e. tx without rx)
+				 * see SIFIVE_SPI_QUEUE_FULL_HANDING_ALT for alternative behavior
+				 */
+				if (rxqueue.size() > queue_size) {
+					rxqueue.pop();
 				}
+
+				if (txmark > 0) {
+					ip |= SIFIVE_SPI_IP_TXWM;
+					if (ie & SIFIVE_SPI_IP_TXWM) {
+						trigger_interrupt = true;
+					}
+				} else {
+					ip &= ~SIFIVE_SPI_IP_TXWM;
+				}
+
+				// TODO: Model latency.
 				txdata = 0;
 			}
 		}
@@ -180,12 +205,51 @@ struct SIFIVE_SPI : public sc_core::sc_module {
 		router.transport(trans, delay);
 	}
 
-	void connect(Pin cs, SpiWriteFunction interface) {
-		if (cs == 1 || cs > 3) {
-			std::cerr << "SIFIVE_SPI: Unsupported chip select " << cs << std::endl;
-			return;
-		}
-		targets.insert(std::pair<const Pin, SpiWriteFunction>(cs, interface));
+   public:
+	tlm_utils::simple_target_socket<SIFIVE_SPI> tsock;
+	interrupt_gateway *plic = nullptr;
+
+	bool is_chipselect_valid(unsigned int cs) override {
+		/*
+		 * TODO: from hifive -> adjust csdef
+		 * if (cs == 1 || cs > 3) {
+		 * 	return false;
+		 */
+		return (cs <= cs_width);
+	}
+
+	SIFIVE_SPI(sc_core::sc_module_name, unsigned int cs_width, int interrupt = -1)
+	    : cs_width(cs_width), interrupt(interrupt) {
+		/* apply cs_width */
+		cs_width_mask = (1 << cs_width) - 1;
+		csdef = cs_width_mask;
+
+		/* reset chip select handling (csmode) */
+		csmode = CSMODE_VALS::AUTO;
+		update_csmode();
+
+		tsock.register_b_transport(this, &SIFIVE_SPI::transport);
+
+		router
+		    .add_register_bank({
+		        {SCKDIV_REG_ADDR, &sckdiv},
+		        {SCKMODE_REG_ADDR, &sckmode},
+		        {CSID_REG_ADDR, &csid},
+		        {CSDEF_REG_ADDR, &csdef},
+		        {CSMODE_REG_ADDR, &csmode},
+		        {DELAY0_REG_ADDR, &delay0},
+		        {DELAY1_REG_ADDR, &delay1},
+		        {FMT_REG_ADDR, &fmt},
+		        {TXDATA_REG_ADDR, &txdata},
+		        {RXDATA_REG_ADDR, &rxdata},
+		        {TXMARK_REG_ADDR, &txmark},
+		        {RXMARK_REG_ADDR, &rxmark},
+		        {FCTRL_REG_ADDR, &fctrl},
+		        {FFMT_REG_ADDR, &ffmt},
+		        {IE_REG_ADDR, &ie},
+		        {IP_REG_ADDR, &ip},
+		    })
+		    .register_handler(this, &SIFIVE_SPI::register_access_callback);
 	}
 };
 

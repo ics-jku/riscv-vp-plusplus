@@ -130,30 +130,41 @@ int sc_main(int argc, char **argv) {
 	AON aon("AON");
 	PRCI prci("PRCI");
 	GPIO gpio0("GPIO0", INT_GPIO_BASE);
-	SIFIVE_SPI spi0("SPI0");
-	SIFIVE_SPI spi1("SPI1");
+
+	SIFIVE_SPI<8> spi0("SPI0", 4);
+
+	SIFIVE_SPI<8> spi1("SPI1", 4);
+
+	SPI_SimpleDevice spi1_cs0;
 	std::shared_ptr<CAN> can;
 	if (opt.enable_can) {
 		std::cout << "using internal CAN controller on SPI CS 0" << std::endl;
 		can = std::make_shared<CAN>();
-		spi1.connect(0, std::bind(&CAN::write, can, std::placeholders::_1));
+		spi1_cs0.connect_transfer_function(std::bind(&CAN::write, can, std::placeholders::_1));
 	} else {
 		// pass through to gpio server
-		spi1.connect(0, gpio0.getSPIwriteFunction(0));
+		spi1_cs0.connect_transfer_function(gpio0.getSPIwriteFunction(0));
 	}
+	spi1.connect_device(0, &spi1_cs0);
+
+	SPI_SimpleDevice spi1_cs2;
 	std::shared_ptr<SS1106> oled;
 	if (!opt.disable_inline_oled) {
 		std::cout << "[hifive_main] using internal SS1106 oled controller on SPI CS 2 (with DC as Pin 16, Bit 10)"
 		          << std::endl;
 		oled = std::make_shared<SS1106>([&gpio0] { return gpio0.value & (1 << 10); });  // custom pin 16 is offset 10
-		spi1.connect(2, std::bind(&SS1106::write, oled, std::placeholders::_1));
+		spi1_cs2.connect_transfer_function(std::bind(&SS1106::write, oled, std::placeholders::_1));
 	} else {
 		// pass through to gpio server
-		spi1.connect(2, gpio0.getSPIwriteFunction(2));
+		spi1_cs2.connect_transfer_function(gpio0.getSPIwriteFunction(2));
 	}
+	spi1.connect_device(2, &spi1_cs2);
 
-	spi1.connect(3, gpio0.getSPIwriteFunction(3));
-	SIFIVE_SPI spi2("SPI2");
+	SPI_SimpleDevice spi1_cs3(gpio0.getSPIwriteFunction(3));
+	spi1.connect_device(3, &spi1_cs3);
+
+	SIFIVE_SPI<8> spi2("SPI2", 4);
+
 	std::shared_ptr<UART> uart0;
 	std::shared_ptr<Tunnel_UART> uart0_tunnel;
 	if (opt.forward_uart_0) {

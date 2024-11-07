@@ -79,5 +79,5 @@ struct GPIO : public sc_core::sc_module {
 	UartTXFunction getUartTransmitFunction(gpio::PinNumber tx);
 	void registerUartReceiveFunction(gpio::PinNumber rx, UartRXFunction);
 
-	SpiWriteFunction getSPIwriteFunction(gpio::PinNumber cs);
+	SPI_SimpleDevice::TransferF_T getSPIwriteFunction(gpio::PinNumber cs);
 };

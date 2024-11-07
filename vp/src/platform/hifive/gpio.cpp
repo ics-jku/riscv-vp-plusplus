@@ -316,7 +316,7 @@ void GPIO::registerUartReceiveFunction(const gpio::PinNumber rx, UartRXFunction 
 	server.registerUARTRX(rx, fun);
 }
 
-SpiWriteFunction GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
+SPI_SimpleDevice::TransferF_T GPIO::getSPIwriteFunction(gpio::PinNumber cs) {
 	const auto pin = getPinOffsFromSPIcs(cs);
 	return bind(&GpioServer::pushSPI, &server, pin, placeholders::_1);
 }
