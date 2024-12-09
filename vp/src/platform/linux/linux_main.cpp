@@ -26,6 +26,7 @@
 #include "platform/common/sifive_spi.h"
 #include "platform/common/sifive_test.h"
 #include "platform/common/slip.h"
+#include "platform/common/spi_sd_card.h"
 #include "platform/common/uart.h"
 #include "platform/common/vncsimplefb.h"
 #include "platform/common/vncsimpleinputkbd.h"
@@ -113,6 +114,7 @@ struct LinuxOptions : public Options {
 	std::string tun_device = "tun0";
 	std::string mram_root_image;
 	std::string mram_data_image;
+	std::string sd_card_image;
 
 	unsigned int vnc_port = 5900;
 
@@ -128,6 +130,7 @@ struct LinuxOptions : public Options {
 			("mram-root-image-size", po::value<unsigned int>(&mram_root_size), "MRAM root image size")
 			("mram-data-image", po::value<std::string>(&mram_data_image)->default_value(""),"MRAM data image file for persistency")
 			("mram-data-image-size", po::value<unsigned int>(&mram_data_size), "MRAM data image size")
+			("sd-card-image", po::value<std::string>(&sd_card_image)->default_value(""), "SD-Card image file (size must be multiple of 512 bytes)")
 			("vnc-port", po::value<unsigned int>(&vnc_port), "select port number to connect with VNC");
 		// clang-format on
 	}
@@ -206,6 +209,11 @@ int sc_main(int argc, char **argv) {
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	MemoryMappedFile mramRoot("MRAM_Root", opt.mram_root_image, opt.mram_root_size);
 	MemoryMappedFile mramData("MRAM_Data", opt.mram_data_image, opt.mram_data_size);
+
+	SPI_SD_Card spi_sd_card(&spi2, 0, &gpio, 11, false);
+	if (opt.sd_card_image.length()) {
+		spi_sd_card.insert(opt.sd_card_image);
+	}
 
 	Core *cores[NUM_CORES];
 	for (unsigned i = 0; i < NUM_CORES; i++) {
