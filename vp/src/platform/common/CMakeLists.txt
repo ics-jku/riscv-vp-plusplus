@@ -12,6 +12,7 @@ add_library(platform-common
 		vncsimplefb.cpp
 		vncsimpleinputptr.cpp
 		vncsimpleinputkbd.cpp
+		spi_sd_card.cpp
 		options.cpp
 		${HEADERS})
 
