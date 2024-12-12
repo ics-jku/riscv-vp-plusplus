@@ -8,6 +8,7 @@ add_library(platform-common
 		slip.cpp
 		uart.cpp
 		sifive_test.cpp
+		fu540_gpio.cpp
 		vncsimplefb.cpp
 		vncsimpleinputptr.cpp
 		vncsimpleinputkbd.cpp
