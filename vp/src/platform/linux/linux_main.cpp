@@ -179,8 +179,8 @@ int sc_main(int argc, char **argv) {
 	FU540_PLIC plic("PLIC", NUM_CORES);
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 	PRCI prci("PRCI");
-	UART uart0("UART0", 3);
-	SLIP slip("SLIP", 4, opt.tun_device);
+	UART uart0("UART0", 4);
+	SLIP slip("SLIP", 5, opt.tun_device);
 	SIFIVE_Test sifive_test("SIFIVE_Test");
 	VNCSimpleFB vncsimplefb("VNCSimpleFB", vncServer);
 	VNCSimpleInputPtr vncsimpleinputptr("VNCSimpleInputPtr", vncServer, 10);
