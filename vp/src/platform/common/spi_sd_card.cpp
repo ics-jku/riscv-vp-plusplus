@@ -725,7 +725,7 @@ void SPI_SD_Card::Receiver::sm_cmd(uint8_t mosi) {
 			uint8_t cmd = data[0] & 0b111111;
 			uint32_t arg = data[1] << 24 | data[2] << 16 | data[3] << 8 | data[4];
 			uint8_t crc = data[5] & ~0b1;
-			bool valid = data[5] & ~0b1;
+			bool valid = data[5] & 0b1;
 
 			// debug
 			// std::cout << "SPI_SD_Card: Receiver: received command: " << "valid = " << valid << ", (A)CMD" << std::dec
