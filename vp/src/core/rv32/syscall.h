@@ -103,11 +103,13 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 
 		auto ans = execute_syscall(syscall, a0, a1, a2, a3);
 
-		core->write_register(RegFile::a0, boost::lexical_cast<int32_t>(ans));
+		core->write_register(RegFile::a0, ans);
 
 		if (shall_exit)
 			core->sys_exit();
 	}
+
+	// TODO: Registers are 32 bit -> uint32_t would be sufficient for all addresses, arg/ret values, ...
 
 	uint8_t *mem = 0;     // direct pointer to start of guest memory in host memory
 	uint64_t mem_offset;  // start address of the memory as mapped into the
@@ -148,7 +150,7 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	 * host as byte array). Note: the data structures on the host system might
 	 * not be binary compatible with those on the guest system.
 	 */
-	int execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3);
+	uint64_t execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3);
 };
 
 }  // namespace rv32

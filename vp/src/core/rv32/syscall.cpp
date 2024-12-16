@@ -15,6 +15,13 @@ using namespace rv32;
 // see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
 // for syscall implementation in the risc-v C lib (many are ignored and just return -1)
 
+/*
+ * TODO: check parameters and return values (see sys_brk fix)
+ * 1. do riscv and target types match (XLEN!)?
+ * 2. are assumptions on signed/unsigned correct?
+ * Cleanup: use types with explicit bit-widths
+ */
+
 typedef int32_t rv32_long;
 
 typedef int32_t rv32_time_t;
@@ -130,21 +137,19 @@ int translateRVFlagsToHost(const int flags) {
 	return ret;
 }
 
-int sys_brk(SyscallHandler *sys, void *addr) {
-	if (addr == 0) {
-		// riscv newlib expects brk to return current heap address when zero is passed in
-		return boost::lexical_cast<int>(sys->hp);
-	} else {
+// TODO: uint32_t would be sufficent here
+uint64_t sys_brk(SyscallHandler *sys, uint64_t addr) {
+	// riscv newlib expects brk to return current heap address when zero is passed in
+	if (addr != 0) {
 		// NOTE: can also shrink again
-		auto n = (uintptr_t)addr;
-		sys->hp = n;
+		sys->hp = addr;
 
-		if (sys->hp > sys->max_heap)
+		if (sys->hp > sys->max_heap) {
 			sys->max_heap = sys->hp;
-
-		// same for brk increase/decrease
-		return boost::lexical_cast<int>(n);
+		}
 	}
+
+	return sys->hp;
 }
 
 int sys_write(SyscallHandler *sys, int fd, const void *buf, size_t count) {
@@ -203,7 +208,7 @@ int sys_close(int fd) {
  *	Especially when coming from a 32 bit guest system.
  */
 
-int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t) {
+uint64_t SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t) {
 	// NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
 
 	switch (n) {
@@ -214,7 +219,7 @@ int SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint
 			return sys_gettimeofday(this, (struct rv32_timeval *)_a0, (void *)_a1);
 
 		case SYS_brk:
-			return sys_brk(this, (void *)_a0);
+			return sys_brk(this, _a0);
 
 		case SYS_time:
 			return sys_time(this, (rv32_time_t *)_a0);

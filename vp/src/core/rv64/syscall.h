@@ -146,7 +146,7 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	 * host as byte array). Note: the data structures on the host system might
 	 * not be binary compatible with those on the guest system.
 	 */
-	int execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3);
+	uint64_t execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3);
 };
 
 }  // namespace rv64
