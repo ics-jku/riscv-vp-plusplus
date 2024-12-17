@@ -1592,9 +1592,17 @@ constexpr uint32_t VMV_NR_R_V_ENCODING = 0b10011100000000000011000001010111;
 constexpr uint32_t VMV_NR_R_V_MASK = 0b11111100000000000111000001111111;
 // RV-V Extension End -- Placeholder 0
 
+/*
+ * check misa_extensions variable if given extension is supported
+ * return current function with UNSUP, if not
+ */
+#define REQUIRE_ISA(_ext_bit)            \
+	if (!(misa_extensions & (_ext_bit))) \
+		return Opcode::UNSUP;
+
 #define MATCH_AND_RETURN_INSTR2(_instr, _op)                         \
 	if (unlikely((data() & (_instr##_MASK)) != (_instr##_ENCODING))) \
-		return UNDEF;                                                \
+		return Opcode::UNDEF;                                        \
 	return (_op);
 
 #define MATCH_AND_RETURN_INSTR(_op) MATCH_AND_RETURN_INSTR2(_op, _op)
@@ -1673,6 +1681,7 @@ for e in [e.strip().replace(",", "") for e in s.strip().split("\n")]:
  */
 std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "ZERO-INVALID",
+    "UNSUP/DISABLED",
 
     // RV32I base instruction set
     "LUI",
@@ -3729,7 +3738,8 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 /* get either the real operation _op (e.g. ADD) or, if rd == zero, _op_NOP (e.g. ADD_NOP) */
 #define C_GET_OP_OR_NOP(_instr, _op) ((_instr).rd() != 0 ? (_op) : (_op##_NOP))
 
-Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Architecture arch) {
+Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Architecture arch,
+                                  uint32_t misa_extensions) {
 	using namespace Opcode;
 	using namespace Compressed;
 
@@ -3792,10 +3802,12 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return LD;
 
 		case C_FLW:
+			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FLW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
 			return FLW;
 
 		case C_FLD:
+			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FLD(instr.c_rs2_small(), instr.c_rd_small(), C_LD_UIMM(instr.data()));
 			return FLD;
 
@@ -3808,10 +3820,12 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return SD;
 
 		case C_FSW:
+			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FSW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
 			return FSW;
 
 		case C_FSD:
+			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FSD(instr.c_rd_small(), instr.c_rs2_small(), C_SD_UIMM(instr.data()));
 			return FSD;
 
@@ -3910,10 +3924,12 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return LD;
 
 		case C_FLWSP:
+			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FLW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
 			return FLW;
 
 		case C_FLDSP:
+			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FLD(instr.c_rd(), 2, C_LDSP_UIMM(instr.data()));
 			return FLD;
 
@@ -3926,10 +3942,12 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			return SD;
 
 		case C_FSWSP:
+			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FSW(2, instr.c_rs2(), C_SWSP_UIMM(instr.data()));
 			return FSW;
 
 		case C_FSDSP:
+			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FSD(2, instr.c_rs2(), C_SDSP_UIMM(instr.data()));
 			return FSD;
 
@@ -3951,9 +3969,10 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 	throw std::runtime_error("some compressed instruction not handled");
 }
 
-Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch) {
+Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch, uint32_t misa_extensions) {
+	REQUIRE_ISA(csr_misa::C);
 	auto c_op = decode_compressed(*this, arch);
-	return expand_compressed(*this, c_op, arch);
+	return expand_compressed(*this, c_op, arch, misa_extensions);
 }
 
 /* match and return either the real operation _opA (e.g. ADD) or, if rd == zero, the alternative operation _opB (e.g.
@@ -3967,7 +3986,10 @@ Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch) {
 #define MATCH_AND_RETURN_INSTR_OR_OPZERO(_op, _opzero) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_op, _op, _opzero)
 #define MATCH_AND_RETURN_INSTR_OR_NOP(_op) MATCH_AND_RETURN_INSTR2_OR_NOP(_op, _op)
 
-Opcode::Mapping Instruction::decode_normal(Architecture arch) {
+/*
+ * TODO: check REQUIRE_MISA for RVV e.g maybe check V and F/D for vector float?
+ */
+Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_extensions) {
 	using namespace Opcode;
 
 	Instruction &instr = *this;
@@ -4131,20 +4153,28 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F7_MUL:
 					switch (instr.funct3()) {
 						case F3_MUL:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(MUL);
 						case F3_MULH:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(MULH);
 						case F3_MULHSU:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(MULHSU);
 						case F3_MULHU:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(MULHU);
 						case F3_DIV:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(DIV);
 						case F3_DIVU:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(DIVU);
 						case F3_REM:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(REM);
 						case F3_REMU:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(REMU);
 					}
 					break;
@@ -4177,14 +4207,19 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F7_MULW:
 					switch (instr.funct3()) {
 						case F3_MULW:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(MULW);
 						case F3_DIVW:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(DIVW);
 						case F3_DIVUW:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(DIVUW);
 						case F3_REMW:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(REMW);
 						case F3_REMUW:
+							REQUIRE_ISA(csr_misa::M);
 							MATCH_AND_RETURN_INSTR_OR_NOP(REMUW);
 					}
 					break;
@@ -4242,66 +4277,77 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_AMO: {
 			switch (instr.funct5()) {
 				case F5_LR_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(LR_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(LR_W);
 					}
 				case F5_SC_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(SC_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(SC_W);
 					}
 				case F5_AMOSWAP_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOSWAP_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOSWAP_W);
 					}
 				case F5_AMOADD_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOADD_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOADD_W);
 					}
 				case F5_AMOXOR_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOXOR_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOXOR_W);
 					}
 				case F5_AMOAND_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOAND_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOAND_W);
 					}
 				case F5_AMOOR_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOOR_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOOR_W);
 					}
 				case F5_AMOMIN_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOMIN_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOMIN_W);
 					}
 				case F5_AMOMAX_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOMAX_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOMAX_W);
 					}
 				case F5_AMOMINU_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOMINU_D);
 					} else {
 						MATCH_AND_RETURN_INSTR(AMOMINU_W);
 					}
 				case F5_AMOMAXU_W:
+					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
 						MATCH_AND_RETURN_INSTR(AMOMAXU_D);
 					} else {
@@ -4315,8 +4361,10 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_FMADD_S:
 			switch (instr.funct2()) {
 				case F2_FMADD_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMADD_S);
 				case F2_FMADD_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FMADD_D);
 			}
 			break;
@@ -4324,160 +4372,212 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_FADD_S:
 			switch (instr.funct7()) {
 				case F7_FADD_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FADD_S);
 				case F7_FADD_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FADD_D);
 				case F7_FSUB_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FSUB_S);
 				case F7_FSUB_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FSUB_D);
 				case F7_FCVT_D_S:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FCVT_D_S);
 				case F7_FMUL_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMUL_S);
 				case F7_FMUL_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FMUL_D);
 				case F7_FDIV_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FDIV_S);
 				case F7_FDIV_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FDIV_D);
 				case F7_FLE_S:
 					switch (instr.funct3()) {
 						case F3_FLE_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FLE_S);
 						case F3_FLT_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FLT_S);
 						case F3_FEQ_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FEQ_S);
 					}
 					break;
 				case F7_FSGNJ_D:
 					switch (instr.funct3()) {
 						case F3_FSGNJ_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FSGNJ_D);
 						case F3_FSGNJN_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FSGNJN_D);
 						case F3_FSGNJX_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FSGNJX_D);
 					}
 					break;
 				case F7_FMIN_S:
 					switch (instr.funct3()) {
 						case F3_FMIN_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FMIN_S);
 						case F3_FMAX_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FMAX_S);
 					}
 					break;
 				case F7_FMIN_D:
 					switch (instr.funct3()) {
 						case F3_FMIN_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FMIN_D);
 						case F3_FMAX_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FMAX_D);
 					}
 					break;
 				case F7_FCVT_S_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FCVT_S_D);
 				case F7_FSGNJ_S:
 					switch (instr.funct3()) {
 						case F3_FSGNJ_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FSGNJ_S);
 						case F3_FSGNJN_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FSGNJN_S);
 						case F3_FSGNJX_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FSGNJX_S);
 					}
 					break;
 				case F7_FLE_D:
 					switch (instr.funct3()) {
 						case F3_FLE_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FLE_D);
 						case F3_FLT_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FLT_D);
 						case F3_FEQ_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FEQ_D);
 					}
 					break;
 				case F7_FCVT_S_W:
 					switch (instr.rs2()) {
 						case RS2_FCVT_S_W:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_S_W);
 						case RS2_FCVT_S_WU:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_S_WU);
 						case RS2_FCVT_S_L:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_S_L);
 						case RS2_FCVT_S_LU:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_S_LU);
 					}
 					break;
 				case F7_FCVT_D_W:
 					switch (instr.rs2()) {
 						case RS2_FCVT_D_W:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_D_W);
 						case RS2_FCVT_D_WU:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_D_WU);
 						case RS2_FCVT_D_L:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_D_L);
 						case RS2_FCVT_D_LU:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_D_LU);
 					}
 					break;
 				case F7_FCVT_W_D:
 					switch (instr.rs2()) {
 						case RS2_FCVT_W_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_W_D);
 						case RS2_FCVT_WU_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_WU_D);
 						case RS2_FCVT_L_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_L_D);
 						case RS2_FCVT_LU_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_LU_D);
 					}
 					break;
 				case F7_FSQRT_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FSQRT_S);
 				case F7_FSQRT_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FSQRT_D);
 				case F7_FCVT_W_S:
 					switch (instr.rs2()) {
 						case RS2_FCVT_W_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_W_S);
 						case RS2_FCVT_WU_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_WU_S);
 						case RS2_FCVT_L_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_L_S);
 						case RS2_FCVT_LU_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_LU_S);
 					}
 					break;
 				case F7_FMV_X_W:
 					switch (instr.funct3()) {
 						case F3_FMV_X_W:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FMV_X_W);
 						case F3_FCLASS_S:
+							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCLASS_S);
 					}
 					break;
 				case F7_FMV_X_D:
 					switch (instr.funct3()) {
 						case F3_FMV_X_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FMV_X_D);
 						case F3_FCLASS_D:
+							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCLASS_D);
 					}
 					break;
 				case F7_FMV_W_X:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMV_W_X);
 				case F7_FMV_D_X:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FMV_D_X);
 			}
 			break;
 		case OP_FLW:
 			switch (instr.funct3()) {
 				case F3_FLW:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FLW);
 				case F3_FLD:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FLD);
 
 				// RV-V Extension Start -- Placeholder 3
@@ -4490,58 +4590,79 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 11:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLM_V);
 											}
 											break;
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE8_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E8_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E8_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E8_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E8_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E8_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E8_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E8_V);
 											}
 											break;
 										case 16:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE8FF_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E8FF_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E8FF_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E8FF_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E8FF_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E8FF_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E8FF_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E8FF_V);
 											}
 											break;
 										case 8:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL1RE8_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL2RE8_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL4RE8_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL8RE8_V);
 											}
 											break;
@@ -4550,60 +4671,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSE8_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG2E8_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG3E8_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG4E8_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG5E8_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG6E8_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG7E8_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG8E8_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXEI8_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG2EI8_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG3EI8_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG4EI8_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG5EI8_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG6EI8_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG7EI8_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG8EI8_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXEI8_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG2EI8_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG3EI8_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG4EI8_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG5EI8_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG6EI8_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG7EI8_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG8EI8_V);
 									}
 									break;
@@ -4620,52 +4765,72 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE16_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E16_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E16_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E16_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E16_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E16_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E16_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E16_V);
 											}
 											break;
 										case 16:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE16FF_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E16FF_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E16FF_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E16FF_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E16FF_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E16FF_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E16FF_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E16FF_V);
 											}
 											break;
 										case 8:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL1RE16_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL2RE16_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL4RE16_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL8RE16_V);
 											}
 											break;
@@ -4674,60 +4839,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSE16_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG2E16_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG3E16_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG4E16_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG5E16_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG6E16_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG7E16_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG8E16_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXEI16_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG2EI16_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG3EI16_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG4EI16_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG5EI16_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG6EI16_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG7EI16_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG8EI16_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXEI16_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG2EI16_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG3EI16_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG4EI16_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG5EI16_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG6EI16_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG7EI16_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG8EI16_V);
 									}
 									break;
@@ -4744,52 +4933,72 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE32_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E32_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E32_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E32_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E32_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E32_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E32_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E32_V);
 											}
 											break;
 										case 16:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE32FF_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E32FF_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E32FF_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E32FF_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E32FF_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E32FF_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E32FF_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E32FF_V);
 											}
 											break;
 										case 8:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL1RE32_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL2RE32_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL4RE32_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL8RE32_V);
 											}
 											break;
@@ -4798,60 +5007,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSE32_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG2E32_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG3E32_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG4E32_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG5E32_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG6E32_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG7E32_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG8E32_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXEI32_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG2EI32_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG3EI32_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG4EI32_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG5EI32_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG6EI32_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG7EI32_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG8EI32_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXEI32_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG2EI32_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG3EI32_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG4EI32_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG5EI32_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG6EI32_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG7EI32_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG8EI32_V);
 									}
 									break;
@@ -4868,52 +5101,72 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE64_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E64_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E64_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E64_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E64_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E64_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E64_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E64_V);
 											}
 											break;
 										case 16:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLE64FF_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG2E64FF_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG3E64FF_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG4E64FF_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG5E64FF_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG6E64FF_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG7E64FF_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VLSEG8E64FF_V);
 											}
 											break;
 										case 8:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL1RE64_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL2RE64_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL4RE64_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VL8RE64_V);
 											}
 											break;
@@ -4922,60 +5175,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSE64_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG2E64_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG3E64_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG4E64_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG5E64_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG6E64_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG7E64_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLSSEG8E64_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXEI64_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG2EI64_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG3EI64_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG4EI64_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG5EI64_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG6EI64_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG7EI64_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLUXSEG8EI64_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXEI64_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG2EI64_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG3EI64_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG4EI64_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG5EI64_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG6EI64_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG7EI64_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VLOXSEG8EI64_V);
 									}
 									break;
@@ -4989,8 +5266,10 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_FSW:
 			switch (instr.funct3()) {
 				case F3_FSW:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FSW);
 				case F3_FSD:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FSD);
 					// RV-V Extension Start -- Placeholder 8
 				case 0:
@@ -5002,38 +5281,51 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 11:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSM_V);
 											}
 											break;
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSE8_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG2E8_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG3E8_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG4E8_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG5E8_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG6E8_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG7E8_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG8E8_V);
 											}
 											break;
 										case 8:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VS1R_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VS2R_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VS4R_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VS8R_V);
 											}
 											break;
@@ -5042,60 +5334,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSE8_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG2E8_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG3E8_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG4E8_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG5E8_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG6E8_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG7E8_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG8E8_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXEI8_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG2EI8_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG3EI8_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG4EI8_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG5EI8_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG6EI8_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG7EI8_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG8EI8_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXEI8_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG2EI8_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG3EI8_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG4EI8_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG5EI8_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG6EI8_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG7EI8_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG8EI8_V);
 									}
 									break;
@@ -5112,20 +5428,28 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSE16_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG2E16_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG3E16_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG4E16_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG5E16_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG6E16_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG7E16_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG8E16_V);
 											}
 											break;
@@ -5134,60 +5458,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSE16_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG2E16_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG3E16_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG4E16_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG5E16_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG6E16_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG7E16_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG8E16_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXEI16_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG2EI16_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG3EI16_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG4EI16_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG5EI16_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG6EI16_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG7EI16_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG8EI16_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXEI16_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG2EI16_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG3EI16_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG4EI16_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG5EI16_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG6EI16_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG7EI16_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG8EI16_V);
 									}
 									break;
@@ -5204,20 +5552,28 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSE32_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG2E32_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG3E32_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG4E32_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG5E32_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG6E32_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG7E32_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG8E32_V);
 											}
 											break;
@@ -5226,60 +5582,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSE32_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG2E32_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG3E32_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG4E32_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG5E32_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG6E32_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG7E32_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG8E32_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXEI32_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG2EI32_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG3EI32_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG4EI32_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG5EI32_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG6EI32_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG7EI32_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG8EI32_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXEI32_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG2EI32_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG3EI32_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG4EI32_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG5EI32_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG6EI32_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG7EI32_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG8EI32_V);
 									}
 									break;
@@ -5296,20 +5676,28 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 										case 0:
 											switch (instr.nf()) {
 												case 0:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSE64_V);
 												case 1:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG2E64_V);
 												case 2:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG3E64_V);
 												case 3:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG4E64_V);
 												case 4:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG5E64_V);
 												case 5:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG6E64_V);
 												case 6:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG7E64_V);
 												case 7:
+													REQUIRE_ISA(csr_misa::V);
 													MATCH_AND_RETURN_INSTR(VSSEG8E64_V);
 											}
 											break;
@@ -5318,60 +5706,84 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 								case 2:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSE64_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG2E64_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG3E64_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG4E64_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG5E64_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG6E64_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG7E64_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSSSEG8E64_V);
 									}
 									break;
 								case 1:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXEI64_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG2EI64_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG3EI64_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG4EI64_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG5EI64_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG6EI64_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG7EI64_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSUXSEG8EI64_V);
 									}
 									break;
 								case 3:
 									switch (instr.nf()) {
 										case 0:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXEI64_V);
 										case 1:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG2EI64_V);
 										case 2:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG3EI64_V);
 										case 3:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG4EI64_V);
 										case 4:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG5EI64_V);
 										case 5:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG6EI64_V);
 										case 6:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG7EI64_V);
 										case 7:
+											REQUIRE_ISA(csr_misa::V);
 											MATCH_AND_RETURN_INSTR(VSOXSEG8EI64_V);
 									}
 									break;
@@ -5385,24 +5797,30 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_FMSUB_S:
 			switch (instr.funct2()) {
 				case F2_FMSUB_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMSUB_S);
 				case F2_FMSUB_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FMSUB_D);
 			}
 			break;
 		case OP_FNMSUB_S:
 			switch (instr.funct2()) {
 				case F2_FNMSUB_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FNMSUB_S);
 				case F2_FNMSUB_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FNMSUB_D);
 			}
 			break;
 		case OP_FNMADD_S:
 			switch (instr.funct2()) {
 				case F2_FNMADD_S:
+					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FNMADD_S);
 				case F2_FNMADD_D:
+					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FNMADD_D);
 			}
 			break;
@@ -5413,12 +5831,15 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case 7:
 					switch (instr.bhigh()) {
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSETVLI);
 						case 1:
 							switch (instr.bhigh2()) {
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSETIVLI);
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSETVL);
 							}
 							break;
@@ -5427,646 +5848,918 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case 0:
 					switch (instr.funct6()) {
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VADD_VV);
 						case 2:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSUB_VV);
 						case 16:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VADC_VVM);
 							}
 							break;
 						case 17:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMADC_VVM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMADC_VV);
 							}
 							break;
 						case 18:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSBC_VVM);
 							}
 							break;
 						case 19:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSBC_VVM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSBC_VV);
 							}
 							break;
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAND_VV);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VOR_VV);
 						case 11:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VXOR_VV);
 						case 37:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLL_VV);
 						case 40:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSRL_VV);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSRA_VV);
 						case 44:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNSRL_WV);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNSRA_WV);
 						case 24:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSEQ_VV);
 						case 25:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSNE_VV);
 						case 26:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLTU_VV);
 						case 27:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLT_VV);
 						case 28:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLEU_VV);
 						case 29:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLE_VV);
 						case 4:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMINU_VV);
 						case 5:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMIN_VV);
 						case 6:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMAXU_VV);
 						case 7:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMAX_VV);
 						case 23:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMERGE_VVM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMV_V_V);
 							}
 							break;
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSADDU_VV);
 						case 33:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSADD_VV);
 						case 34:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSUBU_VV);
 						case 35:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSUB_VV);
 						case 39:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSMUL_VV);
 						case 42:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSRL_VV);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSRA_VV);
 						case 46:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNCLIPU_WV);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNCLIP_WV);
 						case 48:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWREDSUMU_VS);
 						case 49:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWREDSUM_VS);
 						case 12:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VRGATHER_VV);
 						case 14:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VRGATHEREI16_VV);
 					}
 					break;
 				case 3:
 					switch (instr.funct6()) {
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VADD_VI);
 						case 3:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VRSUB_VI);
 						case 16:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VADC_VIM);
 							}
 							break;
 						case 17:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMADC_VIM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMADC_VI);
 							}
 							break;
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAND_VI);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VOR_VI);
 						case 11:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VXOR_VI);
 						case 37:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLL_VI);
 						case 40:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSRL_VI);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSRA_VI);
 						case 44:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNSRL_WI);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNSRA_WI);
 						case 24:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSEQ_VI);
 						case 25:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSNE_VI);
 						case 28:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLEU_VI);
 						case 29:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLE_VI);
 						case 30:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSGTU_VI);
 						case 31:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSGT_VI);
 						case 23:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMERGE_VIM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMV_V_I);
 							}
 							break;
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSADDU_VI);
 						case 33:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSADD_VI);
 						case 42:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSRL_VI);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSRA_VI);
 						case 46:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNCLIPU_WI);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNCLIP_WI);
 						case 14:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLIDEUP_VI);
 						case 15:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLIDEDOWN_VI);
 						case 12:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VRGATHER_VI);
 						case 39:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMV_NR_R_V);
 					}
 					break;
 				case 4:
 					switch (instr.funct6()) {
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VADD_VX);
 						case 2:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSUB_VX);
 						case 3:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VRSUB_VX);
 						case 16:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VADC_VXM);
 							}
 							break;
 						case 17:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMADC_VXM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMADC_VX);
 							}
 							break;
 						case 18:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSBC_VXM);
 							}
 							break;
 						case 19:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSBC_VXM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSBC_VX);
 							}
 							break;
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAND_VX);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VOR_VX);
 						case 11:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VXOR_VX);
 						case 37:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLL_VX);
 						case 40:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSRL_VX);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSRA_VX);
 						case 44:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNSRL_WX);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNSRA_WX);
 						case 24:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSEQ_VX);
 						case 25:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSNE_VX);
 						case 26:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLTU_VX);
 						case 27:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLT_VX);
 						case 28:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLEU_VX);
 						case 29:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSLE_VX);
 						case 30:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSGTU_VX);
 						case 31:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMSGT_VX);
 						case 4:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMINU_VX);
 						case 5:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMIN_VX);
 						case 6:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMAXU_VX);
 						case 7:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMAX_VX);
 						case 23:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMERGE_VXM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMV_V_X);
 							}
 							break;
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSADDU_VX);
 						case 33:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSADD_VX);
 						case 34:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSUBU_VX);
 						case 35:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSUB_VX);
 						case 39:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSMUL_VX);
 						case 42:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSRL_VX);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSSRA_VX);
 						case 46:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNCLIPU_WX);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNCLIP_WX);
 						case 14:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLIDEUP_VX);
 						case 15:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLIDEDOWN_VX);
 						case 12:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VRGATHER_VX);
 					}
 					break;
 				case 2:
 					switch (instr.funct6()) {
 						case 49:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADD_VV);
 						case 51:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUB_VV);
 						case 48:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADDU_VV);
 						case 50:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUBU_VV);
 						case 53:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADD_WV);
 						case 55:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUB_WV);
 						case 52:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADDU_WV);
 						case 54:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUBU_WV);
 						case 18:
 							switch (instr.rs1()) {
 								case 6:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VZEXT_VF2);
 								case 7:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSEXT_VF2);
 								case 4:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VZEXT_VF4);
 								case 5:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSEXT_VF4);
 								case 2:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VZEXT_VF8);
 								case 3:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VSEXT_VF8);
 							}
 							break;
 						case 37:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMUL_VV);
 						case 39:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMULH_VV);
 						case 36:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMULHU_VV);
 						case 38:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMULHSU_VV);
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VDIVU_VV);
 						case 33:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VDIV_VV);
 						case 34:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREMU_VV);
 						case 35:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREM_VV);
 						case 59:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMUL_VV);
 						case 56:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMULU_VV);
 						case 58:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMULSU_VV);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMACC_VV);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNMSAC_VV);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMADD_VV);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNMSUB_VV);
 						case 60:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACCU_VV);
 						case 61:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACC_VV);
 						case 63:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACCSU_VV);
 						case 8:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAADDU_VV);
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAADD_VV);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VASUBU_VV);
 						case 11:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VASUB_VV);
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDSUM_VS);
 						case 6:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDMAXU_VS);
 						case 7:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDMAX_VS);
 						case 4:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDMINU_VS);
 						case 5:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDMIN_VS);
 						case 1:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDAND_VS);
 						case 2:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDOR_VS);
 						case 3:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREDXOR_VS);
 						case 25:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMAND_MM);
 						case 29:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMNAND_MM);
 						case 24:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMANDN_MM);
 						case 27:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMXOR_MM);
 						case 26:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMOR_MM);
 						case 30:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMNOR_MM);
 						case 28:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMORN_MM);
 						case 31:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMXNOR_MM);
 						case 16:
 							switch (instr.rs1()) {
 								case 16:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VCPOP_M);
 								case 17:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFIRST_M);
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMV_X_S);
 							}
 							break;
 						case 20:
 							switch (instr.rs1()) {
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSBF_M);
 								case 3:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSIF_M);
 								case 2:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMSOF_M);
 								case 16:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VIOTA_M);
 								case 17:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VID_V);
 							}
 							break;
 						case 23:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VCOMPRESS_VM);
 					}
 					break;
 				case 6:
 					switch (instr.funct6()) {
 						case 49:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADD_VX);
 						case 51:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUB_VX);
 						case 48:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADDU_VX);
 						case 50:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUBU_VX);
 						case 53:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADD_WX);
 						case 55:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUB_WX);
 						case 52:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWADDU_WX);
 						case 54:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWSUBU_WX);
 						case 37:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMUL_VX);
 						case 39:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMULH_VX);
 						case 36:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMULHU_VX);
 						case 38:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMULHSU_VX);
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VDIVU_VX);
 						case 33:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VDIV_VX);
 						case 34:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREMU_VX);
 						case 35:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VREM_VX);
 						case 59:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMUL_VX);
 						case 56:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMULU_VX);
 						case 58:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMULSU_VX);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMACC_VX);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNMSAC_VX);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMADD_VX);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VNMSUB_VX);
 						case 60:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACCU_VX);
 						case 61:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACC_VX);
 						case 63:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACCSU_VX);
 						case 62:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VWMACCUS_VX);
 						case 8:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAADDU_VX);
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VAADD_VX);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VASUBU_VX);
 						case 11:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VASUB_VX);
 						case 16:
 							switch (instr.lusumop()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VMV_S_X);
 							}
 							break;
 						case 14:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLIDE1UP_VX);
 						case 15:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VSLIDE1DOWN_VX);
 					}
 					break;
 				case 1:
 					switch (instr.funct6()) {
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFADD_VV);
 						case 2:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSUB_VV);
 						case 48:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWADD_VV);
 						case 50:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWSUB_VV);
 						case 52:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWADD_WV);
 						case 54:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWSUB_WV);
 						case 36:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMUL_VV);
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFDIV_VV);
 						case 56:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWMUL_VV);
 						case 44:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMACC_VV);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMACC_VV);
 						case 46:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMSAC_VV);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMSAC_VV);
 						case 40:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMADD_VV);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMADD_VV);
 						case 42:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMSUB_VV);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMSUB_VV);
 						case 60:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWMACC_VV);
 						case 61:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWNMACC_VV);
 						case 62:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWMSAC_VV);
 						case 63:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWNMSAC_VV);
 						case 19:
 							switch (instr.rs1()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFSQRT_V);
 								case 4:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFRSQRT7_V);
 								case 5:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFREC7_V);
 								case 16:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCLASS_V);
 							}
 							break;
 						case 4:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMIN_VV);
 						case 6:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMAX_VV);
 						case 8:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSGNJ_VV);
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSGNJN_VV);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSGNJX_VV);
 						case 24:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFEQ_VV);
 						case 28:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFNE_VV);
 						case 27:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFLT_VV);
 						case 25:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFLE_VV);
 						case 18:
 							switch (instr.rs1()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCVT_XU_F_V);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCVT_X_F_V);
 								case 6:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCVT_RTZ_XU_F_V);
 								case 7:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCVT_RTZ_X_F_V);
 								case 2:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCVT_F_XU_V);
 								case 3:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFCVT_F_X_V);
 								case 8:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_XU_F_V);
 								case 9:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_X_F_V);
 								case 14:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_RTZ_XU_F_V);
 								case 15:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_RTZ_X_F_V);
 								case 10:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_F_XU_V);
 								case 11:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_F_X_V);
 								case 12:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFWCVT_F_F_V);
 								case 16:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_XU_F_W);
 								case 17:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_X_F_W);
 								case 22:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_RTZ_XU_F_W);
 								case 23:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_RTZ_X_F_W);
 								case 18:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_F_XU_W);
 								case 19:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_F_X_W);
 								case 20:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_F_F_W);
 								case 21:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFNCVT_ROD_F_F_W);
 							}
 							break;
 						case 1:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFREDUSUM_VS);
 						case 3:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFREDOSUM_VS);
 						case 7:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFREDMAX_VS);
 						case 5:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFREDMIN_VS);
 						case 49:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWREDUSUM_VS);
 						case 51:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWREDOSUM_VS);
 						case 16:
 							switch (instr.rs1()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFMV_F_S);
 							}
 							break;
@@ -6075,90 +6768,129 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case 5:
 					switch (instr.funct6()) {
 						case 0:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFADD_VF);
 						case 2:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSUB_VF);
 						case 39:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFRSUB_VF);
 						case 48:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWADD_VF);
 						case 50:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWSUB_VF);
 						case 52:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWADD_WF);
 						case 54:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWSUB_WF);
 						case 36:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMUL_VF);
 						case 32:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFDIV_VF);
 						case 33:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFRDIV_VF);
 						case 56:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWMUL_VF);
 						case 44:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMACC_VF);
 						case 45:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMACC_VF);
 						case 46:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMSAC_VF);
 						case 47:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMSAC_VF);
 						case 40:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMADD_VF);
 						case 41:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMADD_VF);
 						case 42:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMSUB_VF);
 						case 43:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFNMSUB_VF);
 						case 60:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWMACC_VF);
 						case 61:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWNMACC_VF);
 						case 62:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWMSAC_VF);
 						case 63:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFWNMSAC_VF);
 						case 4:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMIN_VF);
 						case 6:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFMAX_VF);
 						case 8:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSGNJ_VF);
 						case 9:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSGNJN_VF);
 						case 10:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSGNJX_VF);
 						case 24:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFEQ_VF);
 						case 28:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFNE_VF);
 						case 27:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFLT_VF);
 						case 25:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFLE_VF);
 						case 29:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFGT_VF);
 						case 31:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VMFGE_VF);
 						case 23:
 							switch (instr.vm()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFMERGE_VFM);
 								case 1:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFMV_V_F);
 							}
 							break;
 						case 16:
 							switch (instr.lusumop()) {
 								case 0:
+									REQUIRE_ISA(csr_misa::V);
 									MATCH_AND_RETURN_INSTR(VFMV_S_F);
 							}
 							break;
 						case 14:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSLIDE1UP_VF);
 						case 15:
+							REQUIRE_ISA(csr_misa::V);
 							MATCH_AND_RETURN_INSTR(VFSLIDE1DOWN_VF);
 					}
 					break;

@@ -135,10 +135,10 @@ void ISS::exec_step() {
 	}
 
 	if (instr.is_compressed()) {
-		op = instr.decode_and_expand_compressed(RV64);
+		op = instr.decode_and_expand_compressed(RV64, csrs.misa.fields.extensions);
 		pc += 2;
 	} else {
-		op = instr.decode_normal(RV64);
+		op = instr.decode_normal(RV64, csrs.misa.fields.extensions);
 		pc += 4;
 	}
 
@@ -186,6 +186,14 @@ void ISS::exec_step() {
 			if (trace)
 				std::cout << "[ISS] WARNING: unknown instruction '" << std::to_string(instr.data()) << "' at address '"
 				          << std::to_string(last_pc) << "'" << std::endl;
+			RAISE_ILLEGAL_INSTRUCTION();
+			break;
+
+		case Opcode::UNSUP:
+			if (trace)
+				std::cout << "[ISS] WARNING: instruction not supported (e.g. extension disabled in misa csr '"
+				          << std::to_string(instr.data()) << "' at address '" << std::to_string(last_pc) << "'"
+				          << std::endl;
 			RAISE_ILLEGAL_INSTRUCTION();
 			break;
 

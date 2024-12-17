@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "core/common/core_defs.h"
 #include "core/common/trap.h"
 #include "util/common.h"
 
@@ -24,8 +25,8 @@ struct csr_64 {
 	uint64_t reg = 0;
 };
 
-struct csr_misa {
-	csr_misa() {
+struct csr_misa_64 : csr_misa {
+	csr_misa_64() {
 		init();
 	}
 
@@ -50,22 +51,8 @@ struct csr_misa {
 		return fields.extensions & S;
 	}
 
-	enum {
-		A = 1,
-		C = 1 << 2,
-		D = 1 << 3,
-		E = 1 << 4,
-		F = 1 << 5,
-		I = 1 << 8,
-		M = 1 << 12,
-		N = 1 << 13,
-		S = 1 << 18,
-		U = 1 << 20,
-		V = 1 << 21,
-	};
-
 	void init() {
-		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFD + NUS
+		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFDV + NUS
 		fields.mxl = 2;                                             // RV64
 	}
 };
@@ -640,7 +627,7 @@ struct csr_table {
 	csr_64 mhartid;
 
 	csr_mstatus mstatus;
-	csr_misa misa;
+	csr_misa_64 misa;
 	csr_64 medeleg;
 	csr_64 mideleg;
 	csr_mie mie;

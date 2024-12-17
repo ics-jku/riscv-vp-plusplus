@@ -233,10 +233,13 @@ enum Parts {
 
 // each instruction is mapped by the decoder to the following mapping
 enum Mapping {
+	/* instruction not known by decoder */
 	UNDEF = 0,
+	/* instruction not supported (e.g. extension not enabled in misa csr) */
+	UNSUP = 1,
 
 	// RV32I base instruction set
-	LUI = 1,
+	LUI = 2,
 	LUI_NOP,
 	AUIPC,
 	AUIPC_NOP,
@@ -1182,9 +1185,9 @@ struct Instruction {
 		return BIT_SLICE(instr, 6, 5);
 	}
 
-	Opcode::Mapping decode_normal(Architecture arch);
+	Opcode::Mapping decode_normal(Architecture arch, uint32_t misa_extensions);
 
-	Opcode::Mapping decode_and_expand_compressed(Architecture arch);
+	Opcode::Mapping decode_and_expand_compressed(Architecture arch, uint32_t misa_extensions);
 
 	inline uint32_t csr() {
 		// cast to unsigned to avoid sign extension when shifting

@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "core/common/core_defs.h"
 #include "core/common/trap.h"
 #include "util/common.h"
 
@@ -24,8 +25,8 @@ struct csr_32 {
 	uint32_t reg = 0;
 };
 
-struct csr_misa {
-	csr_misa() {
+struct csr_misa_32 : public csr_misa {
+	csr_misa_32() {
 		init();
 	}
 
@@ -59,33 +60,12 @@ struct csr_misa {
 		return fields.extensions & S;
 	}
 
-	enum {
-		A = 1,
-		C = 1 << 2,
-		D = 1 << 3,
-		E = 1 << 4,
-		F = 1 << 5,
-		I = 1 << 8,
-		M = 1 << 12,
-		N = 1 << 13,
-		S = 1 << 18,
-		U = 1 << 20,
-		V = 1 << 21,
-	};
-
 	void init() {
-		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFD + NUS
+		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFDV + NUS
 		fields.wiri = 0;
 		fields.mxl = 1;  // RV32
 	}
 };
-
-constexpr unsigned M_ISA_EXT = csr_misa::M;
-constexpr unsigned A_ISA_EXT = csr_misa::A;
-constexpr unsigned F_ISA_EXT = csr_misa::F;
-constexpr unsigned D_ISA_EXT = csr_misa::D;
-constexpr unsigned C_ISA_EXT = csr_misa::C;
-constexpr unsigned V_ISA_EXT = csr_misa::V;
 
 struct csr_mvendorid {
 	union {
@@ -674,7 +654,7 @@ struct csr_table {
 	csr_32 mhartid;
 
 	csr_mstatus mstatus;
-	csr_misa misa;
+	csr_misa_32 misa;
 	csr_32 medeleg;
 	csr_32 mideleg;
 	csr_mie mie;
