@@ -1,5 +1,11 @@
 #pragma once
 
+#include <stdint.h>
+#include <tlm_utils/tlm_quantumkeeper.h>
+
+#include <systemc>
+
+#include "irq_if.h"
 #include "mmu_mem_if.h"
 
 constexpr unsigned PTE_PPN_SHIFT = 10;
@@ -57,9 +63,9 @@ struct vm_info {
 	uint64_t ptbase;
 };
 
-template <typename RVX_ISS>
-struct GenericMMU {
-	RVX_ISS &core;
+template <typename T_RVX_ISS>
+struct MMU_T {
+	T_RVX_ISS &core;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_time mmu_access_delay = clock_cycle * 3;
@@ -78,7 +84,7 @@ struct GenericMMU {
 
 	tlb_entry_t tlb[NUM_MODES][NUM_ACCESS_TYPES][TLB_ENTRIES];
 
-	GenericMMU(RVX_ISS &core) : core(core), quantum_keeper(core.quantum_keeper) {
+	MMU_T(T_RVX_ISS &core) : core(core), quantum_keeper(core.quantum_keeper) {
 		flush_tlb();
 	}
 

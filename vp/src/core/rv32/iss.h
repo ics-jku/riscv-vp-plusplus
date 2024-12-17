@@ -20,16 +20,21 @@
 #include "core/common/debug.h"
 #include "core/common/instr.h"
 #include "core/common/irq_if.h"
+#include "core/common/mem_if.h"
 #include "core/common/trap.h"
 #include "csr.h"
 #include "fp.h"
-#include "mem_if.h"
 #include "syscall_if.h"
 #include "util/common.h"
 #include "util/initiator_if.h"
 #include "v.h"
 
 namespace rv32 {
+
+using sxlen_t = int32_t;
+using uxlen_t = uint32_t;
+using xlen_t = sxlen_t;
+using data_memory_if = data_memory_if_T<sxlen_t, uxlen_t>;
 
 struct RegFile {
 	static constexpr unsigned NUM_REGS = 32;

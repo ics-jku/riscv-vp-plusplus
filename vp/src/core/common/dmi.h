@@ -39,8 +39,12 @@ class MemoryDMI {
 		static_assert(std::is_integral<T>::value, "integer type required");
 		T ans;
 		T *src = get_mem_ptr_to_global_addr<T>(addr);
-		// use memcpy to avoid problems with unaligned loads into standard C++ data types
-		// see: https://blog.quarkslab.com/unaligned-accesses-in-cc-what-why-and-solutions-to-do-it-properly.html
+		/*
+		 * use memcpy to avoid problems with unaligned loads into standard C++ data types
+		 * see https://blog.quarkslab.com/unaligned-accesses-in-cc-what-why-and-solutions-to-do-it-properly.html
+		 * memcpy with fixed size will be optimized-out compilers and replaced with single load/stores on achitectures
+		 * which allow unaligned accesses
+		 */
 		memcpy(&ans, src, sizeof(T));
 		return ans;
 	}
@@ -49,6 +53,7 @@ class MemoryDMI {
 	void store(uint64_t addr, T value) {
 		static_assert(std::is_integral<T>::value, "integer type required");
 		T *dst = get_mem_ptr_to_global_addr<T>(addr);
+		/* memcpy -> see note in load */
 		memcpy(dst, &value, sizeof(value));
 	}
 

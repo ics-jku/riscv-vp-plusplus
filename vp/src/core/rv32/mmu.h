@@ -4,7 +4,5 @@
 #include "iss.h"
 
 namespace rv32 {
-
-typedef GenericMMU<ISS> MMU;
-
+using MMU = MMU_T<ISS>;
 }  // namespace rv32
