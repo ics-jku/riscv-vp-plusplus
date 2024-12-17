@@ -40,6 +40,10 @@ struct RegFile {
 
 	RegFile(const RegFile &other);
 
+	void reset_zero() {
+		regs[zero] = 0;
+	}
+
 	void write(uint32_t index, int32_t value);
 
 	int32_t read(uint32_t index);
@@ -274,7 +278,10 @@ struct ISS : public external_interrupt_target,
 		}
 		uint32_t val = operation(data, regs[instr.rs2()]);
 		mem->atomic_store_word(addr, val);
-		regs[instr.rd()] = data;
+		// ignore write to zero/x0
+		if (instr.rd() != RegFile::zero) {
+			regs[instr.rd()] = data;
+		}
 	}
 
 	inline bool m_mode() {

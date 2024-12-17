@@ -122,6 +122,10 @@ class VExtension {
 	}
 
 	void iss_reg_write(xlen_reg_t addr, xlen_reg_t value) {
+		// ignore write to zero/x0
+		if (addr == iss.regs.zero) {
+			return;
+		}
 		iss.regs[addr] = value;
 	}
 

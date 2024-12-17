@@ -384,11 +384,6 @@ void NUCLEI_ISS::run_step() {
 		switch_to_trap_handler();
 	}
 
-	// NOTE: writes to zero register are supposedly allowed but must be ignored
-	// (reset it after every instruction, instead of checking *rd != zero*
-	// before every register write)
-	regs.regs[regs.zero] = 0;
-
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
 	// to *mepc*).

@@ -189,6 +189,56 @@ void ISS::exec_step() {
 			RAISE_ILLEGAL_INSTRUCTION();
 			break;
 
+		/*
+		 * NOP instruction variants
+		 * instructions decoded with rd == zero/x0 and no side effects -> nothing to do
+		 */
+		case Opcode::LUI_NOP:
+		case Opcode::AUIPC_NOP:
+		case Opcode::ADDI_NOP:
+		case Opcode::SLTI_NOP:
+		case Opcode::SLTIU_NOP:
+		case Opcode::XORI_NOP:
+		case Opcode::ORI_NOP:
+		case Opcode::ANDI_NOP:
+		case Opcode::SLLI_NOP:
+		case Opcode::SRLI_NOP:
+		case Opcode::SRAI_NOP:
+		case Opcode::ADD_NOP:
+		case Opcode::SUB_NOP:
+		case Opcode::SLL_NOP:
+		case Opcode::SLT_NOP:
+		case Opcode::SLTU_NOP:
+		case Opcode::XOR_NOP:
+		case Opcode::SRL_NOP:
+		case Opcode::SRA_NOP:
+		case Opcode::OR_NOP:
+		case Opcode::AND_NOP:
+		case Opcode::MUL_NOP:
+		case Opcode::MULH_NOP:
+		case Opcode::MULHSU_NOP:
+		case Opcode::MULHU_NOP:
+		case Opcode::DIV_NOP:
+		case Opcode::DIVU_NOP:
+		case Opcode::REM_NOP:
+		case Opcode::REMU_NOP:
+		case Opcode::ADDIW_NOP:
+		case Opcode::SLLIW_NOP:
+		case Opcode::SRLIW_NOP:
+		case Opcode::SRAIW_NOP:
+		case Opcode::ADDW_NOP:
+		case Opcode::SUBW_NOP:
+		case Opcode::SLLW_NOP:
+		case Opcode::SRLW_NOP:
+		case Opcode::SRAW_NOP:
+		case Opcode::MULW_NOP:
+		case Opcode::DIVW_NOP:
+		case Opcode::DIVUW_NOP:
+		case Opcode::REMW_NOP:
+		case Opcode::REMUW_NOP:
+			break;
+
+		/* rd != x0/zero variants */
 		case Opcode::ADDI:
 			regs[instr.rd()] = regs[instr.rs1()] + instr.I_imm();
 			break;
@@ -273,6 +323,13 @@ void ISS::exec_step() {
 			regs[instr.rd()] = last_pc + instr.U_imm();
 			break;
 
+		/* jal with rd == x0/zero */
+		case Opcode::J: {
+			pc = last_pc + instr.J_imm();
+			trap_check_pc_alignment();
+		} break;
+
+		/* jal with rd != x0/zero */
 		case Opcode::JAL: {
 			auto link = pc;
 			pc = last_pc + instr.J_imm();
@@ -280,6 +337,13 @@ void ISS::exec_step() {
 			regs[instr.rd()] = link;
 		} break;
 
+		/* jalr with rd == x0/zero */
+		case Opcode::JR: {
+			pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
+			trap_check_pc_alignment();
+		} break;
+
+		/* jalr with rd != x0/zero */
 		case Opcode::JALR: {
 			auto link = pc;
 			pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
@@ -313,41 +377,48 @@ void ISS::exec_step() {
 		case Opcode::LB: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			regs[instr.rd()] = mem->load_byte(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::LH: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
 			regs[instr.rd()] = mem->load_half(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::LW: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->load_word(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::LD: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<8, true>(addr);
 			regs[instr.rd()] = mem->load_double(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::LBU: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			regs[instr.rd()] = mem->load_ubyte(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::LHU: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
 			regs[instr.rd()] = mem->load_uhalf(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::LWU: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->load_uword(addr);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::BEQ:
@@ -392,6 +463,7 @@ void ISS::exec_step() {
 			}
 			break;
 
+		/* rd != x0/zero variants */
 		case Opcode::ADDIW:
 			regs[instr.rd()] = (int32_t)regs[instr.rs1()] + (int32_t)instr.I_imm();
 			break;
@@ -555,6 +627,7 @@ void ISS::exec_step() {
 			}
 		} break;
 
+		/* rd != x0/zero variants */
 		case Opcode::MUL: {
 			int128_t ans = (int128_t)regs[instr.rs1()] * (int128_t)regs[instr.rs2()];
 			regs[instr.rd()] = (int64_t)ans;
@@ -674,6 +747,7 @@ void ISS::exec_step() {
 			if (lr_sc_counter == 0)
 				lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the
 				                     // RISC-V forward progress property
+			regs.reset_zero();
 		} break;
 
 		case Opcode::SC_W: {
@@ -684,8 +758,13 @@ void ISS::exec_step() {
 			regs[instr.rd()] =
 			    mem->atomic_store_conditional_word(addr, val) ? 0 : 1;  // overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
+			regs.reset_zero();
 		} break;
 
+		/*
+		 * A Extension
+		 * Note: handling of x0/zero is done in execute_amo* implementations (writes to zero/x0 are ignored)
+		 */
 		case Opcode::AMOSWAP_W: {
 			execute_amo_w(instr, [](int32_t a, int32_t b) {
 				(void)a;
@@ -732,6 +811,7 @@ void ISS::exec_step() {
 			if (lr_sc_counter == 0)
 				lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the
 				                     // RISC-V forward progress property
+			regs.reset_zero();
 		} break;
 
 		case Opcode::SC_D: {
@@ -743,6 +823,7 @@ void ISS::exec_step() {
 			                       ? 0
 			                       : 1;  // overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
+			regs.reset_zero();
 		} break;
 
 		case Opcode::AMOSWAP_D: {
@@ -902,6 +983,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = f32_to_i32(fp_regs.f32(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_WU_S: {
@@ -909,6 +991,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = (int32_t)f32_to_ui32(fp_regs.f32(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_S_W: {
@@ -958,29 +1041,34 @@ void ISS::exec_step() {
 		case Opcode::FMV_X_W: {
 			fp_prepare_instr();
 			regs[RD] = (int32_t)fp_regs.u32(RS1);
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FEQ_S: {
 			fp_prepare_instr();
 			regs[RD] = f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FLT_S: {
 			fp_prepare_instr();
 			regs[RD] = f32_lt(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FLE_S: {
 			fp_prepare_instr();
 			regs[RD] = f32_le(fp_regs.f32(RS1), fp_regs.f32(RS2));
 			fp_update_exception_flags();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCLASS_S: {
 			fp_prepare_instr();
 			regs[RD] = (int32_t)f32_classify(fp_regs.f32(RS1));
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_L_S: {
@@ -988,6 +1076,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = f32_to_i64(fp_regs.f32(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_LU_S: {
@@ -995,6 +1084,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = f32_to_ui64(fp_regs.f32(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_S_L: {
@@ -1010,6 +1100,8 @@ void ISS::exec_step() {
 			fp_regs.write(RD, ui64_to_f32(regs[RS1]));
 			fp_finish_instr();
 		} break;
+
+			// RV32D Extension
 
 		case Opcode::FLD: {
 			uint64_t addr = regs[instr.rs1()] + instr.I_imm();
@@ -1150,23 +1242,27 @@ void ISS::exec_step() {
 			fp_prepare_instr();
 			regs[RD] = f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2));
 			fp_update_exception_flags();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FLT_D: {
 			fp_prepare_instr();
 			regs[RD] = f64_lt(fp_regs.f64(RS1), fp_regs.f64(RS2));
 			fp_update_exception_flags();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FLE_D: {
 			fp_prepare_instr();
 			regs[RD] = f64_le(fp_regs.f64(RS1), fp_regs.f64(RS2));
 			fp_update_exception_flags();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCLASS_D: {
 			fp_prepare_instr();
 			regs[RD] = (int64_t)f64_classify(fp_regs.f64(RS1));
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FMV_D_X: {
@@ -1178,6 +1274,7 @@ void ISS::exec_step() {
 		case Opcode::FMV_X_D: {
 			fp_prepare_instr();
 			regs[RD] = fp_regs.f64(RS1).v;
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_W_D: {
@@ -1185,6 +1282,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = f64_to_i32(fp_regs.f64(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_WU_D: {
@@ -1192,6 +1290,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = (int32_t)f64_to_ui32(fp_regs.f64(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_D_W: {
@@ -1227,6 +1326,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = f64_to_i64(fp_regs.f64(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_LU_D: {
@@ -1234,6 +1334,7 @@ void ISS::exec_step() {
 			fp_setup_rm();
 			regs[RD] = f64_to_ui64(fp_regs.f64(RS1), softfloat_roundingMode, true);
 			fp_finish_instr();
+			regs.reset_zero();
 		} break;
 
 		case Opcode::FCVT_D_L: {
@@ -1250,7 +1351,10 @@ void ISS::exec_step() {
 			fp_finish_instr();
 		} break;
 
-		// RV-V Extension Start -- Placeholder 6
+		/*
+		 * RV-V Extension
+		 * Note: handling of x0/zero is done in v_ext implementation (writes to zero/x0 are ignored)
+		 */
 		case Opcode::VSETVLI: {
 			v_ext.prepInstr(true, false, false);
 			v_ext.v_set_operation(instr.rd(), instr.rs1(), instr.zimm_10(), 0);
@@ -5128,11 +5232,6 @@ void ISS::run_step() {
 		auto target_mode = prepare_trap(e);
 		switch_to_trap_handler(target_mode);
 	}
-
-	// NOTE: writes to zero register are supposedly allowed but must be ignored
-	// (reset it after every instruction, instead of checking *rd != zero*
-	// before every register write)
-	regs.regs[regs.zero] = 0;
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
 	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back

@@ -1592,12 +1592,12 @@ constexpr uint32_t VMV_NR_R_V_ENCODING = 0b10011100000000000011000001010111;
 constexpr uint32_t VMV_NR_R_V_MASK = 0b11111100000000000111000001111111;
 // RV-V Extension End -- Placeholder 0
 
-#define MATCH_AND_RETURN_INSTR2(instr, result)                     \
-	if (unlikely((data() & (instr##_MASK)) != (instr##_ENCODING))) \
-		return UNDEF;                                              \
-	return result;
+#define MATCH_AND_RETURN_INSTR2(_instr, _op)                         \
+	if (unlikely((data() & (_instr##_MASK)) != (_instr##_ENCODING))) \
+		return UNDEF;                                                \
+	return (_op);
 
-#define MATCH_AND_RETURN_INSTR(instr) MATCH_AND_RETURN_INSTR2(instr, instr)
+#define MATCH_AND_RETURN_INSTR(_op) MATCH_AND_RETURN_INSTR2(_op, _op)
 
 namespace Compressed {
 enum Opcode {
@@ -1676,9 +1676,13 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
 
     // RV32I base instruction set
     "LUI",
+    "NOP (LUI rd=zero)",
     "AUIPC",
+    "NOP (AUIPC rd=zero)",
     "JAL",
+    "J (JAL rd=zero)",
     "JALR",
+    "JR (JALR rd=zero)",
     "BEQ",
     "BNE",
     "BLT",
@@ -1694,24 +1698,43 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "SH",
     "SW",
     "ADDI",
+    "NOP (ADDI rd=zero)",
     "SLTI",
+    "NOP (SLTI rd=zero)",
     "SLTIU",
+    "NOP (SLTIU rd=zero)",
     "XORI",
+    "NOP (XORI rd=zero)",
     "ORI",
+    "NOP (ORI rd=zero)",
     "ANDI",
+    "NOP (ANDI rd=zero)",
     "SLLI",
+    "NOP (SLLI rd=zero)",
     "SRLI",
+    "NOP (SRLI rd=zero)",
     "SRAI",
+    "NOP (SRAI rd=zero)",
     "ADD",
+    "NOP (ADD rd=zero)",
     "SUB",
+    "NOP (SUB rd=zero)",
     "SLL",
+    "NOP (SLL rd=zero)",
     "SLT",
+    "NOP (SLT rd=zero)",
     "SLTU",
+    "NOP (SLTU rd=zero)",
     "XOR",
+    "NOP (XOR rd=zero)",
     "SRL",
+    "NOP (SRL rd=zero)",
     "SRA",
+    "NOP (SRA rd=zero)",
     "OR",
+    "NOP (OR rd=zero)",
     "AND",
+    "NOP (AND rd=zero)",
     "FENCE",
     "ECALL",
     "EBREAK",
@@ -1729,13 +1752,21 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
 
     // RV32M Standard Extension
     "MUL",
+    "NOP (MUL rd=zero)",
     "MULH",
+    "NOP (MULH rd=zero)",
     "MULHSU",
+    "NOP (MULHSU rd=zero)",
     "MULHU",
+    "NOP (MULHU rd=zero)",
     "DIV",
+    "NOP (DIV rd=zero)",
     "DIVU",
+    "NOP (DIVU rd=zero)",
     "REM",
+    "NOP (REM rd=zero)",
     "REMU",
+    "NOP (REMU rd=zero)",
 
     // RV32A Standard Extension
     "LR_W",
@@ -1755,21 +1786,35 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "LD",
     "SD",
     "ADDIW",
+    "NOP (ADDIW rd=zero)",
     "SLLIW",
+    "NOP (SLLIW rd=zero)",
     "SRLIW",
+    "NOP (SRLIW rd=zero)",
     "SRAIW",
+    "NOP (SRAIW rd=zero)",
     "ADDW",
+    "NOP (ADDW rd=zero)",
     "SUBW",
+    "NOP (SUBW rd=zero)",
     "SLLW",
+    "NOP (SLLW rd=zero)",
     "SRLW",
+    "NOP (SRLW rd=zero)",
     "SRAW",
+    "NOP (SRAW rd=zero)",
 
     // RV64M standard extension (addition to RV32M)
     "MULW",
+    "NOP (MULW rd=zero)",
     "DIVW",
+    "NOP (DIVW rd=zero)",
     "DIVUW",
+    "NOP (DIVUW rd=zero)",
     "REMW",
+    "NOP (REMW rd=zero)",
     "REMUW",
+    "NOP (REMUW rd=zero)",
 
     // RV64A standard extension (addition to RV32A)
     "LR_D",
@@ -2492,33 +2537,61 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
 Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 	switch (mapping) {
 		case ADD:
+		case ADD_NOP:
 		case SUB:
+		case SUB_NOP:
 		case SLL:
+		case SLL_NOP:
 		case SLT:
+		case SLT_NOP:
 		case SLTU:
+		case SLTU_NOP:
 		case XOR:
+		case XOR_NOP:
 		case SRL:
+		case SRL_NOP:
 		case SRA:
+		case SRA_NOP:
 		case OR:
+		case OR_NOP:
 		case AND:
+		case AND_NOP:
 		case MUL:
+		case MUL_NOP:
 		case MULH:
+		case MULH_NOP:
 		case MULHSU:
+		case MULHSU_NOP:
 		case MULHU:
+		case MULHU_NOP:
 		case DIV:
+		case DIV_NOP:
 		case DIVU:
+		case DIVU_NOP:
 		case REM:
+		case REM_NOP:
 		case REMU:
+		case REMU_NOP:
 		case ADDW:
+		case ADDW_NOP:
 		case SUBW:
+		case SUBW_NOP:
 		case SLLW:
+		case SLLW_NOP:
 		case SRLW:
+		case SRLW_NOP:
 		case SRAW:
+		case SRAW_NOP:
 		case MULW:
+		case MULW_NOP:
 		case DIVW:
+		case DIVW_NOP:
 		case DIVUW:
+		case DIVUW_NOP:
 		case REMW:
+		case REMW_NOP:
 		case REMUW:
+		case REMUW_NOP:
 		case LR_W:
 		case SC_W:
 		case AMOSWAP_W:
@@ -2594,6 +2667,7 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case VSETVL:
 			return Type::R;
 		case JALR:
+		case JR:
 		case LB:
 		case LH:
 		case LW:
@@ -2602,18 +2676,31 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case LHU:
 		case LWU:
 		case ADDI:
+		case ADDI_NOP:
 		case SLTI:
+		case SLTI_NOP:
 		case SLTIU:
+		case SLTIU_NOP:
 		case XORI:
+		case XORI_NOP:
 		case ORI:
+		case ORI_NOP:
 		case ANDI:
+		case ANDI_NOP:
 		case ADDIW:
+		case ADDIW_NOP:
 		case SLLIW:
+		case SLLIW_NOP:
 		case SRLIW:
+		case SRLIW_NOP:
 		case SRAIW:
+		case SRAIW_NOP:
 		case SLLI:
+		case SLLI_NOP:
 		case SRLI:
+		case SRLI_NOP:
 		case SRAI:
+		case SRAI_NOP:
 		case CSRRW:
 		case CSRRS:
 		case CSRRC:
@@ -2638,9 +2725,12 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case BGEU:
 			return Type::B;
 		case LUI:
+		case LUI_NOP:
 		case AUIPC:
+		case AUIPC_NOP:
 			return Type::U;
 		case JAL:
+		case J:
 			return Type::J;
 		case FMADD_S:
 		case FMSUB_S:
@@ -3636,6 +3726,9 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 	return C_Illegal;
 }
 
+/* get either the real operation _op (e.g. ADD) or, if rd == zero, _op_NOP (e.g. ADD_NOP) */
+#define C_GET_OP_OR_NOP(_instr, _op) ((_instr).rd() != 0 ? (_op) : (_op##_NOP))
+
 Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Architecture arch) {
 	using namespace Opcode;
 	using namespace Compressed;
@@ -3656,39 +3749,39 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 
 		case C_NOP:
 			instr = InstructionFactory::ADD(0, 0, 0);
-			return ADD;
+			return ADD_NOP;
 
 		case C_ADD:
 			instr = InstructionFactory::ADD(instr.c_rd(), instr.c_rd(), instr.c_rs2());
-			return ADD;
+			return C_GET_OP_OR_NOP(instr, ADD);
 
 		case C_MV:
 			instr = InstructionFactory::ADD(instr.c_rd(), 0, instr.c_rs2());
-			return ADD;
+			return C_GET_OP_OR_NOP(instr, ADD);
 
 		case C_AND:
 			instr = InstructionFactory::AND(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
-			return AND;
+			return C_GET_OP_OR_NOP(instr, AND);
 
 		case C_OR:
 			instr = InstructionFactory::OR(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
-			return OR;
+			return C_GET_OP_OR_NOP(instr, OR);
 
 		case C_XOR:
 			instr = InstructionFactory::XOR(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
-			return XOR;
+			return C_GET_OP_OR_NOP(instr, XOR);
 
 		case C_SUB:
 			instr = InstructionFactory::SUB(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
-			return SUB;
+			return C_GET_OP_OR_NOP(instr, SUB);
 
 		case C_ADDW:
 			instr = InstructionFactory::ADDW(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
-			return ADDW;
+			return C_GET_OP_OR_NOP(instr, ADDW);
 
 		case C_SUBW:
 			instr = InstructionFactory::SUBW(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
-			return SUBW;
+			return C_GET_OP_OR_NOP(instr, SUBW);
 
 		case C_LW:
 			instr = InstructionFactory::LW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
@@ -3727,12 +3820,12 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (n == 0)
 				return UNDEF;
 			instr = InstructionFactory::ADDI(instr.c_rs2_small(), 2, n);
-			return ADDI;
+			return C_GET_OP_OR_NOP(instr, ADDI);
 		}
 
 		case C_ADDI:
 			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(), instr.c_imm());
-			return ADDI;
+			return C_GET_OP_OR_NOP(instr, ADDI);
 
 		case C_JAL:
 			instr = InstructionFactory::JAL(1, C_JAL_IMM(instr.data()));
@@ -3742,18 +3835,18 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (instr.c_rd() == 0)
 				return UNDEF;  // reserved
 			instr = InstructionFactory::ADDIW(instr.c_rd(), instr.c_rd(), instr.c_imm());
-			return ADDIW;
+			return C_GET_OP_OR_NOP(instr, ADDIW);
 
 		case C_LI:
 			instr = InstructionFactory::ADDI(instr.c_rd(), 0, instr.c_imm());
-			return ADDI;
+			return C_GET_OP_OR_NOP(instr, ADDI);
 
 		case C_ADDI16SP: {
 			auto n = C_ADDI16SP_NZIMM(instr.data());
 			if (n == 0)
 				return UNDEF;  // reserved
 			instr = InstructionFactory::ADDI(2, 2, n);
-			return ADDI;
+			return C_GET_OP_OR_NOP(instr, ADDI);
 		}
 
 		case C_LUI: {
@@ -3761,7 +3854,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (n == 0)
 				return UNDEF;  // reserved
 			instr = InstructionFactory::LUI(instr.c_rd(), n);
-			return LUI;
+			return C_GET_OP_OR_NOP(instr, LUI);
 		}
 
 		case C_SLLI: {
@@ -3769,7 +3862,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (arch == RV32 && n > 31)
 				return UNDEF;
 			instr = InstructionFactory::SLLI(instr.c_rd(), instr.c_rd(), n);
-			return SLLI;
+			return C_GET_OP_OR_NOP(instr, SLLI);
 		}
 
 		case C_SRLI: {
@@ -3777,7 +3870,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (arch == RV32 && n > 31)
 				return UNDEF;
 			instr = InstructionFactory::SRLI(instr.c_rd_small(), instr.c_rd_small(), n);
-			return SRLI;
+			return C_GET_OP_OR_NOP(instr, SRLI);
 		}
 
 		case C_SRAI: {
@@ -3785,16 +3878,16 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (arch == RV32 && n > 31)
 				return UNDEF;
 			instr = InstructionFactory::SRAI(instr.c_rd_small(), instr.c_rd_small(), n);
-			return SRAI;
+			return C_GET_OP_OR_NOP(instr, SRAI);
 		}
 
 		case C_ANDI:
 			instr = InstructionFactory::ANDI(instr.c_rd_small(), instr.c_rd_small(), instr.c_imm());
-			return ANDI;
+			return C_GET_OP_OR_NOP(instr, ANDI);
 
 		case C_J:
 			instr = InstructionFactory::JAL(0, C_J_IMM(instr.data()));
-			return JAL;
+			return J;
 
 		case C_BEQZ:
 			instr = InstructionFactory::BEQ(instr.c_rd_small(), 0, C_BRANCH_IMM(instr.data()));
@@ -3848,7 +3941,7 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 			if (instr.c_rd() == 0)
 				return UNDEF;  // reserved
 			instr = InstructionFactory::JALR(0, instr.c_rd(), 0);
-			return JALR;
+			return JR;
 
 		case C_JALR:
 			instr = InstructionFactory::JALR(1, instr.c_rd(), 0);
@@ -3863,6 +3956,17 @@ Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch) {
 	return expand_compressed(*this, c_op, arch);
 }
 
+/* match and return either the real operation _opA (e.g. ADD) or, if rd == zero, the alternative operation _opB (e.g.
+ * ADD_NOP) */
+#define MATCH_AND_RETURN_INSTR2_OR_OPZERO(_instr, _op, _opzero) \
+	MATCH_AND_RETURN_INSTR2(_instr, (instr.rd() != 0 ? (_op) : (_opzero)))
+
+/* match and return either the real operation _op (e.g. ADD) or, if rd == zero, instr_NOP (e.g. ADD_NOP) */
+#define MATCH_AND_RETURN_INSTR2_OR_NOP(_instr, _op) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_instr, (_op), (_op##_NOP))
+
+#define MATCH_AND_RETURN_INSTR_OR_OPZERO(_op, _opzero) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_op, _op, _opzero)
+#define MATCH_AND_RETURN_INSTR_OR_NOP(_op) MATCH_AND_RETURN_INSTR2_OR_NOP(_op, _op)
+
 Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 	using namespace Opcode;
 
@@ -3870,16 +3974,16 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 
 	switch (instr.opcode()) {
 		case OP_LUI:
-			MATCH_AND_RETURN_INSTR(LUI);
+			MATCH_AND_RETURN_INSTR_OR_NOP(LUI);
 
 		case OP_AUIPC:
-			MATCH_AND_RETURN_INSTR(AUIPC);
+			MATCH_AND_RETURN_INSTR_OR_NOP(AUIPC);
 
 		case OP_JAL:
-			MATCH_AND_RETURN_INSTR(JAL);
+			MATCH_AND_RETURN_INSTR_OR_OPZERO(JAL, J);
 
 		case OP_JALR: {
-			MATCH_AND_RETURN_INSTR(JALR);
+			MATCH_AND_RETURN_INSTR_OR_OPZERO(JALR, JR);
 		}
 
 		case OP_BEQ: {
@@ -3937,36 +4041,36 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_ADDI: {
 			switch (instr.funct3()) {
 				case F3_ADDI:
-					MATCH_AND_RETURN_INSTR(ADDI);
+					MATCH_AND_RETURN_INSTR_OR_NOP(ADDI);
 				case F3_SLTI:
-					MATCH_AND_RETURN_INSTR(SLTI);
+					MATCH_AND_RETURN_INSTR_OR_NOP(SLTI);
 				case F3_SLTIU:
-					MATCH_AND_RETURN_INSTR(SLTIU);
+					MATCH_AND_RETURN_INSTR_OR_NOP(SLTIU);
 				case F3_XORI:
-					MATCH_AND_RETURN_INSTR(XORI);
+					MATCH_AND_RETURN_INSTR_OR_NOP(XORI);
 				case F3_ORI:
-					MATCH_AND_RETURN_INSTR(ORI);
+					MATCH_AND_RETURN_INSTR_OR_NOP(ORI);
 				case F3_ANDI:
-					MATCH_AND_RETURN_INSTR(ANDI);
+					MATCH_AND_RETURN_INSTR_OR_NOP(ANDI);
 				case F3_SLLI:
 					if (arch == RV32) {
-						MATCH_AND_RETURN_INSTR2(SLLI_32, SLLI);
+						MATCH_AND_RETURN_INSTR2_OR_NOP(SLLI_32, SLLI);
 					} else {
-						MATCH_AND_RETURN_INSTR(SLLI);
+						MATCH_AND_RETURN_INSTR_OR_NOP(SLLI);
 					}
 				case F3_SRLI: {
 					switch (instr.funct6()) {
 						case F6_SRLI:
 							if (arch == RV32) {
-								MATCH_AND_RETURN_INSTR2(SRLI_32, SRLI);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(SRLI_32, SRLI);
 							} else {
-								MATCH_AND_RETURN_INSTR(SRLI);
+								MATCH_AND_RETURN_INSTR_OR_NOP(SRLI);
 							}
 						case F6_SRAI:
 							if (arch == RV32) {
-								MATCH_AND_RETURN_INSTR2(SRAI_32, SRAI);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(SRAI_32, SRAI);
 							} else {
-								MATCH_AND_RETURN_INSTR(SRAI);
+								MATCH_AND_RETURN_INSTR_OR_NOP(SRAI);
 							}
 					}
 				}
@@ -3977,15 +4081,15 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 		case OP_ADDIW: {
 			switch (instr.funct3()) {
 				case F3_ADDIW:
-					MATCH_AND_RETURN_INSTR(ADDIW);
+					MATCH_AND_RETURN_INSTR_OR_NOP(ADDIW);
 				case F3_SLLIW:
-					MATCH_AND_RETURN_INSTR(SLLIW);
+					MATCH_AND_RETURN_INSTR_OR_NOP(SLLIW);
 				case F3_SRLIW: {
 					switch (instr.funct7()) {
 						case F7_SRLIW:
-							MATCH_AND_RETURN_INSTR(SRLIW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SRLIW);
 						case F7_SRAIW:
-							MATCH_AND_RETURN_INSTR(SRAIW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SRAIW);
 					}
 				}
 			}
@@ -3997,51 +4101,51 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F7_ADD:
 					switch (instr.funct3()) {
 						case F3_ADD:
-							MATCH_AND_RETURN_INSTR(ADD);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ADD);
 						case F3_SLL:
-							MATCH_AND_RETURN_INSTR(SLL);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SLL);
 						case F3_SLT:
-							MATCH_AND_RETURN_INSTR(SLT);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SLT);
 						case F3_SLTU:
-							MATCH_AND_RETURN_INSTR(SLTU);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SLTU);
 						case F3_XOR:
-							MATCH_AND_RETURN_INSTR(XOR);
+							MATCH_AND_RETURN_INSTR_OR_NOP(XOR);
 						case F3_SRL:
-							MATCH_AND_RETURN_INSTR(SRL);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SRL);
 						case F3_OR:
-							MATCH_AND_RETURN_INSTR(OR);
+							MATCH_AND_RETURN_INSTR_OR_NOP(OR);
 						case F3_AND:
-							MATCH_AND_RETURN_INSTR(AND);
+							MATCH_AND_RETURN_INSTR_OR_NOP(AND);
 					}
 					break;
 
 				case F7_SUB:
 					switch (instr.funct3()) {
 						case F3_SUB:
-							MATCH_AND_RETURN_INSTR(SUB);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SUB);
 						case F3_SRA:
-							MATCH_AND_RETURN_INSTR(SRA);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SRA);
 					}
 					break;
 
 				case F7_MUL:
 					switch (instr.funct3()) {
 						case F3_MUL:
-							MATCH_AND_RETURN_INSTR(MUL);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MUL);
 						case F3_MULH:
-							MATCH_AND_RETURN_INSTR(MULH);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MULH);
 						case F3_MULHSU:
-							MATCH_AND_RETURN_INSTR(MULHSU);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MULHSU);
 						case F3_MULHU:
-							MATCH_AND_RETURN_INSTR(MULHU);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MULHU);
 						case F3_DIV:
-							MATCH_AND_RETURN_INSTR(DIV);
+							MATCH_AND_RETURN_INSTR_OR_NOP(DIV);
 						case F3_DIVU:
-							MATCH_AND_RETURN_INSTR(DIVU);
+							MATCH_AND_RETURN_INSTR_OR_NOP(DIVU);
 						case F3_REM:
-							MATCH_AND_RETURN_INSTR(REM);
+							MATCH_AND_RETURN_INSTR_OR_NOP(REM);
 						case F3_REMU:
-							MATCH_AND_RETURN_INSTR(REMU);
+							MATCH_AND_RETURN_INSTR_OR_NOP(REMU);
 					}
 					break;
 			}
@@ -4053,35 +4157,35 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch) {
 				case F7_ADDW:
 					switch (instr.funct3()) {
 						case F3_ADDW:
-							MATCH_AND_RETURN_INSTR(ADDW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ADDW);
 						case F3_SLLW:
-							MATCH_AND_RETURN_INSTR(SLLW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SLLW);
 						case F3_SRLW:
-							MATCH_AND_RETURN_INSTR(SRLW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SRLW);
 					}
 					break;
 
 				case F7_SUBW:
 					switch (instr.funct3()) {
 						case F3_SUBW:
-							MATCH_AND_RETURN_INSTR(SUBW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SUBW);
 						case F3_SRAW:
-							MATCH_AND_RETURN_INSTR(SRAW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SRAW);
 					}
 					break;
 
 				case F7_MULW:
 					switch (instr.funct3()) {
 						case F3_MULW:
-							MATCH_AND_RETURN_INSTR(MULW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MULW);
 						case F3_DIVW:
-							MATCH_AND_RETURN_INSTR(DIVW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(DIVW);
 						case F3_DIVUW:
-							MATCH_AND_RETURN_INSTR(DIVUW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(DIVUW);
 						case F3_REMW:
-							MATCH_AND_RETURN_INSTR(REMW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(REMW);
 						case F3_REMUW:
-							MATCH_AND_RETURN_INSTR(REMUW);
+							MATCH_AND_RETURN_INSTR_OR_NOP(REMUW);
 					}
 					break;
 			}

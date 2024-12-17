@@ -40,6 +40,10 @@ struct RegFile {
 
 	RegFile(const RegFile &other);
 
+	void reset_zero() {
+		regs[zero] = 0;
+	}
+
 	void write(uint64_t index, int64_t value);
 
 	int64_t read(uint64_t index);
@@ -275,7 +279,10 @@ struct ISS : public external_interrupt_target,
 		}
 		int32_t val = operation(data, (int32_t)regs[instr.rs2()]);
 		mem->atomic_store_word(addr, val);
-		regs[instr.rd()] = data;
+		// ignore write to zero/x0
+		if (instr.rd() != RegFile::zero) {
+			regs[instr.rd()] = data;
+		}
 	}
 
 	inline void execute_amo_d(Instruction &instr, std::function<int64_t(int64_t, int64_t)> operation) {
@@ -291,7 +298,10 @@ struct ISS : public external_interrupt_target,
 		}
 		uint64_t val = operation(data, regs[instr.rs2()]);
 		mem->atomic_store_double(addr, val);
-		regs[instr.rd()] = data;
+		// ignore write to zero/x0
+		if (instr.rd() != RegFile::zero) {
+			regs[instr.rd()] = data;
+		}
 	}
 
 	inline bool m_mode() {
