@@ -10,8 +10,8 @@ nuclei_csr_table *NUCLEI_ISS::get_csr_table() {
 	return &csrs;
 }
 
-uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
-	auto read = [=](auto &x, uint32_t mask) { return x.reg & mask; };
+uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
+	auto read = [=](auto &x, uxlen_t mask) { return x.reg & mask; };
 
 	using namespace csr;
 
@@ -117,8 +117,8 @@ uint32_t NUCLEI_ISS::get_csr_value(uint32_t addr) {
 	}
 }
 
-void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
-	auto write = [=](auto &x, uint32_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
+void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
+	auto write = [=](auto &x, uxlen_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
 
 	using namespace csr;
 
@@ -174,19 +174,19 @@ void NUCLEI_ISS::set_csr_value(uint32_t addr, uint32_t value) {
 			return write(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
 
 		case PUSHMCAUSE_ADDR: {
-			const uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
 			mem->store_word(mem_addr, get_csr_table()->nuclei_mcause.reg);
 			break;
 		}
 		case PUSHMEPC_ADDR: {
-			const uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
 			mem->store_word(mem_addr, get_csr_table()->mepc.reg);
 			break;
 		}
 		case PUSHMSUBM_ADDR: {
-			const uint32_t mem_addr = regs[RegFile::sp] + value * 4;
+			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
 			mem->store_word(mem_addr, get_csr_table()->msubm.reg);
 			break;
@@ -227,7 +227,7 @@ void NUCLEI_ISS::prepare_trap(SimulationTrap &e) {
 	if (prv == MachineMode || !(exc_bit & get_csr_table()->medeleg.reg)) {
 		get_csr_table()->nuclei_mcause.fields.interrupt = 0;
 		get_csr_table()->nuclei_mcause.fields.exccode = e.reason;
-		get_csr_table()->mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		get_csr_table()->mtval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 		return;
 	}
 
@@ -235,14 +235,14 @@ void NUCLEI_ISS::prepare_trap(SimulationTrap &e) {
 	if (prv == SupervisorMode || !(exc_bit & get_csr_table()->sedeleg.reg)) {
 		get_csr_table()->scause.fields.interrupt = 0;
 		get_csr_table()->scause.fields.exception_code = e.reason;
-		get_csr_table()->stval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		get_csr_table()->stval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 		return;
 	}
 
 	assert(prv == UserMode && (exc_bit & get_csr_table()->medeleg.reg) && (exc_bit & get_csr_table()->sedeleg.reg));
 	get_csr_table()->ucause.fields.interrupt = 0;
 	get_csr_table()->ucause.fields.exception_code = e.reason;
-	get_csr_table()->utval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+	get_csr_table()->utval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 	return;
 }
 

@@ -10,11 +10,11 @@ struct NUCLEI_ISS : public ISS {
 	nuclei_csr_table csrs;
 	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY>* eclic = nullptr;
 
-	NUCLEI_ISS(uint32_t hart_id, bool use_E_base_isa = false) : ISS(hart_id, use_E_base_isa){};
+	NUCLEI_ISS(uxlen_t hart_id, bool use_E_base_isa = false) : ISS(hart_id, use_E_base_isa){};
 
 	nuclei_csr_table* get_csr_table() override;
-	uint32_t get_csr_value(uint32_t addr) override;
-	void set_csr_value(uint32_t addr, uint32_t value) override;
+	uxlen_t get_csr_value(uxlen_t addr) override;
+	void set_csr_value(uxlen_t addr, uxlen_t value) override;
 
 	void prepare_trap(SimulationTrap& e);
 

@@ -41,24 +41,24 @@ RegFile::RegFile(const RegFile &other) {
 	memcpy(regs, other.regs, sizeof(regs));
 }
 
-void RegFile::write(uint32_t index, int32_t value) {
+void RegFile::write(unsigned int index, sxlen_t value) {
 	assert(index <= x31);
 	assert(index != x0);
 	regs[index] = value;
 }
 
-int32_t RegFile::read(uint32_t index) {
+sxlen_t RegFile::read(unsigned int index) {
 	if (index > x31)
 		throw std::out_of_range("out-of-range register access");
 	return regs[index];
 }
 
-uint32_t RegFile::shamt(uint32_t index) {
+uxlen_t RegFile::shamt(unsigned int index) {
 	assert(index <= x31);
 	return BIT_RANGE(regs[index], 4, 0);
 }
 
-int32_t &RegFile::operator[](const uint32_t idx) {
+sxlen_t &RegFile::operator[](const unsigned int idx) {
 	return regs[idx];
 }
 
@@ -71,13 +71,14 @@ int32_t &RegFile::operator[](const uint32_t idx) {
 #endif
 
 void RegFile::show() {
-	for (unsigned i = 0; i < NUM_REGS; ++i) {
+	for (unsigned int i = 0; i < NUM_REGS; ++i) {
 		printf(COLORFRMT " = %8x\n", COLORPRINT(regcolors[i], regnames[i]), regs[i]);
 	}
 }
 
-ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
+ISS::ISS(uxlen_t hart_id, bool use_E_base_isa) : v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
 	csrs.mhartid.reg = hart_id;
+	op = Opcode::UNDEF;
 	if (use_E_base_isa)
 		csrs.misa.select_E_base_isa();
 
@@ -108,7 +109,6 @@ ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : v_ext(*this), systemc_name("Co
 	instr_cycles[Opcode::DIVU] = mul_div_cycles;
 	instr_cycles[Opcode::REM] = mul_div_cycles;
 	instr_cycles[Opcode::REMU] = mul_div_cycles;
-	op = Opcode::UNDEF;
 }
 
 void ISS::exec_step() {
@@ -232,7 +232,7 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::SLTIU:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)instr.I_imm());
+			regs[instr.rd()] = ((uxlen_t)regs[instr.rs1()]) < ((uxlen_t)instr.I_imm());
 			break;
 
 		case Opcode::XORI:
@@ -264,11 +264,11 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::SLTU:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)regs[instr.rs2()]);
+			regs[instr.rd()] = ((uxlen_t)regs[instr.rs1()]) < ((uxlen_t)regs[instr.rs2()]);
 			break;
 
 		case Opcode::SRL:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) >> regs.shamt(instr.rs2());
+			regs[instr.rd()] = ((uxlen_t)regs[instr.rs1()]) >> regs.shamt(instr.rs2());
 			break;
 
 		case Opcode::SRA:
@@ -292,7 +292,7 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::SRLI:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) >> instr.shamt();
+			regs[instr.rd()] = ((uxlen_t)regs[instr.rs1()]) >> instr.shamt();
 			break;
 
 		case Opcode::SRAI:
@@ -336,50 +336,50 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::SB: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			mem->store_byte(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SH: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<2, false>(addr);
 			mem->store_half(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::SW: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
 			mem->store_word(addr, regs[instr.rs2()]);
 		} break;
 
 		case Opcode::LB: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			regs[instr.rd()] = mem->load_byte(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LH: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
 			regs[instr.rd()] = mem->load_half(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LW: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->load_word(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LBU: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			regs[instr.rd()] = mem->load_ubyte(addr);
 			regs.reset_zero();
 		} break;
 
 		case Opcode::LHU: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
 			regs[instr.rd()] = mem->load_uhalf(addr);
 			regs.reset_zero();
@@ -414,14 +414,14 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::BLTU:
-			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()]) {
+			if ((uxlen_t)regs[instr.rs1()] < (uxlen_t)regs[instr.rs2()]) {
 				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
 			}
 			break;
 
 		case Opcode::BGEU:
-			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()]) {
+			if ((uxlen_t)regs[instr.rs1()] >= (uxlen_t)regs[instr.rs2()]) {
 				pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
 			}
@@ -566,12 +566,12 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::MULHU: {
-			int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
+			int64_t ans = ((uint64_t)(uxlen_t)regs[instr.rs1()]) * (uint64_t)((uxlen_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
 		case Opcode::MULHSU: {
-			int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
+			int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uxlen_t)regs[instr.rs2()]);
 			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
 		} break;
 
@@ -593,7 +593,7 @@ void ISS::exec_step() {
 			if (b == 0) {
 				regs[instr.rd()] = -1;
 			} else {
-				regs[instr.rd()] = (uint32_t)a / (uint32_t)b;
+				regs[instr.rd()] = (uxlen_t)a / (uxlen_t)b;
 			}
 		} break;
 
@@ -615,12 +615,12 @@ void ISS::exec_step() {
 			if (b == 0) {
 				regs[instr.rd()] = a;
 			} else {
-				regs[instr.rd()] = (uint32_t)a % (uint32_t)b;
+				regs[instr.rd()] = (uxlen_t)a % (uxlen_t)b;
 			}
 		} break;
 
 		case Opcode::LR_W: {
-			uint32_t addr = regs[instr.rs1()];
+			uxlen_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, true>(addr);
 			regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
 			if (lr_sc_counter == 0)
@@ -630,7 +630,7 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::SC_W: {
-			uint32_t addr = regs[instr.rs1()];
+			uxlen_t addr = regs[instr.rs1()];
 			trap_check_addr_alignment<4, false>(addr);
 			uint32_t val = regs[instr.rs2()];
 			regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
@@ -642,57 +642,57 @@ void ISS::exec_step() {
 
 		/*
 		 * A Extension
-		 * Note: handling of x0/zero is done in execute_amo implementation (writes to zero/x0 are ignored)
+		 * Note: handling of x0/zero is done in execute_amo* implementations (writes to zero/x0 are ignored)
 		 */
 		case Opcode::AMOSWAP_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) {
+			execute_amo_w(instr, [](int32_t a, int32_t b) {
 				(void)a;
 				return b;
 			});
 		} break;
 
 		case Opcode::AMOADD_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return a + b; });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a + b; });
 		} break;
 
 		case Opcode::AMOXOR_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return a ^ b; });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a ^ b; });
 		} break;
 
 		case Opcode::AMOAND_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return a & b; });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a & b; });
 		} break;
 
 		case Opcode::AMOOR_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return a | b; });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return a | b; });
 		} break;
 
 		case Opcode::AMOMIN_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return std::min(a, b); });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::min(a, b); });
 		} break;
 
 		case Opcode::AMOMINU_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return std::min((uint32_t)a, (uint32_t)b); });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::min((uint32_t)a, (uint32_t)b); });
 		} break;
 
 		case Opcode::AMOMAX_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return std::max(a, b); });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::max(a, b); });
 		} break;
 
 		case Opcode::AMOMAXU_W: {
-			execute_amo(instr, [](int32_t a, int32_t b) { return std::max((uint32_t)a, (uint32_t)b); });
+			execute_amo_w(instr, [](int32_t a, int32_t b) { return std::max((uint32_t)a, (uint32_t)b); });
 		} break;
 
 			// RV32F Extension
 
 		case Opcode::FLW: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
-			fp_regs.write(RD, float32_t{(uint32_t)mem->load_word(addr)});
+			fp_regs.write(RD, float32_t{(uint32_t)mem->load_uword(addr)});
 		} break;
 
 		case Opcode::FSW: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
 			mem->store_word(addr, fp_regs.u32(RS2));
 		} break;
@@ -4364,7 +4364,7 @@ csr_table *ISS::get_csr_table() {
 	return &csrs;
 }
 
-bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
+bool ISS::is_invalid_csr_access(uxlen_t csr_addr, bool is_write) {
 	if (csr_addr == csr::FFLAGS_ADDR || csr_addr == csr::FRM_ADDR || csr_addr == csr::FCSR_ADDR) {
 		fp_require_not_off();
 	}
@@ -4380,7 +4380,7 @@ bool ISS::is_invalid_csr_access(uint32_t csr_addr, bool is_write) {
 	return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid;
 }
 
-void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
+void ISS::validate_csr_counter_read_access_rights(uxlen_t addr) {
 	// match against counter CSR addresses, see RISC-V privileged spec for the address definitions
 	if ((addr >= 0xC00 && addr <= 0xC1F) || (addr >= 0xC80 && addr <= 0xC9F)) {
 		auto cnt = addr & 0x1F;  // 32 counter in total, naturally aligned with the mcounteren and scounteren CSRs
@@ -4393,10 +4393,10 @@ void ISS::validate_csr_counter_read_access_rights(uint32_t addr) {
 	}
 }
 
-uint32_t ISS::get_csr_value(uint32_t addr) {
+uxlen_t ISS::get_csr_value(uxlen_t addr) {
 	validate_csr_counter_read_access_rights(addr);
 
-	auto read = [=](auto &x, uint32_t mask) { return x.reg & mask; };
+	auto read = [=](auto &x, uxlen_t mask) { return x.reg & mask; };
 
 	using namespace csr;
 
@@ -4494,8 +4494,8 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 	return csrs.default_read32(addr);
 }
 
-void ISS::set_csr_value(uint32_t addr, uint32_t value) {
-	auto write = [=](auto &x, uint32_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
+void ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
+	auto write = [=](auto &x, uxlen_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
 
 	using namespace csr;
 
@@ -4642,8 +4642,7 @@ void ISS::set_csr_value(uint32_t addr, uint32_t value) {
 	}
 }
 
-void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint32_t entrypoint,
-               uint32_t sp) {
+void ISS::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uxlen_t entrypoint, uxlen_t sp) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
@@ -4877,7 +4876,7 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 	if (prv == MachineMode || !(exc_bit & csrs.medeleg.reg)) {
 		csrs.mcause.fields.interrupt = 0;
 		csrs.mcause.fields.exception_code = e.reason;
-		csrs.mtval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		csrs.mtval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 		return MachineMode;
 	}
 
@@ -4885,14 +4884,14 @@ PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 	if (prv == SupervisorMode || !(exc_bit & csrs.sedeleg.reg)) {
 		csrs.scause.fields.interrupt = 0;
 		csrs.scause.fields.exception_code = e.reason;
-		csrs.stval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+		csrs.stval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 		return SupervisorMode;
 	}
 
 	assert(prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
 	csrs.ucause.fields.interrupt = 0;
 	csrs.ucause.fields.exception_code = e.reason;
-	csrs.utval.reg = boost::lexical_cast<uint32_t>(e.mtval);
+	csrs.utval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 	return UserMode;
 }
 
@@ -4948,7 +4947,7 @@ void ISS::prepare_interrupt(const PendingInterrupts &e) {
 }
 
 PendingInterrupts ISS::compute_pending_interrupts() {
-	uint32_t pending = csrs.mie.reg & csrs.mip.reg;
+	uxlen_t pending = csrs.mie.reg & csrs.mip.reg;
 
 	if (!pending)
 		return {NoneMode, 0};
@@ -5043,6 +5042,10 @@ void ISS::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 		default:
 			throw std::runtime_error("unknown privilege level " + std::to_string(target_mode));
+	}
+
+	if (last_pc == pc) {
+		shall_exit = true;
 	}
 }
 

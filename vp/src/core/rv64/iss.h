@@ -31,15 +31,19 @@
 
 namespace rv64 {
 
+static constexpr unsigned XLEN = 64;
 using sxlen_t = int64_t;
 using uxlen_t = uint64_t;
 using xlen_t = sxlen_t;
+static constexpr sxlen_t REG64_MIN = INT64_MIN;
+static constexpr sxlen_t REG32_MIN = INT32_MIN;
+static constexpr sxlen_t REG_MIN = REG64_MIN;
 using data_memory_if = data_memory_if_T<sxlen_t, uxlen_t>;
 
 struct RegFile {
 	static constexpr unsigned NUM_REGS = 32;
 
-	int64_t regs[NUM_REGS];
+	sxlen_t regs[NUM_REGS];
 
 	RegFile();
 
@@ -49,15 +53,15 @@ struct RegFile {
 		regs[zero] = 0;
 	}
 
-	void write(uint64_t index, int64_t value);
+	void write(unsigned int, sxlen_t value);
 
-	int64_t read(uint64_t index);
+	sxlen_t read(unsigned int index);
 
-	uint64_t shamt_w(uint64_t index);
+	uxlen_t shamt_w(unsigned int index);
 
-	uint64_t shamt(uint64_t index);
+	uxlen_t shamt(unsigned int index);
 
-	int64_t &operator[](const uint64_t idx);
+	sxlen_t &operator[](const unsigned int idx);
 
 	void show();
 
@@ -143,7 +147,7 @@ struct timing_if {
 
 struct PendingInterrupts {
 	PrivilegeLevel target_mode;
-	uint64_t pending;
+	uxlen_t pending;
 };
 
 struct ISS : public external_interrupt_target,
@@ -157,8 +161,8 @@ struct ISS : public external_interrupt_target,
 	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	FpRegs fp_regs;
-	uint64_t pc = 0;
-	uint64_t last_pc = 0;
+	uxlen_t pc = 0;
+	uxlen_t last_pc = 0;
 	bool trace = false;
 	bool shall_exit = false;
 	bool ignore_wfi = false;
@@ -172,7 +176,7 @@ struct ISS : public external_interrupt_target,
 	Opcode::Mapping op;
 
 	CoreExecStatus status = CoreExecStatus::Runnable;
-	std::unordered_set<uint64_t> breakpoints;
+	std::unordered_set<uxlen_t> breakpoints;
 	bool debug_mode = false;
 
 	sc_core::sc_event wfi_event;
@@ -183,11 +187,9 @@ struct ISS : public external_interrupt_target,
 	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
 	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
 
-	static constexpr int64_t REG_MIN = INT64_MIN;
-	static constexpr int64_t REG32_MIN = INT32_MIN;
-	static constexpr unsigned xlen = 64;
+	static constexpr unsigned xlen = XLEN;
 
-	ISS(uint64_t hart_id);
+	ISS(uxlen_t hart_id);
 
 	Architecture get_architecture(void) override {
 		return RV64;
@@ -200,7 +202,7 @@ struct ISS : public external_interrupt_target,
 
 	uint64_t _compute_and_get_current_cycles();
 
-	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uint64_t entrypoint, uint64_t sp);
+	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uxlen_t entrypoint, uxlen_t sp);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
 	void clear_external_interrupt(PrivilegeLevel level) override;
@@ -242,17 +244,18 @@ struct ISS : public external_interrupt_target,
 	void fp_require_not_off();
 
 	virtual csr_table *get_csr_table();
-	uint64_t get_csr_value(uint64_t addr);
-	void set_csr_value(uint64_t addr, uint64_t value);
+	uxlen_t get_csr_value(uxlen_t addr);
+	void set_csr_value(uxlen_t addr, uxlen_t value);
 
-	bool is_invalid_csr_access(uint64_t csr_addr, bool is_write);
-	void validate_csr_counter_read_access_rights(uint64_t addr);
+	bool is_invalid_csr_access(uxlen_t csr_addr, bool is_write);
+	void validate_csr_counter_read_access_rights(uxlen_t addr);
 
-	uint64_t pc_alignment_mask() {
-		if (csrs.misa.has_C_extension())
-			return ~uint64_t(0x1);
-		else
-			return ~uint64_t(0x3);
+	uxlen_t pc_alignment_mask() {
+		if (csrs.misa.has_C_extension()) {
+			return ~uxlen_t(0x1);
+		} else {
+			return ~uxlen_t(0x3);
+		}
 	}
 
 	inline void trap_check_pc_alignment() {
@@ -265,14 +268,14 @@ struct ISS : public external_interrupt_target,
 	}
 
 	template <unsigned Alignment, bool isLoad>
-	inline void trap_check_addr_alignment(uint64_t addr) {
+	inline void trap_check_addr_alignment(uxlen_t addr) {
 		if (unlikely(addr % Alignment)) {
 			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
 		}
 	}
 
 	inline void execute_amo_w(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
-		uint64_t addr = regs[instr.rs1()];
+		uxlen_t addr = regs[instr.rs1()];
 		trap_check_addr_alignment<4, false>(addr);
 		int32_t data;
 		try {
@@ -291,7 +294,7 @@ struct ISS : public external_interrupt_target,
 	}
 
 	inline void execute_amo_d(Instruction &instr, std::function<int64_t(int64_t, int64_t)> operation) {
-		uint64_t addr = regs[instr.rs1()];
+		uxlen_t addr = regs[instr.rs1()];
 		trap_check_addr_alignment<8, false>(addr);
 		uint64_t data;
 		try {
