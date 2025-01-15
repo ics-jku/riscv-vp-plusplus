@@ -20,6 +20,9 @@ Options::Options(void) {
 		("use-instr-dmi", po::bool_switch(&use_instr_dmi), "use dmi to fetch instructions")
 		("use-data-dmi", po::bool_switch(&use_data_dmi), "use dmi to execute load/store operations")
 		("use-dmi", po::bool_switch(), "use instr and data dmi")
+		("debug-bus-mode", po::bool_switch(&use_debug_bus), "dump tlm transaction data via TCP connection")
+		("debug-bus-port", po::value<unsigned int>(&debug_bus_port),"select port number for tlm transaction data")
+		("break-on-transaction", po::bool_switch(&break_on_transaction),"break on every transaction when in --debug-mode")
 		("input-file", po::value<std::string>(&input_program)->required(), "input file to use for execution");
 	// clang-format on
 
@@ -44,6 +47,11 @@ void Options::parse(int argc, char **argv) {
 		if (vm["use-dmi"].as<bool>()) {
 			use_data_dmi = true;
 			use_instr_dmi = true;
+		}
+		if (vm["break-on-transaction"].as<bool>() && !vm["debug-mode"].as<bool>()) {
+			std::cerr << "[Options] Error: switch 'break-on-transaction' can only be used if 'debug-mode' is set."
+			          << std::endl;
+			exit(1);
 		}
 		if (vm["intercept-syscalls"].as<bool>() && vm.count("error-on-zero-traphandler") == 0) {
 			// intercept syscalls active, but no overriding error-on-zero-traphandler switch

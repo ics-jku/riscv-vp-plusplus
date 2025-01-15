@@ -121,7 +121,11 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory dram("DRAM", opt.dram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 14> bus("SimpleBus");
+	NetTrace *debug_bus = nullptr;
+	if (opt.use_debug_bus) {
+		debug_bus = new NetTrace(opt.debug_bus_port);
+	}
+	SimpleBus<2, 14> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 
@@ -205,20 +209,29 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_data_dmi)
 		iss_mem_if.dmi_ranges.emplace_back(dram_dmi);
 
-	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
-	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr);
-	bus.ports[2] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-	bus.ports[3] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
-	bus.ports[4] = new PortMapping(opt.aon_start_addr, opt.aon_end_addr);
-	bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr);
-	bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr);
-	bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr);
-	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr);
-	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr);
-	bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
-	bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr);
-	bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr);
-	bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr);
+	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr, flash);
+	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr, dram);
+	bus.ports[2] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr, plic);
+	bus.ports[3] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, clint);
+	bus.ports[4] = new PortMapping(opt.aon_start_addr, opt.aon_end_addr, aon);
+	bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr, prci);
+	bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr, spi0);
+	if (uart0 != NULL) {
+		bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr, *uart0);
+	} else {
+		bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr, *uart0_tunnel);
+	}
+	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr, maskROM);
+	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr, gpio0);
+	bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
+	bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr, spi1);
+	bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr, spi2);
+	if (slip != NULL) {
+		bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr, *slip);
+	} else {
+		bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr, *uart1_tunnel);
+	}
+	bus.mapping_complete();
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(dram, dram.size, opt.dram_start_addr, false);

@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "basic_timer.h"
+#include "bus.h"
 #include "core/common/clint.h"
 #include "debug_memory.h"
 #include "display.hpp"
@@ -20,6 +21,7 @@
 #include "mem.h"
 #include "memory.h"
 #include "memory_mapped_file.h"
+#include "net_trace.h"
 #include "platform/common/options.h"
 #include "platform/common/terminal.h"
 #include "sensor.h"
@@ -123,7 +125,6 @@ int sc_main(int argc, char **argv) {
 	SimpleTerminal term("SimpleTerminal");
 	UART uart("Generic_UART", 6);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<3, 13> bus("SimpleBus");
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
@@ -143,6 +144,12 @@ int sc_main(int argc, char **argv) {
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
+
+	NetTrace *debug_bus = NULL;
+	if (opt.use_debug_bus) {
+		debug_bus = new NetTrace(opt.debug_bus_port);
+	}
+	SimpleBus<3, 13> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 
 	instr_memory_if *instr_mem_if = &iss_mem_if;
 	data_memory_if *data_mem_if = &iss_mem_if;
@@ -179,20 +186,21 @@ int sc_main(int argc, char **argv) {
 	// address mapping
 	{
 		unsigned it = 0;
-		bus.ports[it++] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
-		bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
-		bus.ports[it++] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-		bus.ports[it++] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
-		bus.ports[it++] = new PortMapping(opt.uart_start_addr, opt.uart_end_addr);
-		bus.ports[it++] = new PortMapping(opt.sensor_start_addr, opt.sensor_end_addr);
-		bus.ports[it++] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr);
-		bus.ports[it++] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr);
-		bus.ports[it++] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr);
-		bus.ports[it++] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
-		bus.ports[it++] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr);
-		bus.ports[it++] = new PortMapping(opt.display_start_addr, opt.display_end_addr);
-		bus.ports[it++] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+		bus.ports[it++] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr, mem);
+		bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, clint);
+		bus.ports[it++] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr, plic);
+		bus.ports[it++] = new PortMapping(opt.term_start_addr, opt.term_end_addr, term);
+		bus.ports[it++] = new PortMapping(opt.uart_start_addr, opt.uart_end_addr, uart);
+		bus.ports[it++] = new PortMapping(opt.sensor_start_addr, opt.sensor_end_addr, sensor);
+		bus.ports[it++] = new PortMapping(opt.dma_start_addr, opt.dma_end_addr, dma);
+		bus.ports[it++] = new PortMapping(opt.sensor2_start_addr, opt.sensor2_end_addr, sensor2);
+		bus.ports[it++] = new PortMapping(opt.mram_start_addr, opt.mram_end_addr, mram);
+		bus.ports[it++] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr, flashController);
+		bus.ports[it++] = new PortMapping(opt.ethernet_start_addr, opt.ethernet_end_addr, ethernet);
+		bus.ports[it++] = new PortMapping(opt.display_start_addr, opt.display_end_addr, display);
+		bus.ports[it++] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
 	}
+	bus.mapping_complete();
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);

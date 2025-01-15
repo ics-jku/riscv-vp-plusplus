@@ -4835,6 +4835,16 @@ void ISS::clear_software_interrupt() {
 	csrs.mip.fields.msip = false;
 }
 
+void ISS::halt() {
+	if (debug_mode) {
+		this->status = CoreExecStatus::HitBreakpoint;
+	}
+}
+
+std::string ISS::name() {
+	return this->systemc_name;
+}
+
 PrivilegeLevel ISS::prepare_trap(SimulationTrap &e) {
 	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's
 	// successor)

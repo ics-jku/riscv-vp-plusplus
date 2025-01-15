@@ -2,6 +2,7 @@
 #include <systemc>
 
 #include "afio.h"
+#include "bus.h"
 #include "eclic.h"
 #include "elf_loader.h"
 #include "exmc.h"
@@ -93,7 +94,13 @@ int sc_main(int argc, char **argv) {
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 16> ahb("AHB");
+
+	NetTrace *debug_bus = nullptr;
+	if (opt.use_debug_bus) {
+		debug_bus = new NetTrace(opt.debug_bus_port);
+	}
+	SimpleBus<2, 16> ahb("AHB", debug_bus, opt.break_on_transaction);
+
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 
 	EXMC exmc("EXMC");
@@ -133,23 +140,24 @@ int sc_main(int argc, char **argv) {
 
 	{
 		unsigned int it = 0;
-		ahb.ports[it++] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.sram_start_addr, opt.sram_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.rcu_start_addr, opt.rcu_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.timer_start_addr, opt.timer_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.eclic_start_addr, opt.eclic_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.usart0_start_addr, opt.usart0_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.afio_start_addr, opt.afio_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.exti_start_addr, opt.exti_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.gpioa_start_addr, opt.gpioa_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.gpiob_start_addr, opt.gpiob_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.gpioc_start_addr, opt.gpioc_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.gpiod_start_addr, opt.gpiod_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.gpioe_start_addr, opt.gpioe_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.spi_start_addr, opt.spi_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.exmc_start_addr, opt.exmc_end_addr);
-		ahb.ports[it++] = new PortMapping(opt.exmc_ext_start_addr, opt.exmc_ext_end_addr);
+		ahb.ports[it++] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr, flash);
+		ahb.ports[it++] = new PortMapping(opt.sram_start_addr, opt.sram_end_addr, sram);
+		ahb.ports[it++] = new PortMapping(opt.rcu_start_addr, opt.rcu_end_addr, rcu);
+		ahb.ports[it++] = new PortMapping(opt.timer_start_addr, opt.timer_end_addr, timer);
+		ahb.ports[it++] = new PortMapping(opt.eclic_start_addr, opt.eclic_end_addr, eclic);
+		ahb.ports[it++] = new PortMapping(opt.usart0_start_addr, opt.usart0_end_addr, usart0);
+		ahb.ports[it++] = new PortMapping(opt.afio_start_addr, opt.afio_end_addr, afio);
+		ahb.ports[it++] = new PortMapping(opt.exti_start_addr, opt.exti_end_addr, exti);
+		ahb.ports[it++] = new PortMapping(opt.gpioa_start_addr, opt.gpioa_end_addr, gpioa);
+		ahb.ports[it++] = new PortMapping(opt.gpiob_start_addr, opt.gpiob_end_addr, gpiob);
+		ahb.ports[it++] = new PortMapping(opt.gpioc_start_addr, opt.gpioc_end_addr, gpioc);
+		ahb.ports[it++] = new PortMapping(opt.gpiod_start_addr, opt.gpiod_end_addr, gpiod);
+		ahb.ports[it++] = new PortMapping(opt.gpioe_start_addr, opt.gpioe_end_addr, gpioe);
+		ahb.ports[it++] = new PortMapping(opt.spi_start_addr, opt.spi_end_addr, spi0);
+		ahb.ports[it++] = new PortMapping(opt.exmc_start_addr, opt.exmc_end_addr, exmc);
+		ahb.ports[it++] = new PortMapping(opt.exmc_ext_start_addr, opt.exmc_ext_end_addr, exmc);
 	}
+	ahb.mapping_complete();
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);

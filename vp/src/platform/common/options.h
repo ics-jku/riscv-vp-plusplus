@@ -20,6 +20,9 @@ class Options : public boost::program_options::options_description {
 	unsigned int tlm_global_quantum = 10;
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
+	bool use_debug_bus = false;
+	unsigned int debug_bus_port = 5006;
+	bool break_on_transaction = false;
 
 	virtual void printValues(std::ostream& os = std::cout) const;
 

@@ -4,16 +4,22 @@
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/simple_target_socket.h>
 
+#include <iostream>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <systemc>
+
+#include "net_trace.h"
+#include "util/initator_ext.h"
 
 struct PortMapping {
 	uint64_t start;
 	uint64_t end;
+	sc_core::sc_module &module;
 
-	PortMapping(uint64_t start, uint64_t end) : start(start), end(end) {
+	PortMapping(uint64_t start, uint64_t end, sc_core::sc_module &module) : start(start), end(end), module(module) {
 		assert(end >= start);
 	}
 
@@ -24,6 +30,12 @@ struct PortMapping {
 	uint64_t global_to_local(uint64_t addr) {
 		return addr - start;
 	}
+
+	std::string to_string() {
+		std::stringstream ss;
+		ss << module.name() << " " << std::hex << start << " " << std::hex << end;
+		return ss.str();
+	}
 };
 
 template <unsigned int NR_OF_INITIATORS, unsigned int NR_OF_TARGETS>
@@ -33,7 +45,11 @@ struct SimpleBus : sc_core::sc_module {
 	std::array<tlm_utils::simple_initiator_socket<SimpleBus>, NR_OF_TARGETS> isocks;
 	std::array<PortMapping *, NR_OF_TARGETS> ports;
 
-	SimpleBus(sc_core::sc_module_name) {
+	NetTrace *debug_bus;
+	bool break_on_transaction;
+
+	SimpleBus(sc_core::sc_module_name, NetTrace *debug_bus, bool trans_break)
+	    : debug_bus(debug_bus), break_on_transaction(trans_break) {
 		for (auto &s : tsocks) {
 			s.register_b_transport(this, &SimpleBus::transport);
 			s.register_transport_dbg(this, &SimpleBus::transport_dbg);
@@ -48,6 +64,27 @@ struct SimpleBus : sc_core::sc_module {
 		return -1;
 	}
 
+	void mapping_complete() {
+		if (debug_bus != NULL) {
+			std::vector<std::string> memmap;
+			memmap.reserve(NR_OF_TARGETS);
+			for (auto port : ports) {
+				memmap.push_back(port->to_string());
+			}
+			debug_bus->add_arch(memmap);
+			debug_bus->dump_arch();
+		}
+	}
+
+	static inline initiator_if *get_tlm_initiator(tlm::tlm_generic_payload &trans) {
+		auto init_ext = trans.get_extension<initiator_ext>();
+		if (init_ext != nullptr) {
+			/* note: may be nullptr either */
+			return init_ext->initiator;
+		}
+		return nullptr;
+	}
+
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		auto addr = trans.get_address();
 		auto id = decode(addr);
@@ -57,8 +94,26 @@ struct SimpleBus : sc_core::sc_module {
 			return;
 		}
 
+		if (break_on_transaction) {
+			auto initiator = get_tlm_initiator(trans);
+			if (initiator != nullptr) {
+				initiator->halt();
+			}
+		}
+
 		trans.set_address(ports[id]->global_to_local(addr));
 		isocks[id]->b_transport(trans, delay);
+
+		if (debug_bus != nullptr) {
+			std::string init_name = "UNKNOWN";
+			auto initiator = get_tlm_initiator(trans);
+			if (initiator != nullptr) {
+				init_name = initiator->name();
+			}
+
+			debug_bus->dump_transaction(trans.is_read(), init_name, id, addr, trans.get_data_ptr(),
+			                            trans.get_data_length(), delay);
+		}
 	}
 
 	unsigned transport_dbg(tlm::tlm_generic_payload &trans) {

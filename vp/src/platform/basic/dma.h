@@ -8,9 +8,14 @@
 #include <systemc>
 #include <unordered_map>
 
-struct SimpleDMA : public sc_core::sc_module {
+#include "util/initiator_if.h"
+
+struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 	tlm_utils::simple_initiator_socket<SimpleDMA> isock;
 	tlm_utils::simple_target_socket<SimpleDMA> tsock;
+
+	tlm::tlm_generic_payload trans;
+	initiator_ext *ext;
 
 	interrupt_gateway *plic = 0;
 	uint32_t irq_number = 0;
@@ -48,6 +53,10 @@ struct SimpleDMA : public sc_core::sc_module {
 
 	SimpleDMA(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
 		tsock.register_b_transport(this, &SimpleDMA::transport);
+
+		ext = new initiator_ext(this);  // tlm_generic_payload frees all extension objects in destructor, therefore
+		                                // dynamic allocation is needed
+		trans.set_extension<initiator_ext>(ext);
 
 		SC_THREAD(run);
 
@@ -144,7 +153,6 @@ struct SimpleDMA : public sc_core::sc_module {
 	void do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
 		sc_core::sc_time delay = sc_core::SC_ZERO_TIME;
 
-		tlm::tlm_generic_payload trans;
 		trans.set_command(cmd);
 		trans.set_address(addr);
 		trans.set_data_ptr(data);
@@ -154,6 +162,14 @@ struct SimpleDMA : public sc_core::sc_module {
 
 		if (delay != sc_core::SC_ZERO_TIME)
 			sc_core::wait(delay);
+	}
+
+	void halt() {
+		std::cerr << "[VP] cannot halt initiator " << this->name() << std::endl;
+	}
+
+	std::string name() {
+		return this->name();
 	}
 };
 

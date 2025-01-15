@@ -101,7 +101,11 @@ int sc_main(int argc, char **argv) {
 	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 3> bus("SimpleBus");
+	NetTrace *debug_bus = nullptr;
+	if (opt.use_debug_bus) {
+		debug_bus = new NetTrace(opt.debug_bus_port);
+	}
+	SimpleBus<2, 3> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	SyscallHandler sys("SyscallHandler");
 	CLINT<1> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
@@ -129,9 +133,10 @@ int sc_main(int argc, char **argv) {
 		core.sys = &sys;
 
 	// setup port mapping
-	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
-	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
-	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
+	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr, mem);
+	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, clint);
+	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
+	bus.mapping_complete();
 
 	// connect TLM sockets
 	core_mem_if.isock.bind(bus.tsocks[0]);

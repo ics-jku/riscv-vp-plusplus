@@ -91,7 +91,11 @@ int sc_main(int argc, char** argv) {
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	ELFLoader loader(opt.input_program.c_str());
-	SimpleBus<2, 6> bus("SimpleBus");
+	NetTrace* debug_bus = nullptr;
+	if (opt.use_debug_bus) {
+		debug_bus = new NetTrace(opt.debug_bus_port);
+	}
+	SimpleBus<2, 6> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
@@ -167,13 +171,18 @@ int sc_main(int argc, char** argv) {
 	// address mapping
 	{
 		unsigned it = 0;
-		bus.ports[it++] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr);
-		bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr);
-		bus.ports[it++] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr);
-		bus.ports[it++] = new PortMapping(opt.term_start_addr, opt.term_end_addr);
-		bus.ports[it++] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr);
-		bus.ports[it++] = new PortMapping(opt.virtual_bus_start_addr, opt.virtual_bus_end_addr);
+		bus.ports[it++] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr, mem);
+		if (opt.use_real_clint) {
+			bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, *real_clint);
+		} else {
+			bus.ports[it++] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, *sim_clint);
+		}
+		bus.ports[it++] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr, plic);
+		bus.ports[it++] = new PortMapping(opt.term_start_addr, opt.term_end_addr, term);
+		bus.ports[it++] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
+		bus.ports[it++] = new PortMapping(opt.virtual_bus_start_addr, opt.virtual_bus_end_addr, virtual_bus_member);
 	}
+	bus.mapping_complete();
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);

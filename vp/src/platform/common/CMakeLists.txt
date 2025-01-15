@@ -14,6 +14,7 @@ add_library(platform-common
 		vncsimpleinputkbd.cpp
 		spi_sd_card.cpp
 		options.cpp
+		net_trace.cpp
 		${HEADERS})
 
 target_include_directories(platform-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
