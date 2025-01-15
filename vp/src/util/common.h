@@ -28,3 +28,11 @@ inline uint32_t rv32_align_address(uint32_t addr) {
 /* Allow to provide a custom function name for a SystemC thread to avoid duplicate name warning in case the same
  * SystemC module is instantiated multiple times. */
 #define SC_NAMED_THREAD(func, name) declare_thread_process(func##_handle, name, SC_CURRENT_USER_MODULE, func)
+
+#if defined(COLOR_THEME_LIGHT) || defined(COLOR_THEME_DARK)
+#define COLORFRMT "\e[38;5;%um%s\e[39m"
+#define COLORPRINT(fmt, data) fmt, data
+#else
+#define COLORFRMT "%s"
+#define COLORPRINT(fmt, data) data
+#endif
