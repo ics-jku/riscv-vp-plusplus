@@ -6,10 +6,6 @@
 
 using namespace rv32;
 
-nuclei_csr_table *NUCLEI_ISS::get_csr_table() {
-	return &csrs;
-}
-
 uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 	auto read = [=](auto &x, uxlen_t mask) { return x.reg & mask; };
 
@@ -18,53 +14,53 @@ uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 	switch (addr) {
 		case MTVEC_ADDR:
 			// TODO
-			return get_csr_table()->default_read32(addr);
+			return csrs.default_read32(addr);
 			break;
 		case MCAUSE_ADDR:
-			return read(get_csr_table()->nuclei_mcause, MCAUSE_MASK);
+			return read(csrs.nuclei_mcause, MCAUSE_MASK);
 
 		case MINTSTATUS_ADDR:
-			return read(get_csr_table()->mintstatus, MINTSTATUS_MASK);
+			return read(csrs.mintstatus, MINTSTATUS_MASK);
 		case MILM_CTL_ADDR:
-			return read(get_csr_table()->milm_ctl, MILM_CTL_MASK);
+			return read(csrs.milm_ctl, MILM_CTL_MASK);
 		case MDLM_CTL_ADDR:
-			return read(get_csr_table()->mdlm_ctl, MDLM_CTL_MASK);
+			return read(csrs.mdlm_ctl, MDLM_CTL_MASK);
 		case MECC_CODE_ADDR:
-			return read(get_csr_table()->mecc_code, MECC_CODE_MASK);
+			return read(csrs.mecc_code, MECC_CODE_MASK);
 		case MSUBM_ADDR:
-			return read(get_csr_table()->msubm, MSUBM_MASK);
+			return read(csrs.msubm, MSUBM_MASK);
 		case MDCAUSE_ADDR:
-			return read(get_csr_table()->mdcause, MDCAUSE_MASK);
+			return read(csrs.mdcause, MDCAUSE_MASK);
 		case MCACHE_CTL_ADDR:
-			return read(get_csr_table()->mcache_ctl, MCACHE_CTL_MASK);
+			return read(csrs.mcache_ctl, MCACHE_CTL_MASK);
 		case MMISC_CTL_ADDR:
-			return read(get_csr_table()->mmisc_ctl, MMISC_CTL_MASK);
+			return read(csrs.mmisc_ctl, MMISC_CTL_MASK);
 		case MSAVESTATUS_ADDR:
-			return read(get_csr_table()->msavestatus, MSAVESTATUS_MASK);
+			return read(csrs.msavestatus, MSAVESTATUS_MASK);
 		case MTLB_CTL_ADDR:
-			return read(get_csr_table()->mtlb_ctl, MTLB_CTL_MASK);
+			return read(csrs.mtlb_ctl, MTLB_CTL_MASK);
 		case MECC_LOCK_ADDR:
-			return read(get_csr_table()->mecc_lock, MECC_LOCK_MASK);
+			return read(csrs.mecc_lock, MECC_LOCK_MASK);
 		case MTVT2_ADDR:
-			return read(get_csr_table()->mtvt2, MTVT2_MASK);
+			return read(csrs.mtvt2, MTVT2_MASK);
 		case MPPICFG_INFO_ADDR:
-			return read(get_csr_table()->mppicfg_info, MPPICFG_INFO_MASK);
+			return read(csrs.mppicfg_info, MPPICFG_INFO_MASK);
 		case MFIOCFG_INFO_ADDR:
-			return read(get_csr_table()->mfiocfg_info, MFIOCFG_INFO_MASK);
+			return read(csrs.mfiocfg_info, MFIOCFG_INFO_MASK);
 		case SLEEPVALUE_ADDR:
-			return read(get_csr_table()->sleepvalue, SLEEPVALUE_MASK);
+			return read(csrs.sleepvalue, SLEEPVALUE_MASK);
 		case TXEVT_ADDR:
-			return read(get_csr_table()->txevt, TXEVT_MASK);
+			return read(csrs.txevt, TXEVT_MASK);
 		case WFE_ADDR:
-			return read(get_csr_table()->wfe, WFE_MASK);
+			return read(csrs.wfe, WFE_MASK);
 		case MICFG_INFO_ADDR:
-			return read(get_csr_table()->micfg_info, MICFG_INFO_MASK);
+			return read(csrs.micfg_info, MICFG_INFO_MASK);
 		case MDCFG_INFO_ADDR:
-			return read(get_csr_table()->mdcfg_info, MDCFG_INFO_MASK);
+			return read(csrs.mdcfg_info, MDCFG_INFO_MASK);
 		case MCFG_INFO_ADDR:
-			return read(get_csr_table()->mcfg_info, MCFG_INFO_MASK);
+			return read(csrs.mcfg_info, MCFG_INFO_MASK);
 		case MTLBCFG_INFO_ADDR:
-			return read(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
+			return read(csrs.mtlb_ctl, MTLBCFG_INFO_MASK);
 
 		case JALMNXTI_ADDR: {
 			std::lock_guard<std::mutex> guard(eclic->pending_interrupts_mutex);
@@ -78,15 +74,15 @@ uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 					return 0;
 				}
 
-				get_csr_table()->mstatus.fields.mie = 1;
-				get_csr_table()->nuclei_mcause.fields.exccode = id;
+				csrs.mstatus.fields.mie = 1;
+				csrs.nuclei_mcause.fields.exccode = id;
 				eclic->pending_interrupts.pop();
 				eclic->clicintip[id] = 0;
-				pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
+				pc = instr_mem->load_instr(csrs.mtvt.reg + id * 4);
 				return last_pc;
 			} else {
-				if (get_csr_table()->msubm.fields.typ == get_csr_table()->msubm.Interrupt)
-					get_csr_table()->mstatus.fields.mie = 0;
+				if (csrs.msubm.fields.typ == csrs.msubm.Interrupt)
+					csrs.mstatus.fields.mie = 0;
 				return 0;
 			}
 		}
@@ -111,9 +107,9 @@ uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 		case PUSHMCAUSE_ADDR:
 		case PUSHMEPC_ADDR:
 		case PUSHMSUBM_ADDR:
-			return get_csr_table()->default_read32(addr);
+			return csrs.default_read32(addr);
 		default:
-			return ISS::get_csr_value(addr);
+			return NUCLEI_ISS_BASE::get_csr_value(addr);
 	}
 }
 
@@ -125,70 +121,70 @@ void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
 	switch (addr) {
 		case MTVEC_ADDR:
 			// TODO
-			get_csr_table()->default_write32(addr, value);
+			csrs.default_write32(addr, value);
 			break;
 		case MCAUSE_ADDR:
-			return write(get_csr_table()->nuclei_mcause, MCAUSE_MASK);
+			return write(csrs.nuclei_mcause, MCAUSE_MASK);
 
 		case MINTSTATUS_ADDR:
-			return write(get_csr_table()->mintstatus, MINTSTATUS_MASK);
+			return write(csrs.mintstatus, MINTSTATUS_MASK);
 		case MILM_CTL_ADDR:
-			return write(get_csr_table()->milm_ctl, MILM_CTL_MASK);
+			return write(csrs.milm_ctl, MILM_CTL_MASK);
 		case MDLM_CTL_ADDR:
-			return write(get_csr_table()->mdlm_ctl, MDLM_CTL_MASK);
+			return write(csrs.mdlm_ctl, MDLM_CTL_MASK);
 		case MECC_CODE_ADDR:
-			return write(get_csr_table()->mecc_code, MECC_CODE_MASK);
+			return write(csrs.mecc_code, MECC_CODE_MASK);
 		case MSUBM_ADDR:
-			return write(get_csr_table()->msubm, MSUBM_MASK);
+			return write(csrs.msubm, MSUBM_MASK);
 		case MDCAUSE_ADDR:
-			return write(get_csr_table()->mdcause, MDCAUSE_MASK);
+			return write(csrs.mdcause, MDCAUSE_MASK);
 		case MCACHE_CTL_ADDR:
-			return write(get_csr_table()->mcache_ctl, MCACHE_CTL_MASK);
+			return write(csrs.mcache_ctl, MCACHE_CTL_MASK);
 		case MMISC_CTL_ADDR:
-			return write(get_csr_table()->mmisc_ctl, MMISC_CTL_MASK);
+			return write(csrs.mmisc_ctl, MMISC_CTL_MASK);
 		case MSAVESTATUS_ADDR:
-			return write(get_csr_table()->msavestatus, MSAVESTATUS_MASK);
+			return write(csrs.msavestatus, MSAVESTATUS_MASK);
 		case MTLB_CTL_ADDR:
-			return write(get_csr_table()->mtlb_ctl, MTLB_CTL_MASK);
+			return write(csrs.mtlb_ctl, MTLB_CTL_MASK);
 		case MECC_LOCK_ADDR:
-			return write(get_csr_table()->mecc_lock, MECC_LOCK_MASK);
+			return write(csrs.mecc_lock, MECC_LOCK_MASK);
 		case MTVT2_ADDR:
-			return write(get_csr_table()->mtvt2, MTVT2_MASK);
+			return write(csrs.mtvt2, MTVT2_MASK);
 		case MPPICFG_INFO_ADDR:
-			return write(get_csr_table()->mppicfg_info, MPPICFG_INFO_MASK);
+			return write(csrs.mppicfg_info, MPPICFG_INFO_MASK);
 		case MFIOCFG_INFO_ADDR:
-			return write(get_csr_table()->mfiocfg_info, MFIOCFG_INFO_MASK);
+			return write(csrs.mfiocfg_info, MFIOCFG_INFO_MASK);
 		case SLEEPVALUE_ADDR:
-			return write(get_csr_table()->sleepvalue, SLEEPVALUE_MASK);
+			return write(csrs.sleepvalue, SLEEPVALUE_MASK);
 		case TXEVT_ADDR:
-			return write(get_csr_table()->txevt, TXEVT_MASK);
+			return write(csrs.txevt, TXEVT_MASK);
 		case WFE_ADDR:
-			return write(get_csr_table()->wfe, WFE_MASK);
+			return write(csrs.wfe, WFE_MASK);
 		case MICFG_INFO_ADDR:
-			return write(get_csr_table()->micfg_info, MICFG_INFO_MASK);
+			return write(csrs.micfg_info, MICFG_INFO_MASK);
 		case MDCFG_INFO_ADDR:
-			return write(get_csr_table()->mdcfg_info, MDCFG_INFO_MASK);
+			return write(csrs.mdcfg_info, MDCFG_INFO_MASK);
 		case MCFG_INFO_ADDR:
-			return write(get_csr_table()->mcfg_info, MCFG_INFO_MASK);
+			return write(csrs.mcfg_info, MCFG_INFO_MASK);
 		case MTLBCFG_INFO_ADDR:
-			return write(get_csr_table()->mtlb_ctl, MTLBCFG_INFO_MASK);
+			return write(csrs.mtlb_ctl, MTLBCFG_INFO_MASK);
 
 		case PUSHMCAUSE_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
-			mem->store_word(mem_addr, get_csr_table()->nuclei_mcause.reg);
+			mem->store_word(mem_addr, csrs.nuclei_mcause.reg);
 			break;
 		}
 		case PUSHMEPC_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
-			mem->store_word(mem_addr, get_csr_table()->mepc.reg);
+			mem->store_word(mem_addr, csrs.mepc.reg);
 			break;
 		}
 		case PUSHMSUBM_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
-			mem->store_word(mem_addr, get_csr_table()->msubm.reg);
+			mem->store_word(mem_addr, csrs.msubm.reg);
 			break;
 		}
 
@@ -206,10 +202,10 @@ void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
 		case MSAVECAUSE1_ADDR:
 		case MSAVEEPC2_ADDR:
 		case MSAVECAUSE2_ADDR:
-			get_csr_table()->default_write32(addr, value);
+			csrs.default_write32(addr, value);
 			break;
 		default:
-			ISS::set_csr_value(addr, value);
+			NUCLEI_ISS_BASE::set_csr_value(addr, value);
 	}
 }
 
@@ -224,48 +220,48 @@ void NUCLEI_ISS::prepare_trap(SimulationTrap &e) {
 
 	// 1) machine mode execution takes any traps, independent of delegation setting
 	// 2) non-delegated traps are processed in machine mode, independent of current execution mode
-	if (prv == MachineMode || !(exc_bit & get_csr_table()->medeleg.reg)) {
-		get_csr_table()->nuclei_mcause.fields.interrupt = 0;
-		get_csr_table()->nuclei_mcause.fields.exccode = e.reason;
-		get_csr_table()->mtval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
+	if (prv == MachineMode || !(exc_bit & csrs.medeleg.reg)) {
+		csrs.nuclei_mcause.fields.interrupt = 0;
+		csrs.nuclei_mcause.fields.exccode = e.reason;
+		csrs.mtval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 		return;
 	}
 
 	// see above machine mode comment
-	if (prv == SupervisorMode || !(exc_bit & get_csr_table()->sedeleg.reg)) {
-		get_csr_table()->scause.fields.interrupt = 0;
-		get_csr_table()->scause.fields.exception_code = e.reason;
-		get_csr_table()->stval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
+	if (prv == SupervisorMode || !(exc_bit & csrs.sedeleg.reg)) {
+		csrs.scause.fields.interrupt = 0;
+		csrs.scause.fields.exception_code = e.reason;
+		csrs.stval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 		return;
 	}
 
-	assert(prv == UserMode && (exc_bit & get_csr_table()->medeleg.reg) && (exc_bit & get_csr_table()->sedeleg.reg));
-	get_csr_table()->ucause.fields.interrupt = 0;
-	get_csr_table()->ucause.fields.exception_code = e.reason;
-	get_csr_table()->utval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
+	assert(prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
+	csrs.ucause.fields.interrupt = 0;
+	csrs.ucause.fields.exception_code = e.reason;
+	csrs.utval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
 	return;
 }
 
 void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	// update privlege mode
-	prv = get_csr_table()->mstatus.fields.mpp;
-	get_csr_table()->mstatus.fields.mpp = 0;  // not in the docs but real device seems to do that
+	prv = csrs.mstatus.fields.mpp;
+	csrs.mstatus.fields.mpp = 0;  // not in the docs but real device seems to do that
 
 	// update machine sub-mode
-	get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.fields.ptyp;
+	csrs.msubm.fields.typ = csrs.msubm.fields.ptyp;
 
 	// update mstatus
-	get_csr_table()->mstatus.fields.mie = get_csr_table()->mstatus.fields.mpie;
+	csrs.mstatus.fields.mie = csrs.mstatus.fields.mpie;
 
 	// mirror mcause/mstatus MPIE & MPP fields
-	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
-	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
+	csrs.nuclei_mcause.fields.mpie = csrs.mstatus.fields.mpie;
+	csrs.nuclei_mcause.fields.mpp = csrs.mstatus.fields.mpp;
 
-	if (get_csr_table()->nuclei_mcause.fields.interrupt) {
-		get_csr_table()->mintstatus.fields.mil = get_csr_table()->nuclei_mcause.fields.mpil;
+	if (csrs.nuclei_mcause.fields.interrupt) {
+		csrs.mintstatus.fields.mil = csrs.nuclei_mcause.fields.mpil;
 	}
 	// update pc
-	pc = get_csr_table()->mepc.reg;
+	pc = csrs.mepc.reg;
 }
 
 void NUCLEI_ISS::switch_to_trap_handler() {
@@ -274,30 +270,30 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	prv = MachineMode;
 
 	// update mepc
-	get_csr_table()->mepc.reg = pc;
+	csrs.mepc.reg = pc;
 
 	// update mstatus
-	get_csr_table()->mstatus.fields.mpie = get_csr_table()->mstatus.fields.mie;
-	get_csr_table()->mstatus.fields.mie = 0;
-	get_csr_table()->mstatus.fields.mpp = pp;
+	csrs.mstatus.fields.mpie = csrs.mstatus.fields.mie;
+	csrs.mstatus.fields.mie = 0;
+	csrs.mstatus.fields.mpp = pp;
 
 	// mirror mcause/mstatus MPIE & MPP fields
-	get_csr_table()->nuclei_mcause.fields.mpie = get_csr_table()->mstatus.fields.mpie;
-	get_csr_table()->nuclei_mcause.fields.mpp = get_csr_table()->mstatus.fields.mpp;
+	csrs.nuclei_mcause.fields.mpie = csrs.mstatus.fields.mpie;
+	csrs.nuclei_mcause.fields.mpp = csrs.mstatus.fields.mpp;
 
-	get_csr_table()->msubm.fields.ptyp = get_csr_table()->msubm.fields.typ;
+	csrs.msubm.fields.ptyp = csrs.msubm.fields.typ;
 
-	if (get_csr_table()->nuclei_mcause.fields.interrupt) {
+	if (csrs.nuclei_mcause.fields.interrupt) {
 		// Interrupt
 		// update machine sub-mode
-		get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.Interrupt;
+		csrs.msubm.fields.typ = csrs.msubm.Interrupt;
 
 		// update mcause
-		get_csr_table()->nuclei_mcause.fields.mpil = get_csr_table()->mintstatus.fields.mil;
+		csrs.nuclei_mcause.fields.mpil = csrs.mintstatus.fields.mil;
 
 		eclic->pending_interrupts_mutex.lock();
 		const auto id = eclic->pending_interrupts.top().id;
-		get_csr_table()->nuclei_mcause.fields.exccode = id;
+		csrs.nuclei_mcause.fields.exccode = id;
 
 		if (eclic->clicintattr[id] & 1) {
 			// vectored
@@ -307,27 +303,27 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 				eclic->pending_interrupts_mutex.unlock();
 				return return_from_trap_handler(MachineMode);
 			}
-			get_csr_table()->nuclei_mcause.fields.minhv = 1;
-			pc = instr_mem->load_instr(get_csr_table()->mtvt.reg + id * 4);
-			get_csr_table()->nuclei_mcause.fields.minhv = 0;
+			csrs.nuclei_mcause.fields.minhv = 1;
+			pc = instr_mem->load_instr(csrs.mtvt.reg + id * 4);
+			csrs.nuclei_mcause.fields.minhv = 0;
 			eclic->pending_interrupts.pop();
 		} else {
 			// non-vectored
-			if (get_csr_table()->mtvt2.fields.mtvt2en) {
+			if (csrs.mtvt2.fields.mtvt2en) {
 				// use mtvt2
-				pc = get_csr_table()->mtvt2.fields.cmmon_code_entry << 2;
+				pc = csrs.mtvt2.fields.cmmon_code_entry << 2;
 			} else {
 				// use mtvec
-				pc = get_csr_table()->nuclei_mtvec.get_base_address();
+				pc = csrs.nuclei_mtvec.get_base_address();
 			}
 		}
 		eclic->pending_interrupts_mutex.unlock();
 	} else {
 		// Exception
 		// update machine sub-mode
-		get_csr_table()->msubm.fields.typ = get_csr_table()->msubm.Exception;
+		csrs.msubm.fields.typ = csrs.msubm.Exception;
 
-		pc = get_csr_table()->nuclei_mtvec.get_base_address();
+		pc = csrs.nuclei_mtvec.get_base_address();
 	}
 
 	if (pc == 0) {
@@ -361,25 +357,25 @@ void NUCLEI_ISS::run_step() {
 	try {
 		exec_step();
 
-		bool pending = !eclic->pending_interrupts.empty() && get_csr_table()->mstatus.fields.mie;
+		bool pending = !eclic->pending_interrupts.empty() && csrs.mstatus.fields.mie;
 
 		// Interrupt preemption. Only supported for non-vectored interrupts.
 		// Current running interrupt will only be preempted by a higher non-vectored interrupt.
-		if (pending && get_csr_table()->msubm.fields.typ == get_csr_table()->msubm.Interrupt) {
-			const auto current_intr_id = get_csr_table()->nuclei_mcause.fields.exccode;
+		if (pending && csrs.msubm.fields.typ == csrs.msubm.Interrupt) {
+			const auto current_intr_id = csrs.nuclei_mcause.fields.exccode;
 			const auto pending_intr = eclic->pending_interrupts.top();
 			Interrupt current_intr =
 			    Interrupt(current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg);
 			pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 && pending_intr.level > current_intr.level;
 		}
 		if (pending) {
-			get_csr_table()->nuclei_mcause.fields.interrupt = 1;
+			csrs.nuclei_mcause.fields.interrupt = 1;
 			switch_to_trap_handler();
 		}
 	} catch (SimulationTrap &e) {
 		if (trace)
 			std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
-		get_csr_table()->nuclei_mcause.fields.interrupt = 0;
+		csrs.nuclei_mcause.fields.interrupt = 0;
 		prepare_trap(e);
 		switch_to_trap_handler();
 	}

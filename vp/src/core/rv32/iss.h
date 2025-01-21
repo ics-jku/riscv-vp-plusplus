@@ -26,6 +26,7 @@
 #include "core/common/trap.h"
 #include "csr.h"
 #include "fp.h"
+#include "platform/gd32/nuclei_core/nuclei_csr.h"
 #include "syscall_if.h"
 #include "util/common.h"
 #include "util/initiator_if.h"
@@ -44,7 +45,11 @@ using data_memory_if = data_memory_if_T<sxlen_t, uxlen_t>;
 
 // NOTE: on this branch, currently the *simple-timing* model is still directly
 // integrated in the ISS. Merge the *timedb* branch to use the timing_if.
-struct ISS;
+
+// predefine default template instance ISS
+template <class T_csr_table>
+struct ISS_T;
+using ISS = ISS_T<csr_table>;
 
 struct timing_if {
 	virtual ~timing_if() {}
@@ -57,11 +62,32 @@ struct PendingInterrupts {
 	uxlen_t pending;
 };
 
-struct ISS : public external_interrupt_target,
-             public clint_interrupt_target,
-             public iss_syscall_if,
-             public debug_target_if,
-             public initiator_if {
+/*
+ * NOTE RVxx.1:
+ *
+ * See also "NOTE RVxx.1" in core/rv32/iss.cpp, core/rv64/iss.h and core/rv64/iss.cpp
+ *
+ * This RV32 ISS_T template class is used as stand-alone for the classic RV32 ISS and as base class
+ * for the derived nuclei_core ISS (platform/gd32/nuclei_core).
+ * Currently the implementation is based on C++ templates and polymorphism, so:
+ *  1. The ISS_T class is *NOT* set to final to allow derived classes
+ *  2. There are virtual methods. The virtual methods to make nuclei_core work are annotated with a
+ *     "see NOTE RVXX.1" comment
+ *  3. ISS_T is a template with an implementation located in iss.cpp, so every concrete class based
+ *     on the ISS_T template has to be *explicitly* specified. The concrete implementations of the
+ *     ISS_T template for the classic RV32 ISS and nuclei_core ISS are specified at the end of iss.cpp
+ *     annotated with a "see NOTE RVXX.1" comment.
+ *
+ * TODO: Virtual methods come with a runtime-cost (dynamic dispatch) -> In the long run, we plan to get rid of
+ * polymorphism here all together by using a C++ template based approach. (something as described in
+ * http://groups.di.unipi.it/~nids/docs/templates_vs_inheritance.html)
+ */
+template <class T_csr_table>
+struct ISS_T : public external_interrupt_target,
+               public clint_interrupt_target,
+               public iss_syscall_if,
+               public debug_target_if,
+               public initiator_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	LSCacheDefault_T<sxlen_t, uxlen_t> lscache;
@@ -75,8 +101,8 @@ struct ISS : public external_interrupt_target,
 	bool shall_exit = false;
 	bool ignore_wfi = false;
 	bool error_on_zero_traphandler = false;
-	csr_table csrs;
-	VExtension<ISS> v_ext;
+	T_csr_table csrs;
+	VExtension<ISS_T<T_csr_table>> v_ext;
 	PrivilegeLevel prv = MachineMode;
 	int64_t lr_sc_counter = 0;
 	uint64_t total_num_instr = 0;
@@ -99,7 +125,7 @@ struct ISS : public external_interrupt_target,
 
 	static constexpr unsigned xlen = XLEN;
 
-	ISS(uxlen_t hart_id, bool use_E_base_isa = false);
+	ISS_T(uxlen_t hart_id, bool use_E_base_isa = false);
 
 	Architecture get_architecture(void) override {
 		return RV32;
@@ -153,8 +179,9 @@ struct ISS : public external_interrupt_target,
 	void fp_setup_rm();
 	void fp_require_not_off();
 
-	virtual csr_table *get_csr_table();
+	/* virtual -> see NOTE RVxx.1 above */
 	virtual uxlen_t get_csr_value(uxlen_t addr);
+	/* virtual -> see NOTE RVxx.1 above */
 	virtual void set_csr_value(uxlen_t addr, uxlen_t value);
 
 	bool is_invalid_csr_access(uxlen_t csr_addr, bool is_write);
@@ -229,6 +256,7 @@ struct ISS : public external_interrupt_target,
 		return csrs.mie.reg & csrs.mip.reg;
 	}
 
+	/* virtual -> see NOTE RVxx.1 above */
 	virtual void return_from_trap_handler(PrivilegeLevel return_mode);
 
 	void switch_to_trap_handler(PrivilegeLevel target_mode);
@@ -244,13 +272,15 @@ struct ISS : public external_interrupt_target,
 
 /* Do not call the run function of the ISS directly but use one of the Runner
  * wrappers. */
+template <class T_csr_table>
 struct DirectCoreRunner : public sc_core::sc_module {
-	ISS &core;
+	ISS_T<T_csr_table> &core;
 	std::string thread_name;
 
 	SC_HAS_PROCESS(DirectCoreRunner);
 
-	DirectCoreRunner(ISS &core) : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
+	DirectCoreRunner(ISS_T<T_csr_table> &core)
+	    : sc_module(sc_core::sc_module_name(core.systemc_name.c_str())), core(core) {
 		thread_name = "run" + std::to_string(core.get_hart_id());
 		SC_NAMED_THREAD(run, thread_name.c_str());
 	}

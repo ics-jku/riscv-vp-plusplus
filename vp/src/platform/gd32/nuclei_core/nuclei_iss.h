@@ -6,13 +6,14 @@
 
 namespace rv32 {
 
-struct NUCLEI_ISS : public ISS {
-	nuclei_csr_table csrs;
+/* see bottom of vp/core/rv32/iss.cpp */
+using NUCLEI_ISS_BASE = ISS_T<nuclei_csr_table>;
+
+struct NUCLEI_ISS : public NUCLEI_ISS_BASE {
 	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY>* eclic = nullptr;
 
-	NUCLEI_ISS(uxlen_t hart_id, bool use_E_base_isa = false) : ISS(hart_id, use_E_base_isa){};
+	NUCLEI_ISS(uxlen_t hart_id, bool use_E_base_isa = false) : NUCLEI_ISS_BASE(hart_id, use_E_base_isa){};
 
-	nuclei_csr_table* get_csr_table() override;
 	uxlen_t get_csr_value(uxlen_t addr) override;
 	void set_csr_value(uxlen_t addr, uxlen_t value) override;
 
