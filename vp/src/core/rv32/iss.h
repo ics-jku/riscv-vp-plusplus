@@ -263,6 +263,12 @@ struct ISS_T : public external_interrupt_target,
 
 	void performance_and_sync_update(Opcode::Mapping executed_op);
 
+	/* virtual -> see NOTE RVxx.1 above */
+	virtual void handle_interrupt();
+
+	/* virtual -> see NOTE RVxx.1 above */
+	virtual void handle_trap(SimulationTrap &e);
+
 	void run_step() override;
 
 	void run() override;

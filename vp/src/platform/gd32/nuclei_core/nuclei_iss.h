@@ -22,7 +22,8 @@ struct NUCLEI_ISS : public NUCLEI_ISS_BASE {
 	void return_from_trap_handler(PrivilegeLevel return_mode) override;
 	void switch_to_trap_handler();
 
-	void run_step() override;
+	void handle_interrupt() override;
+	void handle_trap(SimulationTrap& e) override;
 };
 
 }  // namespace rv32

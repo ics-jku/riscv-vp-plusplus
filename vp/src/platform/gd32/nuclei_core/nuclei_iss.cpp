@@ -343,48 +343,29 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	}
 }
 
-void NUCLEI_ISS::run_step() {
-	assert(regs.read(0) == 0);
+void NUCLEI_ISS::handle_interrupt() {
+	bool pending = !eclic->pending_interrupts.empty() && csrs.mstatus.fields.mie;
 
-	// speeds up the execution performance (non debug mode) significantly by
-	// checking the additional flag first
-	if (debug_mode && (breakpoints.find(pc) != breakpoints.end())) {
-		status = CoreExecStatus::HitBreakpoint;
-		return;
+	// Interrupt preemption. Only supported for non-vectored interrupts.
+	// Current running interrupt will only be preempted by a higher non-vectored interrupt.
+	if (pending && csrs.msubm.fields.typ == csrs.msubm.Interrupt) {
+		const auto current_intr_id = csrs.nuclei_mcause.fields.exccode;
+		const auto pending_intr = eclic->pending_interrupts.top();
+		Interrupt current_intr =
+		    Interrupt(current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg);
+		pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 && pending_intr.level > current_intr.level;
 	}
-
-	last_pc = pc;
-	try {
-		exec_step();
-
-		bool pending = !eclic->pending_interrupts.empty() && csrs.mstatus.fields.mie;
-
-		// Interrupt preemption. Only supported for non-vectored interrupts.
-		// Current running interrupt will only be preempted by a higher non-vectored interrupt.
-		if (pending && csrs.msubm.fields.typ == csrs.msubm.Interrupt) {
-			const auto current_intr_id = csrs.nuclei_mcause.fields.exccode;
-			const auto pending_intr = eclic->pending_interrupts.top();
-			Interrupt current_intr =
-			    Interrupt(current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg);
-			pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 && pending_intr.level > current_intr.level;
-		}
-		if (pending) {
-			csrs.nuclei_mcause.fields.interrupt = 1;
-			switch_to_trap_handler();
-		}
-	} catch (SimulationTrap &e) {
-		if (trace)
-			std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
-		csrs.nuclei_mcause.fields.interrupt = 0;
-		prepare_trap(e);
+	if (pending) {
+		csrs.nuclei_mcause.fields.interrupt = 1;
 		switch_to_trap_handler();
 	}
+}
 
-	// Do not use a check *pc == last_pc* here. The reason is that due to
-	// interrupts *pc* can be set to *last_pc* accidentally (when jumping back
-	// to *mepc*).
-	if (shall_exit)
-		status = CoreExecStatus::Terminated;
-
-	performance_and_sync_update(op);
+void NUCLEI_ISS::handle_trap(SimulationTrap &e) {
+	if (trace) {
+		std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
+	}
+	csrs.nuclei_mcause.fields.interrupt = 0;
+	prepare_trap(e);
+	switch_to_trap_handler();
 }

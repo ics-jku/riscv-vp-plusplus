@@ -5065,6 +5065,25 @@ void ISS_T<T_csr_table>::performance_and_sync_update(Opcode::Mapping executed_op
 }
 
 template <class T_csr_table>
+void ISS_T<T_csr_table>::handle_interrupt() {
+	auto x = compute_pending_interrupts();
+	if (x.target_mode != NoneMode) {
+		prepare_interrupt(x);
+		switch_to_trap_handler(x.target_mode);
+	}
+}
+
+template <class T_csr_table>
+void ISS_T<T_csr_table>::handle_trap(SimulationTrap &e) {
+	if (trace) {
+		std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval
+		          << ", pc=" << boost::format("%x") % last_pc << std::endl;
+	}
+	auto target_mode = prepare_trap(e);
+	switch_to_trap_handler(target_mode);
+}
+
+template <class T_csr_table>
 void ISS_T<T_csr_table>::run_step() {
 	assert(regs.read(0) == 0);
 
@@ -5078,18 +5097,9 @@ void ISS_T<T_csr_table>::run_step() {
 	last_pc = pc;
 	try {
 		exec_step();
-
-		auto x = compute_pending_interrupts();
-		if (x.target_mode != NoneMode) {
-			prepare_interrupt(x);
-			switch_to_trap_handler(x.target_mode);
-		}
+		handle_interrupt();
 	} catch (SimulationTrap &e) {
-		if (trace)
-			std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval
-			          << ", pc=" << boost::format("%x") % last_pc << std::endl;
-		auto target_mode = prepare_trap(e);
-		switch_to_trap_handler(target_mode);
+		handle_trap(e);
 	}
 
 	// Do not use a check *pc == last_pc* here. The reason is that due to
