@@ -252,7 +252,8 @@ struct ISS_T : public external_interrupt_target,
 		return compute_pending_interrupts().target_mode != NoneMode;
 	}
 
-	bool has_local_pending_enabled_interrupts() {
+	/* virtual -> see NOTE RVxx.1 above */
+	virtual bool has_local_pending_enabled_interrupts() {
 		return csrs.mie.reg & csrs.mip.reg;
 	}
 

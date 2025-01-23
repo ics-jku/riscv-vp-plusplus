@@ -6,6 +6,13 @@
 
 using namespace rv32;
 
+void NUCLEI_ISS::trigger_eclic_interrupt() {
+	if (trace) {
+		std::cout << "[vp::iss] trigger eclic interrupt, " << sc_core::sc_time_stamp() << std::endl;
+	}
+	wfi_event.notify(sc_core::SC_ZERO_TIME);
+}
+
 uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 	auto read = [=](auto &x, uxlen_t mask) { return x.reg & mask; };
 

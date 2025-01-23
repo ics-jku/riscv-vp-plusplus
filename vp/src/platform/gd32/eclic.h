@@ -76,7 +76,11 @@ class ECLIC : public sc_core::sc_module, public nuclei_interrupt_gateway {
 	std::priority_queue<Interrupt, std::vector<Interrupt>, InterruptComparator> pending_interrupts;
 	std::mutex pending_interrupts_mutex;
 
-	ECLIC(sc_core::sc_module_name) {
+	std::vector<eclic_interrupt_target *> target_harts{};
+
+	ECLIC(sc_core::sc_module_name, unsigned harts = 1) {
+		target_harts = std::vector<eclic_interrupt_target *>(harts, NULL);
+
 		tsock.register_b_transport(this, &ECLIC::transport);
 
 		// fill clicinfo register with following information
@@ -98,6 +102,10 @@ class ECLIC : public sc_core::sc_module, public nuclei_interrupt_gateway {
 		clicintip[irq_id] = 1;
 		std::lock_guard<std::mutex> guard(pending_interrupts_mutex);
 		pending_interrupts.push({irq_id, clicintctl[irq_id], clicinfo, cliccfg});
+
+		for (size_t i = 0; i < target_harts.size(); i++) {
+			target_harts[i]->trigger_eclic_interrupt();
+		}
 	}
 
 	void gateway_clear_interrupt(uint32_t irq_id) {

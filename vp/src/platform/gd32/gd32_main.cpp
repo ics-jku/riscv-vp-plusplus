@@ -106,7 +106,7 @@ int sc_main(int argc, char **argv) {
 	EXMC exmc("EXMC");
 	RCU rcu("RCU");
 	TIMER timer("TIMER");
-	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY> eclic("ECLIC");
+	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY> eclic("ECLIC", 1);
 	USART usart0("USART0");
 	AFIO afio("AFIO");
 	EXTI exti("EXTI");
@@ -187,6 +187,7 @@ int sc_main(int argc, char **argv) {
 		ahb.isocks[it++].bind(exmc.tsock_external);
 	}
 
+	eclic.target_harts[0] = &core;
 	core.eclic = &eclic;
 	timer.eclic = &eclic;
 	for (auto &gpio : gpioVec) {
