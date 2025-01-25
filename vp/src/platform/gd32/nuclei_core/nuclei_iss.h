@@ -6,9 +6,6 @@
 
 namespace rv32 {
 
-/* see bottom of vp/core/rv32/iss.cpp */
-using NUCLEI_ISS_BASE = ISS_T<nuclei_csr_table>;
-
 struct NUCLEI_ISS : public NUCLEI_ISS_BASE, public eclic_interrupt_target {
 	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY>* eclic = nullptr;
 
