@@ -242,6 +242,7 @@ int sc_main(int argc, char **argv) {
 		sys.register_core(&cores[i]->iss);
 		if (opt.intercept_syscalls)
 			cores[i]->iss.sys = &sys;
+		cores[i]->iss.error_on_zero_traphandler = opt.error_on_zero_traphandler;
 	}
 
 	// setup port mapping

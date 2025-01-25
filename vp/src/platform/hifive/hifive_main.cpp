@@ -242,6 +242,7 @@ int sc_main(int argc, char **argv) {
 
 	if (opt.intercept_syscalls)
 		core.sys = &sys;
+	core.error_on_zero_traphandler = opt.error_on_zero_traphandler;
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(bus.tsocks[0]);

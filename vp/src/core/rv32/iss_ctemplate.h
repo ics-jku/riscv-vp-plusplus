@@ -38,7 +38,6 @@ struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	VExtension<ISS_CT> v_ext;
 	PrivilegeLevel prv = MachineMode;
 	int64_t lr_sc_counter = 0;
-	uint64_t total_num_instr = 0;
 
 	// last decoded and executed instruction and opcode
 	Instruction instr;

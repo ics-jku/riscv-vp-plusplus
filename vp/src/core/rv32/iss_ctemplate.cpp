@@ -4950,7 +4950,7 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 			pc = csrs.mtvec.get_base_address();
 
-			if (pc == 0) {
+			if (unlikely(pc == 0)) {
 				if (error_on_zero_traphandler) {
 					throw std::runtime_error("[ISS] Took null trap handler in machine mode");
 				} else {
@@ -5006,8 +5006,6 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 }
 
 void ISS_CT::performance_and_sync_update(Opcode::Mapping executed_op) {
-	++total_num_instr;
-
 	if (!csrs.mcountinhibit.fields.IR)
 		++csrs.instret.reg;
 

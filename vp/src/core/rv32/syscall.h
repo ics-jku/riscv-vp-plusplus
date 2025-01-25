@@ -61,8 +61,8 @@
 
 #include <systemc>
 
+#include "core/common/syscall_if.h"
 #include "iss.h"
-#include "syscall_if.h"
 
 namespace rv32 {
 

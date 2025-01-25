@@ -59,8 +59,8 @@
 
 #include <systemc>
 
+#include "core/common/syscall_if.h"
 #include "iss.h"
-#include "syscall_if.h"
 
 namespace rv64 {
 
@@ -91,7 +91,7 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	}
 
 	virtual void execute_syscall(iss_syscall_if *core) override {
-		auto a7 = core->read_register(RegFile::a7);
+		auto syscall = core->read_register(core->get_syscall_register_index());
 		auto a3 = core->read_register(RegFile::a3);
 		auto a2 = core->read_register(RegFile::a2);
 		auto a1 = core->read_register(RegFile::a1);
@@ -99,7 +99,7 @@ struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 
 		// printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
 
-		auto ans = execute_syscall(a7, a0, a1, a2, a3);
+		auto ans = execute_syscall(syscall, a0, a1, a2, a3);
 
 		core->write_register(RegFile::a0, ans);
 

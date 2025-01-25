@@ -4770,6 +4770,10 @@ void ISS_CT::sys_exit() {
 	shall_exit = true;
 }
 
+unsigned ISS_CT::get_syscall_register_index() {
+	return RegFile::a7;
+}
+
 uint64_t ISS_CT::read_register(unsigned idx) {
 	return regs.read(idx);
 }
@@ -5095,6 +5099,19 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 			csrs.mstatus.fields.mpp = pp;
 
 			pc = csrs.mtvec.get_base_address();
+
+			if (unlikely(pc == 0)) {
+				if (error_on_zero_traphandler) {
+					throw std::runtime_error("[ISS] Took null trap handler in machine mode");
+				} else {
+					static bool once = true;
+					if (once)
+						std::cout
+						    << "[ISS] Warn: Taking trap handler in machine mode to 0x0, this is probably an error."
+						    << std::endl;
+					once = false;
+				}
+			}
 
 			if (csrs.mcause.fields.interrupt && csrs.mtvec.fields.mode == csr_mtvec::Mode::Vectored)
 				pc += 4 * csrs.mcause.fields.exception_code;

@@ -33,6 +33,7 @@ struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	bool trace = false;
 	bool shall_exit = false;
 	bool ignore_wfi = false;
+	bool error_on_zero_traphandler = false;
 	ISS_CT_T_CSR_TABLE csrs;
 	VExtension<ISS_CT> v_ext;
 	PrivilegeLevel prv = MachineMode;
@@ -81,7 +82,7 @@ struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	void clear_software_interrupt() override;
 
 	void sys_exit() override;
-
+	unsigned get_syscall_register_index() override;
 	uint64_t read_register(unsigned idx) override;
 	void write_register(unsigned idx, uint64_t value) override;
 
