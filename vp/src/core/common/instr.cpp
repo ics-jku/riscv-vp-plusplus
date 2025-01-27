@@ -1,5 +1,15 @@
 #include "instr.h"
 
+/*
+ * NOTE RVCOMMON.01 (RV32E/RV64E)
+ * We have support for RV32E and RV64E. However, new RISC-V specs, like
+ * The RISC-V Instruction Set Manual Volume I: Unprivileged Architecture, Version 20240411
+ * (Chapter 3) specifies registers x16-x31 as reserved -> the decoder should check the registers
+ * and trap if they are used.
+ * TODO: Add REQUIRE_ISA(I) check for x16-x31 as values for rd, rs1 and rs2! (see
+ * NOTE RVCOMMON.01 at REQUIRE_ISA below)
+ */
+
 #include <cassert>
 #include <stdexcept>
 
@@ -1595,6 +1605,7 @@ constexpr uint32_t VMV_NR_R_V_MASK = 0b11111100000000000111000001111111;
 /*
  * check misa_extensions variable if given extension is supported
  * return current function with UNSUP, if not
+ * TODO: NOTE RVCOMMON.01 (RV32E/RV64E) see above
  */
 #define REQUIRE_ISA(_ext_bit)            \
 	if (!(misa_extensions & (_ext_bit))) \

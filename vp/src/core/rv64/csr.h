@@ -43,6 +43,15 @@ struct csr_misa_64 : csr_misa {
 		return fields.extensions & C;
 	}
 
+	bool has_E_base_isa() {
+		return fields.extensions & E;
+	}
+
+	void select_E_base_isa() {
+		fields.extensions &= ~I;
+		fields.extensions |= E;
+	}
+
 	bool has_user_mode_extension() {
 		return fields.extensions & U;
 	}

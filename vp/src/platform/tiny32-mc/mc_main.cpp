@@ -58,8 +58,8 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core0(0);
-	ISS core1(1);
+	ISS core0(0, opt.use_E_base_isa);
+	ISS core1(1, opt.use_E_base_isa);
 	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0);
 	CombinedMemoryInterface core1_mem_if("MemoryInterface1", core1);
 

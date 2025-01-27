@@ -31,9 +31,11 @@ typedef __uint128_t uint128_t;
 #define RS2 instr.rs2()
 #define RS3 instr.rs3()
 
-ISS_CT::ISS_CT(uxlen_t hart_id) : v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
+ISS_CT::ISS_CT(uxlen_t hart_id, bool use_E_base_isa) : v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
 	csrs.mhartid.reg = hart_id;
 	op = Opcode::UNDEF;
+	if (use_E_base_isa)
+		csrs.misa.select_E_base_isa();
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -4771,7 +4773,10 @@ void ISS_CT::sys_exit() {
 }
 
 unsigned ISS_CT::get_syscall_register_index() {
-	return RegFile::a7;
+	if (csrs.misa.has_E_base_isa())
+		return RegFile::a5;
+	else
+		return RegFile::a7;
 }
 
 uint64_t ISS_CT::read_register(unsigned idx) {

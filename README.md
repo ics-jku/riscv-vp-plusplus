@@ -6,6 +6,8 @@ It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Jo
 A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf), can be found in the last section.
 
 ### Key features of *RISC-V VP++*
+ * Support for RV32E and RV64E
+   (Can be enabled with the "--use-E-base-isa" command line option on riscv-vp, microrv32-vp and all tiny* vp platforms.)
  * Support for the *GD32VF103VBT6* microcontroller (*Nuclei N205*) including UI
    * More detailed information can be found [here](doc/GD32/README.md)
  * Support for *RISC-V "V" Vector Extension* (RVV) version 1.0

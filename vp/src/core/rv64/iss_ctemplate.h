@@ -57,7 +57,7 @@ struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	static constexpr unsigned xlen = XLEN;
 
-	ISS_CT(uxlen_t hart_id);
+	ISS_CT(uxlen_t hart_id, bool use_E_base_isa = false);
 
 	Architecture get_architecture(void) override {
 		return RV64;
