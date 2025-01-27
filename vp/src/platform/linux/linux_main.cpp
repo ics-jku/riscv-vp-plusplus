@@ -185,7 +185,7 @@ int sc_main(int argc, char **argv) {
 	VNCServer vncServer("RISC-V VP++ VNCServer", opt.vnc_port);
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
-	SimpleMemory dtb_rom("DBT_ROM", opt.dtb_rom_size);
+	SimpleMemory dtb_rom("DTB_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
 	NetTrace *debug_bus = nullptr;
 	if (opt.use_debug_bus) {
