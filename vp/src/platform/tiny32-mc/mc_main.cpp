@@ -113,8 +113,8 @@ int sc_main(int argc, char **argv) {
 	clint.target_harts[1] = &core1;
 
 	// switch for printing instructions
-	core0.trace = opt.trace_mode;
-	core1.trace = opt.trace_mode;
+	core0.enable_trace(opt.trace_mode);
+	core1.enable_trace(opt.trace_mode);
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core0);

@@ -286,7 +286,7 @@ int sc_main(int argc, char **argv) {
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
 
-	core.trace = opt.trace_mode;  // switch for printing instructions
+	core.enable_trace(opt.trace_mode);  // switch for printing instructions
 	if (opt.use_debug_runner) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
 		new GDBServerRunner("GDBRunner", server, &core);

@@ -114,7 +114,7 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[2].bind(sys.tsock);
 
 	// switch for printing instructions
-	core.trace = opt.trace_mode;
+	core.enable_trace(opt.trace_mode);
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);

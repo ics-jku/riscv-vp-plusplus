@@ -16,11 +16,16 @@
 #endif
 
 /* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */
-struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
-                                 public clint_interrupt_target,
-                                 public iss_syscall_if,
-                                 public debug_target_if,
-                                 public initiator_if {
+class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
+                                public clint_interrupt_target,
+                                public iss_syscall_if,
+                                public debug_target_if,
+                                public initiator_if {
+	// private: must not modified directly (would break DBBCache)
+	bool trace = false;
+	// TODO: check and set intended permissions for all members
+
+   public:
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	LSCacheDefault_T<sxlen_t, uxlen_t> lscache;
@@ -30,7 +35,6 @@ struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	FpRegs fp_regs;
 	uxlen_t pc = 0;
 	uxlen_t last_pc = 0;
-	bool trace = false;
 	bool shall_exit = false;
 	bool ignore_wfi = false;
 	bool error_on_zero_traphandler = false;
@@ -90,6 +94,14 @@ struct ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	uint64_t get_progam_counter(void) override;
 	void enable_debug(void) override;
+
+	void enable_trace(bool ena) {
+		trace = ena;
+	}
+	bool trace_enabled(void) {
+		return trace;
+	}
+
 	CoreExecStatus get_status(void) override;
 	void set_status(CoreExecStatus) override;
 	void block_on_wfi(bool) override;

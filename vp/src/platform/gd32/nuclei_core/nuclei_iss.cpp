@@ -7,7 +7,7 @@
 using namespace rv32;
 
 void NUCLEI_ISS::trigger_eclic_interrupt() {
-	if (trace) {
+	if (trace_enabled()) {
 		std::cout << "[vp::iss] trigger eclic interrupt, " << sc_core::sc_time_stamp() << std::endl;
 	}
 	wfi_event.notify(sc_core::SC_ZERO_TIME);
@@ -390,7 +390,7 @@ void NUCLEI_ISS::handle_interrupt() {
 }
 
 void NUCLEI_ISS::handle_trap(SimulationTrap &e) {
-	if (trace) {
+	if (trace_enabled()) {
 		std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
 	}
 	csrs.nuclei_mcause.fields.interrupt = 0;

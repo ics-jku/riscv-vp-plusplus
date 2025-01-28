@@ -80,7 +80,7 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		quantum_keeper.set(local_delay);
 
 		if (trans.is_response_error()) {
-			if (iss.trace)
+			if (iss.trace_enabled())
 				std::cout << "WARNING: core memory transaction failed for address 0x" << std::hex << addr << std::dec
 				          << " -> raise trap" << std::endl;
 			if (cmd == tlm::TLM_READ_COMMAND)

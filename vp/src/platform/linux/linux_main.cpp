@@ -308,7 +308,7 @@ int sc_main(int argc, char **argv) {
 
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		// switch for printing instructions
-		cores[i]->iss.trace = opt.trace_mode;
+		cores[i]->iss.enable_trace(opt.trace_mode);
 
 		// emulate RISC-V core boot loader
 		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
