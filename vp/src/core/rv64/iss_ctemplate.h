@@ -22,20 +22,36 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
                                 public debug_target_if,
                                 public initiator_if {
 	// private: must not modified directly (would break DBBCache)
+	bool iss_slow_path = false;
 	bool trace = false;
+	uint64_t cycle_counter_raw_last = 0;
 	// TODO: check and set intended permissions for all members
 
+	struct op_label_entry {
+		Opcode::Mapping op;
+		void *label_ptr;
+	};
+
+	void *genOpMap();
+
+	void exec_steps(const bool debug_single_step);
+
    public:
+#ifdef ISS_CT_STATS_ENABLED
+	ISSStats stats;
+#else
+	ISSStatsDummy stats;
+#endif
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
 	LSCacheDefault_T<sxlen_t, uxlen_t> lscache;
+	DBBCacheDefault_T<ARCH, uxlen_t, instr_memory_if> dbbcache;
 	data_memory_if *mem = nullptr;
 	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	FpRegs fp_regs;
 	uxlen_t pc = 0;
-	uxlen_t last_pc = 0;
-	bool shall_exit = false;
+	bool shall_exit = false;  // TODO: private?
 	bool ignore_wfi = false;
 	bool error_on_zero_traphandler = false;
 	ISS_CT_T_CSR_TABLE csrs;
@@ -45,11 +61,10 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	// last decoded and executed instruction and opcode
 	Instruction instr;
-	Opcode::Mapping op;
 
-	CoreExecStatus status = CoreExecStatus::Runnable;
+	CoreExecStatus status = CoreExecStatus::Runnable;  // TODO: private?
 	std::unordered_set<uxlen_t> breakpoints;
-	bool debug_mode = false;
+	bool debug_mode = false;  // TODO: private?
 
 	sc_core::sc_event wfi_event;
 
@@ -57,20 +72,54 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	sc_core::sc_time cycle_time;
 	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
-	std::array<sc_core::sc_time, Opcode::NUMBER_OF_INSTRUCTIONS> instr_cycles;
+	struct OpMapEntry opMap[Opcode::NUMBER_OF_INSTRUCTIONS];
 
 	static constexpr unsigned xlen = XLEN;
 
 	ISS_CT(uxlen_t hart_id, bool use_E_base_isa = false);
 
 	Architecture get_architecture(void) override {
-		return RV64;
+		return ARCH;
 	}
 
 	std::string name();
 	void halt();
 
-	void exec_step();
+	void print_trace();
+
+	void force_slow_path() {
+		iss_slow_path = true;
+		dbbcache.force_slow_path();
+	}
+
+	/*
+	 * commit incremental cycle counter to global counter and quantum_keeper
+	 * NOTE: must be called before any tlm transaction (done in mem.h)
+	 */
+	inline void commit_cycles() {
+		stats.inc_commit_cycles();
+
+		/* calculate increment */
+		uint64_t cycle_counter_raw = dbbcache.get_cycle_counter_raw();
+		uint64_t cycle_counter_raw_inc = cycle_counter_raw - cycle_counter_raw_last;
+		cycle_counter_raw_last = cycle_counter_raw;
+
+		/* update csr and quantum_keeper */
+		sc_core::sc_time cycle_counter_raw_inc_sysc = sc_core::sc_time(cycle_counter_raw_inc, sc_core::SC_NS);
+		if (!csrs.mcountinhibit.fields.CY) {
+			cycle_counter += cycle_counter_raw_inc_sysc;
+		}
+		quantum_keeper.inc(cycle_counter_raw_inc_sysc);
+	}
+
+	inline void commit_instructions(unsigned long &ninstr) {
+		stats.inc_commit_instructions();
+
+		if (!csrs.mcountinhibit.fields.IR) {
+			csrs.instret.reg += ninstr;
+		}
+		ninstr = 0;
+	}
 
 	uint64_t _compute_and_get_current_cycles();
 
@@ -97,6 +146,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	void enable_trace(bool ena) {
 		trace = ena;
+		force_slow_path();
 	}
 	bool trace_enabled(void) {
 		return trace;
@@ -105,6 +155,11 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	CoreExecStatus get_status(void) override;
 	void set_status(CoreExecStatus) override;
 	void block_on_wfi(bool) override;
+
+	void maybe_interrupt_pending() {
+		force_slow_path();
+		wfi_event.notify(sc_core::SC_ZERO_TIME);
+	}
 
 	void insert_breakpoint(uint64_t) override;
 	void remove_breakpoint(uint64_t) override;
@@ -139,15 +194,6 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		}
 	}
 
-	inline void trap_check_pc_alignment() {
-		assert(!(pc & 0x1) && "not possible due to immediate formats and jump execution");
-
-		if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
-			// NOTE: misaligned instruction address not possible on machines supporting compressed instructions
-			raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
-		}
-	}
-
 	template <unsigned Alignment, bool isLoad>
 	inline void trap_check_addr_alignment(uxlen_t addr) {
 		if (unlikely(addr % Alignment)) {
@@ -156,6 +202,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	}
 
 	inline void execute_amo_w(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
+		stats.inc_amo();
 		uxlen_t addr = regs[instr.rs1()];
 		trap_check_addr_alignment<4, false>(addr);
 		int32_t data;
@@ -193,6 +240,11 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		}
 	}
 
+	inline void reset_reg_zero() {
+		regs.reset_zero();
+		stats.inc_set_zero();
+	}
+
 	inline bool m_mode() {
 		return prv == MachineMode;
 	}
@@ -205,7 +257,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return prv == UserMode;
 	}
 
-	PrivilegeLevel prepare_trap(SimulationTrap &e);
+	PrivilegeLevel prepare_trap(SimulationTrap &e, uxlen_t last_pc);
 
 	void prepare_interrupt(const PendingInterrupts &x);
 
@@ -225,13 +277,11 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	void switch_to_trap_handler(PrivilegeLevel target_mode);
 
-	void performance_and_sync_update(Opcode::Mapping executed_op);
-
 	/* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */
 	PROP_METHOD_VIRTUAL void handle_interrupt();
 
 	/* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */
-	PROP_METHOD_VIRTUAL void handle_trap(SimulationTrap &e);
+	PROP_METHOD_VIRTUAL void handle_trap(SimulationTrap &e, uxlen_t last_pc);
 
 	void run_step() override;
 

@@ -16,6 +16,22 @@
  * (core/rv32/iss_ctemplate_handle.h) For RV64 we currently have only on concrete ISS definition and implementation.
  * However, we still using this c-template pattern here to keep differences between the RV32 and RV64 ISS as small as
  * possible.
+ *
+ * There are following parameters:
+ *  * ISS_CT .. the name of the class to define/implement
+ *  * ISS_CT_T_CSR_TABLE .. the csr_table type to use
+ *  * ISS_CT_ENABLE_POLYMORPHISM ..
+ *    * see NOTE RVxx.1 in iss_ctemplate.h
+ *    * If not defined: The class will be set to final and there will be no virtual methods.
+ *      -> Not derivable. No overhead for dynamic dispatch. -> Used for the classic RV32 ISS
+ *    * If defined: The class will *NOT* be set to final and some methods (annotated with NOTE RVxx.1) will be set as
+ * virtual.
+ *      -> Derivable, but overhead for dynamic dispatch. -> Used to realize the derived nuclei_core.
+ *  * ISS_CT_STATS_ENABLED .. Enable ISS statistics (see common/iss_stats.h)
+ *  * ISS_CT_OP_TAIL_FAST_FDD_ENABLED ..
+ *    related to DBBCache based optimization. If this is defined it enables tail dispatch (threaded code)
+ *    instead of global dispatch for operations
+ *    Longer compilation, increased size, but faster execution
  */
 
 /*
@@ -27,9 +43,14 @@
  *  1. The class "ISS" is set to final -> not derivable
  *  2. There are no virtual methods -> no cost for dynamic dispatch
  */
+
+#define ISS_CT_ARCH RV64
+
 #define ISS_CT ISS
 #define ISS_CT_T_CSR_TABLE csr_table
 #undef ISS_CT_ENABLE_POLYMORPHISM
+#undef ISS_CT_STATS_ENABLED
+#define ISS_CT_OP_TAIL_FAST_FDD_ENABLED
 
 #if defined(ISS_CT_CREATE_DEFINITION)
 #include "iss_ctemplate.h"
@@ -41,7 +62,11 @@
 /* undef all configurations */
 #undef ISS_CT
 #undef ISS_CT_T_CSR_TABLE
+#undef ISS_CT_ENABLE_POLYMORPHISM
+#undef ISS_CT_STATS_ENABLED
+#undef ISS_CT_OP_TAIL_FAST_FDD_ENABLED
 
 /* cleanup */
 #undef ISS_CT_CREATE_DEFINITION
 #undef ISS_CT_CREATE_IMPLEMENTATION
+#undef ISS_CT_ARCH

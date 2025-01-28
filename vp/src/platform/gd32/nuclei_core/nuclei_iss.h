@@ -16,7 +16,7 @@ struct NUCLEI_ISS : public NUCLEI_ISS_BASE, public eclic_interrupt_target {
 	uxlen_t get_csr_value(uxlen_t addr) override;
 	void set_csr_value(uxlen_t addr, uxlen_t value) override;
 
-	void prepare_trap(SimulationTrap& e);
+	void prepare_trap(SimulationTrap& e, uxlen_t last_pc);
 
 	virtual bool has_local_pending_enabled_interrupts() {
 		return csrs.mstatus.fields.mie && (!eclic->pending_interrupts.empty());
@@ -26,7 +26,7 @@ struct NUCLEI_ISS : public NUCLEI_ISS_BASE, public eclic_interrupt_target {
 	void switch_to_trap_handler();
 
 	void handle_interrupt() override;
-	void handle_trap(SimulationTrap& e) override;
+	void handle_trap(SimulationTrap& e, uxlen_t last_pc) override;
 };
 
 }  // namespace rv32

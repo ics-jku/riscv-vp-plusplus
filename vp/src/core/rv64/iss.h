@@ -17,9 +17,11 @@
 
 #include "core/common/bus_lock_if.h"
 #include "core/common/clint_if.h"
+#include "core/common/dbbcache.h"
 #include "core/common/debug.h"
 #include "core/common/instr.h"
 #include "core/common/irq_if.h"
+#include "core/common/iss_stats.h"
 #include "core/common/lscache.h"
 #include "core/common/mem_if.h"
 #include "core/common/regfile.h"
@@ -33,6 +35,7 @@
 
 namespace rv64 {
 
+static constexpr Architecture ARCH = RV64;
 static constexpr unsigned XLEN = 64;
 using sxlen_t = int64_t;
 using uxlen_t = uint64_t;

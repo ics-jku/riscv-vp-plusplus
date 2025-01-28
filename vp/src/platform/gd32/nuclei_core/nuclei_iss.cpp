@@ -10,7 +10,7 @@ void NUCLEI_ISS::trigger_eclic_interrupt() {
 	if (trace_enabled()) {
 		std::cout << "[vp::iss] trigger eclic interrupt, " << sc_core::sc_time_stamp() << std::endl;
 	}
-	wfi_event.notify(sc_core::SC_ZERO_TIME);
+	maybe_interrupt_pending();
 }
 
 uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
@@ -86,7 +86,7 @@ uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 				eclic->pending_interrupts.pop();
 				eclic->clicintip[id] = 0;
 				pc = instr_mem->load_instr(csrs.mtvt.reg + id * 4);
-				return last_pc;
+				return dbbcache.jump_dyn_and_link(pc);
 			} else {
 				if (csrs.msubm.fields.typ == csrs.msubm.Interrupt)
 					csrs.mstatus.fields.mie = 0;
@@ -234,12 +234,18 @@ void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
 		default:
 			NUCLEI_ISS_BASE::set_csr_value(addr, value);
 	}
+
+	/*
+	 * interrupt enables may have changed
+	 * TODO: optimize -> move to specific csrs above
+	 */
+	maybe_interrupt_pending();
 }
 
 // this is more or less just copy and paste from "iss.cpp" -> Code Duplication
 // but i think still a better solution then dealing with complicated inheritance
 // for the mcause/nuclei_mcause register
-void NUCLEI_ISS::prepare_trap(SimulationTrap &e) {
+void NUCLEI_ISS::prepare_trap(SimulationTrap &e, uxlen_t last_pc) {
 	// undo any potential pc update (for traps the pc should point to the originating instruction and not it's
 	// successor)
 	pc = last_pc;
@@ -289,6 +295,9 @@ void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	}
 	// update pc
 	pc = csrs.mepc.reg;
+
+	dbbcache.ret_trap(pc);
+	force_slow_path();
 }
 
 void NUCLEI_ISS::switch_to_trap_handler() {
@@ -369,6 +378,8 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 			          << std::endl;
 		once = false;
 	}
+
+	dbbcache.enter_trap(pc);
 }
 
 void NUCLEI_ISS::handle_interrupt() {
@@ -389,11 +400,8 @@ void NUCLEI_ISS::handle_interrupt() {
 	}
 }
 
-void NUCLEI_ISS::handle_trap(SimulationTrap &e) {
-	if (trace_enabled()) {
-		std::cout << "take trap " << e.reason << ", mtval=" << e.mtval << std::endl;
-	}
+void NUCLEI_ISS::handle_trap(SimulationTrap &e, uxlen_t last_pc) {
 	csrs.nuclei_mcause.fields.interrupt = 0;
-	prepare_trap(e);
+	prepare_trap(e, last_pc);
 	switch_to_trap_handler();
 }

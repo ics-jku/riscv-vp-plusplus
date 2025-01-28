@@ -6,6 +6,7 @@ add_library(core-common
 		instr.cpp
 		debug_memory.cpp
 		rawmode.cpp
+		iss_stats.cpp
 		${HEADERS})
 
 target_include_directories(core-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
