@@ -131,51 +131,71 @@ void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
 			csrs.default_write32(addr, value);
 			break;
 		case MCAUSE_ADDR:
-			return write(csrs.nuclei_mcause, MCAUSE_MASK);
-
+			write(csrs.nuclei_mcause, MCAUSE_MASK);
+			break;
 		case MINTSTATUS_ADDR:
-			return write(csrs.mintstatus, MINTSTATUS_MASK);
+			write(csrs.mintstatus, MINTSTATUS_MASK);
+			break;
 		case MILM_CTL_ADDR:
-			return write(csrs.milm_ctl, MILM_CTL_MASK);
+			write(csrs.milm_ctl, MILM_CTL_MASK);
+			break;
 		case MDLM_CTL_ADDR:
-			return write(csrs.mdlm_ctl, MDLM_CTL_MASK);
+			write(csrs.mdlm_ctl, MDLM_CTL_MASK);
+			break;
 		case MECC_CODE_ADDR:
-			return write(csrs.mecc_code, MECC_CODE_MASK);
+			write(csrs.mecc_code, MECC_CODE_MASK);
+			break;
 		case MSUBM_ADDR:
-			return write(csrs.msubm, MSUBM_MASK);
+			write(csrs.msubm, MSUBM_MASK);
+			break;
 		case MDCAUSE_ADDR:
-			return write(csrs.mdcause, MDCAUSE_MASK);
+			write(csrs.mdcause, MDCAUSE_MASK);
+			break;
 		case MCACHE_CTL_ADDR:
-			return write(csrs.mcache_ctl, MCACHE_CTL_MASK);
+			write(csrs.mcache_ctl, MCACHE_CTL_MASK);
+			break;
 		case MMISC_CTL_ADDR:
-			return write(csrs.mmisc_ctl, MMISC_CTL_MASK);
+			write(csrs.mmisc_ctl, MMISC_CTL_MASK);
+			break;
 		case MSAVESTATUS_ADDR:
-			return write(csrs.msavestatus, MSAVESTATUS_MASK);
+			write(csrs.msavestatus, MSAVESTATUS_MASK);
+			break;
 		case MTLB_CTL_ADDR:
-			return write(csrs.mtlb_ctl, MTLB_CTL_MASK);
+			write(csrs.mtlb_ctl, MTLB_CTL_MASK);
+			break;
 		case MECC_LOCK_ADDR:
-			return write(csrs.mecc_lock, MECC_LOCK_MASK);
+			write(csrs.mecc_lock, MECC_LOCK_MASK);
+			break;
 		case MTVT2_ADDR:
-			return write(csrs.mtvt2, MTVT2_MASK);
+			write(csrs.mtvt2, MTVT2_MASK);
+			break;
 		case MPPICFG_INFO_ADDR:
-			return write(csrs.mppicfg_info, MPPICFG_INFO_MASK);
+			write(csrs.mppicfg_info, MPPICFG_INFO_MASK);
+			break;
 		case MFIOCFG_INFO_ADDR:
-			return write(csrs.mfiocfg_info, MFIOCFG_INFO_MASK);
+			write(csrs.mfiocfg_info, MFIOCFG_INFO_MASK);
+			break;
 		case SLEEPVALUE_ADDR:
-			return write(csrs.sleepvalue, SLEEPVALUE_MASK);
+			write(csrs.sleepvalue, SLEEPVALUE_MASK);
+			break;
 		case TXEVT_ADDR:
-			return write(csrs.txevt, TXEVT_MASK);
+			write(csrs.txevt, TXEVT_MASK);
+			break;
 		case WFE_ADDR:
-			return write(csrs.wfe, WFE_MASK);
+			write(csrs.wfe, WFE_MASK);
+			break;
 		case MICFG_INFO_ADDR:
-			return write(csrs.micfg_info, MICFG_INFO_MASK);
+			write(csrs.micfg_info, MICFG_INFO_MASK);
+			break;
 		case MDCFG_INFO_ADDR:
-			return write(csrs.mdcfg_info, MDCFG_INFO_MASK);
+			write(csrs.mdcfg_info, MDCFG_INFO_MASK);
+			break;
 		case MCFG_INFO_ADDR:
-			return write(csrs.mcfg_info, MCFG_INFO_MASK);
+			write(csrs.mcfg_info, MCFG_INFO_MASK);
+			break;
 		case MTLBCFG_INFO_ADDR:
-			return write(csrs.mtlb_ctl, MTLBCFG_INFO_MASK);
-
+			write(csrs.mtlb_ctl, MTLBCFG_INFO_MASK);
+			break;
 		case PUSHMCAUSE_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
@@ -194,12 +214,12 @@ void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
 			mem->store_word(mem_addr, csrs.msubm.reg);
 			break;
 		}
-
 		case JALMNXTI_ADDR:
-			return;
+			break;
 
 		case MNXTI_ADDR:
 			// TODO
+			break;
 
 		case MTVT_ADDR:
 		case MNVEC_ADDR:
@@ -308,7 +328,8 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 				// check if interrupt is still pending, if not remove from queue
 				eclic->pending_interrupts.pop();
 				eclic->pending_interrupts_mutex.unlock();
-				return return_from_trap_handler(MachineMode);
+				return_from_trap_handler(MachineMode);
+				return;
 			}
 			csrs.nuclei_mcause.fields.minhv = 1;
 			pc = instr_mem->load_instr(csrs.mtvt.reg + id * 4);
