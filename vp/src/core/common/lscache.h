@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  *
- * Load/Store Cache (DISABLED)
+ * Load/Store Cache
  * Allows direct translation of in-simulation virtual addresses to (dmi-capable) host system memory addresses, to speed
  * up load and stores on data memory. For hits, calls to the memory interface (including virtual address translation)
  * are omitted. Instead, data is directly accessed via dereferencing cached page pointers + page offsets.
@@ -28,9 +28,8 @@
  * BEGIN: CONFIG
  ******************************************************************************/
 
-// TODO: ENABLE
-//#define LSCACHE_ENABLED
-#undef LSCACHE_ENABLED
+#define LSCACHE_ENABLED
+//#undef LSCACHE_ENABLED
 //#define LSCACHE_STATS_ENABLED
 #undef LSCACHE_STATS_ENABLED
 
