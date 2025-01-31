@@ -1,4 +1,26 @@
-# RISC-V VP++
+# NOTE: Experimental Fast ISS Branch
+
+This experimental branch of RISC-V VP++
+ 1. enables the Load/Store Cache (LSCache)
+ 2. contains and enables the experimental implementation of the Dynamic Basic Block Cache (DBBCache), and
+ 3. contains all ISS optimizations made possible by DBBCache
+
+It contains a slightly improved version of the Fast Interpreter-Based Instruction Set Simulator as introduced in the paper
+"Fast Interpreter-Based Instruction Set Simulation for Virtual Prototypes"
+by Manfred Schlaegl and Daniel Grosse
+presented at the Design, Automation and Test in Europe Conference 2025.
+
+This optimized VP allows experiments with RV64 and Linux ([GUI-VP Kit](https://github.com/ics-jku/GUI-VP_Kit)).
+However, the branch is marked experimental because:
+ 1. RV32 implementation is not stable yet
+ 2. DBBCache and LSCache can not be disabled at runtime yet
+ 3. DBBCache can not be disabled at compile time yet
+
+Once these issues are resolved, this branch will be merged back into the master.
+
+(see TODOs in code)
+
+# RISC-V VP++ (Fast interpreter ISS Experimental Branch)
 
 *RISC-V VP++* is a extended and improved successor of the RISC-V based Virtual Prototype (VP) [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp).
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
