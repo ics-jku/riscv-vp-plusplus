@@ -22,6 +22,7 @@
 #include "memory_mapped_file.h"
 #include "mmu.h"
 #include "platform/common/fu540_gpio.h"
+#include "platform/common/miscdev.h"
 #include "platform/common/options.h"
 #include "platform/common/sifive_spi.h"
 #include "platform/common/sifive_test.h"
@@ -93,7 +94,9 @@ struct LinuxOptions : public Options {
 	addr_t plic_start_addr = 0x0C000000;
 	addr_t plic_end_addr = 0x10000000;
 	addr_t prci_start_addr = 0x10000000;
-	addr_t prci_end_addr = 0x1000FFFF;
+	addr_t prci_end_addr = 0x10000FFF;
+	addr_t miscdev_start_addr = 0x10001000;
+	addr_t miscdev_end_addr = 0x10001FFF;
 	addr_t sifive_test_start_addr = 0x100000;
 	addr_t sifive_test_end_addr = 0x100fff;
 	addr_t vncsimplefb_start_addr = 0x11000000;
@@ -191,11 +194,12 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_debug_bus) {
 		debug_bus = new NetTrace(opt.debug_bus_port);
 	}
-	SimpleBus<NUM_CORES + 1, 18> bus("SimpleBus", debug_bus, opt.break_on_transaction);
+	SimpleBus<NUM_CORES + 1, 19> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	SyscallHandler sys("SyscallHandler");
 	FU540_PLIC plic("PLIC", NUM_CORES);
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 	PRCI prci("PRCI");
+	MiscDev miscdev("MiscDev");
 	UART uart0("UART0", 4);
 	SLIP slip("SLIP", 5, opt.tun_device);
 
@@ -258,14 +262,15 @@ int sc_main(int argc, char **argv) {
 	bus.ports[9] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr, spi2);
 	bus.ports[10] = new PortMapping(opt.plic_start_addr, opt.plic_end_addr, plic);
 	bus.ports[11] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr, prci);
-	bus.ports[12] = new PortMapping(opt.sifive_test_start_addr, opt.sifive_test_end_addr, sifive_test);
-	bus.ports[13] = new PortMapping(opt.vncsimplefb_start_addr, opt.vncsimplefb_end_addr, vncsimplefb);
-	bus.ports[14] =
-	    new PortMapping(opt.vncsimpleinputptr_start_addr, opt.vncsimpleinputptr_end_addr, vncsimpleinputptr);
+	bus.ports[12] = new PortMapping(opt.miscdev_start_addr, opt.miscdev_end_addr, miscdev);
+	bus.ports[13] = new PortMapping(opt.sifive_test_start_addr, opt.sifive_test_end_addr, sifive_test);
+	bus.ports[14] = new PortMapping(opt.vncsimplefb_start_addr, opt.vncsimplefb_end_addr, vncsimplefb);
 	bus.ports[15] =
+	    new PortMapping(opt.vncsimpleinputptr_start_addr, opt.vncsimpleinputptr_end_addr, vncsimpleinputptr);
+	bus.ports[16] =
 	    new PortMapping(opt.vncsimpleinputkbd_start_addr, opt.vncsimpleinputkbd_end_addr, vncsimpleinputkbd);
-	bus.ports[16] = new PortMapping(opt.mram_root_start_addr, opt.mram_root_end_addr, mramRoot);
-	bus.ports[17] = new PortMapping(opt.mram_data_start_addr, opt.mram_data_end_addr, mramData);
+	bus.ports[17] = new PortMapping(opt.mram_root_start_addr, opt.mram_root_end_addr, mramRoot);
+	bus.ports[18] = new PortMapping(opt.mram_data_start_addr, opt.mram_data_end_addr, mramData);
 	bus.mapping_complete();
 
 	// connect TLM sockets
@@ -285,12 +290,13 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[9].bind(spi2.tsock);
 	bus.isocks[10].bind(plic.tsock);
 	bus.isocks[11].bind(prci.tsock);
-	bus.isocks[12].bind(sifive_test.tsock);
-	bus.isocks[13].bind(vncsimplefb.tsock);
-	bus.isocks[14].bind(vncsimpleinputptr.tsock);
-	bus.isocks[15].bind(vncsimpleinputkbd.tsock);
-	bus.isocks[16].bind(mramRoot.tsock);
-	bus.isocks[17].bind(mramData.tsock);
+	bus.isocks[12].bind(miscdev.tsock);
+	bus.isocks[13].bind(sifive_test.tsock);
+	bus.isocks[14].bind(vncsimplefb.tsock);
+	bus.isocks[15].bind(vncsimpleinputptr.tsock);
+	bus.isocks[16].bind(vncsimpleinputkbd.tsock);
+	bus.isocks[17].bind(mramRoot.tsock);
+	bus.isocks[18].bind(mramData.tsock);
 
 	// connect interrupt signals/communication
 	for (size_t i = 0; i < NUM_CORES; i++) {
