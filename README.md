@@ -4,6 +4,7 @@ This experimental branch of RISC-V VP++
  1. enables the Load/Store Cache (LSCache)
  2. contains and enables the experimental implementation of the Dynamic Basic Block Cache (DBBCache), and
  3. contains all ISS optimizations made possible by DBBCache
+ 4. adds support for Half-Precision Floating-Point Extensions (Zfh)
 
 It contains a slightly improved version of the Fast Interpreter-Based Instruction Set Simulator as introduced in the paper
 "Fast Interpreter-Based Instruction Set Simulation for Virtual Prototypes"
@@ -15,6 +16,7 @@ However, the branch is marked experimental because:
  1. RV32 implementation is not stable yet
  2. DBBCache and LSCache can not be disabled at runtime yet
  3. DBBCache can not be disabled at compile time yet
+ 4. The decoder checks Zfh instructions via the misa F flag, because there is no dedicated bit in the misa CSR.
 
 Once these issues are resolved, this branch will be merged back into the master.
 
