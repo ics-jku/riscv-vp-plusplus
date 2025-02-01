@@ -156,8 +156,11 @@ class Core {
 	CombinedMemoryInterface memif;
 	InstrMemoryProxy imemif;
 
-	Core(unsigned int id, const MemoryDMI &dmi)
-	    : iss(id), mmu(iss), memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu), imemif(dmi, iss) {
+	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi)
+	    : iss(isa_config, id),
+	      mmu(iss),
+	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu),
+	      imemif(dmi, iss) {
 		return;
 	}
 
@@ -180,6 +183,12 @@ class Core {
 int sc_main(int argc, char **argv) {
 	LinuxOptions opt;
 	opt.parse(argc, argv);
+
+	if (opt.use_E_base_isa) {
+		std::cerr << "Error: The Linux VP does not support RV32E/RV64E!" << std::endl;
+		return -1;
+	}
+	RV_ISA_Config isa_config(false, opt.en_ext_Zfh);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
@@ -225,7 +234,7 @@ int sc_main(int argc, char **argv) {
 
 	Core *cores[NUM_CORES];
 	for (unsigned i = 0; i < NUM_CORES; i++) {
-		cores[i] = new Core(i, dmi);
+		cores[i] = new Core(&isa_config, i, dmi);
 	}
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -319,12 +328,6 @@ int sc_main(int argc, char **argv) {
 		// emulate RISC-V core boot loader
 		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
-
-#ifdef TARGET_RV32
-		// configure supported instructions
-		cores[i]->iss.csrs.misa.fields.extensions |= cores[i]->iss.csrs.misa.M | cores[i]->iss.csrs.misa.A |
-		                                             cores[i]->iss.csrs.misa.F | cores[i]->iss.csrs.misa.D;
-#endif /* TARGET_RV32 */
 	}
 
 	// OpenSBI boots all harts except hart 0 by default.

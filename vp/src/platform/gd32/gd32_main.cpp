@@ -90,7 +90,9 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	NUCLEI_ISS core(0);
+	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
+	NUCLEI_ISS core(&isa_config, 0);
+
 	SimpleMemory sram("SRAM", opt.sram_size);
 	SimpleMemory flash("Flash", opt.flash_size);
 	ELFLoader loader(opt.input_program.c_str());

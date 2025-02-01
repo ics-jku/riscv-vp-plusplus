@@ -31,11 +31,10 @@ typedef __uint128_t uint128_t;
 #define RS2 instr.rs2()
 #define RS3 instr.rs3()
 
-ISS_CT::ISS_CT(uxlen_t hart_id, bool use_E_base_isa)
-    : stats(hart_id), v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
+ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
+    : isa_config(isa_config), stats(hart_id), v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
 	csrs.mhartid.reg = hart_id;
-	if (use_E_base_isa)
-		csrs.misa.select_E_base_isa();
+	csrs.misa.fields.extensions = isa_config->get_misa_extensions();
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
@@ -86,7 +85,7 @@ void ISS_CT::print_trace() {
 	 *  * every compressed instruction was already converted to a normal instruction.
 	 *    -> it is safe to use decode_normal here
 	 */
-	Opcode::Mapping op = instr.decode_normal(ARCH, csrs.misa.fields.extensions);
+	Opcode::Mapping op = instr.decode_normal(ARCH, *isa_config);
 
 	printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg, prv, dbbcache.get_last_pc_before_callback(),
 	       mem_word, Opcode::mappingStr.at(op));
@@ -7172,7 +7171,7 @@ void ISS_CT::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if
 	void *fast_abort_and_fdd_label_ptr = genOpMap();
 
 	uint64_t hartId = get_hart_id();
-	dbbcache.init(instr_mem, opMap, fast_abort_and_fdd_label_ptr, csrs.misa.fields.extensions, entrypoint);
+	dbbcache.init(isa_config, instr_mem, opMap, fast_abort_and_fdd_label_ptr, entrypoint);
 	lscache.init(hartId, data_mem);
 	cycle_counter_raw_last = 0;
 }

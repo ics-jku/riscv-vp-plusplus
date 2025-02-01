@@ -127,23 +127,29 @@ struct OpMapEntry {
 template <enum Architecture arch, typename T_uxlen_t, typename T_instr_memory_if>
 class DBBCache_IF_T {
    protected:
+	RV_ISA_Config *isa_config = nullptr;
+	bool has_compressed = false;
 	T_instr_memory_if *instr_mem = nullptr;
 	struct OpMapEntry *opMap = nullptr;
 	void *ufast_abort_label_ptr = nullptr;
-	uint32_t misa_extensions = 0x0;
 	uint32_t mem_word = 0x0;
 
    public:
 	DBBCache_IF_T() {
-		init(nullptr, nullptr, nullptr, 0, 0);
+		init(nullptr, nullptr, nullptr, nullptr, 0);
 	}
 
-	void init(T_instr_memory_if *instr_mem, struct OpMapEntry opMap[], void *ufast_abort_label_ptr,
-	          uint32_t misa_extensions, T_uxlen_t entrypoint) {
+	void init(RV_ISA_Config *isa_config, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
+	          void *ufast_abort_label_ptr, T_uxlen_t entrypoint) {
+		this->isa_config = isa_config;
+		if (isa_config != nullptr) {
+			this->has_compressed = isa_config->get_misa_extensions();
+		} else {
+			this->has_compressed = false;
+		}
 		this->instr_mem = instr_mem;
 		this->opMap = opMap;
 		this->ufast_abort_label_ptr = ufast_abort_label_ptr;
-		this->misa_extensions = misa_extensions;
 		this->mem_word = 0;
 	}
 
@@ -174,10 +180,10 @@ class DBBCache_IF_T {
 		}
 
 		if (instr.is_compressed()) {
-			op = instr.decode_and_expand_compressed(arch, this->misa_extensions);
+			op = instr.decode_and_expand_compressed(arch, *this->isa_config);
 			pc += 2;
 		} else {
-			op = instr.decode_normal(arch, this->misa_extensions);
+			op = instr.decode_normal(arch, *this->isa_config);
 			pc += 4;
 		}
 	}
@@ -553,10 +559,10 @@ class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
 	__always_inline int decode(Instruction &instr, Opcode::Mapping &op) {
 		stats.inc_decodes();
 		if (instr.is_compressed()) {
-			op = instr.decode_and_expand_compressed(arch, this->misa_extensions);
+			op = instr.decode_and_expand_compressed(arch, *this->isa_config);
 			return 2;
 		} else {
-			op = instr.decode_normal(arch, this->misa_extensions);
+			op = instr.decode_normal(arch, *this->isa_config);
 			return 4;
 		}
 	}
@@ -718,7 +724,7 @@ class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
 		T_uxlen_t pc =
 		    curBlock->entries[curEntryIdx].pc + pc_offset;  // also works for dummyBlock (pc in curEntryIdx = 0)
 		assert(pc_is_valid(pc) && "not possible due to immediate formats and jump execution");
-		if (unlikely((pc & 0x3) && (!(this->misa_extensions & csr_misa::C)))) {
+		if (unlikely((pc & 0x3) && (!this->has_compressed))) {
 			// NOTE: misaligned instruction address not possible on machines supporting compressed instructions
 			raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
 		}
@@ -756,13 +762,13 @@ class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
 
    public:
 	DBBCache_T() {
-		init(nullptr, nullptr, nullptr, false, 0);
+		init(nullptr, nullptr, nullptr, nullptr, 0);
 	}
 
-	void init(T_instr_memory_if *instr_mem, struct OpMapEntry opMap[], void *ufast_abort_label_ptr,
-	          uint32_t misa_extensions, T_uxlen_t entrypoint) {
-		DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if>::init(instr_mem, opMap, ufast_abort_label_ptr,
-		                                                        misa_extensions, entrypoint);
+	void init(RV_ISA_Config *isa_config, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
+	          void *ufast_abort_label_ptr, T_uxlen_t entrypoint) {
+		DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if>::init(isa_config, instr_mem, opMap, ufast_abort_label_ptr,
+		                                                        entrypoint);
 
 		/* set abort label ptr and reinit blocks to have valid terminal entries */
 		this->ufast_abort_label_ptr = ufast_abort_label_ptr;

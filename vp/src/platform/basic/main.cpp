@@ -73,7 +73,6 @@ class BasicOptions : public Options {
 	addr_t display_end_addr = display_start_addr + Display::addressRange;
 
 	bool quiet = false;
-	bool use_E_base_isa = false;
 
 	OptionValue<unsigned long> entry_point;
 
@@ -83,7 +82,6 @@ class BasicOptions : public Options {
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
 			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
-			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
 			("mram-image", po::value<std::string>(&mram_image)->default_value(""),"MRAM image file for persistency")
 			("mram-image-size", po::value<unsigned int>(&mram_size), "MRAM image size")
@@ -120,7 +118,9 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	ISS core(0, opt.use_E_base_isa);
+	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
+	ISS core(&isa_config, 0);
+
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
 	UART uart("Generic_UART", 6);
