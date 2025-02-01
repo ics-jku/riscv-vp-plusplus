@@ -21,6 +21,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
                                 public iss_syscall_if,
                                 public debug_target_if,
                                 public initiator_if {
+	RV_ISA_Config *isa_config = nullptr;
+
 	// private: must not modified directly (would break DBBCache)
 	bool iss_slow_path = false;
 	bool trace = false;
@@ -76,7 +78,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	static constexpr unsigned xlen = XLEN;
 
-	ISS_CT(uxlen_t hart_id, bool use_E_base_isa = false);
+	ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id);
 
 	Architecture get_architecture(void) override {
 		return ARCH;

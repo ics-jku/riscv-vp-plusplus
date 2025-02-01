@@ -1209,8 +1209,8 @@ enum class Type {
 	V_LS,
 };
 
-extern std::array<const char*, NUMBER_OF_INSTRUCTIONS> mappingStr;
-extern std::array<const char*, 32> regnamePrettyStr;
+extern std::array<const char *, NUMBER_OF_INSTRUCTIONS> mappingStr;
+extern std::array<const char *, 32> regnamePrettyStr;
 
 Type getType(Mapping mapping);
 }  // namespace Opcode
@@ -1279,9 +1279,9 @@ struct Instruction {
 		return BIT_SLICE(instr, 6, 5);
 	}
 
-	Opcode::Mapping decode_normal(Architecture arch, uint32_t misa_extensions);
+	Opcode::Mapping decode_normal(Architecture arch, const RV_ISA_Config &isa_config);
 
-	Opcode::Mapping decode_and_expand_compressed(Architecture arch, uint32_t misa_extensions);
+	Opcode::Mapping decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config);
 
 	inline uint32_t csr() {
 		// cast to unsigned to avoid sign extension when shifting

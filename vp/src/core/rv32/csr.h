@@ -47,11 +47,6 @@ struct csr_misa_32 : public csr_misa {
 		return fields.extensions & E;
 	}
 
-	void select_E_base_isa() {
-		fields.extensions &= ~I;
-		fields.extensions |= E;
-	}
-
 	bool has_user_mode_extension() {
 		return fields.extensions & U;
 	}
@@ -61,9 +56,11 @@ struct csr_misa_32 : public csr_misa {
 	}
 
 	void init() {
-		fields.extensions = I | M | A | F | D | C | N | U | S | V;  // IMACFDV + NUS
+		// supported extensions will be set by the iss according to RV_ISA_Config
+		fields.extensions = 0;
 		fields.wiri = 0;
-		fields.mxl = 1;  // RV32
+		// RV32
+		fields.mxl = 1;
 	}
 };
 

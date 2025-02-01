@@ -11,6 +11,8 @@ Options::Options(void) {
 	// clang-format off
 	add_options()
 		("help", "produce help message")
+		("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
+		("en-ext-Zfh", po::bool_switch(&en_ext_Zfh), "enable the half-precision floating point extension (Zfh)")
 		("intercept-syscalls", po::bool_switch(&intercept_syscalls), "directly intercept and handle syscalls in the ISS (testing mode)")
 		("error-on-zero-traphandler", po::value<bool>(&error_on_zero_traphandler), "Assume that taking an unset (zero) trap handler in machine mode is an error condition (which it usually is)")
 		("debug-mode", po::bool_switch(&use_debug_runner), "start execution in debugger (using gdb rsp interface)")

@@ -1673,12 +1673,12 @@ constexpr uint32_t VMV_NR_R_V_MASK = 0b11111100000000000111000001111111;
 // RV-V Extension End -- Placeholder 0
 
 /*
- * check misa_extensions variable if given extension is supported
+ * check isa_config (RV_ISA_Config) if given extension is supported
  * return current function with UNSUP, if not
  * TODO: NOTE RVCOMMON.01 (RV32E/RV64E) see above
  */
-#define REQUIRE_ISA(_ext_bit)            \
-	if (!(misa_extensions & (_ext_bit))) \
+#define REQUIRE_ISA(_ext_bit)           \
+	if (!(isa_config.cfg & (_ext_bit))) \
 		return Opcode::UNSUP;
 
 #define MATCH_AND_RETURN_INSTR2(_instr, _op)                         \
@@ -3913,7 +3913,7 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 #define C_GET_OP_OR_NOP(_instr, _op) ((_instr).rd() != 0 ? (_op) : (_op##_NOP))
 
 Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Architecture arch,
-                                  uint32_t misa_extensions) {
+                                  const RV_ISA_Config &isa_config) {
 	using namespace Opcode;
 	using namespace Compressed;
 
@@ -4143,10 +4143,10 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 	throw std::runtime_error("some compressed instruction not handled");
 }
 
-Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch, uint32_t misa_extensions) {
+Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config) {
 	REQUIRE_ISA(csr_misa::C);
 	auto c_op = decode_compressed(*this, arch);
-	return expand_compressed(*this, c_op, arch, misa_extensions);
+	return expand_compressed(*this, c_op, arch, isa_config);
 }
 
 /* match and return either the real operation _opA (e.g. ADD) or, if rd == zero, the alternative operation _opB (e.g.
@@ -4163,7 +4163,7 @@ Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch, uin
 /*
  * TODO: check REQUIRE_MISA for RVV e.g maybe check V and F/D for vector float?
  */
-Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_extensions) {
+Opcode::Mapping Instruction::decode_normal(Architecture arch, const RV_ISA_Config &isa_config) {
 	using namespace Opcode;
 
 	Instruction &instr = *this;
@@ -4535,7 +4535,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FMADD_S:
 			switch (instr.funct2()) {
 				case F2_FMADD_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FMADD_H);
 				case F2_FMADD_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -4549,7 +4549,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FADD_S:
 			switch (instr.funct7()) {
 				case F7_FADD_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FADD_H);
 				case F7_FADD_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -4558,7 +4558,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FADD_D);
 				case F7_FSUB_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FSUB_H);
 				case F7_FSUB_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -4572,12 +4572,12 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_D_S);
 						case RS2_FCVT_D_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_D_H);
 					}
 					break;
 				case F7_FMUL_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FMUL_H);
 				case F7_FMUL_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -4586,7 +4586,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FMUL_D);
 				case F7_FDIV_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FDIV_H);
 				case F7_FDIV_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -4597,13 +4597,13 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 				case F7_FLE_H:
 					switch (instr.funct3()) {
 						case F3_FLE_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FLE_H);
 						case F3_FLT_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FLT_H);
 						case F3_FEQ_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FEQ_H);
 					}
 					break;
@@ -4636,10 +4636,10 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 				case F7_FMIN_H:
 					switch (instr.funct3()) {
 						case F3_FMIN_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FMIN_H);
 						case F3_FMAX_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FMAX_H);
 					}
 					break;
@@ -4669,30 +4669,30 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FCVT_S_D);
 						case RS2_FCVT_S_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_S_H);
 					}
 					break;
 				case F7_FCVT_H_S:
 					switch (instr.rs2()) {
 						case RS2_FCVT_H_S:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_H_S);
 						case RS2_FCVT_H_D:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_H_D);
 					}
 					break;
 				case F7_FSGNJ_H:
 					switch (instr.funct3()) {
 						case F3_FSGNJ_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FSGNJ_H);
 						case F3_FSGNJN_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FSGNJN_H);
 						case F3_FSGNJX_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FSGNJX_H);
 					}
 					break;
@@ -4725,16 +4725,16 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 				case F7_FCVT_H_W:
 					switch (instr.rs2()) {
 						case RS2_FCVT_H_W:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_H_W);
 						case RS2_FCVT_H_WU:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_H_WU);
 						case RS2_FCVT_H_L:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_H_L);
 						case RS2_FCVT_H_LU:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_H_LU);
 					}
 					break;
@@ -4787,7 +4787,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 					}
 					break;
 				case F7_FSQRT_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FSQRT_H);
 				case F7_FSQRT_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -4798,16 +4798,16 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 				case F7_FCVT_W_H:
 					switch (instr.rs2()) {
 						case RS2_FCVT_W_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_W_H);
 						case RS2_FCVT_WU_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_WU_H);
 						case RS2_FCVT_L_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_L_H);
 						case RS2_FCVT_LU_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCVT_LU_H);
 					}
 					break;
@@ -4830,10 +4830,10 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 				case F7_FMV_X_H:
 					switch (instr.funct3()) {
 						case F3_FMV_X_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FMV_X_H);
 						case F3_FCLASS_H:
-							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							REQUIRE_ISA(RV_ISA_Config::Zfh);
 							MATCH_AND_RETURN_INSTR(FCLASS_H);
 					}
 					break;
@@ -4858,7 +4858,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 					}
 					break;
 				case F7_FMV_H_X:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FMV_H_X);
 				case F7_FMV_W_X:
 					REQUIRE_ISA(csr_misa::F);
@@ -4871,7 +4871,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FLW:
 			switch (instr.funct3()) {
 				case F3_FLH:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FLH);
 				case F3_FLW:
 					REQUIRE_ISA(csr_misa::F);
@@ -5566,7 +5566,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FSW:
 			switch (instr.funct3()) {
 				case F3_FSH:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FSH);
 				case F3_FSW:
 					REQUIRE_ISA(csr_misa::F);
@@ -6100,7 +6100,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FMSUB_S:
 			switch (instr.funct2()) {
 				case F2_FMSUB_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FMSUB_H);
 				case F2_FMSUB_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -6113,7 +6113,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FNMSUB_S:
 			switch (instr.funct2()) {
 				case F2_FNMSUB_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FNMSUB_H);
 				case F2_FNMSUB_S:
 					REQUIRE_ISA(csr_misa::F);
@@ -6126,7 +6126,7 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 		case OP_FNMADD_S:
 			switch (instr.funct2()) {
 				case F2_FNMADD_H:
-					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					REQUIRE_ISA(RV_ISA_Config::Zfh);
 					MATCH_AND_RETURN_INSTR(FNMADD_H);
 				case F2_FNMADD_S:
 					REQUIRE_ISA(csr_misa::F);

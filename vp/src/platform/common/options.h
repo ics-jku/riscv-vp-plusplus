@@ -12,6 +12,8 @@ class Options : public boost::program_options::options_description {
 
 	std::string input_program;
 
+	bool use_E_base_isa = false;
+	bool en_ext_Zfh = false;
 	bool intercept_syscalls = false;
 	bool error_on_zero_traphandler = false;
 	bool use_debug_runner = false;
