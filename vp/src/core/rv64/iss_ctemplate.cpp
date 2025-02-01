@@ -1249,6 +1249,308 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				}
 				OP_END();
 
+				// RV Zfh extension
+
+				OP_CASE(FLH) {
+					uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+					trap_check_addr_alignment<2, true>(addr);
+					fp_regs.write(RD, float16_t{(uint16_t)lscache.load_uhalf(addr)});
+				}
+				OP_END();
+
+				OP_CASE(FSH) {
+					uint64_t addr = regs[instr.rs1()] + instr.S_imm();
+					trap_check_addr_alignment<2, false>(addr);
+					lscache.store_half(addr, fp_regs.f16(RS2).v);
+				}
+				OP_END();
+
+				OP_CASE(FADD_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_add(fp_regs.f16(RS1), fp_regs.f16(RS2)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FSUB_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_sub(fp_regs.f16(RS1), fp_regs.f16(RS2)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FMUL_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_mul(fp_regs.f16(RS1), fp_regs.f16(RS2)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FDIV_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_div(fp_regs.f16(RS1), fp_regs.f16(RS2)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FSQRT_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_sqrt(fp_regs.f16(RS1)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FMIN_H) {
+					fp_prepare_instr();
+
+					bool rs1_smaller = f16_lt_quiet(fp_regs.f16(RS1), fp_regs.f16(RS2)) ||
+					                   (f16_eq(fp_regs.f16(RS1), fp_regs.f16(RS2)) && f16_isNegative(fp_regs.f16(RS1)));
+
+					if (f16_isNaN(fp_regs.f16(RS1)) && f16_isNaN(fp_regs.f16(RS2))) {
+						fp_regs.write(RD, f16_defaultNaN);
+					} else {
+						if (rs1_smaller)
+							fp_regs.write(RD, fp_regs.f16(RS1));
+						else
+							fp_regs.write(RD, fp_regs.f16(RS2));
+					}
+
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FMAX_H) {
+					fp_prepare_instr();
+
+					bool rs1_greater = f16_lt_quiet(fp_regs.f16(RS2), fp_regs.f16(RS1)) ||
+					                   (f16_eq(fp_regs.f16(RS2), fp_regs.f16(RS1)) && f16_isNegative(fp_regs.f16(RS2)));
+
+					if (f16_isNaN(fp_regs.f16(RS1)) && f16_isNaN(fp_regs.f16(RS2))) {
+						fp_regs.write(RD, f16_defaultNaN);
+					} else {
+						if (rs1_greater)
+							fp_regs.write(RD, fp_regs.f16(RS1));
+						else
+							fp_regs.write(RD, fp_regs.f16(RS2));
+					}
+
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FMADD_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_mulAdd(fp_regs.f16(RS1), fp_regs.f16(RS2), fp_regs.f16(RS3)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FMSUB_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_mulAdd(fp_regs.f16(RS1), fp_regs.f16(RS2), f16_neg(fp_regs.f16(RS3))));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FNMADD_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD,
+					              f16_mulAdd(f16_neg(fp_regs.f16(RS1)), fp_regs.f16(RS2), f16_neg(fp_regs.f16(RS3))));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FNMSUB_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_mulAdd(f16_neg(fp_regs.f16(RS1)), fp_regs.f16(RS2), fp_regs.f16(RS3)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FSGNJ_H) {
+					fp_prepare_instr();
+					auto f1 = fp_regs.f16(RS1);
+					auto f2 = fp_regs.f16(RS2);
+					uint16_t a = (f1.v & ~F16_SIGN_BIT) | (f2.v & F16_SIGN_BIT);
+					fp_regs.write(RD, float16_t{a});
+					fp_set_dirty();
+				}
+				OP_END();
+
+				OP_CASE(FSGNJN_H) {
+					fp_prepare_instr();
+					auto f1 = fp_regs.f16(RS1);
+					auto f2 = fp_regs.f16(RS2);
+					uint16_t a = (f1.v & ~F16_SIGN_BIT) | (~f2.v & F16_SIGN_BIT);
+					fp_regs.write(RD, float16_t{a});
+					fp_set_dirty();
+				}
+				OP_END();
+
+				OP_CASE(FSGNJX_H) {
+					fp_prepare_instr();
+					auto f1 = fp_regs.f16(RS1);
+					auto f2 = fp_regs.f16(RS2);
+					uint16_t a = f1.v ^ (f2.v & F16_SIGN_BIT);
+					fp_regs.write(RD, float16_t{a});
+					fp_set_dirty();
+				}
+				OP_END();
+
+				OP_CASE(FEQ_H) {
+					fp_prepare_instr();
+					regs[RD] = f16_eq(fp_regs.f16(RS1), fp_regs.f16(RS2));
+					fp_update_exception_flags();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FLT_H) {
+					fp_prepare_instr();
+					regs[RD] = f16_lt(fp_regs.f16(RS1), fp_regs.f16(RS2));
+					fp_update_exception_flags();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FLE_H) {
+					fp_prepare_instr();
+					regs[RD] = f16_le(fp_regs.f16(RS1), fp_regs.f16(RS2));
+					fp_update_exception_flags();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCLASS_H) {
+					fp_prepare_instr();
+					regs[RD] = (int16_t)f16_classify(fp_regs.f16(RS1));
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FMV_H_X) {
+					fp_prepare_instr();
+					fp_regs.write(RD, float16_t{(uint16_t)regs[RS1]});
+					fp_set_dirty();
+				}
+				OP_END();
+
+				OP_CASE(FMV_X_H) {
+					fp_prepare_instr();
+					regs[RD] = fp_regs.f16(RS1).v;
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_W_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					regs[RD] = f16_to_i32(fp_regs.f16(RS1), softfloat_roundingMode, true);
+					fp_finish_instr();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_WU_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					regs[RD] = (int32_t)f16_to_ui32(fp_regs.f16(RS1), softfloat_roundingMode, true);
+					fp_finish_instr();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_H_W) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, i32_to_f16((int32_t)regs[RS1]));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_H_WU) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, ui32_to_f16((int32_t)regs[RS1]));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_S_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_to_f32(fp_regs.f16(RS1)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_H_S) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f32_to_f16(fp_regs.f32(RS1)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_H_D) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f64_to_f16(fp_regs.f64(RS1)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_D_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, f16_to_f64(fp_regs.f16(RS1)));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_L_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					regs[RD] = f16_to_i64(fp_regs.f16(RS1), softfloat_roundingMode, true);
+					fp_finish_instr();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_LU_H) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					regs[RD] = f16_to_ui64(fp_regs.f16(RS1), softfloat_roundingMode, true);
+					fp_finish_instr();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_H_L) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, i64_to_f16(regs[RS1]));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_H_LU) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, ui64_to_f16(regs[RS1]));
+					fp_finish_instr();
+				}
+				OP_END();
+
 				// RV64 F/D extension
 
 				OP_CASE(FLW) {

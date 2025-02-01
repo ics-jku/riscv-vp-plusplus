@@ -226,6 +226,76 @@ constexpr uint32_t AMOMINU_D_ENCODING = 0b11000000000000000011000000101111;
 constexpr uint32_t AMOMAXU_D_MASK = 0b11111000000000000111000001111111;
 constexpr uint32_t AMOMAXU_D_ENCODING = 0b11100000000000000011000000101111;
 
+// RV32/64Zfh Extension
+constexpr uint32_t FLH_MASK = 0b00000000000000000111000001111111;
+constexpr uint32_t FLH_ENCODING = 0b00000000000000000001000000000111;
+constexpr uint32_t FSH_MASK = 0b00000000000000000111000001111111;
+constexpr uint32_t FSH_ENCODING = 0b00000000000000000001000000100111;
+constexpr uint32_t FMADD_H_MASK = 0b00000110000000000000000001111111;
+constexpr uint32_t FMADD_H_ENCODING = 0b00000100000000000000000001000011;
+constexpr uint32_t FMSUB_H_MASK = 0b00000110000000000000000001111111;
+constexpr uint32_t FMSUB_H_ENCODING = 0b00000100000000000000000001000111;
+constexpr uint32_t FNMADD_H_MASK = 0b00000110000000000000000001111111;
+constexpr uint32_t FNMADD_H_ENCODING = 0b00000100000000000000000001001111;
+constexpr uint32_t FNMSUB_H_MASK = 0b00000110000000000000000001111111;
+constexpr uint32_t FNMSUB_H_ENCODING = 0b00000100000000000000000001001011;
+constexpr uint32_t FADD_H_MASK = 0b11111110000000000000000001111111;
+constexpr uint32_t FADD_H_ENCODING = 0b00000100000000000000000001010011;
+constexpr uint32_t FSUB_H_MASK = 0b11111110000000000000000001111111;
+constexpr uint32_t FSUB_H_ENCODING = 0b00001100000000000000000001010011;
+constexpr uint32_t FMUL_H_MASK = 0b11111110000000000000000001111111;
+constexpr uint32_t FMUL_H_ENCODING = 0b00010100000000000000000001010011;
+constexpr uint32_t FDIV_H_MASK = 0b11111110000000000000000001111111;
+constexpr uint32_t FDIV_H_ENCODING = 0b00011100000000000000000001010011;
+constexpr uint32_t FSQRT_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FSQRT_H_ENCODING = 0b01011100000000000000000001010011;
+constexpr uint32_t FSGNJ_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJ_H_ENCODING = 0b00100100000000000000000001010011;
+constexpr uint32_t FSGNJN_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJN_H_ENCODING = 0b00100100000000000001000001010011;
+constexpr uint32_t FSGNJX_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FSGNJX_H_ENCODING = 0b00100100000000000010000001010011;
+constexpr uint32_t FMIN_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FMIN_H_ENCODING = 0b00101100000000000000000001010011;
+constexpr uint32_t FMAX_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FMAX_H_ENCODING = 0b00101100000000000001000001010011;
+constexpr uint32_t FCVT_W_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_W_H_ENCODING = 0b11000100000000000000000001010011;
+constexpr uint32_t FCVT_WU_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_WU_H_ENCODING = 0b11000100000100000000000001010011;
+constexpr uint32_t FMV_X_H_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t FMV_X_H_ENCODING = 0b11100100000000000000000001010011;
+constexpr uint32_t FEQ_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FEQ_H_ENCODING = 0b10100100000000000010000001010011;
+constexpr uint32_t FLT_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FLT_H_ENCODING = 0b10100100000000000001000001010011;
+constexpr uint32_t FLE_H_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t FLE_H_ENCODING = 0b10100100000000000000000001010011;
+constexpr uint32_t FCLASS_H_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t FCLASS_H_ENCODING = 0b11100100000000000001000001010011;
+constexpr uint32_t FCVT_H_W_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_H_W_ENCODING = 0b11010100000000000000000001010011;
+constexpr uint32_t FCVT_H_WU_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_H_WU_ENCODING = 0b11010100000100000000000001010011;
+constexpr uint32_t FMV_H_X_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t FMV_H_X_ENCODING = 0b11110100000000000000000001010011;
+constexpr uint32_t FCVT_H_S_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_H_S_ENCODING = 0b01000100000000000000000001010011;
+constexpr uint32_t FCVT_S_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_S_H_ENCODING = 0b01000000001000000000000001010011;
+constexpr uint32_t FCVT_H_D_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_H_D_ENCODING = 0b01000100000100000000000001010011;
+constexpr uint32_t FCVT_D_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_D_H_ENCODING = 0b01000010001000000000000001010011;
+constexpr uint32_t FCVT_L_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_L_H_ENCODING = 0b11000100001000000000000001010011;
+constexpr uint32_t FCVT_LU_H_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_LU_H_ENCODING = 0b11000100001100000000000001010011;
+constexpr uint32_t FCVT_H_L_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_H_L_ENCODING = 0b11010100001000000000000001010011;
+constexpr uint32_t FCVT_H_LU_MASK = 0b11111111111100000000000001111111;
+constexpr uint32_t FCVT_H_LU_ENCODING = 0b11010100001100000000000001010011;
+
 // RV32/64FD Extension
 constexpr uint32_t FLW_MASK = 0b00000000000000000111000001111111;
 constexpr uint32_t FLW_ENCODING = 0b00000000000000000010000000000111;
@@ -4385,9 +4455,12 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 			break;
 		}
 
-		// RV32/64 FD Extension
+		// RV32/64 F,D and Zfh Extension
 		case OP_FMADD_S:
 			switch (instr.funct2()) {
+				case F2_FMADD_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FMADD_H);
 				case F2_FMADD_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMADD_S);
@@ -4399,12 +4472,18 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 
 		case OP_FADD_S:
 			switch (instr.funct7()) {
+				case F7_FADD_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FADD_H);
 				case F7_FADD_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FADD_S);
 				case F7_FADD_D:
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FADD_D);
+				case F7_FSUB_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FSUB_H);
 				case F7_FSUB_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FSUB_S);
@@ -4412,20 +4491,46 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FSUB_D);
 				case F7_FCVT_D_S:
-					REQUIRE_ISA(csr_misa::D);
-					MATCH_AND_RETURN_INSTR(FCVT_D_S);
+					switch (instr.rs2()) {
+						case RS2_FCVT_D_S:
+							REQUIRE_ISA(csr_misa::D);
+							MATCH_AND_RETURN_INSTR(FCVT_D_S);
+						case RS2_FCVT_D_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_D_H);
+					}
+					break;
+				case F7_FMUL_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FMUL_H);
 				case F7_FMUL_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMUL_S);
 				case F7_FMUL_D:
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FMUL_D);
+				case F7_FDIV_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FDIV_H);
 				case F7_FDIV_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FDIV_S);
 				case F7_FDIV_D:
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FDIV_D);
+				case F7_FLE_H:
+					switch (instr.funct3()) {
+						case F3_FLE_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FLE_H);
+						case F3_FLT_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FLT_H);
+						case F3_FEQ_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FEQ_H);
+					}
+					break;
 				case F7_FLE_S:
 					switch (instr.funct3()) {
 						case F3_FLE_S:
@@ -4452,6 +4557,16 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 							MATCH_AND_RETURN_INSTR(FSGNJX_D);
 					}
 					break;
+				case F7_FMIN_H:
+					switch (instr.funct3()) {
+						case F3_FMIN_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FMIN_H);
+						case F3_FMAX_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FMAX_H);
+					}
+					break;
 				case F7_FMIN_S:
 					switch (instr.funct3()) {
 						case F3_FMIN_S:
@@ -4473,8 +4588,38 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 					}
 					break;
 				case F7_FCVT_S_D:
-					REQUIRE_ISA(csr_misa::D);
-					MATCH_AND_RETURN_INSTR(FCVT_S_D);
+					switch (instr.rs2()) {
+						case RS2_FCVT_S_D:
+							REQUIRE_ISA(csr_misa::D);
+							MATCH_AND_RETURN_INSTR(FCVT_S_D);
+						case RS2_FCVT_S_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_S_H);
+					}
+					break;
+				case F7_FCVT_H_S:
+					switch (instr.rs2()) {
+						case RS2_FCVT_H_S:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_H_S);
+						case RS2_FCVT_H_D:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_H_D);
+					}
+					break;
+				case F7_FSGNJ_H:
+					switch (instr.funct3()) {
+						case F3_FSGNJ_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FSGNJ_H);
+						case F3_FSGNJN_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FSGNJN_H);
+						case F3_FSGNJX_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FSGNJX_H);
+					}
+					break;
 				case F7_FSGNJ_S:
 					switch (instr.funct3()) {
 						case F3_FSGNJ_S:
@@ -4499,6 +4644,22 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 						case F3_FEQ_D:
 							REQUIRE_ISA(csr_misa::D);
 							MATCH_AND_RETURN_INSTR(FEQ_D);
+					}
+					break;
+				case F7_FCVT_H_W:
+					switch (instr.rs2()) {
+						case RS2_FCVT_H_W:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_H_W);
+						case RS2_FCVT_H_WU:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_H_WU);
+						case RS2_FCVT_H_L:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_H_L);
+						case RS2_FCVT_H_LU:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_H_LU);
 					}
 					break;
 				case F7_FCVT_S_W:
@@ -4549,12 +4710,31 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 							MATCH_AND_RETURN_INSTR(FCVT_LU_D);
 					}
 					break;
+				case F7_FSQRT_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FSQRT_H);
 				case F7_FSQRT_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FSQRT_S);
 				case F7_FSQRT_D:
 					REQUIRE_ISA(csr_misa::D);
 					MATCH_AND_RETURN_INSTR(FSQRT_D);
+				case F7_FCVT_W_H:
+					switch (instr.rs2()) {
+						case RS2_FCVT_W_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_W_H);
+						case RS2_FCVT_WU_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_WU_H);
+						case RS2_FCVT_L_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_L_H);
+						case RS2_FCVT_LU_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCVT_LU_H);
+					}
+					break;
 				case F7_FCVT_W_S:
 					switch (instr.rs2()) {
 						case RS2_FCVT_W_S:
@@ -4569,6 +4749,16 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 						case RS2_FCVT_LU_S:
 							REQUIRE_ISA(csr_misa::F);
 							MATCH_AND_RETURN_INSTR(FCVT_LU_S);
+					}
+					break;
+				case F7_FMV_X_H:
+					switch (instr.funct3()) {
+						case F3_FMV_X_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FMV_X_H);
+						case F3_FCLASS_H:
+							REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+							MATCH_AND_RETURN_INSTR(FCLASS_H);
 					}
 					break;
 				case F7_FMV_X_W:
@@ -4591,6 +4781,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 							MATCH_AND_RETURN_INSTR(FCLASS_D);
 					}
 					break;
+				case F7_FMV_H_X:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FMV_H_X);
 				case F7_FMV_W_X:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMV_W_X);
@@ -4601,6 +4794,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 			break;
 		case OP_FLW:
 			switch (instr.funct3()) {
+				case F3_FLH:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FLH);
 				case F3_FLW:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FLW);
@@ -5293,6 +5489,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 			// RV-V Extension End -- Placeholder 3
 		case OP_FSW:
 			switch (instr.funct3()) {
+				case F3_FSH:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FSH);
 				case F3_FSW:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FSW);
@@ -5824,6 +6023,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 			// RV-V Extension End -- Placeholder 8
 		case OP_FMSUB_S:
 			switch (instr.funct2()) {
+				case F2_FMSUB_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FMSUB_H);
 				case F2_FMSUB_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FMSUB_S);
@@ -5834,6 +6036,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 			break;
 		case OP_FNMSUB_S:
 			switch (instr.funct2()) {
+				case F2_FNMSUB_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FNMSUB_H);
 				case F2_FNMSUB_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FNMSUB_S);
@@ -5844,6 +6049,9 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, uint32_t misa_exte
 			break;
 		case OP_FNMADD_S:
 			switch (instr.funct2()) {
+				case F2_FNMADD_H:
+					REQUIRE_ISA(csr_misa::F);  // TODO: replace check for F with Zfh
+					MATCH_AND_RETURN_INSTR(FNMADD_H);
 				case F2_FNMADD_S:
 					REQUIRE_ISA(csr_misa::F);
 					MATCH_AND_RETURN_INSTR(FNMADD_S);

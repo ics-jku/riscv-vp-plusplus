@@ -6,6 +6,7 @@ It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Jo
 A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf), can be found in the last section.
 
 ### Key features of *RISC-V VP++*
+ * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
  * Fast Interpreter-Based ISS (only partially enabled by default yet!)
    * [Manfred Schlägl and Daniel Große. Fast interpreter-based instruction set simulation for virtual prototypes, In DATE, 2025.](https://ics.jku.at/files/2025DATE_Fast_Interpreter-based_ISS.pdf)
    * DBBCache: Dynamic Basic Block Cache to speed up ISS instruction processing
