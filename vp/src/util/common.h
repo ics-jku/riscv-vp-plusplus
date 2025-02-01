@@ -2,6 +2,18 @@
 
 #include <stdexcept>
 
+/*
+ * preprocessor magic
+ * The cascading (with _INNER) is needed to ensure expansion of macro parameters
+ * Do not use the _INNER variants directly!
+ */
+// convert parameter to string
+#define M_DEFINE2STR(_def) M_DEFINE2STR_INNER(_def)
+#define M_DEFINE2STR_INNER(_def) #_def
+// join macro parameters
+#define M_JOIN(x, y) M_JOIN_AGAIN(x, y)
+#define M_JOIN_AGAIN(x, y) x##y
+
 #define likely(x) __builtin_expect((x), 1)
 #define unlikely(x) __builtin_expect((x), 0)
 

@@ -72,6 +72,11 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		trans.set_data_length(num_bytes);
 		trans.set_response_status(tlm::TLM_OK_RESPONSE);
 
+		/* ensure, that quantum_keeper value of ISS is up-to-date */
+		iss.commit_cycles();
+
+		/* update quantum values by transaction delay */
+
 		sc_core::sc_time local_delay = quantum_keeper.get_local_time();
 
 		isock->b_transport(trans, local_delay);

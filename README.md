@@ -6,6 +6,15 @@ It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Jo
 A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf), can be found in the last section.
 
 ### Key features of *RISC-V VP++*
+ * Fast Interpreter-Based ISS (only partially enabled by default yet!)
+   * [Manfred Schlägl and Daniel Große. Fast interpreter-based instruction set simulation for virtual prototypes, In DATE, 2025.](https://ics.jku.at/files/2025DATE_Fast_Interpreter-based_ISS.pdf)
+   * DBBCache: Dynamic Basic Block Cache to speed up ISS instruction processing
+   * LSCache: Direct translation of in-simulation virtual addresses to (dmi-capable) host system memory addresses to speed up ISS memory accesses
+   * ISS optimizations based on DBBCache (and DBBCacheDummy): Computed goto, Threaded code, Fast/Medium/Slow-Path, Lazy/Approximate tlm quantum checks, Executed cycles and PC calculated on demand, On demand performance counters, ...
+   * PLEASE NOTE: LSCache and DBBCache are currently *disabled* by default at compilation!
+     * The caches can be enabled in ```vp/src/core/common/lscache.h``` (```LSCACHE_ENABLED```) and ```vp/src/core/common/dbbcache.h``` (```DBBCACHE_ENABLED```)
+     * Both caches will be enabled as soon as we implement a way to turn them on/off at runtime (command line parameter).
+     * Many optimizations based on DBBCache are already active (using DBBCacheDummy). However, maximum performance is only achieved when both caches are active!
  * Support for RV32E and RV64E
    (Can be enabled with the "--use-E-base-isa" command line option on riscv-vp, microrv32-vp and all tiny* vp platforms.)
  * Support for the *GD32VF103VBT6* microcontroller (*Nuclei N205*) including UI
