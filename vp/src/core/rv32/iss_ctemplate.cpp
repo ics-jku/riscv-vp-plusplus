@@ -448,7 +448,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(FCVT_D_W)
 				OP_CASE(FCVT_D_WU) {
 					if (trace)
-						std::cout << "[ISS] WARNING: RV64 instruction not supported on RV32"
+						std::cout << "[ISS] WARNING: RV64 instruction not supported on RV32 "
 						          << std::to_string(instr.data()) << "' at address '"
 						          << std::to_string(dbbcache.get_last_pc_before_callback()) << "'" << std::endl;
 					RAISE_ILLEGAL_INSTRUCTION();
