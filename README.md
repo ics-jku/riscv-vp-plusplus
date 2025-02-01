@@ -16,7 +16,6 @@ However, the branch is marked experimental because:
  1. RV32 implementation is not stable yet
  2. DBBCache and LSCache can not be disabled at runtime yet
  3. DBBCache can not be disabled at compile time yet
- 4. The decoder checks Zfh instructions via the misa F flag, because there is no dedicated bit in the misa CSR.
 
 Once these issues are resolved, this branch will be merged back into the master.
 
