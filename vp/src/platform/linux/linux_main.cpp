@@ -156,7 +156,7 @@ class Core {
 	CombinedMemoryInterface memif;
 	InstrMemoryProxy imemif;
 
-	Core(unsigned int id, MemoryDMI dmi)
+	Core(unsigned int id, const MemoryDMI &dmi)
 	    : iss(id), mmu(iss), memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu), imemif(dmi, iss) {
 		return;
 	}
