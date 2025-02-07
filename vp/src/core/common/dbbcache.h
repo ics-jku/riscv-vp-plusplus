@@ -63,9 +63,6 @@
  *    cache.
  *
  * TODO:
- *  * !!! fix dummy implementation DBBCache_IF_T (to be able to disable
- *    DBBCache at compile time)
- *  * !!! fix DBBCache for RV32
  *  * !! allow enabling/disabling the DBBCache at runtime (or at VP start)
  *     * similar to dmi
  *     * ideally without performance impact
@@ -106,26 +103,26 @@
  ******************************************************************************/
 
 /******************************************************************************
- * BEGIN: MISC (TODO)
+ * BEGIN: MISC
  ******************************************************************************/
 
 struct OpMapEntry {
 	/* order optimized for alignment */
-	void *label_ptr;
 	Opcode::Mapping op;
 	unsigned long instr_time;
+	void *label_ptr;
 };
 
 /******************************************************************************
- * END: MISC (TODO)
+ * END: MISC
  ******************************************************************************/
 
 /******************************************************************************
- * BEGIN: DUMMY/INTERFACE IMPLEMENTATION
+ * BEGIN: COMMON BASE CLASS
  ******************************************************************************/
 
 template <enum Architecture arch, typename T_uxlen_t, typename T_instr_memory_if>
-class DBBCache_IF_T {
+class DBBCacheBase_T {
    protected:
 	RV_ISA_Config *isa_config = nullptr;
 	bool has_compressed = false;
@@ -134,8 +131,7 @@ class DBBCache_IF_T {
 	void *ufast_abort_label_ptr = nullptr;
 	uint32_t mem_word = 0x0;
 
-   public:
-	DBBCache_IF_T() {
+	DBBCacheBase_T() {
 		init(nullptr, nullptr, nullptr, nullptr, 0);
 	}
 
@@ -152,51 +148,153 @@ class DBBCache_IF_T {
 		this->ufast_abort_label_ptr = ufast_abort_label_ptr;
 		this->mem_word = 0;
 	}
+};
 
-	void branch_not_taken(T_uxlen_t pc) {}
+/******************************************************************************
+ * END: COMMON BASE CLASS
+ ******************************************************************************/
 
-	void branch_taken(T_uxlen_t pc) {}
+/******************************************************************************
+ * BEGIN: DUMMY IMPLEMENTATION
+ ******************************************************************************/
 
-	void jump(T_uxlen_t pc) {}
+template <enum Architecture arch, typename T_uxlen_t, typename T_instr_memory_if>
+class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
+   private:
+	T_uxlen_t pc;
+	T_uxlen_t last_pc;
+	uint64_t cycle_counter_raw = 0;
 
-	void jump_dyn(T_uxlen_t pc) {}
-
-	void fence_i(T_uxlen_t pc) {}
-
-	void fence_vma(T_uxlen_t pc) {}
-
-	void enter_trap(T_uxlen_t pc) {}
-
-	void ret_trap(T_uxlen_t pc) {}
-
-	void fetch_decode(T_uxlen_t &pc, Instruction &instr, Opcode::Mapping &op) {
+	__always_inline uint32_t fetch(T_uxlen_t &pc, Instruction &instr) {
 		try {
-			this->mem_word = this->instr_mem->load_instr(pc);
-			instr = Instruction(this->mem_word);
+			uint32_t mem_word = this->instr_mem->load_instr(pc);
+			instr = Instruction(mem_word);
+			return mem_word;
 		} catch (SimulationTrap &e) {
-			op = Opcode::UNDEF;
 			instr = Instruction(0);
 			throw;
 		}
+	}
 
+	__always_inline int decode(Instruction &instr, Opcode::Mapping &op) {
 		if (instr.is_compressed()) {
 			op = instr.decode_and_expand_compressed(arch, *this->isa_config);
-			pc += 2;
+			return 2;
 		} else {
 			op = instr.decode_normal(arch, *this->isa_config);
-			pc += 4;
+			return 4;
 		}
 	}
 
-	uint32_t get_mem_word() {
+	__always_inline uint32_t fetch_decode(T_uxlen_t &pc, Instruction &instr, Opcode::Mapping &op) {
+		uint32_t mem_word = fetch(pc, instr);
+		pc += decode(instr, op);
 		return mem_word;
 	}
+
+	__always_inline void branch_taken_sjump(int32_t pc_offset) {
+		this->pc = this->last_pc + pc_offset;
+	}
+
+   public:
+	DBBCacheDummy_T() {
+		init(nullptr, nullptr, nullptr, nullptr, 0);
+	}
+
+	void init(RV_ISA_Config *isa_config, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
+	          void *ufast_abort_label_ptr, T_uxlen_t entrypoint) {
+		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(isa_config, instr_mem, opMap, ufast_abort_label_ptr,
+		                                                         entrypoint);
+		this->pc = entrypoint;
+	}
+
+	__always_inline void branch_not_taken(T_uxlen_t pc) {}
+
+	__always_inline void branch_taken(int32_t pc_offset) {
+		branch_taken_sjump(pc_offset);
+	}
+
+	__always_inline void jump(int32_t pc_offset) {
+		branch_taken_sjump(pc_offset);
+	}
+
+	__always_inline T_uxlen_t jump_and_link(int32_t pc_offset) {
+		T_uxlen_t link = pc;
+		branch_taken_sjump(pc_offset);
+		return link;
+	}
+
+	__always_inline void jump_dyn(T_uxlen_t pc) {
+		this->pc = pc;
+	}
+
+	__always_inline T_uxlen_t jump_dyn_and_link(T_uxlen_t pc) {
+		T_uxlen_t link = this->pc;
+		this->pc = pc;
+		return link;
+	}
+
+	__always_inline void fence_i(T_uxlen_t pc) {}
+
+	__always_inline void fence_vma(T_uxlen_t pc) {}
+
+	__always_inline void enter_trap(T_uxlen_t pc) {
+		this->pc = pc;
+	}
+
+	__always_inline void ret_trap(T_uxlen_t pc) {
+		this->pc = pc;
+	}
+
+	__always_inline void force_slow_path() {}
+
+	__always_inline bool in_ufast_path() {
+		return false;
+	}
+
+	__always_inline void *fetch_decode_fast(Instruction &instr) {
+		return this->ufast_abort_label_ptr;
+	}
+
+	__always_inline void abort_fetch_decode_fast() {}
+
+	__always_inline void *fetch_decode(T_uxlen_t &pc, Instruction &instr) {
+		Opcode::Mapping op;
+		this->last_pc = this->pc;
+		this->mem_word = fetch_decode(pc, instr, op);
+		this->pc = pc;
+		cycle_counter_raw += this->opMap[op].instr_time;
+		return this->opMap[op].label_ptr;
+	}
+
+	__always_inline T_uxlen_t get_last_pc_before_callback() {
+		return last_pc;
+	}
+
+	__always_inline T_uxlen_t get_last_pc_exception_safe() {
+		return last_pc;
+	}
+
+	/* TODO: UNUSED - REMOVE? */
+	__always_inline T_uxlen_t get_pc_before_callback() {
+		return pc;
+	}
+
+	__always_inline T_uxlen_t get_pc_maybe_after_callback() {
+		return pc;
+	}
+
+	__always_inline uint64_t get_cycle_counter_raw() {
+		return cycle_counter_raw;
+	}
+
+	uint32_t get_mem_word() {
+		return this->mem_word;
+	}
 };
-template <enum Architecture arch, typename T_uxlen_t, typename T_instr_memory_if>
-using DBBCacheDummy_T = DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if>;
 
 /******************************************************************************
- * END: DUMMY/INTERFACE IMPLEMENTATION
+ * END: DUMMY IMPLEMENTATION
  ******************************************************************************/
 
 /******************************************************************************
@@ -204,7 +302,7 @@ using DBBCacheDummy_T = DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if>;
  ******************************************************************************/
 
 template <enum Architecture arch, typename T_uxlen_t, typename T_instr_memory_if>
-class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
+class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	/* Configuration */
 	const static unsigned int N_ENTRIES_START = 2;
 	const static unsigned int JUMPDYNLINKCACHE_SIZE = 16;
@@ -767,8 +865,8 @@ class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 	void init(RV_ISA_Config *isa_config, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
 	          void *ufast_abort_label_ptr, T_uxlen_t entrypoint) {
-		DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if>::init(isa_config, instr_mem, opMap, ufast_abort_label_ptr,
-		                                                        entrypoint);
+		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(isa_config, instr_mem, opMap, ufast_abort_label_ptr,
+		                                                         entrypoint);
 
 		/* set abort label ptr and reinit blocks to have valid terminal entries */
 		this->ufast_abort_label_ptr = ufast_abort_label_ptr;
@@ -948,11 +1046,6 @@ class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		stats.dec_cnt();
 		stats.inc_ufast_abort();
-	}
-
-	__always_inline uint32_t try_fetch_decode_fast_commit() {
-		ufastEntry++;
-		return ufastEntry->instr;
 	}
 
 	__always_inline void *fetch_decode(T_uxlen_t &pc, Instruction &instr) {
@@ -1137,6 +1230,7 @@ class DBBCache_T : public DBBCache_IF_T<arch, T_uxlen_t, T_instr_memory_if> {
 		return curBlock->entries[curEntryIdx].pc;
 	}
 
+	/* TODO: UNUSED - REMOVE? */
 	__always_inline T_uxlen_t get_pc_before_callback() {
 		/* taken hit fast */
 		if (likely(in_ufast_path())) {
