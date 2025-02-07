@@ -1919,6 +1919,44 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "AMOMINU_D",
     "AMOMAXU_D",
 
+    // RV32Zfh standard extension
+    "FLH",
+    "FSH",
+    "FMADD_H",
+    "FMSUB_H",
+    "FNMADD_H",
+    "FNMSUB_H",
+    "FADD_H",
+    "FSUB_H",
+    "FMUL_H",
+    "FDIV_H",
+    "FSQRT_H",
+    "FSGNJ_H",
+    "FSGNJN_H",
+    "FSGNJX_H",
+    "FMIN_H",
+    "FMAX_H",
+    "FCVT_W_H",
+    "FCVT_WU_H",
+    "FMV_X_H",
+    "FEQ_H",
+    "FLT_H",
+    "FLE_H",
+    "FCLASS_H",
+    "FCVT_H_W",
+    "FCVT_H_WU",
+    "FMV_H_X",
+    "FCVT_S_H",
+    "FCVT_H_S",
+    "FCVT_H_D",
+    "FCVT_D_H",
+
+    // RV64Zfh standard extension
+    "FCVT_L_H",
+    "FCVT_LU_H",
+    "FCVT_H_L",
+    "FCVT_H_LU",
+
     // RV32F standard extension
     "FLW",
     "FSW",
@@ -2754,8 +2792,37 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case FCVT_D_L:
 		case FCVT_D_LU:
 		case FMV_D_X:
+		case FADD_H:
+		case FSUB_H:
+		case FMUL_H:
+		case FDIV_H:
+		case FSQRT_H:
+		case FSGNJ_H:
+		case FSGNJN_H:
+		case FSGNJX_H:
+		case FMIN_H:
+		case FMAX_H:
+		case FCVT_W_H:
+		case FCVT_WU_H:
+		case FMV_X_H:
+		case FEQ_H:
+		case FLT_H:
+		case FLE_H:
+		case FCLASS_H:
+		case FCVT_H_W:
+		case FCVT_H_WU:
+		case FMV_H_X:
+		case FCVT_S_H:
+		case FCVT_H_S:
+		case FCVT_H_D:
+		case FCVT_D_H:
+		case FCVT_L_H:
+		case FCVT_LU_H:
+		case FCVT_H_L:
+		case FCVT_H_LU:
 		case VSETVL:
 			return Type::R;
+
 		case JALR:
 		case JR:
 		case LB:
@@ -2799,14 +2866,18 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case CSRRCI:
 		case FLW:
 		case FLD:
+		case FLH:
 			return Type::I;
+
 		case SB:
 		case SH:
 		case SW:
 		case SD:
 		case FSW:
 		case FSD:
+		case FSH:
 			return Type::S;
+
 		case BEQ:
 		case BNE:
 		case BLT:
@@ -2830,7 +2901,12 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case FMSUB_D:
 		case FNMSUB_D:
 		case FNMADD_D:
+		case FMADD_H:
+		case FMSUB_H:
+		case FNMSUB_H:
+		case FNMADD_H:
 			return Type::R4;
+
 		case VSETVLI:
 		case VSETIVLI:
 			return Type::V_SET_I;
