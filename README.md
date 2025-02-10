@@ -13,9 +13,7 @@ presented at the Design, Automation and Test in Europe Conference 2025.
 
 This optimized VP allows experiments with RV64 and Linux ([GUI-VP Kit](https://github.com/ics-jku/GUI-VP_Kit)).
 However, the branch is marked experimental because:
- 1. RV32 implementation is not stable yet
- 2. DBBCache and LSCache can not be disabled at runtime yet
- 3. DBBCache can not be disabled at compile time yet
+ 1. DBBCache and LSCache can not be disabled at runtime yet
 
 Once these issues are resolved, this branch will be merged back into the master.
 
