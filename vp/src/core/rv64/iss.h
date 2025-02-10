@@ -86,12 +86,12 @@ struct DirectCoreRunner : public sc_core::sc_module {
 	void run() {
 		core.run();
 
-		if (core.status == CoreExecStatus::HitBreakpoint) {
+		if (core.get_status() == CoreExecStatus::HitBreakpoint) {
 			throw std::runtime_error(
 			    "Breakpoints are not supported in the direct runner, use the debug "
 			    "runner instead.");
 		}
-		assert(core.status == CoreExecStatus::Terminated);
+		assert(core.get_status() == CoreExecStatus::Terminated);
 
 		sc_core::sc_stop();
 	}

@@ -21,12 +21,19 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
                                 public iss_syscall_if,
                                 public debug_target_if,
                                 public initiator_if {
+   protected:
+	// protected: must not modified directly (would break FastISS)
 	RV_ISA_Config *isa_config = nullptr;
-
-	// private: must not modified directly (would break DBBCache)
+	uxlen_t pc = 0;
+	uint64_t cycle_counter_raw_last = 0;
+	int64_t lr_sc_counter = 0;
 	bool iss_slow_path = false;
 	bool trace = false;
-	uint64_t cycle_counter_raw_last = 0;
+	bool shall_exit = false;
+	sc_core::sc_event wfi_event;
+	CoreExecStatus status = CoreExecStatus::Runnable;
+	std::unordered_set<uxlen_t> breakpoints;
+	bool debug_mode = false;
 	// TODO: check and set intended permissions for all members
 
 	struct op_label_entry {
@@ -52,23 +59,14 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	syscall_emulator_if *sys = nullptr;  // optional, if provided, the iss will intercept and handle syscalls directly
 	RegFile regs;
 	FpRegs fp_regs;
-	uxlen_t pc = 0;
-	bool shall_exit = false;  // TODO: private?
 	bool ignore_wfi = false;
 	bool error_on_zero_traphandler = false;
 	ISS_CT_T_CSR_TABLE csrs;
 	VExtension<ISS_CT> v_ext;
 	PrivilegeLevel prv = MachineMode;
-	int64_t lr_sc_counter = 0;
 
 	// last decoded and executed instruction and opcode
 	Instruction instr;
-
-	CoreExecStatus status = CoreExecStatus::Runnable;  // TODO: private?
-	std::unordered_set<uxlen_t> breakpoints;
-	bool debug_mode = false;  // TODO: private?
-
-	sc_core::sc_event wfi_event;
 
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
@@ -154,7 +152,10 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return trace;
 	}
 
-	CoreExecStatus get_status(void) override;
+	CoreExecStatus get_status(void) override {
+		return status;
+	}
+
 	void set_status(CoreExecStatus) override;
 	void block_on_wfi(bool) override;
 

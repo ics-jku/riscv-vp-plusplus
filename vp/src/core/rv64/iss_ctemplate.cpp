@@ -7204,10 +7204,6 @@ void ISS_CT::block_on_wfi(bool block) {
 	ignore_wfi = !block;
 }
 
-CoreExecStatus ISS_CT::get_status(void) {
-	return status;
-}
-
 void ISS_CT::set_status(CoreExecStatus s) {
 	status = s;
 	force_slow_path();
