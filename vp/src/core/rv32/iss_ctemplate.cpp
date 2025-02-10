@@ -440,12 +440,12 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(FCVT_S_L)
 				OP_CASE(FCVT_S_LU)
 				// RV64D
-				OP_CASE(FMV_D_X)
+				OP_CASE(FCVT_L_D)
+				OP_CASE(FCVT_LU_D)
 				OP_CASE(FMV_X_D)
-				OP_CASE(FCVT_W_D)
-				OP_CASE(FCVT_WU_D)
-				OP_CASE(FCVT_D_W)
-				OP_CASE(FCVT_D_WU) {
+				OP_CASE(FCVT_D_L)
+				OP_CASE(FCVT_D_LU)
+				OP_CASE(FMV_D_X) {
 					if (trace)
 						std::cout << "[ISS] WARNING: RV64 instruction not supported on RV32 "
 						          << std::to_string(instr.data()) << "' at address '"
@@ -1791,6 +1791,40 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				}
 				OP_END();
 
+				OP_CASE(FCVT_W_D) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					regs[RD] = f64_to_i32(fp_regs.f64(RS1), softfloat_roundingMode, true);
+					fp_finish_instr();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_WU_D) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					regs[RD] = (int32_t)f64_to_ui32(fp_regs.f64(RS1), softfloat_roundingMode, true);
+					fp_finish_instr();
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_D_W) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, i32_to_f64((int32_t)regs[RS1]));
+					fp_finish_instr();
+				}
+				OP_END();
+
+				OP_CASE(FCVT_D_WU) {
+					fp_prepare_instr();
+					fp_setup_rm();
+					fp_regs.write(RD, ui32_to_f64((int32_t)regs[RS1]));
+					fp_finish_instr();
+				}
+				OP_END();
+
 				OP_CASE(FCVT_S_D) {
 					fp_prepare_instr();
 					fp_setup_rm();
@@ -1803,40 +1837,6 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					fp_prepare_instr();
 					fp_setup_rm();
 					fp_regs.write(RD, f32_to_f64(fp_regs.f32(RS1)));
-					fp_finish_instr();
-				}
-				OP_END();
-
-				OP_CASE(FCVT_L_D) {
-					fp_prepare_instr();
-					fp_setup_rm();
-					regs[RD] = f64_to_i64(fp_regs.f64(RS1), softfloat_roundingMode, true);
-					fp_finish_instr();
-					reset_reg_zero();
-				}
-				OP_END();
-
-				OP_CASE(FCVT_LU_D) {
-					fp_prepare_instr();
-					fp_setup_rm();
-					regs[RD] = f64_to_ui64(fp_regs.f64(RS1), softfloat_roundingMode, true);
-					fp_finish_instr();
-					reset_reg_zero();
-				}
-				OP_END();
-
-				OP_CASE(FCVT_D_L) {
-					fp_prepare_instr();
-					fp_setup_rm();
-					fp_regs.write(RD, i64_to_f64(regs[RS1]));
-					fp_finish_instr();
-				}
-				OP_END();
-
-				OP_CASE(FCVT_D_LU) {
-					fp_prepare_instr();
-					fp_setup_rm();
-					fp_regs.write(RD, ui64_to_f64(regs[RS1]));
 					fp_finish_instr();
 				}
 				OP_END();
