@@ -2684,6 +2684,7 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case OR_NOP:
 		case AND:
 		case AND_NOP:
+		case SFENCE_VMA:
 		case MUL:
 		case MUL_NOP:
 		case MULH:
@@ -2858,6 +2859,14 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case SRLI_NOP:
 		case SRAI:
 		case SRAI_NOP:
+		case ECALL:
+		case EBREAK:
+		case WFI:
+		case FENCE_I:
+		case FENCE:
+		case URET:
+		case SRET:
+		case MRET:
 		case CSRRW:
 		case CSRRS:
 		case CSRRC:
@@ -2885,14 +2894,17 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case BLTU:
 		case BGEU:
 			return Type::B;
+
 		case LUI:
 		case LUI_NOP:
 		case AUIPC:
 		case AUIPC_NOP:
 			return Type::U;
+
 		case JAL:
 		case J:
 			return Type::J;
+
 		case FMADD_S:
 		case FMSUB_S:
 		case FNMSUB_S:
@@ -3536,9 +3548,14 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 		case VMV_NR_R_V:
 			return Type::V;
 
-		default:
+		case UNDEF:
+		case UNSUP:
+		case NUMBER_OF_INSTRUCTIONS:
 			return Type::UNKNOWN;
+
+			/* no default branch here -> we want compiler warnings in this case! */
 	}
+	return Type::UNKNOWN;
 }
 
 unsigned C_ADDI4SPN_NZUIMM(uint32_t n) {
