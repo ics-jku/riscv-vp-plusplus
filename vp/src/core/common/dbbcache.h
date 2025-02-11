@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  *
- * Dynamic Basic Block Cache (DISABLED)
+ * Dynamic Basic Block Cache
  * Generates an alternative representation of the executed code, the Dynamic Basic Block Graph (DBBG), to efficiently
  * cache data needed for instruction processing by the ISS to significantly speed-up instruction interpretation.
  *
@@ -61,11 +61,6 @@
  *    by DBBCache. They are calculated once and cached on a cache miss.
  *    On cache hits, the values are not calculated but taken from the
  *    cache.
- *
- * TODO:
- *  * !! allow enabling/disabling the DBBCache at runtime (or at VP start)
- *     * similar to dmi
- *     * ideally without performance impact
  */
 
 #ifndef RISCV_ISA_DBBCACHE_H
@@ -90,8 +85,15 @@
  * enable/disable cache
  * if disabled, the dummy implementation is used
  */
-//#define DBBCACHE_ENABLED
-#undef DBBCACHE_ENABLED
+#define DBBCACHE_ENABLED
+//#undef DBBCACHE_ENABLED
+
+/*
+ * forces the cache to be always enabled, independent of the runtime configuration
+ * this eliminates the runtime checks (located in cache miss) -> max performance
+ */
+//#define LSCACHE_FORCED_ENABLED
+#undef LSCACHE_FORCED_ENABLED
 
 /*
  * enable statistics
@@ -126,6 +128,7 @@ struct OpMapEntry {
 template <enum Architecture arch, typename T_uxlen_t, typename T_instr_memory_if>
 class DBBCacheBase_T {
    protected:
+	bool enabled = false;
 	RV_ISA_Config *isa_config = nullptr;
 	uint64_t hartId = 0;
 	bool has_compressed = false;
@@ -136,11 +139,12 @@ class DBBCacheBase_T {
 
    public:
 	DBBCacheBase_T() {
-		init(nullptr, 0, nullptr, nullptr, nullptr, 0);
+		init(false, nullptr, 0, nullptr, nullptr, nullptr, 0);
 	}
 
-	void init(RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
-	          void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+	void init(bool enabled, RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem,
+	          struct OpMapEntry opMap[], void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+		this->enabled = enabled;
 		this->isa_config = isa_config;
 		this->hartId = hartId;
 		if (isa_config != nullptr) {
@@ -152,6 +156,14 @@ class DBBCacheBase_T {
 		this->opMap = opMap;
 		this->fast_abort_label_ptr = fast_abort_label_ptr;
 		this->mem_word = 0;
+	}
+
+	__always_inline bool is_enabled() {
+#ifdef DBBCACHE_FORCED_ENABLED
+		return true;
+#else
+		return enabled;
+#endif
 	}
 };
 
@@ -203,12 +215,12 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 
    public:
 	DBBCacheDummy_T() {
-		init(nullptr, 0, nullptr, nullptr, nullptr, 0);
+		init(false, nullptr, 0, nullptr, nullptr, nullptr, 0);
 	}
 
-	void init(RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
-	          void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
-		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(isa_config, hartId, instr_mem, opMap,
+	void init(bool enabled, RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem,
+	          struct OpMapEntry opMap[], void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(enabled, isa_config, hartId, instr_mem, opMap,
 		                                                         fast_abort_label_ptr, entrypoint);
 		this->pc = entrypoint;
 	}
@@ -828,11 +840,15 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
 		}
 
-		Block *lastBlock = curBlock;
-		int lastEntryIdx = curEntryIdx;
-		find_create_block(pc);
-		if (lastBlock != &dummyBlock) {
-			lastBlock->entries[lastEntryIdx].setLinkBlock(curBlock);
+		if (likely(this->is_enabled())) {
+			Block *lastBlock = curBlock;
+			int lastEntryIdx = curEntryIdx;
+			find_create_block(pc);
+			if (lastBlock != &dummyBlock) {
+				lastBlock->entries[lastEntryIdx].setLinkBlock(curBlock);
+			}
+		} else {
+			switch_block_dummy(pc);
 		}
 	}
 
@@ -861,12 +877,12 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
    public:
 	DBBCache_T() {
-		init(nullptr, 0, nullptr, nullptr, nullptr, 0);
+		init(false, nullptr, 0, nullptr, nullptr, nullptr, 0);
 	}
 
-	void init(RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem, struct OpMapEntry opMap[],
-	          void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
-		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(isa_config, hartId, instr_mem, opMap,
+	void init(bool enabled, RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem,
+	          struct OpMapEntry opMap[], void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(enabled, isa_config, hartId, instr_mem, opMap,
 		                                                         fast_abort_label_ptr, entrypoint);
 
 		/* set abort label ptr and reinit blocks to have valid terminal entries */
@@ -893,7 +909,11 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		fastDisableBlock.entries[1].set_terminal(*this);
 		fast_path_raw_disable();
 
-		find_create_block(entrypoint);
+		if (this->is_enabled()) {
+			find_create_block(entrypoint);
+		} else {
+			switch_block_dummy(entrypoint);
+		}
 	}
 
 	__always_inline void branch_not_taken(T_uxlen_t pc) {
@@ -911,18 +931,17 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	}
 
 	__always_inline T_uxlen_t jump_and_link(int32_t pc_offset) {
-		stats.inc_sjumps();
-
+		/* calculate link */
 		Entry *e;
 		if (likely(in_fast_path())) {
 			e = fastEntry;
 		} else {
 			e = &curBlock->entries[curEntryIdx];
 		}
-
 		T_uxlen_t link = e->pc + e->pc_increment;
 
-		branch_taken_sjump(pc_offset);
+		/* reuse jump */
+		jump(pc_offset);
 
 		return link;
 	}
@@ -937,33 +956,28 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			return;
 		}
 
-		Block *lastBlock = curBlock;
-		find_create_block(pc);
-		lastBlock->jumpDynLinkCache.add(pc, curBlock);
+		if (likely(this->is_enabled())) {
+			Block *lastBlock = curBlock;
+			find_create_block(pc);
+			lastBlock->jumpDynLinkCache.add(pc, curBlock);
+		} else {
+			switch_block_dummy(pc);
+		}
 	}
 
 	__always_inline T_uxlen_t jump_dyn_and_link(T_uxlen_t pc) {
-		stats.inc_djumps();
-
+		/* calculate link */
 		Entry *e;
 		if (likely(in_fast_path())) {
 			e = fastEntry;
 		} else {
 			e = &curBlock->entries[curEntryIdx];
 		}
-
 		T_uxlen_t link = e->pc + e->pc_increment;
 
-		struct Block *linkBlock = curBlock->jumpDynLinkCache.find(pc);
-		if (likely(linkBlock != nullptr)) {
-			stats.inc_djump_hits();
-			switch_block(linkBlock);
-			return link;
-		}
+		/* reuse jump_dyn */
+		jump_dyn(pc);
 
-		Block *lastBlock = curBlock;
-		find_create_block(pc);
-		lastBlock->jumpDynLinkCache.add(pc, curBlock);
 		return link;
 	}
 
@@ -990,8 +1004,12 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			return;
 		}
 
-		find_create_block(pc);
-		trapLinkCache.add(pc, curBlock);
+		if (likely(this->is_enabled())) {
+			find_create_block(pc);
+			trapLinkCache.add(pc, curBlock);
+		} else {
+			switch_block_dummy(pc);
+		}
 	}
 
 	__always_inline void ret_trap(T_uxlen_t pc) {
@@ -1082,7 +1100,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		/* SLOW PATH */
 
-		/* ignore cache after return from interrupt at random position */
+		/* ignore cache, if cache is disabled or if we are after return from interrupt to random position */
 		if (unlikely(curBlock == &dummyBlock)) {
 			Opcode::Mapping op = Opcode::UNDEF;
 			stats.inc_cache_ignored_instr();

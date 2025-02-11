@@ -123,7 +123,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	uint64_t _compute_and_get_current_cycles();
 
-	void init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uxlen_t entrypoint, uxlen_t sp);
+	void init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
+	          clint_if *clint, uxlen_t entrypoint, uxlen_t sp);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
 	void clear_external_interrupt(PrivilegeLevel level) override;

@@ -20,6 +20,8 @@ class Options : public boost::program_options::options_description {
 	unsigned int debug_port = 5005;
 	bool trace_mode = false;
 	unsigned int tlm_global_quantum = 10;
+	bool use_dbbcache = false;
+	bool use_lscache = false;
 	bool use_instr_dmi = false;
 	bool use_data_dmi = false;
 	bool use_debug_bus = false;

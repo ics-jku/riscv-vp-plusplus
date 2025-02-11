@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  *
- * Load/Store Cache (DISABLED)
+ * Load/Store Cache
  * Allows direct translation of in-simulation virtual addresses to (dmi-capable) host system memory addresses, to speed
  * up load and stores on data memory. For hits, calls to the memory interface (including virtual address translation)
  * are omitted. Instead, data is directly accessed via dereferencing cached page pointers + page offsets.
@@ -32,8 +32,15 @@
  * enable/disable cache
  * if disabled, the dummy implementation is used
  */
-//#define LSCACHE_ENABLED
-#undef LSCACHE_ENABLED
+#define LSCACHE_ENABLED
+//#undef LSCACHE_ENABLED
+
+/*
+ * forces the cache to be always enabled, independent of the runtime configuration
+ * this eliminates the runtime checks (located in cache miss) -> max performance
+ */
+//#define LSCACHE_FORCED_ENABLED
+#undef LSCACHE_FORCED_ENABLED
 
 /*
  * enable statistics
@@ -54,17 +61,27 @@ template <typename T_sxlen_t, typename T_uxlen_t>
 class LSCache_IF_T {
    protected:
 	using dmemif_t = data_memory_if_T<T_sxlen_t, T_uxlen_t>;
+	bool enabled;
 	uint64_t hartId = 0;
 	dmemif_t *data_mem = nullptr;
 
    public:
 	LSCache_IF_T() {
-		init(0, nullptr);
+		init(false, 0, nullptr);
 	}
 
-	void init(uint64_t hartId, dmemif_t *data_mem) {
+	void init(bool enabled, uint64_t hartId, dmemif_t *data_mem) {
+		this->enabled = enabled;
 		this->hartId = hartId;
 		this->data_mem = data_mem;
+	}
+
+	__always_inline bool is_enabled() {
+#ifdef LSCACHE_FORCED_ENABLED
+		return true;
+#else
+		return enabled;
+#endif
 	}
 
 	__always_inline void fence() {
@@ -212,7 +229,10 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 		void *host_page_addr = this->data_mem->get_last_dmi_page_host_addr();
 		if (host_page_addr != nullptr) {
 			stats.inc_dmi();
-			update(virt_addr, host_page_addr, valid_bits);
+			// do not add to cache, if disabled
+			if (likely(this->is_enabled())) {
+				update(virt_addr, host_page_addr, valid_bits);
+			}
 		} else {
 			stats.inc_no_dmi();
 		}
@@ -263,12 +283,12 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 
    public:
 	LSCache_T() {
-		init(0, nullptr);
+		init(false, 0, nullptr);
 	}
 
-	void init(uint64_t hartId, dmemif_t *data_mem) {
+	void init(bool enabled, uint64_t hartId, dmemif_t *data_mem) {
 		flush();
-		super::init(hartId, data_mem);
+		super::init(enabled, hartId, data_mem);
 	}
 
 	__always_inline void fence_vma() {

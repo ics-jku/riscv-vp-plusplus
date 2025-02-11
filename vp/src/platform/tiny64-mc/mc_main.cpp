@@ -89,9 +89,10 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
 
-	core0.init(&core0_mem_if, &core0_mem_if, &clint, loader.get_entrypoint(),
+	core0.init(&core0_mem_if, opt.use_dbbcache, &core0_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	           opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
-	core1.init(&core1_mem_if, &core1_mem_if, &clint, loader.get_entrypoint(), opt.mem_end_addr - 32767);
+	core1.init(&core1_mem_if, opt.use_dbbcache, &core1_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
+	           opt.mem_end_addr - 32767);
 
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core0);

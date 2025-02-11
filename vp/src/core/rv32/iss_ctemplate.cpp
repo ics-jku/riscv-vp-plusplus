@@ -6936,8 +6936,8 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 	maybe_interrupt_pending();
 }
 
-void ISS_CT::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if *clint, uxlen_t entrypoint,
-                  uxlen_t sp) {
+void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
+                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
@@ -6948,8 +6948,8 @@ void ISS_CT::init(instr_memory_if *instr_mem, data_memory_if *data_mem, clint_if
 	void *fast_abort_and_fdd_label_ptr = genOpMap();
 
 	uint64_t hartId = get_hart_id();
-	dbbcache.init(isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_label_ptr, entrypoint);
-	lscache.init(hartId, data_mem);
+	dbbcache.init(use_dbbcache, isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_label_ptr, entrypoint);
+	lscache.init(use_lscache, hartId, data_mem);
 	cycle_counter_raw_last = 0;
 }
 

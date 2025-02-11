@@ -164,7 +164,8 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
 	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);
 
-	core.init(instr_mem_if, data_mem_if, &timer, loader.get_entrypoint(), rv32_align_address(opt.sram_end_addr));
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &timer, loader.get_entrypoint(),
+	          rv32_align_address(opt.sram_end_addr));
 
 	// connect TLM sockets
 	iss_mem_if.isock.bind(ahb.tsocks[0]);

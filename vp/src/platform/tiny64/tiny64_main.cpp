@@ -94,7 +94,8 @@ int sc_main(int argc, char **argv) {
 	}
 
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
-	core.init(instr_mem_if, data_mem_if, &clint, loader.get_entrypoint(), rv64_align_address(opt.mem_end_addr));
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
+	          rv64_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 

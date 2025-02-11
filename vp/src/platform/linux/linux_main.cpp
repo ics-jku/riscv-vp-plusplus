@@ -164,11 +164,12 @@ class Core {
 		return;
 	}
 
-	void init(bool use_data_dmi, bool use_instr_dmi, clint_if *clint, uint64_t entry, uint64_t addr) {
+	void init(bool use_data_dmi, bool use_instr_dmi, bool use_dbbcache, bool use_lscache, clint_if *clint,
+	          uint64_t entry, uint64_t addr) {
 		if (use_data_dmi)
 			memif.dmi_ranges.emplace_back(imemif.dmi);
 
-		iss.init(get_instr_memory_if(use_instr_dmi), &memif, clint, entry, addr);
+		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, addr);
 	}
 
    private:
@@ -250,7 +251,8 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	for (size_t i = 0; i < NUM_CORES; i++) {
-		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
+		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, opt.use_dbbcache, opt.use_lscache, &clint, entry_point,
+		               rv64_align_address(opt.mem_end_addr));
 
 		sys.register_core(&cores[i]->iss);
 		if (opt.intercept_syscalls)

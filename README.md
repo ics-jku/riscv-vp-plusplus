@@ -8,17 +8,18 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
 ### Key features of *RISC-V VP++*
  * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
    (Can be enabled with the "--en-ext-Zfh" command line option on all platforms)
- * Fast Interpreter-Based ISS (only partially enabled by default yet!)
+ * Fast Interpreter-Based ISS
    * [Manfred Schlägl and Daniel Große. Fast interpreter-based instruction set simulation for virtual prototypes, In DATE, 2025.](https://ics.jku.at/files/2025DATE_Fast_Interpreter-based_ISS.pdf)
    * DBBCache: Dynamic Basic Block Cache to speed up ISS instruction processing
    * LSCache: Direct translation of in-simulation virtual addresses to (dmi-capable) host system memory addresses to speed up ISS memory accesses
    * ISS optimizations based on DBBCache (and DBBCacheDummy): Computed goto, Threaded code, Fast/Medium/Slow-Path, Lazy/Approximate tlm quantum checks, Executed cycles and PC calculated on demand, On demand performance counters, ...
-   * PLEASE NOTE: LSCache and DBBCache are currently *disabled* by default at compilation!
-     * The caches can be enabled in ```vp/src/core/common/lscache.h``` (```LSCACHE_ENABLED```) and ```vp/src/core/common/dbbcache.h``` (```DBBCACHE_ENABLED```)
-     * Both caches will be enabled as soon as we implement a way to turn them on/off at runtime (command line parameter).
-     * Many optimizations based on DBBCache are already active (using DBBCacheDummy). However, maximum performance is only achieved when both caches are active!
+   * PLEASE NOTE: LSCache and DBBCache are included at compile time, but disabled at runtime by default!
+     * Use the new command line switches "--use-dbbcache" and "--use-lscache" to enable the caches at runtime ("--use-lscache" will automatically enable DMI)
+     * To completely disable the caches (replacing them with dummy implementations) at compile time un-define ```DBBCACHE_ENABLED``` and ```LSCACHE_ENABLED``` in ```vp/src/core/common/dbbcache.h``` and ```vp/src/core/common/lscache.h```, respectively
+     * To enable the caches independent of command line switches define ```DBBCACHE_ENABLED``` + ```DBBCACHE_FORCED_ENABLED``` and ```LSCACHE_ENABLED``` + ```LSCACHE_FORCED_ENABLED``` in see ```vp/src/core/common/dbbcache.h``` and ```vp/src/core/common/lscache.h```, respectively
+     * Some ISS optimisations based on DBBCache are active when the cache is disabled. However, significant performance improvements are only achieved when both caches are enabled!
  * Support for RV32E and RV64E
-   (Can be enabled with the "--use-E-base-isa" command line option on riscv-vp, microrv32-vp and all tiny* vp platforms.)
+   (Can be enabled with the "--use-E-base-isa" command line option on riscv-vp, microrv32-vp and all tiny* vp platforms)
  * Support for the *GD32VF103VBT6* microcontroller (*Nuclei N205*) including UI
    * More detailed information can be found [here](doc/GD32/README.md)
  * Support for *RISC-V "V" Vector Extension* (RVV) version 1.0

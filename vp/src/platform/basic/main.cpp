@@ -175,7 +175,8 @@ int sc_main(int argc, char **argv) {
 	 * mainly used together with the syscall handler, this helps for certain floats.
 	 * https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
 	 */
-	core.init(instr_mem_if, data_mem_if, &clint, entry_point, rv64_align_address(opt.mem_end_addr));
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, entry_point,
+	          rv64_align_address(opt.mem_end_addr));
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
 	sys.register_core(&core);
 
