@@ -28,9 +28,17 @@
  * BEGIN: CONFIG
  ******************************************************************************/
 
-// TODO: ENABLE
+/*
+ * enable/disable cache
+ * if disabled, the dummy implementation is used
+ */
 //#define LSCACHE_ENABLED
 #undef LSCACHE_ENABLED
+
+/*
+ * enable statistics
+ * (expensive)
+ */
 //#define LSCACHE_STATS_ENABLED
 #undef LSCACHE_STATS_ENABLED
 
