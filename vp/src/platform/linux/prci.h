@@ -8,30 +8,37 @@
 #include "core/common/irq_if.h"
 #include "util/tlm_map.h"
 
+/*
+ * only registers - no function
+ * based on SiFive FU540-C000 Manual v1p4
+ */
 struct PRCI : public sc_core::sc_module {
 	tlm_utils::simple_target_socket<PRCI> tsock;
 
 	// memory mapped configuration registers
-	uint32_t hfrosccfg = 0;
-	uint32_t core_pllcfg0 = 0;
-	uint32_t ddr_pllcfg0 = 0;
-	uint32_t core_pllcfg1 = 0;
-	uint32_t gemgxl_pllcfg0 = 0;
-	uint32_t gemgxl_pllcfg1 = 0;
-	uint32_t core_clksel = 0;
-	uint32_t reset = 0;
-	uint32_t clkmux_status = 0;
+	uint32_t hfxosccfg = 0;
+	uint32_t corepllcfg0 = 0;
+	uint32_t ddrpllcfg0 = 0;
+	uint32_t ddrpllcfg1 = 0;
+	uint32_t gemgxlpllcfg0 = 0;
+	uint32_t gemgxlpllcfg1 = 0;
+	uint32_t coreclksel = 0;
+	uint32_t devicesresetreg = 0;
+	/* reserved */
+	uint32_t clkmuxstatusreg = 0;
+	uint32_t procmoncfg = 0;
 
 	enum {
-		HFROSCCFG_REG_ADDR = 0x0,
-		CORE_PLLCFG0_REG_ADDR = 0x4,
-		DDR_PLLCFG0_REG_ADDR = 0x8,
-		CORE_PLLCFG1_REG_ADDR = 0x10,
-		GEMGXL_PLLCFG0_REG_ADDR = 0x1C,
-		GEMGXL_PLLCFG1_REG_ADDR = 0x20,
-		CORE_CLKSEL_REG_ADDR = 0x24,
-		RESET_REG_ADDR = 0x28,
-		CLKMUX_STATUS_REG_ADDR = 0x2C,
+		HFXOSCCFG_REG_ADDR = 0x0,
+		COREPLLCFG0_REG_ADDR = 0x4,
+		DDRPLLCFG0_REG_ADDR = 0xC,
+		DDRPLLCFG1_REG_ADDR = 0x10,
+		GEMGXLPLLCFG0_REG_ADDR = 0x1C,
+		GEMGXLPLLCFG1_REG_ADDR = 0x20,
+		CORECLKSEL_REG_ADDR = 0x24,
+		DEVICESRESETREG_REG_ADDR = 0x28,
+		CLKMUXSTATUSREG_REG_ADDR = 0x2C,
+		PROCMONCFG_REG_ADDR = 0xF0
 	};
 
 	vp::map::LocalRouter router = {"PRCI"};
@@ -41,15 +48,16 @@ struct PRCI : public sc_core::sc_module {
 
 		router
 		    .add_register_bank({
-		        {HFROSCCFG_REG_ADDR, &hfrosccfg},
-		        {CORE_PLLCFG0_REG_ADDR, &core_pllcfg0},
-		        {DDR_PLLCFG0_REG_ADDR, &ddr_pllcfg0},
-		        {CORE_PLLCFG1_REG_ADDR, &core_pllcfg1},
-		        {GEMGXL_PLLCFG0_REG_ADDR, &gemgxl_pllcfg0},
-		        {GEMGXL_PLLCFG1_REG_ADDR, &gemgxl_pllcfg1},
-		        {CORE_CLKSEL_REG_ADDR, &core_clksel},
-		        {RESET_REG_ADDR, &reset},
-		        {CLKMUX_STATUS_REG_ADDR, &clkmux_status},
+		        {HFXOSCCFG_REG_ADDR, &hfxosccfg},
+		        {COREPLLCFG0_REG_ADDR, &corepllcfg0},
+		        {DDRPLLCFG0_REG_ADDR, &ddrpllcfg0},
+		        {DDRPLLCFG1_REG_ADDR, &ddrpllcfg1},
+		        {GEMGXLPLLCFG0_REG_ADDR, &gemgxlpllcfg0},
+		        {GEMGXLPLLCFG1_REG_ADDR, &gemgxlpllcfg1},
+		        {CORECLKSEL_REG_ADDR, &coreclksel},
+		        {DEVICESRESETREG_REG_ADDR, &devicesresetreg},
+		        {CLKMUXSTATUSREG_REG_ADDR, &clkmuxstatusreg},
+		        {PROCMONCFG_REG_ADDR, &procmoncfg},
 		    })
 		    .register_handler(this, &PRCI::register_access_callback);
 	}
