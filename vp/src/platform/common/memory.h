@@ -5,6 +5,7 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <fstream>
 #include <iostream>
 #include <systemc>
 
@@ -40,9 +41,18 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 	}
 
 	void load_binary_file(const std::string &filename, unsigned addr) {
-		boost::iostreams::mapped_file_source f(filename);
-		assert(f.is_open());
-		write_data(addr, (const uint8_t *)f.data(), f.size());
+		/* check, if file exists and is readable */
+		std::fstream file;
+		file.open(filename, std::ofstream::in | std::ofstream::binary);
+		if (file.fail()) {
+			std::cerr << name() << ": ERROR: Open: \"" << filename << "\"!" << std::endl;
+			assert(0);
+		}
+		file.close();
+
+		boost::iostreams::mapped_file_source mf(filename);
+		assert(mf.is_open());
+		write_data(addr, (const uint8_t *)mf.data(), mf.size());
 	}
 
 	void write_data(unsigned addr, const uint8_t *src, unsigned num_bytes) {
