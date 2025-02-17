@@ -3,6 +3,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <cstdint>
 #include <exception>
+#include <fstream>
 #include <vector>
 
 #include "load_if.h"
@@ -26,8 +27,17 @@ struct GenericElfLoader {
 		}
 	};
 
-	GenericElfLoader(const char *filename) : filename(filename), elf(filename) {
-		assert(elf.is_open() && "file not open");
+	GenericElfLoader(const char *filename) : filename(filename) {
+		/* check, if file exists and is readable (prevent segfault on mapped_source_file) */
+		std::fstream file;
+		file.open(filename, std::ofstream::in | std::ofstream::binary);
+		if (file.fail()) {
+			std::cerr << __FUNCTION__ << ": ERROR: Open: \"" << filename << "\"!" << std::endl;
+			assert(0);
+		}
+		file.close();
+
+		elf = boost::iostreams::mapped_file_source(filename);
 
 		hdr = reinterpret_cast<const Elf_Ehdr *>(elf.data());
 	}
