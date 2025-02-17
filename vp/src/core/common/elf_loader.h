@@ -28,11 +28,14 @@ struct GenericElfLoader {
 	};
 
 	GenericElfLoader(const char *filename) : filename(filename) {
-		/* check, if file exists and is readable (prevent segfault on mapped_source_file) */
-		std::fstream file;
-		file.open(filename, std::ofstream::in | std::ofstream::binary);
-		if (file.fail()) {
-			std::cerr << __FUNCTION__ << ": ERROR: Open: \"" << filename << "\"!" << std::endl;
+		/*
+		 * check, if file exists, is readable and don't has zero size
+		 * (prevent segfault on mapped_source_file)
+		 */
+		std::ifstream file;
+		file.open(filename, std::ifstream::in | std::ifstream::binary | std::ios::ate);
+		if (file.fail() || file.tellg() == 0) {
+			std::cerr << "GenericElfLoader: ERROR: Open: \"" << filename << "\"!" << std::endl;
 			assert(0);
 		}
 		file.close();
