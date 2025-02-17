@@ -29,7 +29,7 @@ struct MemoryMappedFile : public sc_core::sc_module {
 		}
 		file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary);
 		if (!file.is_open() || !file.good()) {
-			// cout << "Failed to open " << mFilepath << ": " << strerror(errno)
+			// cerr << "Failed to open " << mFilepath << ": " << strerror(errno)
 			// << endl;
 			file.open(mFilepath, ofstream::in | ofstream::out | ofstream::binary | ios_base::trunc);
 		}
@@ -44,19 +44,34 @@ struct MemoryMappedFile : public sc_core::sc_module {
 
 	void write_data(unsigned addr, uint8_t *src, unsigned num_bytes) {
 		assert(addr + num_bytes <= mSize);
+		if (!file.is_open()) {
+			cerr << name() << ": ERROR: Write: No file mapped!" << endl;
+			return;
+		}
 		file.seekg(addr, file.beg);
-		file.write(reinterpret_cast<char *>(src), num_bytes);
-		if (!file.is_open() || !file.good()) {
-			cout << "Failed to write " << mFilepath << ": " << strerror(errno) << endl;
+		if (!file.fail()) {
+			file.write(reinterpret_cast<char *>(src), num_bytes);
+		}
+		if (file.fail()) {
+			cerr << name() << ": ERROR: Failed to write to \"" << mFilepath << "\"!" << endl;
+			file.clear();
 		}
 	}
 
 	void read_data(unsigned addr, uint8_t *dst, unsigned num_bytes) {
 		assert(addr + num_bytes <= mSize);
+		if (!file.is_open()) {
+			cerr << name() << ": ERROR: Read: No file mapped!" << endl;
+			memset(dst, 0, num_bytes);
+		}
 		file.seekg(addr, file.beg);
-		file.read(reinterpret_cast<char *>(dst), num_bytes);
-		if (!file.is_open() || !file.good()) {
-			cout << "Failed to read " << mFilepath << ": " << strerror(errno) << endl;
+		if (!file.fail()) {
+			file.read(reinterpret_cast<char *>(dst), num_bytes);
+		}
+		if (file.fail()) {
+			cerr << name() << ": ERROR: Failed to read from \"" << mFilepath << "\"!" << endl;
+			file.clear();
+			memset(dst, 0, num_bytes);
 		}
 	}
 
