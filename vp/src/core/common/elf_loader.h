@@ -9,7 +9,8 @@
 #include "load_if.h"
 
 template <typename T>
-struct GenericElfLoader {
+class GenericElfLoader {
+	constexpr static uint8_t e_ident_magic[4] = {0x7f, 'E', 'L', 'F'};
 	typedef typename T::addr_t addr_t;
 	typedef typename T::Elf_Ehdr Elf_Ehdr;
 	typedef typename T::Elf_Phdr Elf_Phdr;
@@ -19,8 +20,9 @@ struct GenericElfLoader {
 
 	const char *filename;
 	boost::iostreams::mapped_file_source elf;
-	const Elf_Ehdr *hdr;
+	const Elf_Ehdr *hdr = nullptr;
 
+   public:
 	struct load_executable_exception : public std::exception {
 		const char *what() const throw() {
 			return "Tried loading invalid elf layout";
@@ -41,48 +43,31 @@ struct GenericElfLoader {
 		file.close();
 
 		elf = boost::iostreams::mapped_file_source(filename);
-
-		hdr = reinterpret_cast<const Elf_Ehdr *>(elf.data());
 	}
 
-	std::vector<const Elf_Phdr *> get_load_sections() {
-		std::vector<const Elf_Phdr *> sections;
+	/*
+	 * NOTE: all public functions need to call init() before any action
+	 */
 
-		for (int i = 0; i < hdr->e_phnum; ++i) {
-			const Elf_Phdr *p =
-			    reinterpret_cast<const typename T::Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
-
-			if (p->p_type != T::PT_LOAD)
-				continue;
-
-			if ((p->p_filesz == 0) && (p->p_memsz == 0))
-				continue;
-
-			// If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
-			//  -> still, the memory needs to be zero initialized in this case!
-			//			if (p->p_memsz > p->p_filesz)
-			//				continue;
-
-			sections.push_back(p);
-		}
-
-		return sections;
+	/* return true if file is an elf */
+	bool is_elf() {
+		init(false);
+		return hdr != nullptr;
 	}
 
-	std::ostream &print_phdr(std::ostream &os, const Elf_Phdr &h, unsigned tabs = 0) {
-		std::string tab(tabs, '\t');
-		os << tab << "p_type " << h.p_type << std::endl;
-		os << tab << "p_offset " << h.p_offset << std::endl;
-		os << tab << "p_vaddr " << h.p_vaddr << std::endl;
-		os << tab << "p_paddr " << h.p_paddr << std::endl;
-		os << tab << "p_filesz " << h.p_filesz << std::endl;
-		os << tab << "p_memsz " << h.p_memsz << std::endl;
-		os << tab << "p_flags " << h.p_flags << std::endl;
-		os << tab << "p_align " << h.p_align << std::endl;
-		return os;
+	addr_t get_heap_addr() {
+		// return first 8 byte aligned address after the memory image
+		auto s = get_memory_end();
+		return s + s % 8;
+	}
+
+	addr_t get_entrypoint() {
+		init();
+		return hdr->e_entry;
 	}
 
 	void load_executable_image(load_if &load_if, addr_t size, addr_t offset, bool use_vaddr = true) {
+		init();
 		for (auto p : get_load_sections()) {
 			auto addr = p->p_paddr;
 			if (use_vaddr)
@@ -127,21 +112,95 @@ struct GenericElfLoader {
 		}
 	}
 
+	addr_t get_begin_signature_address() {
+		init();
+		auto p = get_symbol("begin_signature");
+		return p->st_value;
+	}
+
+	addr_t get_end_signature_address() {
+		init();
+		auto p = get_symbol("end_signature");
+		return p->st_value;
+	}
+
+	addr_t get_to_host_address() {
+		init();
+		auto p = get_symbol("tohost");
+		return p->st_value;
+	}
+
+   private:
+	void init(bool throw_error = true) {
+		/* already initialized? */
+		if (hdr != nullptr) {
+			return;
+		}
+
+		/* at least header in file? */
+		if (elf.size() >= sizeof(Elf_Ehdr)) {
+			/* "read" header */
+			hdr = reinterpret_cast<const Elf_Ehdr *>(elf.data());
+
+			/* check magic */
+			if (!memcmp(hdr->e_ident, e_ident_magic, sizeof(e_ident_magic))) {
+				/* match -> OK */
+				return;
+			}
+		}
+
+		/* not an elf */
+		hdr = nullptr;
+		if (throw_error) {
+			std::cerr << "GenericElfLoader: ERROR: \"" << filename << "\" is not an ELF file!" << std::endl;
+			assert(0);
+		}
+	}
+
+	std::vector<const Elf_Phdr *> get_load_sections() {
+		std::vector<const Elf_Phdr *> sections;
+
+		for (int i = 0; i < hdr->e_phnum; ++i) {
+			const Elf_Phdr *p =
+			    reinterpret_cast<const typename T::Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
+
+			if (p->p_type != T::PT_LOAD)
+				continue;
+
+			if ((p->p_filesz == 0) && (p->p_memsz == 0))
+				continue;
+
+			// If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
+			//  -> still, the memory needs to be zero initialized in this case!
+			//			if (p->p_memsz > p->p_filesz)
+			//				continue;
+
+			sections.push_back(p);
+		}
+
+		return sections;
+	}
+
+	std::ostream &print_phdr(std::ostream &os, const Elf_Phdr &h, unsigned tabs = 0) {
+		std::string tab(tabs, '\t');
+		os << tab << "p_type " << h.p_type << std::endl;
+		os << tab << "p_offset " << h.p_offset << std::endl;
+		os << tab << "p_vaddr " << h.p_vaddr << std::endl;
+		os << tab << "p_paddr " << h.p_paddr << std::endl;
+		os << tab << "p_filesz " << h.p_filesz << std::endl;
+		os << tab << "p_memsz " << h.p_memsz << std::endl;
+		os << tab << "p_flags " << h.p_flags << std::endl;
+		os << tab << "p_align " << h.p_align << std::endl;
+		return os;
+	}
+
 	addr_t get_memory_end() {
+		init();
+
 		const Elf_Phdr *last =
 		    reinterpret_cast<const Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * (hdr->e_phnum - 1));
 
 		return last->p_vaddr + last->p_memsz;
-	}
-
-	addr_t get_heap_addr() {
-		// return first 8 byte aligned address after the memory image
-		auto s = get_memory_end();
-		return s + s % 8;
-	}
-
-	addr_t get_entrypoint() {
-		return hdr->e_entry;
 	}
 
 	const char *get_section_string_table() {
@@ -176,21 +235,6 @@ struct GenericElfLoader {
 		}
 
 		throw std::runtime_error("unable to find symbol in the symbol table " + std::string(symbol_name));
-	}
-
-	addr_t get_begin_signature_address() {
-		auto p = get_symbol("begin_signature");
-		return p->st_value;
-	}
-
-	addr_t get_end_signature_address() {
-		auto p = get_symbol("end_signature");
-		return p->st_value;
-	}
-
-	addr_t get_to_host_address() {
-		auto p = get_symbol("tohost");
-		return p->st_value;
 	}
 
 	std::vector<const Elf_Shdr *> get_sections(void) {
