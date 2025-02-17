@@ -41,7 +41,7 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 	}
 
 	void load_binary_file(const std::string &filename, unsigned addr) {
-		/* check, if file exists and is readable */
+		/* check, if file exists and is readable (prevent segfault on mapped_source_file) */
 		std::fstream file;
 		file.open(filename, std::ofstream::in | std::ofstream::binary);
 		if (file.fail()) {
