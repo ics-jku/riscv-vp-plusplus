@@ -55,11 +55,15 @@ using namespace rv32;
  * -> only small memory areas (images sizes) possible
  */
 #define MRAM_SIZE_MB 64  // MB mem mapped file (rootfs)
+/* address to load raw (not elf) images provided via --kernel-file */
+#define KERNEL_LOAD_ADDR 0x80400000
 
 #elif defined(TARGET_RV64)
 using namespace rv64;
 #define MEM_SIZE_MB 2048  // MB ram
 #define MRAM_SIZE_MB 512  // MB mem mapped file (rootfs)
+/* address to load raw (not elf) images provided via --kernel-file */
+#define KERNEL_LOAD_ADDR 0x80200000
 
 #endif /* TARGET_RVxx */
 
@@ -114,6 +118,7 @@ struct LinuxOptions : public Options {
 
 	OptionValue<unsigned long> entry_point;
 	std::string dtb_file;
+	std::string kernel_file;
 	std::string tun_device = "tun0";
 	std::string mram_root_image;
 	std::string mram_data_image;
@@ -128,6 +133,7 @@ struct LinuxOptions : public Options {
 			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
 			("dtb-file", po::value<std::string>(&dtb_file)->required(), "dtb file for boot loading")
+			("kernel-file", po::value<std::string>(&kernel_file), "optional kernel file to load (supports ELF or RAW files)")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP")
 			("mram-root-image", po::value<std::string>(&mram_root_image)->default_value(""),"MRAM root image file")
 			("mram-root-image-size", po::value<unsigned int>(&mram_root_size), "MRAM root image size")
@@ -180,6 +186,25 @@ class Core {
 			return &memif;
 	}
 };
+
+void handle_kernel_file(const LinuxOptions opt, SimpleMemory &mem) {
+	if (opt.kernel_file.size() == 0) {
+		return;
+	}
+
+	std::cout << "Info: load kernel file \"" << opt.kernel_file << "\" ";
+	ELFLoader elf(opt.kernel_file.c_str());
+	if (elf.is_elf()) {
+		/* load elf (use physical addresses) */
+		std::cout << "as ELF file (to physical addresses defined in ELF)";
+		elf.load_executable_image(mem, mem.size, opt.mem_start_addr, false);
+	} else {
+		/* load raw to KERNEL_LOAD_ADDR */
+		std::cout << "as RAW file (to 0x" << std::hex << KERNEL_LOAD_ADDR << std::dec << ")";
+		mem.load_binary_file(opt.kernel_file, KERNEL_LOAD_ADDR - opt.mem_start_addr);
+	}
+	std::cout << std::endl;
+}
 
 int sc_main(int argc, char **argv) {
 	LinuxOptions opt;
@@ -346,6 +371,9 @@ int sc_main(int argc, char **argv) {
 
 	// load DTB (Device Tree Binary) file
 	dtb_rom.load_binary_file(opt.dtb_file, 0);
+
+	// load kernel
+	handle_kernel_file(opt, mem);
 
 	std::vector<mmu_memory_if *> mmus;
 	std::vector<debug_target_if *> dharts;
