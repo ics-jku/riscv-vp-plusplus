@@ -37,8 +37,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	// TODO: check and set intended permissions for all members
 
 	struct op_label_entry {
-		Opcode::Mapping op;
-		void *label_ptr;
+		Operation::OpId opId;
+		void *labelPtr;
 	};
 
 	void *genOpMap();
@@ -65,14 +65,14 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	VExtension<ISS_CT> v_ext;
 	PrivilegeLevel prv = MachineMode;
 
-	// last decoded and executed instruction and opcode
+	// last decoded and executed instruction
 	Instruction instr;
 
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
 	sc_core::sc_time cycle_time;
 	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
-	struct OpMapEntry opMap[Opcode::NUMBER_OF_INSTRUCTIONS];
+	struct OpMapEntry opMap[Operation::OpId::NUMBER_OF_OPERATIONS];
 
 	static constexpr unsigned xlen = XLEN;
 

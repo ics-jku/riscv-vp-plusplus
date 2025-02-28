@@ -41,31 +41,31 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 	 * If you want to add a dynamic cycle model, you have add this in the
 	 * operation implementations below (OPCASE)
 	 */
-	for (int i = 0; i < Opcode::NUMBER_OF_INSTRUCTIONS; ++i) {
-		opMap[i].op = (Opcode::Mapping)i;
+	for (int i = 0; i < Operation::OpId::NUMBER_OF_OPERATIONS; ++i) {
+		opMap[i].opId = (Operation::OpId)i;
 		opMap[i].instr_time = cycle_time.value() / 1000; /* ns */
-		opMap[i].label_ptr = nullptr;
+		opMap[i].labelPtr = nullptr;
 	}
 
 	unsigned long memory_access_cycles = 4 * cycle_time.value() / 1000;
 	unsigned long mul_div_cycles = 8 * cycle_time.value() / 1000;
 
-	opMap[Opcode::LB].instr_time = memory_access_cycles;
-	opMap[Opcode::LBU].instr_time = memory_access_cycles;
-	opMap[Opcode::LH].instr_time = memory_access_cycles;
-	opMap[Opcode::LHU].instr_time = memory_access_cycles;
-	opMap[Opcode::LW].instr_time = memory_access_cycles;
-	opMap[Opcode::SB].instr_time = memory_access_cycles;
-	opMap[Opcode::SH].instr_time = memory_access_cycles;
-	opMap[Opcode::SW].instr_time = memory_access_cycles;
-	opMap[Opcode::MUL].instr_time = mul_div_cycles;
-	opMap[Opcode::MULH].instr_time = mul_div_cycles;
-	opMap[Opcode::MULHU].instr_time = mul_div_cycles;
-	opMap[Opcode::MULHSU].instr_time = mul_div_cycles;
-	opMap[Opcode::DIV].instr_time = mul_div_cycles;
-	opMap[Opcode::DIVU].instr_time = mul_div_cycles;
-	opMap[Opcode::REM].instr_time = mul_div_cycles;
-	opMap[Opcode::REMU].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::LB].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::LBU].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::LH].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::LHU].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::LW].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::SB].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::SH].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::SW].instr_time = memory_access_cycles;
+	opMap[Operation::OpId::MUL].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::MULH].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::MULHU].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::MULHSU].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::DIV].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::DIVU].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::REM].instr_time = mul_div_cycles;
+	opMap[Operation::OpId::REMU].instr_time = mul_div_cycles;
 }
 
 void ISS_CT::print_trace() {
@@ -78,42 +78,42 @@ void ISS_CT::print_trace() {
 	 *  * every compressed instruction was already converted to a normal instruction.
 	 *    -> it is safe to use decode_normal here
 	 */
-	Opcode::Mapping op = instr.decode_normal(ARCH, *isa_config);
+	Operation::OpId opId = instr.decode_normal(ARCH, *isa_config);
 
 	printf("core %2u: prv %1x: pc %8x (%8x): %s ", csrs.mhartid.reg, prv, dbbcache.get_last_pc_before_callback(),
-	       mem_word, Opcode::mappingStr.at(op));
-	switch (Opcode::getType(op)) {
-		case Opcode::Type::R:
+	       mem_word, Operation::opIdStr.at(opId));
+	switch (Operation::getType(opId)) {
+		case Operation::Type::R:
 			printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT,
 			       COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]),
 			       COLORPRINT(regcolors[instr.rs2()], RegFile::regnames[instr.rs2()]));
 			break;
-		case Opcode::Type::R4:
+		case Operation::Type::R4:
 			printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT ", " COLORFRMT,
 			       COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]),
 			       COLORPRINT(regcolors[instr.rs2()], RegFile::regnames[instr.rs2()]),
 			       COLORPRINT(regcolors[instr.rs3()], RegFile::regnames[instr.rs3()]));
 			break;
-		case Opcode::Type::I:
+		case Operation::Type::I:
 			printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]), instr.I_imm());
 			break;
-		case Opcode::Type::S:
+		case Operation::Type::S:
 			printf(COLORFRMT ", " COLORFRMT ", 0x%x",
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]),
 			       COLORPRINT(regcolors[instr.rs2()], RegFile::regnames[instr.rs2()]), instr.S_imm());
 			break;
-		case Opcode::Type::B:
+		case Operation::Type::B:
 			printf(COLORFRMT ", " COLORFRMT ", 0x%x",
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]),
 			       COLORPRINT(regcolors[instr.rs2()], RegFile::regnames[instr.rs2()]), instr.B_imm());
 			break;
-		case Opcode::Type::U:
+		case Operation::Type::U:
 			printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]), instr.U_imm());
 			break;
-		case Opcode::Type::J:
+		case Operation::Type::J:
 			printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]), instr.J_imm());
 			break;
 		default:;
@@ -134,8 +134,8 @@ void ISS_CT::print_trace() {
 #define OP_LABLE_ENTRIES_SEC_STR M_DEFINE2STR(OP_LABEL_ENTRIES_SECNAME)
 #define OP_LABEL_ENTIRES_SEC_START M_JOIN(__start_, OP_LABEL_ENTRIES_SECNAME)
 #define OP_LABEL_ENTIRES_SEC_STOP M_JOIN(__stop_, OP_LABEL_ENTRIES_SECNAME)
-/* fast_abort_and_fdd_label_ptr handling */
-#define OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_NAME M_JOIN(OP_PREFIX, op_global_fast_abort_and_fdd_label_ptr)
+/* fast_abort_and_fdd_labelPtr handling */
+#define OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_NAME M_JOIN(OP_PREFIX, op_global_fast_abort_and_fdd_labelPtr)
 #define OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_STR M_DEFINE2STR(OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_NAME)
 #define OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_START M_JOIN(__start_, OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_NAME)
 /* explicitly defined labels */
@@ -156,34 +156,34 @@ void *ISS_CT::genOpMap() {
 
 	// fill op labels (all others are already initialized with nullptr)
 	while (entry < end) {
-		if ((unsigned int)entry->op >= Opcode::NUMBER_OF_INSTRUCTIONS) {
-			std::cerr << "[ISS] Error: Invalid op (" << entry->op << ") in op_lable_entry section at 0x" << std::hex
-			          << entry << std::dec << std::endl;
+		if ((unsigned int)entry->opId >= Operation::OpId::NUMBER_OF_OPERATIONS) {
+			std::cerr << "[ISS] Error: Invalid operation (" << entry->opId << ") in op_lable_entry section at 0x"
+			          << std::hex << entry << std::dec << std::endl;
 			error = true;
 			break;
 		}
-		if (opMap[entry->op].label_ptr != nullptr) {
-			std::cerr << "[ISS] Error: Multiple implementations for opcode " << entry->op << " ("
-			          << Opcode::mappingStr.at(entry->op) << ")" << std::endl;
+		if (opMap[entry->opId].labelPtr != nullptr) {
+			std::cerr << "[ISS] Error: Multiple implementations for operation " << entry->opId << " ("
+			          << Operation::opIdStr.at(entry->opId) << ")" << std::endl;
 			error = true;
 		}
-		opMap[entry->op].label_ptr = entry->label_ptr;
+		opMap[entry->opId].labelPtr = entry->labelPtr;
 		entry++;
 	}
 	if (error) {
-		throw std::runtime_error("[ISS] Multiple implementations for opcode(s) (see above)");
+		throw std::runtime_error("[ISS] Multiple implementations for operation(s) (see above)");
 	}
 
 	// check for unimplemented opcodes
-	for (unsigned int op = 0; op < Opcode::NUMBER_OF_INSTRUCTIONS; op++) {
-		if (opMap[op].label_ptr == nullptr) {
-			std::cerr << "[ISS] Error: Unimplemented opcode " << op << " (" << Opcode::mappingStr.at(op) << ")"
+	for (unsigned int opId = 0; opId < Operation::OpId::NUMBER_OF_OPERATIONS; opId++) {
+		if (opMap[opId].labelPtr == nullptr) {
+			std::cerr << "[ISS] Error: Unimplemented operation " << opId << " (" << Operation::opIdStr.at(opId) << ")"
 			          << std::endl;
 			error = true;
 		}
 	}
 	if (error) {
-		throw std::runtime_error("[ISS] Unimplemented opcode(s) (see above)");
+		throw std::runtime_error("[ISS] Unimplemented operation(s) (see above)");
 	}
 
 	return OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_START;
@@ -236,7 +236,7 @@ void *ISS_CT::genOpMap() {
 #define OP_CASE(_op)                                          \
 	OP_LABEL_OP(_op)                                          \
 	    : static struct op_label_entry OP_LABEL_ENTRY_OP(_op) \
-	          __attribute__((used, section(OP_LABLE_ENTRIES_SEC_STR))) = {Opcode::_op, &&OP_LABEL_OP(_op)};
+	          __attribute__((used, section(OP_LABLE_ENTRIES_SEC_STR))) = {Operation::OpId::_op, &&OP_LABEL_OP(_op)};
 
 #ifdef ISS_CT_OP_TAIL_FAST_FDD_ENABLED
 #define OP_END() OP_FAST_FINALIZE_AND_FDD()
@@ -6945,10 +6945,10 @@ void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if 
 	pc = entrypoint;
 
 	/* TODO: make const? (make all label ptrs const?) */
-	void *fast_abort_and_fdd_label_ptr = genOpMap();
+	void *fast_abort_and_fdd_labelPtr = genOpMap();
 
 	uint64_t hartId = get_hart_id();
-	dbbcache.init(use_dbbcache, isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_label_ptr, entrypoint);
+	dbbcache.init(use_dbbcache, isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_labelPtr, entrypoint);
 	lscache.init(use_lscache, hartId, data_mem);
 	cycle_counter_raw_last = 0;
 }

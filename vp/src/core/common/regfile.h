@@ -1,6 +1,8 @@
 #ifndef RISCV_ISA_REGFILE_H
 #define RISCV_ISA_REGFILE_H
 
+#include <cassert>
+
 #include "util/common.h"
 
 template <typename T_sxlen_t, typename T_uxlen_t>

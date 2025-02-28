@@ -839,10 +839,6 @@ class VExtension {
 				}
 			}
 		}
-
-		// if (!break_loop) {
-		//      std::cout << "LOAD/STORE OK " << Opcode::mappingStr.at(iss.op) << std::endl;
-		// }
 	}
 
 	void genericVLoop(std::function<void(xlen_reg_t)> func) {

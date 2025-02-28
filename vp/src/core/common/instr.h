@@ -8,287 +8,10 @@
 
 #include "core_defs.h"
 
-namespace Opcode {
-// opcode masks used to decode an instruction
-enum Parts {
-	OP_LUI = 0b0110111,
+namespace Operation {
 
-	OP_AUIPC = 0b0010111,
-
-	OP_JAL = 0b1101111,
-
-	OP_JALR = 0b1100111,
-	F3_JALR = 0b000,
-
-	OP_LB = 0b0000011,
-	F3_LB = 0b000,
-	F3_LH = 0b001,
-	F3_LW = 0b010,
-	F3_LBU = 0b100,
-	F3_LHU = 0b101,
-	F3_LWU = 0b110,
-	F3_LD = 0b011,
-
-	OP_SB = 0b0100011,
-	F3_SB = 0b000,
-	F3_SH = 0b001,
-	F3_SW = 0b010,
-	F3_SD = 0b011,
-
-	OP_BEQ = 0b1100011,
-	F3_BEQ = 0b000,
-	F3_BNE = 0b001,
-	F3_BLT = 0b100,
-	F3_BGE = 0b101,
-	F3_BLTU = 0b110,
-	F3_BGEU = 0b111,
-
-	OP_ADDI = 0b0010011,
-	F3_ADDI = 0b000,
-	F3_SLTI = 0b010,
-	F3_SLTIU = 0b011,
-	F3_XORI = 0b100,
-	F3_ORI = 0b110,
-	F3_ANDI = 0b111,
-	F3_SLLI = 0b001,
-	F3_SRLI = 0b101,
-	F7_SRLI = 0b0000000,
-	F7_SRAI = 0b0100000,
-	F6_SRLI = 0b000000,  // RV64 special case
-	F6_SRAI = 0b010000,  // RV64 special case
-
-	OP_ADD = 0b0110011,
-	F3_ADD = 0b000,
-	F7_ADD = 0b0000000,
-	F3_SUB = 0b000,
-	F7_SUB = 0b0100000,
-	F3_SLL = 0b001,
-	F3_SLT = 0b010,
-	F3_SLTU = 0b011,
-	F3_XOR = 0b100,
-	F3_SRL = 0b101,
-	F3_SRA = 0b101,
-	F3_OR = 0b110,
-	F3_AND = 0b111,
-
-	F3_MUL = 0b000,
-	F7_MUL = 0b0000001,
-	F3_MULH = 0b001,
-	F3_MULHSU = 0b010,
-	F3_MULHU = 0b011,
-	F3_DIV = 0b100,
-	F3_DIVU = 0b101,
-	F3_REM = 0b110,
-	F3_REMU = 0b111,
-
-	OP_FENCE = 0b0001111,
-	F3_FENCE = 0b000,
-	F3_FENCE_I = 0b001,
-
-	OP_ECALL = 0b1110011,
-	F3_SYS = 0b000,
-	F12_ECALL = 0b000000000000,
-	F12_EBREAK = 0b000000000001,
-	// begin:privileged-instructions
-	F12_URET = 0b000000000010,
-	F12_SRET = 0b000100000010,
-	F12_MRET = 0b001100000010,
-	F12_WFI = 0b000100000101,
-	F7_SFENCE_VMA = 0b0001001,
-	// end:privileged-instructions
-	F3_CSRRW = 0b001,
-	F3_CSRRS = 0b010,
-	F3_CSRRC = 0b011,
-	F3_CSRRWI = 0b101,
-	F3_CSRRSI = 0b110,
-	F3_CSRRCI = 0b111,
-
-	OP_AMO = 0b0101111,
-	F5_LR_W = 0b00010,
-	F5_SC_W = 0b00011,
-	F5_AMOSWAP_W = 0b00001,
-	F5_AMOADD_W = 0b00000,
-	F5_AMOXOR_W = 0b00100,
-	F5_AMOAND_W = 0b01100,
-	F5_AMOOR_W = 0b01000,
-	F5_AMOMIN_W = 0b10000,
-	F5_AMOMAX_W = 0b10100,
-	F5_AMOMINU_W = 0b11000,
-	F5_AMOMAXU_W = 0b11100,
-
-	F3_AMO_W = 0b010,
-	F3_AMO_D = 0b011,
-
-	OP_ADDIW = 0b0011011,
-	F3_ADDIW = 0b000,
-	F3_SLLIW = 0b001,
-	F3_SRLIW = 0b101,
-	F7_SRLIW = 0b0000000,
-	F7_SRAIW = 0b0100000,
-
-	OP_ADDW = 0b0111011,
-	F3_ADDW = 0b000,
-	F7_ADDW = 0b0000000,
-	F3_SUBW = 0b000,
-	F7_SUBW = 0b0100000,
-	F3_SLLW = 0b001,
-	F3_SRLW = 0b101,
-	F7_SRLW = 0b0000000,
-	F3_SRAW = 0b101,
-	F7_SRAW = 0b0100000,
-	F7_MULW = 0b0000001,
-	F3_MULW = 0b000,
-	F3_DIVW = 0b100,
-	F3_DIVUW = 0b101,
-	F3_REMW = 0b110,
-	F3_REMUW = 0b111,
-
-	// Zfh extension
-	F3_FLH = 0b001,
-	F3_FSH = 0b001,
-	F2_FMADD_H = 0b10,
-	F2_FMSUB_H = 0b10,
-	F2_FNMSUB_H = 0b10,
-	F2_FNMADD_H = 0b10,
-	F7_FADD_H = 0b0000010,
-	F7_FSUB_H = 0b0000110,
-	F7_FMUL_H = 0b0001010,
-	F7_FDIV_H = 0b0001110,
-	F7_FSQRT_H = 0b0101110,
-	F7_FSGNJ_H = 0b0010010,
-	F3_FSGNJ_H = 0b000,
-	F3_FSGNJN_H = 0b001,
-	F3_FSGNJX_H = 0b010,
-
-	F7_FMIN_H = 0b0010110,
-	F3_FMIN_H = 0b000,
-	F3_FMAX_H = 0b001,
-
-	F7_FCVT_S_H = 0b0100000,
-	F7_FCVT_H_S = 0b0100010,
-	F7_FCVT_D_H = 0b0100001,
-	F7_FCVT_H_D = 0b0100010,
-
-	F7_FLE_H = 0b1010010,
-	F3_FLE_H = 0b000,
-	F3_FLT_H = 0b001,
-	F3_FEQ_H = 0b010,
-
-	F3_FCLASS_H = 0b001,
-	F7_FCVT_W_H = 0b1100010,
-	RS2_FCVT_W_H = 0b00000,
-	F7_FCVT_WU_H = 0b1100010,
-	RS2_FCVT_WU_H = 0b00001,
-	F7_FMV_X_H = 0b1110010,
-	F3_FMV_X_H = 0b000,
-	F7_FCVT_H_W = 0b1101010,
-	RS2_FCVT_H_W = 0b00000,
-	F7_FCVT_H_WU = 0b1101010,
-	RS2_FCVT_H_WU = 0b00001,
-	F7_FMV_H_X = 0b1111010,
-
-	RS2_FCVT_S_H = 0b00010,
-	RS2_FCVT_H_S = 0b00000,
-	RS2_FCVT_D_H = 0b00010,
-	RS2_FCVT_H_D = 0b00001,
-
-	RS2_FCVT_H_L = 0b00010,
-	RS2_FCVT_H_LU = 0b00011,
-	RS2_FCVT_L_H = 0b00010,
-	RS2_FCVT_LU_H = 0b00011,
-
-	// F and D extension
-	OP_FMADD_S = 0b1000011,
-	F2_FMADD_S = 0b00,
-	F2_FMADD_D = 0b01,
-	OP_FADD_S = 0b1010011,
-	F7_FADD_S = 0b0000000,
-	F7_FADD_D = 0b0000001,
-	F7_FSUB_S = 0b0000100,
-	F7_FSUB_D = 0b0000101,
-	F7_FCVT_D_S = 0b0100001,
-	F7_FMUL_S = 0b0001000,
-	F7_FMUL_D = 0b0001001,
-	F7_FDIV_S = 0b0001100,
-	F7_FDIV_D = 0b0001101,
-	F7_FLE_S = 0b1010000,
-	F3_FLE_S = 0b000,
-	F3_FLT_S = 0b001,
-	F3_FEQ_S = 0b010,
-	F7_FSGNJ_D = 0b0010001,
-	F3_FSGNJ_D = 0b000,
-	F3_FSGNJN_D = 0b001,
-	F3_FSGNJX_D = 0b010,
-	F7_FMIN_S = 0b0010100,
-	F3_FMIN_S = 0b000,
-	F3_FMAX_S = 0b001,
-	F7_FMIN_D = 0b0010101,
-	F3_FMIN_D = 0b000,
-	F3_FMAX_D = 0b001,
-	F7_FCVT_S_D = 0b0100000,
-	F7_FSGNJ_S = 0b0010000,
-	F3_FSGNJ_S = 0b000,
-	F3_FSGNJN_S = 0b001,
-	F3_FSGNJX_S = 0b010,
-	F7_FLE_D = 0b1010001,
-	F3_FLE_D = 0b000,
-	F3_FLT_D = 0b001,
-	F3_FEQ_D = 0b010,
-	RS2_FCVT_S_D = 0b00001,
-	RS2_FCVT_D_S = 0b00000,
-	F7_FCVT_S_W = 0b1101000,
-	RS2_FCVT_S_W = 0b00000,
-	RS2_FCVT_S_WU = 0b00001,
-	RS2_FCVT_S_L = 0b00010,
-	RS2_FCVT_S_LU = 0b00011,
-	F7_FCVT_D_W = 0b1101001,
-	RS2_FCVT_D_W = 0b00000,
-	RS2_FCVT_D_WU = 0b00001,
-	RS2_FCVT_D_L = 0b00010,
-	RS2_FCVT_D_LU = 0b00011,
-	F7_FCVT_W_D = 0b1100001,
-	RS2_FCVT_W_D = 0b00000,
-	RS2_FCVT_WU_D = 0b00001,
-	RS2_FCVT_L_D = 0b00010,
-	RS2_FCVT_LU_D = 0b00011,
-	F7_FSQRT_S = 0b0101100,
-	F7_FSQRT_D = 0b0101101,
-	F7_FCVT_W_S = 0b1100000,
-	RS2_FCVT_W_S = 0b00000,
-	RS2_FCVT_WU_S = 0b00001,
-	RS2_FCVT_L_S = 0b00010,
-	RS2_FCVT_LU_S = 0b00011,
-	F7_FMV_X_W = 0b1110000,
-	F3_FMV_X_W = 0b000,
-	F3_FCLASS_S = 0b001,
-	F7_FMV_X_D = 0b1110001,
-	F3_FMV_X_D = 0b000,
-	F3_FCLASS_D = 0b001,
-	F7_FMV_W_X = 0b1111000,
-	F7_FMV_D_X = 0b1111001,
-	OP_FLW = 0b0000111,
-	F3_FLW = 0b010,
-	F3_FLD = 0b011,
-	OP_FSW = 0b0100111,
-	F3_FSW = 0b010,
-	F3_FSD = 0b011,
-	OP_FMSUB_S = 0b1000111,
-	F2_FMSUB_S = 0b00,
-	F2_FMSUB_D = 0b01,
-	OP_FNMSUB_S = 0b1001011,
-	F2_FNMSUB_S = 0b00,
-	F2_FNMSUB_D = 0b01,
-	OP_FNMADD_S = 0b1001111,
-	F2_FNMADD_S = 0b00,
-	F2_FNMADD_D = 0b01,
-
-	// reserved opcodes for custom instructions
-	OP_CUST1 = 0b0101011,
-	OP_CUST0 = 0b0001011,
-};
-
-// each instruction is mapped by the decoder to the following mapping
-enum Mapping {
+// each instruction is mapped by the decoder to the following ids
+enum OpId {
 	/* instruction not known by decoder */
 	UNDEF = 0,
 	/* instruction not supported (e.g. extension not enabled in misa csr) */
@@ -1191,7 +914,7 @@ enum Mapping {
 	WFI,
 	SFENCE_VMA,
 
-	NUMBER_OF_INSTRUCTIONS
+	NUMBER_OF_OPERATIONS
 };
 
 // type denotes the instruction format
@@ -1209,11 +932,10 @@ enum class Type {
 	V_LS,
 };
 
-extern std::array<const char *, NUMBER_OF_INSTRUCTIONS> mappingStr;
-extern std::array<const char *, 32> regnamePrettyStr;
+extern std::array<const char *, OpId::NUMBER_OF_OPERATIONS> opIdStr;
 
-Type getType(Mapping mapping);
-}  // namespace Opcode
+Type getType(OpId opId);
+}  // namespace Operation
 
 #define BIT_RANGE(instr, upper, lower) (instr & (((1 << (upper - lower + 1)) - 1) << lower))
 #define BIT_SLICE(instr, upper, lower) (BIT_RANGE(instr, upper, lower) >> lower)
@@ -1223,6 +945,284 @@ Type getType(Mapping mapping);
 #define EXTRACT_SIGN_BIT(instr, pos, new_pos) ((BIT_SINGLE_P1(instr, pos) << 31) >> (31 - new_pos))
 
 struct Instruction {
+	// opcode masks used to decode an instruction
+	enum Parts {
+		OP_LUI = 0b0110111,
+
+		OP_AUIPC = 0b0010111,
+
+		OP_JAL = 0b1101111,
+
+		OP_JALR = 0b1100111,
+		F3_JALR = 0b000,
+
+		OP_LB = 0b0000011,
+		F3_LB = 0b000,
+		F3_LH = 0b001,
+		F3_LW = 0b010,
+		F3_LBU = 0b100,
+		F3_LHU = 0b101,
+		F3_LWU = 0b110,
+		F3_LD = 0b011,
+
+		OP_SB = 0b0100011,
+		F3_SB = 0b000,
+		F3_SH = 0b001,
+		F3_SW = 0b010,
+		F3_SD = 0b011,
+
+		OP_BEQ = 0b1100011,
+		F3_BEQ = 0b000,
+		F3_BNE = 0b001,
+		F3_BLT = 0b100,
+		F3_BGE = 0b101,
+		F3_BLTU = 0b110,
+		F3_BGEU = 0b111,
+
+		OP_ADDI = 0b0010011,
+		F3_ADDI = 0b000,
+		F3_SLTI = 0b010,
+		F3_SLTIU = 0b011,
+		F3_XORI = 0b100,
+		F3_ORI = 0b110,
+		F3_ANDI = 0b111,
+		F3_SLLI = 0b001,
+		F3_SRLI = 0b101,
+		F7_SRLI = 0b0000000,
+		F7_SRAI = 0b0100000,
+		F6_SRLI = 0b000000,  // RV64 special case
+		F6_SRAI = 0b010000,  // RV64 special case
+
+		OP_ADD = 0b0110011,
+		F3_ADD = 0b000,
+		F7_ADD = 0b0000000,
+		F3_SUB = 0b000,
+		F7_SUB = 0b0100000,
+		F3_SLL = 0b001,
+		F3_SLT = 0b010,
+		F3_SLTU = 0b011,
+		F3_XOR = 0b100,
+		F3_SRL = 0b101,
+		F3_SRA = 0b101,
+		F3_OR = 0b110,
+		F3_AND = 0b111,
+
+		F3_MUL = 0b000,
+		F7_MUL = 0b0000001,
+		F3_MULH = 0b001,
+		F3_MULHSU = 0b010,
+		F3_MULHU = 0b011,
+		F3_DIV = 0b100,
+		F3_DIVU = 0b101,
+		F3_REM = 0b110,
+		F3_REMU = 0b111,
+
+		OP_FENCE = 0b0001111,
+		F3_FENCE = 0b000,
+		F3_FENCE_I = 0b001,
+
+		OP_ECALL = 0b1110011,
+		F3_SYS = 0b000,
+		F12_ECALL = 0b000000000000,
+		F12_EBREAK = 0b000000000001,
+		// begin:privileged-instructions
+		F12_URET = 0b000000000010,
+		F12_SRET = 0b000100000010,
+		F12_MRET = 0b001100000010,
+		F12_WFI = 0b000100000101,
+		F7_SFENCE_VMA = 0b0001001,
+		// end:privileged-instructions
+		F3_CSRRW = 0b001,
+		F3_CSRRS = 0b010,
+		F3_CSRRC = 0b011,
+		F3_CSRRWI = 0b101,
+		F3_CSRRSI = 0b110,
+		F3_CSRRCI = 0b111,
+
+		OP_AMO = 0b0101111,
+		F5_LR_W = 0b00010,
+		F5_SC_W = 0b00011,
+		F5_AMOSWAP_W = 0b00001,
+		F5_AMOADD_W = 0b00000,
+		F5_AMOXOR_W = 0b00100,
+		F5_AMOAND_W = 0b01100,
+		F5_AMOOR_W = 0b01000,
+		F5_AMOMIN_W = 0b10000,
+		F5_AMOMAX_W = 0b10100,
+		F5_AMOMINU_W = 0b11000,
+		F5_AMOMAXU_W = 0b11100,
+
+		F3_AMO_W = 0b010,
+		F3_AMO_D = 0b011,
+
+		OP_ADDIW = 0b0011011,
+		F3_ADDIW = 0b000,
+		F3_SLLIW = 0b001,
+		F3_SRLIW = 0b101,
+		F7_SRLIW = 0b0000000,
+		F7_SRAIW = 0b0100000,
+
+		OP_ADDW = 0b0111011,
+		F3_ADDW = 0b000,
+		F7_ADDW = 0b0000000,
+		F3_SUBW = 0b000,
+		F7_SUBW = 0b0100000,
+		F3_SLLW = 0b001,
+		F3_SRLW = 0b101,
+		F7_SRLW = 0b0000000,
+		F3_SRAW = 0b101,
+		F7_SRAW = 0b0100000,
+		F7_MULW = 0b0000001,
+		F3_MULW = 0b000,
+		F3_DIVW = 0b100,
+		F3_DIVUW = 0b101,
+		F3_REMW = 0b110,
+		F3_REMUW = 0b111,
+
+		// Zfh extension
+		F3_FLH = 0b001,
+		F3_FSH = 0b001,
+		F2_FMADD_H = 0b10,
+		F2_FMSUB_H = 0b10,
+		F2_FNMSUB_H = 0b10,
+		F2_FNMADD_H = 0b10,
+		F7_FADD_H = 0b0000010,
+		F7_FSUB_H = 0b0000110,
+		F7_FMUL_H = 0b0001010,
+		F7_FDIV_H = 0b0001110,
+		F7_FSQRT_H = 0b0101110,
+		F7_FSGNJ_H = 0b0010010,
+		F3_FSGNJ_H = 0b000,
+		F3_FSGNJN_H = 0b001,
+		F3_FSGNJX_H = 0b010,
+
+		F7_FMIN_H = 0b0010110,
+		F3_FMIN_H = 0b000,
+		F3_FMAX_H = 0b001,
+
+		F7_FCVT_S_H = 0b0100000,
+		F7_FCVT_H_S = 0b0100010,
+		F7_FCVT_D_H = 0b0100001,
+		F7_FCVT_H_D = 0b0100010,
+
+		F7_FLE_H = 0b1010010,
+		F3_FLE_H = 0b000,
+		F3_FLT_H = 0b001,
+		F3_FEQ_H = 0b010,
+
+		F3_FCLASS_H = 0b001,
+		F7_FCVT_W_H = 0b1100010,
+		RS2_FCVT_W_H = 0b00000,
+		F7_FCVT_WU_H = 0b1100010,
+		RS2_FCVT_WU_H = 0b00001,
+		F7_FMV_X_H = 0b1110010,
+		F3_FMV_X_H = 0b000,
+		F7_FCVT_H_W = 0b1101010,
+		RS2_FCVT_H_W = 0b00000,
+		F7_FCVT_H_WU = 0b1101010,
+		RS2_FCVT_H_WU = 0b00001,
+		F7_FMV_H_X = 0b1111010,
+
+		RS2_FCVT_S_H = 0b00010,
+		RS2_FCVT_H_S = 0b00000,
+		RS2_FCVT_D_H = 0b00010,
+		RS2_FCVT_H_D = 0b00001,
+
+		RS2_FCVT_H_L = 0b00010,
+		RS2_FCVT_H_LU = 0b00011,
+		RS2_FCVT_L_H = 0b00010,
+		RS2_FCVT_LU_H = 0b00011,
+
+		// F and D extension
+		OP_FMADD_S = 0b1000011,
+		F2_FMADD_S = 0b00,
+		F2_FMADD_D = 0b01,
+		OP_FADD_S = 0b1010011,
+		F7_FADD_S = 0b0000000,
+		F7_FADD_D = 0b0000001,
+		F7_FSUB_S = 0b0000100,
+		F7_FSUB_D = 0b0000101,
+		F7_FCVT_D_S = 0b0100001,
+		F7_FMUL_S = 0b0001000,
+		F7_FMUL_D = 0b0001001,
+		F7_FDIV_S = 0b0001100,
+		F7_FDIV_D = 0b0001101,
+		F7_FLE_S = 0b1010000,
+		F3_FLE_S = 0b000,
+		F3_FLT_S = 0b001,
+		F3_FEQ_S = 0b010,
+		F7_FSGNJ_D = 0b0010001,
+		F3_FSGNJ_D = 0b000,
+		F3_FSGNJN_D = 0b001,
+		F3_FSGNJX_D = 0b010,
+		F7_FMIN_S = 0b0010100,
+		F3_FMIN_S = 0b000,
+		F3_FMAX_S = 0b001,
+		F7_FMIN_D = 0b0010101,
+		F3_FMIN_D = 0b000,
+		F3_FMAX_D = 0b001,
+		F7_FCVT_S_D = 0b0100000,
+		F7_FSGNJ_S = 0b0010000,
+		F3_FSGNJ_S = 0b000,
+		F3_FSGNJN_S = 0b001,
+		F3_FSGNJX_S = 0b010,
+		F7_FLE_D = 0b1010001,
+		F3_FLE_D = 0b000,
+		F3_FLT_D = 0b001,
+		F3_FEQ_D = 0b010,
+		RS2_FCVT_S_D = 0b00001,
+		RS2_FCVT_D_S = 0b00000,
+		F7_FCVT_S_W = 0b1101000,
+		RS2_FCVT_S_W = 0b00000,
+		RS2_FCVT_S_WU = 0b00001,
+		RS2_FCVT_S_L = 0b00010,
+		RS2_FCVT_S_LU = 0b00011,
+		F7_FCVT_D_W = 0b1101001,
+		RS2_FCVT_D_W = 0b00000,
+		RS2_FCVT_D_WU = 0b00001,
+		RS2_FCVT_D_L = 0b00010,
+		RS2_FCVT_D_LU = 0b00011,
+		F7_FCVT_W_D = 0b1100001,
+		RS2_FCVT_W_D = 0b00000,
+		RS2_FCVT_WU_D = 0b00001,
+		RS2_FCVT_L_D = 0b00010,
+		RS2_FCVT_LU_D = 0b00011,
+		F7_FSQRT_S = 0b0101100,
+		F7_FSQRT_D = 0b0101101,
+		F7_FCVT_W_S = 0b1100000,
+		RS2_FCVT_W_S = 0b00000,
+		RS2_FCVT_WU_S = 0b00001,
+		RS2_FCVT_L_S = 0b00010,
+		RS2_FCVT_LU_S = 0b00011,
+		F7_FMV_X_W = 0b1110000,
+		F3_FMV_X_W = 0b000,
+		F3_FCLASS_S = 0b001,
+		F7_FMV_X_D = 0b1110001,
+		F3_FMV_X_D = 0b000,
+		F3_FCLASS_D = 0b001,
+		F7_FMV_W_X = 0b1111000,
+		F7_FMV_D_X = 0b1111001,
+		OP_FLW = 0b0000111,
+		F3_FLW = 0b010,
+		F3_FLD = 0b011,
+		OP_FSW = 0b0100111,
+		F3_FSW = 0b010,
+		F3_FSD = 0b011,
+		OP_FMSUB_S = 0b1000111,
+		F2_FMSUB_S = 0b00,
+		F2_FMSUB_D = 0b01,
+		OP_FNMSUB_S = 0b1001011,
+		F2_FNMSUB_S = 0b00,
+		F2_FNMSUB_D = 0b01,
+		OP_FNMADD_S = 0b1001111,
+		F2_FNMADD_S = 0b00,
+		F2_FNMADD_D = 0b01,
+
+		// reserved opcodes for custom instructions
+		OP_CUST1 = 0b0101011,
+		OP_CUST0 = 0b0001011,
+	};
+
 	Instruction() : instr(0) {}
 
 	Instruction(uint32_t instr) : instr(instr) {}
@@ -1279,9 +1279,9 @@ struct Instruction {
 		return BIT_SLICE(instr, 6, 5);
 	}
 
-	Opcode::Mapping decode_normal(Architecture arch, const RV_ISA_Config &isa_config);
+	Operation::OpId decode_normal(Architecture arch, const RV_ISA_Config &isa_config);
 
-	Opcode::Mapping decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config);
+	Operation::OpId decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config);
 
 	inline uint32_t csr() {
 		// cast to unsigned to avoid sign extension when shifting

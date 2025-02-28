@@ -53,7 +53,7 @@ template <class T_ISS>
 struct timing_if {
 	virtual ~timing_if() {}
 
-	virtual void update_timing(Instruction instr, Opcode::Mapping op, T_ISS &iss) = 0;
+	virtual void update_timing(Instruction instr, Operation::OpId opId, T_ISS &iss) = 0;
 };
 
 struct PendingInterrupts {

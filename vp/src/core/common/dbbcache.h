@@ -112,9 +112,9 @@
 
 struct OpMapEntry {
 	/* order optimized for alignment */
-	Opcode::Mapping op;
+	Operation::OpId opId;
 	unsigned long instr_time;
-	void *label_ptr;
+	void *labelPtr;
 };
 
 /******************************************************************************
@@ -134,7 +134,7 @@ class DBBCacheBase_T {
 	bool has_compressed = false;
 	T_instr_memory_if *instr_mem = nullptr;
 	struct OpMapEntry *opMap = nullptr;
-	void *fast_abort_label_ptr = nullptr;
+	void *fast_abort_labelPtr = nullptr;
 	uint32_t mem_word = 0x0;
 
    public:
@@ -143,7 +143,7 @@ class DBBCacheBase_T {
 	}
 
 	void init(bool enabled, RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem,
-	          struct OpMapEntry opMap[], void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+	          struct OpMapEntry opMap[], void *fast_abort_labelPtr, T_uxlen_t entrypoint) {
 		this->enabled = enabled;
 		this->isa_config = isa_config;
 		this->hartId = hartId;
@@ -154,7 +154,7 @@ class DBBCacheBase_T {
 		}
 		this->instr_mem = instr_mem;
 		this->opMap = opMap;
-		this->fast_abort_label_ptr = fast_abort_label_ptr;
+		this->fast_abort_labelPtr = fast_abort_labelPtr;
 		this->mem_word = 0;
 	}
 
@@ -193,19 +193,19 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 		}
 	}
 
-	__always_inline int decode(Instruction &instr, Opcode::Mapping &op) {
+	__always_inline int decode(Instruction &instr, Operation::OpId &opId) {
 		if (instr.is_compressed()) {
-			op = instr.decode_and_expand_compressed(arch, *this->isa_config);
+			opId = instr.decode_and_expand_compressed(arch, *this->isa_config);
 			return 2;
 		} else {
-			op = instr.decode_normal(arch, *this->isa_config);
+			opId = instr.decode_normal(arch, *this->isa_config);
 			return 4;
 		}
 	}
 
-	__always_inline uint32_t fetch_decode(T_uxlen_t &pc, Instruction &instr, Opcode::Mapping &op) {
+	__always_inline uint32_t fetch_decode(T_uxlen_t &pc, Instruction &instr, Operation::OpId &opId) {
 		uint32_t mem_word = fetch(pc, instr);
-		pc += decode(instr, op);
+		pc += decode(instr, opId);
 		return mem_word;
 	}
 
@@ -219,9 +219,9 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 	}
 
 	void init(bool enabled, RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem,
-	          struct OpMapEntry opMap[], void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+	          struct OpMapEntry opMap[], void *fast_abort_labelPtr, T_uxlen_t entrypoint) {
 		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(enabled, isa_config, hartId, instr_mem, opMap,
-		                                                         fast_abort_label_ptr, entrypoint);
+		                                                         fast_abort_labelPtr, entrypoint);
 		this->pc = entrypoint;
 	}
 
@@ -270,18 +270,18 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 	}
 
 	__always_inline void *fetch_decode_fast(Instruction &instr) {
-		return this->fast_abort_label_ptr;
+		return this->fast_abort_labelPtr;
 	}
 
 	__always_inline void abort_fetch_decode_fast() {}
 
 	__always_inline void *fetch_decode(T_uxlen_t &pc, Instruction &instr) {
-		Opcode::Mapping op;
+		Operation::OpId opId;
 		this->last_pc = this->pc;
-		this->mem_word = fetch_decode(pc, instr, op);
+		this->mem_word = fetch_decode(pc, instr, opId);
 		this->pc = pc;
-		cycle_counter_raw += this->opMap[op].instr_time;
-		return this->opMap[op].label_ptr;
+		cycle_counter_raw += this->opMap[opId].instr_time;
+		return this->opMap[opId].labelPtr;
 	}
 
 	__always_inline T_uxlen_t get_last_pc_before_callback() {
@@ -355,10 +355,10 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		uint16_t idx;
 
 		__always_inline void set_terminal(const DBBCache_T &dbbcache) {
-			opLabelPtr = dbbcache.fast_abort_label_ptr;
+			opLabelPtr = dbbcache.fast_abort_labelPtr;
 		}
 		__always_inline bool is_terminal(const DBBCache_T &dbbcache) {
-			return opLabelPtr == dbbcache.fast_abort_label_ptr;
+			return opLabelPtr == dbbcache.fast_abort_labelPtr;
 		}
 
 		__always_inline void resetLink() {
@@ -671,37 +671,37 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		}
 	}
 
-	__always_inline int decode(Instruction &instr, Opcode::Mapping &op) {
+	__always_inline int decode(Instruction &instr, Operation::OpId &opId) {
 		stats.inc_decodes();
 		if (instr.is_compressed()) {
-			op = instr.decode_and_expand_compressed(arch, *this->isa_config);
+			opId = instr.decode_and_expand_compressed(arch, *this->isa_config);
 			return 2;
 		} else {
-			op = instr.decode_normal(arch, *this->isa_config);
+			opId = instr.decode_normal(arch, *this->isa_config);
 			return 4;
 		}
 	}
 
-	__always_inline uint32_t fetch_decode(T_uxlen_t &pc, Instruction &instr, Opcode::Mapping &op) {
+	__always_inline uint32_t fetch_decode(T_uxlen_t &pc, Instruction &instr, Operation::OpId &opId) {
 		uint32_t mem_word = fetch(pc, instr);
-		pc += decode(instr, op);
+		pc += decode(instr, opId);
 		return mem_word;
 	}
 
 	__always_inline void decode_update_entry(struct Entry *entry, T_uxlen_t &pc, Instruction &instr) {
-		Opcode::Mapping op;
+		Operation::OpId opId;
 		entry->mem_word = instr.data();
 		entry->pc = pc;
-		entry->pc_increment = decode(instr, op);
+		entry->pc_increment = decode(instr, opId);
 		pc += entry->pc_increment;
-		entry->opLabelPtr = this->opMap[op].label_ptr;
+		entry->opLabelPtr = this->opMap[opId].labelPtr;
 
 		/*
 		 * We want to have the cycles AFTER the next decode ->
 		 * The next entry must hold the current cycles
 		 * update cycle_counter_raw of follow-up entry (there is always a terminal!)
 		 */
-		(entry + 1)->cycle_counter_raw = entry->cycle_counter_raw + this->opMap[op].instr_time;
+		(entry + 1)->cycle_counter_raw = entry->cycle_counter_raw + this->opMap[opId].instr_time;
 
 		entry->instr = instr.data();
 		entry->resetLink();
@@ -881,12 +881,12 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	}
 
 	void init(bool enabled, RV_ISA_Config *isa_config, uint64_t hartId, T_instr_memory_if *instr_mem,
-	          struct OpMapEntry opMap[], void *fast_abort_label_ptr, T_uxlen_t entrypoint) {
+	          struct OpMapEntry opMap[], void *fast_abort_labelPtr, T_uxlen_t entrypoint) {
 		DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>::init(enabled, isa_config, hartId, instr_mem, opMap,
-		                                                         fast_abort_label_ptr, entrypoint);
+		                                                         fast_abort_labelPtr, entrypoint);
 
 		/* set abort label ptr and reinit blocks to have valid terminal entries */
-		this->fast_abort_label_ptr = fast_abort_label_ptr;
+		this->fast_abort_labelPtr = fast_abort_labelPtr;
 		dummyBlock.init(0, *this);
 		fastDisableBlock.init(0, *this);
 
@@ -1102,7 +1102,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		/* ignore cache, if cache is disabled or if we are after return from interrupt to random position */
 		if (unlikely(curBlock == &dummyBlock)) {
-			Opcode::Mapping op = Opcode::UNDEF;
+			Operation::OpId opId = Operation::OpId::UNDEF;
 			stats.inc_cache_ignored_instr();
 			/* all tracked data is stored in first entry */
 			curEntryIdx = 0;
@@ -1110,13 +1110,13 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			T_uxlen_t last_pc = pc;
 			dummyBlock.entries[0].pc = last_pc;
 			/* save mem_word for get_mem_word */
-			this->mem_word = fetch_decode(pc, instr, op);
+			this->mem_word = fetch_decode(pc, instr, opId);
 			dummyBlock.entries[0].pc_increment = pc - last_pc;
 
 			/* update block cycle counter -> see comments in decode_update_entry above */
-			dummyBlock.entries[1].cycle_counter_raw += this->opMap[op].instr_time;
+			dummyBlock.entries[1].cycle_counter_raw += this->opMap[opId].instr_time;
 
-			return this->opMap[op].label_ptr;
+			return this->opMap[opId].labelPtr;
 		}
 
 		/*

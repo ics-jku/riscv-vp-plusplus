@@ -1,5 +1,6 @@
 #include <instr.h>
 #include <inttypes.h>
+#include <regfile.h>
 
 #include <exception>
 #include <iostream>
@@ -14,47 +15,47 @@ using namespace std;
 
 string registerName(uint_fast16_t num) {
 	if (USE_PRETTY_NAMES) {
-		return Opcode::regnamePrettyStr[num];
+		return RegFile_T<int64_t, uint64_t>::regnames[num];
 	} else {
 		return {"x" + to_string(num)};
 	}
 }
 
-void printOpcode(Instruction& instr) {
-	Opcode::Mapping op;
+void printOperation(Instruction& instr, const RV_ISA_Config& isa_config) {
+	Operation::OpId opId;
 	if (instr.is_compressed()) {
-		op = instr.decode_and_expand_compressed(ARCH);
+		opId = instr.decode_and_expand_compressed(ARCH, isa_config);
 	} else {
-		op = instr.decode_normal(ARCH);
+		opId = instr.decode_normal(ARCH, isa_config);
 	}
 
-	cout << Opcode::mappingStr.at(op) << " ";
+	cout << Operation::opIdStr.at(opId) << " ";
 
-	switch (Opcode::getType(op)) {
-		case Opcode::Type::R:
+	switch (Operation::getType(opId)) {
+		case Operation::Type::R:
 			cout << registerName(instr.rd()) << ", " << registerName(instr.rs1()) << ", " << registerName(instr.rs2());
 			break;
-		case Opcode::Type::R4:  // only >= rv64
+		case Operation::Type::R4:  // only >= rv64
 			cout << registerName(instr.rd()) << ", " << registerName(instr.rs1()) << ", " << registerName(instr.rs2())
 			     << ", " << registerName(instr.rs3());
 			break;
-		case Opcode::Type::I:
+		case Operation::Type::I:
 			cout << registerName(instr.rd()) << ", " << registerName(instr.rs1()) << ", " << instr.I_imm();
 			break;
-		case Opcode::Type::S:
+		case Operation::Type::S:
 			cout << registerName(instr.rd()) << ", " << registerName(instr.rs1()) << ", " << instr.S_imm();
 			break;
-		case Opcode::Type::B:
+		case Operation::Type::B:
 			cout << registerName(instr.rd()) << ", " << registerName(instr.rs1()) << ", " << instr.B_imm();
 			break;
-		case Opcode::Type::U:
+		case Operation::Type::U:
 			cout << registerName(instr.rd()) << ", " << instr.U_imm();
 			break;
-		case Opcode::Type::J:
+		case Operation::Type::J:
 			cout << registerName(instr.rd()) << ", " << instr.J_imm();
 			break;
 		default:
-			cout << "Unknown Opcode Type " << instr.opcode();
+			cout << "Unknown Operation Type " << instr.opcode();
 	}
 
 	cout << endl;
@@ -63,6 +64,7 @@ void printOpcode(Instruction& instr) {
 int main(int argc, const char* argv[]) {
 	string line;
 	Instruction instr;
+	RV_ISA_Config isa_config(false, false);
 	cout << showbase << hex;
 
 	for (unsigned i = 1; i < argc; i++) {
@@ -83,6 +85,6 @@ int main(int argc, const char* argv[]) {
 			cerr << "Not a parse-able hex number: '" << line << "'" << endl;
 			continue;
 		}
-		printOpcode(instr);
+		printOperation(instr, &isa_config);
 	}
 }

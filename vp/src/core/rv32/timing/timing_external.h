@@ -52,7 +52,7 @@ struct ExternalTimingDecorator : public timing_if {
 		dlclose(lib_handle);
 	}
 
-	void on_begin_exec_step(Instruction instr, Opcode::mapping op, ISS &iss) override {
+	void on_begin_exec_step(Instruction instr, Operation::OpId op, ISS &iss) override {
 		uint64_t cycles = timing_sim->get_cycles_for_instruction(iss.last_pc);
 
 		assert(timing_sim->get_magic_number() == 0x5E5E5E5E5E5E5E5E);

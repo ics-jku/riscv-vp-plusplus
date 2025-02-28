@@ -1679,17 +1679,10 @@ constexpr uint32_t VMV_NR_R_V_MASK = 0b11111100000000000111000001111111;
  */
 #define REQUIRE_ISA(_ext_bit)           \
 	if (!(isa_config.cfg & (_ext_bit))) \
-		return Opcode::UNSUP;
-
-#define MATCH_AND_RETURN_INSTR2(_instr, _op)                         \
-	if (unlikely((data() & (_instr##_MASK)) != (_instr##_ENCODING))) \
-		return Opcode::UNDEF;                                        \
-	return (_op);
-
-#define MATCH_AND_RETURN_INSTR(_op) MATCH_AND_RETURN_INSTR2(_op, _op)
+		return Operation::OpId::UNSUP;
 
 namespace Compressed {
-enum Opcode {
+enum C_OpId {
 	// quadrant zero
 	C_Illegal,
 	C_Reserved,
@@ -1747,12 +1740,8 @@ enum Opcode {
 };
 }
 
-std::array<const char *, 32> Opcode::regnamePrettyStr = {
-    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0/fp", "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
-    "a6",   "a7", "s2", "s3", "s4", "s5", "s6", "s7", "s8",    "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
-
 /*
-Python snippet to generate the "mappingStr":
+Python snippet to generate the "opIdStr":
 
 for e in [e.strip().replace(",", "") for e in s.strip().split("\n")]:
     if "//" in e or len(e) == 0:
@@ -1760,7 +1749,7 @@ for e in [e.strip().replace(",", "") for e in s.strip().split("\n")]:
     else:
         print('"{}",'.format(e))
  */
-std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
+std::array<const char *, Operation::OpId::NUMBER_OF_OPERATIONS> Operation::opIdStr = {
     "ZERO-INVALID",
     "UNSUP/DISABLED",
 
@@ -2662,8 +2651,8 @@ std::array<const char *, Opcode::NUMBER_OF_INSTRUCTIONS> Opcode::mappingStr = {
     "SFENCE_VMA",
 };
 
-Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
-	switch (mapping) {
+Operation::Type Operation::getType(Operation::OpId opId) {
+	switch (opId) {
 		case ADD:
 		case ADD_NOP:
 		case SUB:
@@ -3550,7 +3539,7 @@ Opcode::Type Opcode::getType(Opcode::Mapping mapping) {
 
 		case UNDEF:
 		case UNSUP:
-		case NUMBER_OF_INSTRUCTIONS:
+		case NUMBER_OF_OPERATIONS:
 			return Type::UNKNOWN;
 
 			/* no default branch here -> we want compiler warnings in this case! */
@@ -3741,7 +3730,7 @@ struct InstructionFactory {
 	}
 };
 
-Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
+Compressed::C_OpId decode_compressed(Instruction &instr, Architecture arch) {
 	using namespace Compressed;
 
 	switch (instr.quadrant()) {
@@ -3912,12 +3901,12 @@ Compressed::Opcode decode_compressed(Instruction &instr, Architecture arch) {
 /* get either the real operation _op (e.g. ADD) or, if rd == zero, _op_NOP (e.g. ADD_NOP) */
 #define C_GET_OP_OR_NOP(_instr, _op) ((_instr).rd() != 0 ? (_op) : (_op##_NOP))
 
-Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Architecture arch,
+Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId, Architecture arch,
                                   const RV_ISA_Config &isa_config) {
-	using namespace Opcode;
+	using namespace Operation;
 	using namespace Compressed;
 
-	switch (op) {
+	switch (c_opId) {
 		case C_Illegal:
 			return UNDEF;
 
@@ -4143,19 +4132,23 @@ Opcode::Mapping expand_compressed(Instruction &instr, Compressed::Opcode op, Arc
 	throw std::runtime_error("some compressed instruction not handled");
 }
 
-Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config) {
+Operation::OpId Instruction::decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config) {
 	REQUIRE_ISA(csr_misa::C);
 	auto c_op = decode_compressed(*this, arch);
 	return expand_compressed(*this, c_op, arch, isa_config);
 }
 
-/* match and return either the real operation _opA (e.g. ADD) or, if rd == zero, the alternative operation _opB (e.g.
- * ADD_NOP) */
-#define MATCH_AND_RETURN_INSTR2_OR_OPZERO(_instr, _op, _opzero) \
-	MATCH_AND_RETURN_INSTR2(_instr, (instr.rd() != 0 ? (_op) : (_opzero)))
+/* match and return either the real operation _op (e.g. ADD) or, if rd == zero, the alternative operation _oprdzero
+ * (e.g. ADD_NOP) */
+#define MATCH_AND_RETURN_INSTR2_OR_OPZERO(_instr, _op, _oprdzero)    \
+	if (unlikely((data() & (_instr##_MASK)) != (_instr##_ENCODING))) \
+		return Operation::OpId::UNDEF;                               \
+	return (instr.rd() != 0 ? (Operation::OpId::_op) : (Operation::OpId::_oprdzero))
+
+#define MATCH_AND_RETURN_INSTR(_op) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_op, _op, _op)
 
 /* match and return either the real operation _op (e.g. ADD) or, if rd == zero, instr_NOP (e.g. ADD_NOP) */
-#define MATCH_AND_RETURN_INSTR2_OR_NOP(_instr, _op) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_instr, (_op), (_op##_NOP))
+#define MATCH_AND_RETURN_INSTR2_OR_NOP(_instr, _op) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_instr, _op, _op##_NOP)
 
 #define MATCH_AND_RETURN_INSTR_OR_OPZERO(_op, _opzero) MATCH_AND_RETURN_INSTR2_OR_OPZERO(_op, _op, _opzero)
 #define MATCH_AND_RETURN_INSTR_OR_NOP(_op) MATCH_AND_RETURN_INSTR2_OR_NOP(_op, _op)
@@ -4163,9 +4156,7 @@ Opcode::Mapping Instruction::decode_and_expand_compressed(Architecture arch, con
 /*
  * TODO: check REQUIRE_MISA for RVV e.g maybe check V and F/D for vector float?
  */
-Opcode::Mapping Instruction::decode_normal(Architecture arch, const RV_ISA_Config &isa_config) {
-	using namespace Opcode;
-
+Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Config &isa_config) {
 	Instruction &instr = *this;
 
 	switch (instr.opcode()) {
@@ -7211,5 +7202,5 @@ Opcode::Mapping Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 			// RV-V Extension End -- Placeholder 1
 	}
 
-	return UNDEF;
+	return Operation::OpId::UNDEF;
 }
