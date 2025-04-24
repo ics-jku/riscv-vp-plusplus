@@ -22,7 +22,7 @@ namespace po = boost::program_options;
 
 struct TinyOptions : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint64_t addr_t;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications
@@ -40,8 +40,8 @@ struct TinyOptions : public Options {
 		// clang-format off
 		add_options()
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
-			("memory-start", po::value<unsigned int>(&mem_start_addr), "set memory start address")
-			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
+			("memory-start", po::value<uint64_t>(&mem_start_addr), "set memory start address")
+			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA");
 		// clang-format on
 	}

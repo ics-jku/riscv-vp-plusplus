@@ -71,9 +71,9 @@ namespace po = boost::program_options;
 
 struct LinuxOptions : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint64_t addr_t;
 
-	addr_t mem_size = 1024u * 1024u * (unsigned int)(MEM_SIZE_MB);
+	addr_t mem_size = 1024ul * 1024ul * (uint64_t)(MEM_SIZE_MB);
 	addr_t mem_start_addr = 0x80000000;
 	addr_t mem_end_addr = mem_start_addr + mem_size - 1;
 	addr_t clint_start_addr = 0x02000000;
@@ -129,16 +129,16 @@ struct LinuxOptions : public Options {
 	LinuxOptions(void) {
 		// clang-format off
 		add_options()
-			("memory-start", po::value<unsigned int>(&mem_start_addr),"set memory start address")
-			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
+			("memory-start", po::value<uint64_t>(&mem_start_addr),"set memory start address")
+			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
 			("dtb-file", po::value<std::string>(&dtb_file)->required(), "dtb file for boot loading")
 			("kernel-file", po::value<std::string>(&kernel_file), "optional kernel file to load (supports ELF or RAW files)")
 			("tun-device", po::value<std::string>(&tun_device), "tun device used by SLIP")
 			("mram-root-image", po::value<std::string>(&mram_root_image)->default_value(""),"MRAM root image file")
-			("mram-root-image-size", po::value<unsigned int>(&mram_root_size), "MRAM root image size")
+			("mram-root-image-size", po::value<uint64_t>(&mram_root_size), "MRAM root image size")
 			("mram-data-image", po::value<std::string>(&mram_data_image)->default_value(""),"MRAM data image file for persistency")
-			("mram-data-image-size", po::value<unsigned int>(&mram_data_size), "MRAM data image size")
+			("mram-data-image-size", po::value<uint64_t>(&mram_data_size), "MRAM data image size")
 			("sd-card-image", po::value<std::string>(&sd_card_image)->default_value(""), "SD-Card image file (size must be multiple of 512 bytes)")
 			("vnc-port", po::value<unsigned int>(&vnc_port), "select port number to connect with VNC");
 		// clang-format on
