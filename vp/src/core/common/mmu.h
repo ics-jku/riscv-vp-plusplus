@@ -121,7 +121,7 @@ struct MMU_T {
 		uint64_t paddr = walk(vaddr, type, mode);
 
 		// optimization only, to void page walk
-		x.ppn = (paddr & ~PGMASK);
+		x.ppn = (paddr & ~((uint64_t)PGMASK));
 		x.vpn = vpn;
 
 		return paddr;
