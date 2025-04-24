@@ -16,10 +16,10 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 	tlm_utils::simple_target_socket<SimpleMemory> tsock;
 
 	uint8_t *data;
-	uint32_t size;
+	uint64_t size;
 	bool read_only;
 
-	SimpleMemory(sc_core::sc_module_name, uint32_t size, bool read_only = false)
+	SimpleMemory(sc_core::sc_module_name, uint64_t size, bool read_only = false)
 	    : data(new uint8_t[size]()), size(size), read_only(read_only) {
 		tsock.register_b_transport(this, &SimpleMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
@@ -40,7 +40,7 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 		memset(&data[dst_addr], 0, n);
 	}
 
-	void load_binary_file(const std::string &filename, unsigned addr) {
+	void load_binary_file(const std::string &filename, uint64_t addr) {
 		/*
 		 * check, if file exists, is readable and don't has zero size
 		 * (prevent segfault on mapped_source_file)
@@ -58,13 +58,13 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 		write_data(addr, (const uint8_t *)mf.data(), mf.size());
 	}
 
-	void write_data(unsigned addr, const uint8_t *src, unsigned num_bytes) {
+	void write_data(uint64_t addr, const uint8_t *src, unsigned num_bytes) {
 		assert(addr + num_bytes <= size);
 
 		memcpy(data + addr, src, num_bytes);
 	}
 
-	void read_data(unsigned addr, uint8_t *dst, unsigned num_bytes) {
+	void read_data(uint64_t addr, uint8_t *dst, unsigned num_bytes) {
 		assert(addr + num_bytes <= size);
 
 		memcpy(dst, data + addr, num_bytes);
