@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 #define stop_fd (stop_pipe[0])
-#define newpollfd(FD) (struct pollfd){.fd = FD, .events = POLLIN | POLLHUP | POLLERR, .revents = 0};
+#define newpollfd(FD) {FD, POLLIN | POLLHUP | POLLERR, 0};
 
 Channel_FD_IF::Channel_FD_IF() {
 	if (pipe(stop_pipe) == -1) {

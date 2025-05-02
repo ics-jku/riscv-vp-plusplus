@@ -315,7 +315,7 @@ void GpioServer::handleConnection(Socket conn) {
 
 				cout << "[gpio-server port:" << base_port << "] Started IOF channel type " << (int)req.reqIOF.iof
 				     << " on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
-				IOF_Channelinfo info = {.id = response.id, .requested_iof = req.reqIOF.iof};
+				IOF_Channelinfo info = {response.id, req.reqIOF.iof};
 				active_IOF_channels.emplace(req.reqIOF.pin, info);
 
 				break;
