@@ -21,6 +21,10 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
 include(cmake/AddGitSubmodule.cmake)
 
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package( Boost REQUIRED COMPONENTS iostreams program_options log)
 
 if(USE_SYSTEM_SYSTEMC)
