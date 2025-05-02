@@ -25,7 +25,9 @@ class VNCSimpleFB : public sc_core::sc_module {
 	uint8_t *frameBuffer;
 	sc_core::sc_mutex mutex;
 	bool areaChanged;
+#ifdef TRACK_CHANGED_AREA
 	uint32_t xMin, yMin, xMax, yMax;
+#endif
 
 	void fb_access_callback(tlm::tlm_generic_payload &trans, sc_core::sc_time);
 	void transport(tlm::tlm_generic_payload &, sc_core::sc_time &);
