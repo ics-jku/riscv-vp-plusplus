@@ -82,8 +82,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return ARCH;
 	}
 
-	std::string name();
-	void halt();
+	std::string name() override;
+	void halt() override;
 
 	void print_trace();
 
