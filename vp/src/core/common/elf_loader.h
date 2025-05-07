@@ -66,49 +66,34 @@ class GenericElfLoader {
 		return hdr->e_entry;
 	}
 
-	void load_executable_image(load_if &load_if, addr_t size, addr_t offset, bool use_vaddr = true) {
+	void load_executable_image(load_if &load_if, addr_t area_size, addr_t area_start, bool use_vaddr = true) {
 		init();
 		for (auto p : get_load_sections()) {
 			auto addr = p->p_paddr;
-			if (use_vaddr)
+			if (use_vaddr) {
 				addr = p->p_vaddr;
+			}
 
 			// If the modeled virtual platform separates Flash and DRAM
 			// (like the hifive-vp does) we call load_executable_image
 			// once for each memory segment (i.e. once for the Flash and
 			// once for the DRAM). As such, we must skip all ELF regions
 			// which are not covered by the passed memory segment.
-			if (!(addr >= offset && addr < (offset + size)))
+			if (!in_area(addr, area_size, area_start)) {
 				continue;
-
-			if (addr < offset) {
-				std::cerr << "[elf_loader] ";
-				std::cerr << "Offset overlaps into section:" << std::endl;
-				std::cerr << "\t0x" << std::hex << +addr << " < " << +offset << std::endl;
-				print_phdr(std::cerr, *p, 2);
-				throw load_executable_exception();
 			}
 
-			if (addr + p->p_memsz >= offset + size) {
-				std::cerr << "[elf_loader] ";
-				std::cerr << "Section does not fit in target memory" << std::endl;
-				std::cerr << "\t0x" << std::hex << +addr << " + size 0x" << +p->p_memsz;
-				std::cerr << " would overflow offset 0x" << +offset << " + size 0x" << +size << std::endl;
-				print_phdr(std::cerr, *p, 2);
-				throw load_executable_exception();
-			}
-
-			auto idx = addr - offset;
+			auto offset = addr - area_start;
 			const char *src = elf.data() + p->p_offset;
 			auto to_copy = p->p_filesz;
 
-			load_if.load_data(src, idx, to_copy);
+			load_if.load_data(src, offset, to_copy);
 
 			assert(p->p_memsz >= p->p_filesz);
-			idx = idx + p->p_filesz;
+			offset = offset + p->p_filesz;
 			to_copy = p->p_memsz - p->p_filesz;
 
-			load_if.load_zero(idx, to_copy);
+			load_if.load_zero(offset, to_copy);
 		}
 	}
 
@@ -157,12 +142,22 @@ class GenericElfLoader {
 		}
 	}
 
+	static inline bool in_area(addr_t addr, addr_t area_size, addr_t area_start) {
+		return ((addr >= area_start) && (addr < (area_start + area_size)));
+	}
+
+	inline const typename T::Elf_Phdr *get_elf_Phdr(unsigned int idx) {
+		if (idx >= hdr->e_phnum) {
+			return nullptr;
+		}
+		return reinterpret_cast<const typename T::Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * idx);
+	}
+
 	std::vector<const Elf_Phdr *> get_load_sections() {
 		std::vector<const Elf_Phdr *> sections;
 
 		for (int i = 0; i < hdr->e_phnum; ++i) {
-			const Elf_Phdr *p =
-			    reinterpret_cast<const typename T::Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * i);
+			const Elf_Phdr *p = get_elf_Phdr(i);
 
 			if (p->p_type != T::PT_LOAD)
 				continue;
@@ -196,6 +191,9 @@ class GenericElfLoader {
 
 	addr_t get_memory_end() {
 		init();
+		const Elf_Phdr *last = get_elf_Phdr(hdr->e_phnum - 1);
+		return last->p_vaddr + last->p_memsz;
+	}
 
 		const Elf_Phdr *last =
 		    reinterpret_cast<const Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * (hdr->e_phnum - 1));
