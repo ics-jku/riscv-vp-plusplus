@@ -55,10 +55,41 @@ class GenericElfLoader {
 		return hdr != nullptr;
 	}
 
-	addr_t get_heap_addr() {
-		// return first 8 byte aligned address after the memory image
-		auto s = get_memory_end();
-		return s + s % 8;
+	/*
+	 * Get the heap address for system call handling
+	 * (this is only used, if heap is not managed by software)
+	 *
+	 * Current policy: Find the highest 8 byte aligned address in the given area.
+	 * TODO: A better algorithm would find the largest free area usable for the heap.
+	 */
+	addr_t get_heap_addr(addr_t area_size, addr_t area_start, bool use_vaddr = true) {
+		init();
+
+		addr_t last_heap_start = (area_start & ~((addr_t)(0x7))) + 8;
+
+		for (int i = 0; i < hdr->e_phnum; i++) {
+			const Elf_Phdr *p = get_elf_Phdr(i);
+
+			addr_t start_addr = p->p_paddr;
+			if (use_vaddr) {
+				start_addr = p->p_vaddr;
+			}
+
+			// first 8 byte aligned address after the segment
+			addr_t heap_start = ((start_addr + p->p_memsz - 1) & ~((addr_t)(0x7))) + 8;
+
+			// check if the candidate is within the area
+			if (!in_area(heap_start, area_size, area_start)) {
+				continue;
+			}
+
+			// store candidate with highest address
+			if (heap_start > last_heap_start) {
+				last_heap_start = heap_start;
+			}
+		}
+
+		return last_heap_start;
 	}
 
 	addr_t get_entrypoint() {
@@ -187,18 +218,6 @@ class GenericElfLoader {
 		os << tab << "p_flags " << h.p_flags << std::endl;
 		os << tab << "p_align " << h.p_align << std::endl;
 		return os;
-	}
-
-	addr_t get_memory_end() {
-		init();
-		const Elf_Phdr *last = get_elf_Phdr(hdr->e_phnum - 1);
-		return last->p_vaddr + last->p_memsz;
-	}
-
-		const Elf_Phdr *last =
-		    reinterpret_cast<const Elf_Phdr *>(elf.data() + hdr->e_phoff + hdr->e_phentsize * (hdr->e_phnum - 1));
-
-		return last->p_vaddr + last->p_memsz;
 	}
 
 	const char *get_section_string_table() {

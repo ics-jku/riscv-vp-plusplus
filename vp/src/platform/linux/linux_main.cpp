@@ -274,7 +274,7 @@ int sc_main(int argc, char **argv) {
 		entry_point = opt.entry_point.value;
 
 	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.size, opt.mem_start_addr));
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, opt.use_dbbcache, opt.use_lscache, &clint, entry_point,
 		               rv64_align_address(opt.mem_end_addr));

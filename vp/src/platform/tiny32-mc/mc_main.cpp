@@ -92,7 +92,7 @@ int sc_main(int argc, char **argv) {
 	core1.init(&core1_mem_if, opt.use_dbbcache, &core1_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	           opt.mem_end_addr - 32767);
 
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr());
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.size, opt.mem_start_addr));
 	sys.register_core(&core0);
 	sys.register_core(&core1);
 
