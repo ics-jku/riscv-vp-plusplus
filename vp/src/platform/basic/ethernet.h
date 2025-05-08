@@ -57,8 +57,11 @@ struct EthernetDevice : public sc_core::sc_module {
 	static const uint16_t FRAME_SIZE = MTU_SIZE + 14;
 
 	uint8_t recv_frame_buf[FRAME_SIZE];
+	uint8_t *send_buf = nullptr;
 	bool has_frame;
 	bool disabled;
+
+	static constexpr unsigned int BUF_MIN_SIZE = 60;
 
 	static const uint16_t STATUS_REG_ADDR = 0x00;
 	static const uint16_t RECEIVE_SIZE_REG_ADDR = STATUS_REG_ADDR + sizeof(uint32_t);
@@ -79,7 +82,7 @@ struct EthernetDevice : public sc_core::sc_module {
 
 	void init_network(std::string clonedev);
 	void add_all_if_ips();
-
+	void check_send_buf();
 	void send_raw_frame();
 	bool try_recv_raw_frame();
 	bool isPacketForUs(uint8_t *packet, ssize_t size);
@@ -101,6 +104,10 @@ struct EthernetDevice : public sc_core::sc_module {
 			} else {
 				throw std::runtime_error("unsupported operation");
 			}
+		}
+
+		if (r.write && r.vptr == &send_size) {
+			check_send_buf();
 		}
 	}
 

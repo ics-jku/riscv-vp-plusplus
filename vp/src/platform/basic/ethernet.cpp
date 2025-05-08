@@ -200,6 +200,17 @@ EthernetDevice::EthernetDevice(sc_core::sc_module_name, uint32_t irq_number, uin
 	}
 }
 
+void EthernetDevice::check_send_buf() {
+	if (send_buf != nullptr) {
+		delete[] send_buf;
+	}
+	if (send_size < BUF_MIN_SIZE) {
+		send_buf = new uint8_t[BUF_MIN_SIZE];
+	} else {
+		send_buf = new uint8_t[send_size];
+	}
+}
+
 void EthernetDevice::init_network(std::string clonedev) {
 	struct ifreq ifr;
 	int err;
@@ -237,26 +248,32 @@ void EthernetDevice::init_network(std::string clonedev) {
 }
 
 void EthernetDevice::send_raw_frame() {
-	uint8_t sendbuf[send_size < 60 ? 60 : send_size];
-	memcpy(sendbuf, &mem[send_src - 0x80000000], send_size);
-	if (send_size < 60) {
-		memset(&sendbuf[send_size], 0, 60 - send_size);
-		send_size = 60;
+	if (send_size < BUF_MIN_SIZE) {
+		memcpy(send_buf, &mem[send_src - 0x80000000], send_size);
+		memset(&send_buf[send_size], 0, BUF_MIN_SIZE - send_size);
+	} else {
+		memcpy(send_buf, &mem[send_src - 0x80000000], send_size);
 	}
 
 	cout << "SEND FRAME --->--->--->--->--->---> ";
-	dump_ethernet_frame(sendbuf, send_size, true);
+	dump_ethernet_frame(send_buf, send_size, true);
 	cout << endl;
 
-	struct ether_header *eh = (struct ether_header *)sendbuf;
+	struct ether_header *eh = (struct ether_header *)send_buf;
 
 	assert(memcmp(eh->ether_shost, VIRTUAL_MAC_ADDRESS, ETH_ALEN) == 0);
 
-	ssize_t ans = write(sockfd, sendbuf, send_size);
+	ssize_t ans = write(sockfd, send_buf, send_size);
 	if (ans != send_size) {
 		cout << strerror(errno) << endl;
 	}
 	assert(ans == send_size);
+
+	if (send_size < BUF_MIN_SIZE) {
+		memset(&send_buf, 0, BUF_MIN_SIZE);
+	} else {
+		memset(&send_buf, 0, send_size);
+	}
 }
 
 bool EthernetDevice::isPacketForUs(uint8_t *packet, ssize_t) {
