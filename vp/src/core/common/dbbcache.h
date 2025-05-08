@@ -436,7 +436,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			this->block[idx] = block;
 		}
 
-		struct Block *get(unsigned int idx, T_uxlen_t pc) {
+		Block *get(unsigned int idx, T_uxlen_t pc) {
 			if (this->pc[idx] == pc) {
 				return block[idx];
 			} else {
@@ -444,7 +444,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			}
 		}
 
-		__always_inline struct Block *find(T_uxlen_t pc) {
+		__always_inline Block *find(T_uxlen_t pc) {
 			for (unsigned int idx = 0; idx < SIZE; idx++) {
 				if (this->pc[idx] == pc) {
 					return block[idx];
@@ -493,7 +493,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			curIdx = 0;
 		}
 
-		void add(T_uxlen_t pc, struct Block *block) {
+		void add(T_uxlen_t pc, Block *block) {
 			this->set(curIdx, pc, block);
 			curIdx++;
 			if (curIdx == SIZE) {
@@ -512,7 +512,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		T_uxlen_t start_addr;
 		uint32_t alloc_len;
 		uint32_t len;
-		struct Entry *entries;
+		Entry *entries;
 
 		/* cache links of dynamic jump addresses (jalr) */
 		BlockLinkCache_T<JUMPDYNLINKCACHE_SIZE> jumpDynLinkCache;
@@ -602,14 +602,14 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	dbbcachestats_t stats = dbbcachestats_t(*this);
 
    private:
-	std::unordered_map<uint64_t, struct Block *> blockmap;
-	struct Block *curBlock;
-	struct Block dummyBlock = Block(0, *this);
+	std::unordered_map<uint64_t, Block *> blockmap;
+	Block *curBlock;
+	Block dummyBlock = Block(0, *this);
 	int32_t curEntryIdx = 0;
 
 	bool slow_path = false;
-	struct Block fastDisableBlock = Block(0, *this);
-	struct Entry *fastEntry;
+	Block fastDisableBlock = Block(0, *this);
+	Entry *fastEntry;
 
 	bool exception = false;
 
@@ -632,7 +632,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		 *  * After fetch_decode and a callback -> fastEntry might point to its block start value
 		 * (curBlock->entries[-1])! We have to consider both cases!
 		 */
-		struct Entry *entry;
+		Entry *entry;
 		if (fastEntry == &curBlock->entries[-1]) {
 			/* fastEntry points has initial value -> set initial curEntryIdx*/
 			entry = fastEntry + 1;
@@ -688,7 +688,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		return mem_word;
 	}
 
-	__always_inline void decode_update_entry(struct Entry *entry, T_uxlen_t &pc, Instruction &instr) {
+	__always_inline void decode_update_entry(Entry *entry, T_uxlen_t &pc, Instruction &instr) {
 		Operation::OpId opId;
 		entry->mem_word = instr.data();
 		entry->pc = pc;
@@ -716,7 +716,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			curBlock->entries = (Entry *)realloc(curBlock->entries, curBlock->alloc_len * sizeof(*curBlock->entries));
 		}
 
-		struct Entry *entry = &curBlock->entries[idx];
+		Entry *entry = &curBlock->entries[idx];
 		fetch(pc, instr);
 		decode_update_entry(entry, pc, instr);
 		entry->idx = idx;
@@ -949,7 +949,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	__always_inline void jump_dyn(T_uxlen_t pc) {
 		stats.inc_djumps();
 
-		struct Block *linkBlock = curBlock->jumpDynLinkCache.find(pc);
+		Block *linkBlock = curBlock->jumpDynLinkCache.find(pc);
 		if (likely(linkBlock != nullptr)) {
 			stats.inc_djump_hits();
 			switch_block(linkBlock);
@@ -997,7 +997,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		// TODO maybe stack push (curBlock, CurEntryIdx?)
 		stats.inc_trap_enters();
 
-		struct Block *linkBlock = trapLinkCache.find(pc);
+		Block *linkBlock = trapLinkCache.find(pc);
 		if (likely(linkBlock != nullptr)) {
 			stats.inc_trap_enter_hits();
 			switch_block(linkBlock);
@@ -1136,7 +1136,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		/* hit -> use existing entry */
 
-		struct Entry *curEntry = &curBlock->entries[nextEntryIdx];
+		Entry *curEntry = &curBlock->entries[nextEntryIdx];
 
 		if (curBlock->coherence_cnt != coherence_cnt) {
 			/* check and repair whole block at once */
@@ -1146,7 +1146,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 				exception = false;
 				T_uxlen_t addr = curBlock->start_addr;
 				for (idx = 0; idx < curBlock->len; idx++) {
-					struct Entry *e = &curBlock->entries[idx];
+					Entry *e = &curBlock->entries[idx];
 
 					/* fetch and check -> decode only if read word differs */
 
