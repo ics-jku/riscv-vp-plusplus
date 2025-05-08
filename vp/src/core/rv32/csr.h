@@ -22,7 +22,9 @@ inline bool is_valid_privilege_level(PrivilegeLevel mode) {
 }
 
 struct csr_32 {
-	uint32_t reg = 0;
+	union reg {
+		uint32_t val = 0;
+	} reg;
 };
 
 struct csr_misa_32 : public csr_misa {
@@ -30,54 +32,54 @@ struct csr_misa_32 : public csr_misa {
 		init();
 	}
 
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned extensions : 26;
 			unsigned wiri : 4;
 			unsigned mxl : 2;
 		} fields;
-	};
+	} reg;
 
 	bool has_C_extension() {
-		return fields.extensions & C;
+		return reg.fields.extensions & C;
 	}
 
 	bool has_E_base_isa() {
-		return fields.extensions & E;
+		return reg.fields.extensions & E;
 	}
 
 	bool has_user_mode_extension() {
-		return fields.extensions & U;
+		return reg.fields.extensions & U;
 	}
 
 	bool has_supervisor_mode_extension() {
-		return fields.extensions & S;
+		return reg.fields.extensions & S;
 	}
 
 	void init() {
 		// supported extensions will be set by the iss according to RV_ISA_Config
-		fields.extensions = 0;
-		fields.wiri = 0;
+		reg.fields.extensions = 0;
+		reg.fields.wiri = 0;
 		// RV32
-		fields.mxl = 1;
+		reg.fields.mxl = 1;
 	}
 };
 
 struct csr_mvendorid {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned offset : 7;
 			unsigned bank : 25;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mstatus {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned uie : 1;
 			unsigned sie : 1;
 			unsigned wpri1 : 1;
@@ -100,7 +102,7 @@ struct csr_mstatus {
 			unsigned wpri4 : 8;
 			unsigned sd : 1;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mstatush {
@@ -112,35 +114,35 @@ struct csr_mstatush {
 			unsigned mbe : 1;
 			unsigned wpri2 : 26;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mtvec {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned mode : 2;   // WARL
 			unsigned base : 30;  // WARL
 		} fields;
-	};
+	} reg;
 
 	uint32_t get_base_address() {
-		return fields.base << 2;
+		return reg.fields.base << 2;
 	}
 
 	enum Mode { Direct = 0, Vectored = 1 };
 
 	void checked_write(uint32_t val) {
-		reg = val;
-		if (fields.mode >= 1)
-			fields.mode = 0;
+		reg.val = val;
+		if (reg.fields.mode >= 1)
+			reg.fields.mode = 0;
 	}
 };
 
 struct csr_mie {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned usie : 1;
 			unsigned ssie : 1;
 			unsigned wpri1 : 1;
@@ -158,13 +160,13 @@ struct csr_mie {
 
 			unsigned wpri4 : 20;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mip {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned usip : 1;
 			unsigned ssip : 1;
 			unsigned wiri1 : 1;
@@ -182,53 +184,53 @@ struct csr_mip {
 
 			unsigned wiri4 : 20;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mepc {
-	union {
-		uint32_t reg = 0;
-	};
+	union reg {
+		uint32_t val = 0;
+	} reg;
 };
 
 struct csr_mcause {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned exception_code : 31;  // WLRL
 			unsigned interrupt : 1;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mcounteren {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned CY : 1;
 			unsigned TM : 1;
 			unsigned IR : 1;
 			unsigned reserved : 29;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_mcountinhibit {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned CY : 1;
 			unsigned zero : 1;
 			unsigned IR : 1;
 			unsigned reserved : 29;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_pmpcfg {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned UNIMPLEMENTED : 24;  // WARL
 			unsigned L0 : 1;              // WARL
 			unsigned _wiri0 : 2;          // WIRI
@@ -237,30 +239,30 @@ struct csr_pmpcfg {
 			unsigned W0 : 1;              // WARL
 			unsigned R0 : 1;              // WARL
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_satp {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned ppn : 22;  // WARL
 			unsigned asid : 9;  // WARL
 			unsigned mode : 1;  // WARL
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_fcsr {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned fflags : 5;
 			unsigned frm : 3;
 			unsigned reserved : 24;
 		} fields;
 		// fflags accessed separately
-		struct {
+		struct fflags {
 			unsigned NX : 1;  // invalid operation
 			unsigned UF : 1;  // divide by zero
 			unsigned OF : 1;  // overflow
@@ -268,13 +270,13 @@ struct csr_fcsr {
 			unsigned NV : 1;  // inexact
 			unsigned _ : 27;
 		} fflags;
-	};
+	} reg;
 };
 
 struct csr_vtype {
-	union {
-		uint32_t reg = 0x8000000;  // vill=1 at reset
-		struct {
+	union reg {
+		uint32_t val = 0x8000000;  // vill=1 at reset
+		struct fields {
 			unsigned vlmul : 3;
 			unsigned vsew : 3;
 			unsigned vta : 1;
@@ -282,56 +284,56 @@ struct csr_vtype {
 			unsigned reserved : 23;
 			unsigned vill : 1;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_vl {
-	union {
-		uint32_t reg = 0;
-	};
+	union reg {
+		uint32_t val = 0;
+	} reg;
 };
 
 struct csr_vstart {
-	union {
-		uint32_t reg = 0;
-	};
+	union reg {
+		uint32_t val = 0;
+	} reg;
 };
 
 struct csr_vxrm {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned vxrm : 2;
 			unsigned zero : 30;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_vxsat {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned vxsat : 1;
 			unsigned zero : 31;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_vcsr {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned vxsat : 1;
 			unsigned vxrm : 2;
 			unsigned reserved : 29;
 		} fields;
-	};
+	} reg;
 };
 
 struct csr_vlenb {
-	union {
-		uint32_t reg = 0;
-	};
+	union reg {
+		uint32_t val = 0;
+	} reg;
 };
 
 /*
@@ -339,23 +341,23 @@ struct csr_vlenb {
  * write_low, write_high functions) if necessary.
  */
 struct csr_64 {
-	union {
-		uint64_t reg = 0;
-		struct {
+	union reg {
+		uint64_t val = 0;
+		struct fields {
 			int32_t low;
 			int32_t high;
 		} words;
-	};
+	} reg;
 
 	void increment() {
-		++reg;
+		++reg.val;
 	}
 };
 
 namespace csr {
 template <typename T>
 inline bool is_bitset(T &csr, unsigned bitpos) {
-	return csr.reg & (1 << bitpos);
+	return csr.reg.val & (1 << bitpos);
 }
 
 constexpr uint32_t MIE_MASK = 0b101110111011;
@@ -735,56 +737,56 @@ struct csr_table {
 		register_mapping[MINSTRET_ADDR] = (uint32_t *)(&instret.reg);
 		register_mapping[MINSTRETH_ADDR] = (uint32_t *)(&instret.reg) + 1;
 
-		register_mapping[MVENDORID_ADDR] = &mvendorid.reg;
-		register_mapping[MARCHID_ADDR] = &marchid.reg;
-		register_mapping[MIMPID_ADDR] = &mimpid.reg;
-		register_mapping[MHARTID_ADDR] = &mhartid.reg;
+		register_mapping[MVENDORID_ADDR] = &mvendorid.reg.val;
+		register_mapping[MARCHID_ADDR] = &marchid.reg.val;
+		register_mapping[MIMPID_ADDR] = &mimpid.reg.val;
+		register_mapping[MHARTID_ADDR] = &mhartid.reg.val;
 
-		register_mapping[MSTATUS_ADDR] = &mstatus.reg;
-		register_mapping[MSTATUSH_ADDR] = &mstatush.reg;
-		register_mapping[MISA_ADDR] = &misa.reg;
-		register_mapping[MEDELEG_ADDR] = &medeleg.reg;
-		register_mapping[MIDELEG_ADDR] = &mideleg.reg;
-		register_mapping[MIE_ADDR] = &mie.reg;
-		register_mapping[MTVEC_ADDR] = &mtvec.reg;
-		register_mapping[MCOUNTEREN_ADDR] = &mcounteren.reg;
-		register_mapping[MCOUNTINHIBIT_ADDR] = &mcountinhibit.reg;
+		register_mapping[MSTATUS_ADDR] = &mstatus.reg.val;
+		register_mapping[MSTATUSH_ADDR] = &mstatush.reg.val;
+		register_mapping[MISA_ADDR] = &misa.reg.val;
+		register_mapping[MEDELEG_ADDR] = &medeleg.reg.val;
+		register_mapping[MIDELEG_ADDR] = &mideleg.reg.val;
+		register_mapping[MIE_ADDR] = &mie.reg.val;
+		register_mapping[MTVEC_ADDR] = &mtvec.reg.val;
+		register_mapping[MCOUNTEREN_ADDR] = &mcounteren.reg.val;
+		register_mapping[MCOUNTINHIBIT_ADDR] = &mcountinhibit.reg.val;
 
-		register_mapping[MSCRATCH_ADDR] = &mscratch.reg;
-		register_mapping[MEPC_ADDR] = &mepc.reg;
-		register_mapping[MCAUSE_ADDR] = &mcause.reg;
-		register_mapping[MTVAL_ADDR] = &mtval.reg;
-		register_mapping[MIP_ADDR] = &mip.reg;
+		register_mapping[MSCRATCH_ADDR] = &mscratch.reg.val;
+		register_mapping[MEPC_ADDR] = &mepc.reg.val;
+		register_mapping[MCAUSE_ADDR] = &mcause.reg.val;
+		register_mapping[MTVAL_ADDR] = &mtval.reg.val;
+		register_mapping[MIP_ADDR] = &mip.reg.val;
 
-		for (unsigned i = 0; i < 16; ++i) register_mapping[PMPADDR0_ADDR + i] = &pmpaddr[i].reg;
+		for (unsigned i = 0; i < 16; ++i) register_mapping[PMPADDR0_ADDR + i] = &pmpaddr[i].reg.val;
 
-		for (unsigned i = 0; i < 4; ++i) register_mapping[PMPCFG0_ADDR + i] = &pmpcfg[i].reg;
+		for (unsigned i = 0; i < 4; ++i) register_mapping[PMPCFG0_ADDR + i] = &pmpcfg[i].reg.val;
 
-		register_mapping[SEDELEG_ADDR] = &sedeleg.reg;
-		register_mapping[SIDELEG_ADDR] = &sideleg.reg;
-		register_mapping[STVEC_ADDR] = &stvec.reg;
-		register_mapping[SCOUNTEREN_ADDR] = &scounteren.reg;
-		register_mapping[SSCRATCH_ADDR] = &sscratch.reg;
-		register_mapping[SEPC_ADDR] = &sepc.reg;
-		register_mapping[SCAUSE_ADDR] = &scause.reg;
-		register_mapping[STVAL_ADDR] = &stval.reg;
-		register_mapping[SATP_ADDR] = &satp.reg;
+		register_mapping[SEDELEG_ADDR] = &sedeleg.reg.val;
+		register_mapping[SIDELEG_ADDR] = &sideleg.reg.val;
+		register_mapping[STVEC_ADDR] = &stvec.reg.val;
+		register_mapping[SCOUNTEREN_ADDR] = &scounteren.reg.val;
+		register_mapping[SSCRATCH_ADDR] = &sscratch.reg.val;
+		register_mapping[SEPC_ADDR] = &sepc.reg.val;
+		register_mapping[SCAUSE_ADDR] = &scause.reg.val;
+		register_mapping[STVAL_ADDR] = &stval.reg.val;
+		register_mapping[SATP_ADDR] = &satp.reg.val;
 
-		register_mapping[UTVEC_ADDR] = &utvec.reg;
-		register_mapping[USCRATCH_ADDR] = &uscratch.reg;
-		register_mapping[UEPC_ADDR] = &uepc.reg;
-		register_mapping[UCAUSE_ADDR] = &ucause.reg;
-		register_mapping[UTVAL_ADDR] = &utval.reg;
+		register_mapping[UTVEC_ADDR] = &utvec.reg.val;
+		register_mapping[USCRATCH_ADDR] = &uscratch.reg.val;
+		register_mapping[UEPC_ADDR] = &uepc.reg.val;
+		register_mapping[UCAUSE_ADDR] = &ucause.reg.val;
+		register_mapping[UTVAL_ADDR] = &utval.reg.val;
 
-		register_mapping[FCSR_ADDR] = &fcsr.reg;
+		register_mapping[FCSR_ADDR] = &fcsr.reg.val;
 
-		register_mapping[VSTART_ADDR] = &vstart.reg;
-		register_mapping[VXSAT_ADDR] = &vxsat.reg;
-		register_mapping[VXRM_ADDR] = &vxrm.reg;
-		register_mapping[VCSR_ADDR] = &vcsr.reg;
-		register_mapping[VL_ADDR] = &vl.reg;
-		register_mapping[VTYPE_ADDR] = &vtype.reg;
-		register_mapping[VLENB_ADDR] = &vlenb.reg;
+		register_mapping[VSTART_ADDR] = &vstart.reg.val;
+		register_mapping[VXSAT_ADDR] = &vxsat.reg.val;
+		register_mapping[VXRM_ADDR] = &vxrm.reg.val;
+		register_mapping[VCSR_ADDR] = &vcsr.reg.val;
+		register_mapping[VL_ADDR] = &vl.reg.val;
+		register_mapping[VTYPE_ADDR] = &vtype.reg.val;
+		register_mapping[VLENB_ADDR] = &vlenb.reg.val;
 	}
 
 	bool is_valid_csr32_addr(unsigned addr) {

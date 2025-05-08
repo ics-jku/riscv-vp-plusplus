@@ -106,7 +106,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 		/* update csr and quantum_keeper */
 		sc_core::sc_time cycle_counter_raw_inc_sysc = sc_core::sc_time(cycle_counter_raw_inc, sc_core::SC_NS);
-		if (!csrs.mcountinhibit.fields.CY) {
+		if (!csrs.mcountinhibit.reg.fields.CY) {
 			cycle_counter += cycle_counter_raw_inc_sysc;
 		}
 		quantum_keeper.inc(cycle_counter_raw_inc_sysc);
@@ -115,8 +115,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	inline void commit_instructions(unsigned long &ninstr) {
 		stats.inc_commit_instructions();
 
-		if (!csrs.mcountinhibit.fields.IR) {
-			csrs.instret.reg += ninstr;
+		if (!csrs.mcountinhibit.reg.fields.IR) {
+			csrs.instret.reg.val += ninstr;
 		}
 		ninstr = 0;
 	}
@@ -254,7 +254,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	/* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */
 	PROP_METHOD_VIRTUAL bool has_local_pending_enabled_interrupts() {
-		return csrs.mie.reg & csrs.mip.reg;
+		return csrs.mie.reg.val & csrs.mip.reg.val;
 	}
 
 	/* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */

@@ -19,7 +19,7 @@ struct NUCLEI_ISS : public NUCLEI_ISS_BASE, public eclic_interrupt_target {
 	void prepare_trap(SimulationTrap& e, uxlen_t last_pc);
 
 	virtual bool has_local_pending_enabled_interrupts() override {
-		return csrs.mstatus.fields.mie && (!eclic->pending_interrupts.empty());
+		return csrs.mstatus.reg.fields.mie && (!eclic->pending_interrupts.empty());
 	}
 
 	void return_from_trap_handler(PrivilegeLevel return_mode) override;

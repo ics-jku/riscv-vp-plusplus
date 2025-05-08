@@ -252,12 +252,12 @@ void GpioServer::handleConnection(Socket conn) {
 				break;
 			case Request::Type::SET_BIT: {
 				// printRequest(&req);
-				if (req.setBit.pin >= max_num_pins) {
-					cerr << "[gpio-server] invalid request setbit pin number " << req.setBit.pin << endl;
+				if (req.payload.setBit.pin >= max_num_pins) {
+					cerr << "[gpio-server] invalid request setbit pin number " << req.payload.setBit.pin << endl;
 					break;
 				}
 
-				if (isIOF(state.pins[req.setBit.pin])) {
+				if (isIOF(state.pins[req.payload.setBit.pin])) {
 					cerr << "[gpio-server] Ignoring setPin on IOF" << endl;
 					break;
 				}
@@ -265,9 +265,9 @@ void GpioServer::handleConnection(Socket conn) {
 				// sanity checks ok
 
 				if (onchange_fun != nullptr) {
-					onchange_fun(req.setBit.pin, req.setBit.val);
+					onchange_fun(req.payload.setBit.pin, req.payload.setBit.val);
 				} else {
-					state.pins[req.setBit.pin] = toPinstate(req.setBit.val);
+					state.pins[req.payload.setBit.pin] = toPinstate(req.payload.setBit.val);
 				}
 				break;
 			}
@@ -313,17 +313,18 @@ void GpioServer::handleConnection(Socket conn) {
 					}
 				}
 
-				cout << "[gpio-server port:" << base_port << "] Started IOF channel type " << (int)req.reqIOF.iof
-				     << " on pin " << (int)req.reqIOF.pin << " with ID " << (int)response.id << endl;
-				IOF_Channelinfo info = {response.id, req.reqIOF.iof};
-				active_IOF_channels.emplace(req.reqIOF.pin, info);
+				cout << "[gpio-server port:" << base_port << "] Started IOF channel type "
+				     << (int)req.payload.reqIOF.iof << " on pin " << (int)req.payload.reqIOF.pin << " with ID "
+				     << (int)response.id << endl;
+				IOF_Channelinfo info = {response.id, req.payload.reqIOF.iof};
+				active_IOF_channels.emplace(req.payload.reqIOF.pin, info);
 
 				break;
 			}
 			case Request::Type::END_IOF: {
-				auto channel = active_IOF_channels.find(req.reqIOF.pin);
+				auto channel = active_IOF_channels.find(req.payload.reqIOF.pin);
 				if (channel == active_IOF_channels.end()) {
-					cerr << "[gpio-server] IOF quit on non active pin " << (int)req.reqIOF.pin << endl;
+					cerr << "[gpio-server] IOF quit on non active pin " << (int)req.payload.reqIOF.pin << endl;
 					return;
 				}
 				// cout << "[gpio-server] IOF quit on pin " << (int)req.reqIOF.pin << endl;

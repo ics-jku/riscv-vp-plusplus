@@ -85,8 +85,8 @@ bool GpioClient::setBit(uint8_t pos, Tristate val) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::SET_BIT;
-	req.setBit.pin = pos;
-	req.setBit.val = val;
+	req.payload.setBit.pin = pos;
+	req.payload.setBit.val = val;
 
 	if (!writeStruct(control_channel, &req)) {
 		cerr << "[gpio-client] Error in setBit" << endl;
@@ -99,8 +99,8 @@ gpio::Req_IOF_Response GpioClient::requestIOFchannel(gpio::PinNumber pin, gpio::
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::REQ_IOF;
-	req.reqIOF.pin = pin;
-	req.reqIOF.iof = iof_type;
+	req.payload.reqIOF.pin = pin;
+	req.payload.reqIOF.iof = iof_type;
 
 	if (!writeStruct(control_channel, &req)) {
 		cerr << "[gpio-client] Error in write of SPI IOF register request" << endl;
@@ -123,7 +123,7 @@ void GpioClient::notifyEndIOFchannel(PinNumber pin) {
 	Request req;
 	memset(&req, 0, sizeof(Request));
 	req.op = Request::Type::END_IOF;
-	req.reqIOF.pin = pin;
+	req.payload.reqIOF.pin = pin;
 
 	if (!writeStruct(control_channel, &req)) {
 		cerr << "[gpio-client] Error in write 'Stop SPI IOF' for pin " << (int)pin << endl;

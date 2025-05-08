@@ -14,7 +14,7 @@ void NUCLEI_ISS::trigger_eclic_interrupt() {
 }
 
 uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
-	auto read = [=](auto &x, uxlen_t mask) { return x.reg & mask; };
+	auto read = [=](auto &x, uxlen_t mask) { return x.reg.val & mask; };
 
 	using namespace csr;
 
@@ -81,15 +81,15 @@ uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 					return 0;
 				}
 
-				csrs.mstatus.fields.mie = 1;
-				csrs.nuclei_mcause.fields.exccode = id;
+				csrs.mstatus.reg.fields.mie = 1;
+				csrs.nuclei_mcause.reg.fields.exccode = id;
 				eclic->pending_interrupts.pop();
 				eclic->clicintip[id] = 0;
-				pc = instr_mem->load_instr(csrs.mtvt.reg + id * 4);
+				pc = instr_mem->load_instr(csrs.mtvt.reg.val + id * 4);
 				return dbbcache.jump_dyn_and_link(pc);
 			} else {
-				if (csrs.msubm.fields.typ == csrs.msubm.Interrupt)
-					csrs.mstatus.fields.mie = 0;
+				if (csrs.msubm.reg.fields.typ == csrs.msubm.Interrupt)
+					csrs.mstatus.reg.fields.mie = 0;
 				return 0;
 			}
 		}
@@ -121,7 +121,7 @@ uxlen_t NUCLEI_ISS::get_csr_value(uxlen_t addr) {
 }
 
 void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
-	auto write = [=](auto &x, uxlen_t mask) { x.reg = (x.reg & ~mask) | (value & mask); };
+	auto write = [=](auto &x, uxlen_t mask) { x.reg.val = (x.reg.val & ~mask) | (value & mask); };
 
 	using namespace csr;
 
@@ -199,19 +199,19 @@ void NUCLEI_ISS::set_csr_value(uxlen_t addr, uxlen_t value) {
 		case PUSHMCAUSE_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
-			mem->store_word(mem_addr, csrs.nuclei_mcause.reg);
+			mem->store_word(mem_addr, csrs.nuclei_mcause.reg.val);
 			break;
 		}
 		case PUSHMEPC_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
-			mem->store_word(mem_addr, csrs.mepc.reg);
+			mem->store_word(mem_addr, csrs.mepc.reg.val);
 			break;
 		}
 		case PUSHMSUBM_ADDR: {
 			const uxlen_t mem_addr = regs[RegFile::sp] + value * 4;
 			trap_check_addr_alignment<4, false>(mem_addr);
-			mem->store_word(mem_addr, csrs.msubm.reg);
+			mem->store_word(mem_addr, csrs.msubm.reg.val);
 			break;
 		}
 		case JALMNXTI_ADDR:
@@ -253,48 +253,48 @@ void NUCLEI_ISS::prepare_trap(SimulationTrap &e, uxlen_t last_pc) {
 
 	// 1) machine mode execution takes any traps, independent of delegation setting
 	// 2) non-delegated traps are processed in machine mode, independent of current execution mode
-	if (prv == MachineMode || !(exc_bit & csrs.medeleg.reg)) {
-		csrs.nuclei_mcause.fields.interrupt = 0;
-		csrs.nuclei_mcause.fields.exccode = e.reason;
-		csrs.mtval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
+	if (prv == MachineMode || !(exc_bit & csrs.medeleg.reg.val)) {
+		csrs.nuclei_mcause.reg.fields.interrupt = 0;
+		csrs.nuclei_mcause.reg.fields.exccode = e.reason;
+		csrs.mtval.reg.val = boost::lexical_cast<uxlen_t>(e.mtval);
 		return;
 	}
 
 	// see above machine mode comment
-	if (prv == SupervisorMode || !(exc_bit & csrs.sedeleg.reg)) {
-		csrs.scause.fields.interrupt = 0;
-		csrs.scause.fields.exception_code = e.reason;
-		csrs.stval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
+	if (prv == SupervisorMode || !(exc_bit & csrs.sedeleg.reg.val)) {
+		csrs.scause.reg.fields.interrupt = 0;
+		csrs.scause.reg.fields.exception_code = e.reason;
+		csrs.stval.reg.val = boost::lexical_cast<uxlen_t>(e.mtval);
 		return;
 	}
 
-	assert(prv == UserMode && (exc_bit & csrs.medeleg.reg) && (exc_bit & csrs.sedeleg.reg));
-	csrs.ucause.fields.interrupt = 0;
-	csrs.ucause.fields.exception_code = e.reason;
-	csrs.utval.reg = boost::lexical_cast<uxlen_t>(e.mtval);
+	assert(prv == UserMode && (exc_bit & csrs.medeleg.reg.val) && (exc_bit & csrs.sedeleg.reg.val));
+	csrs.ucause.reg.fields.interrupt = 0;
+	csrs.ucause.reg.fields.exception_code = e.reason;
+	csrs.utval.reg.val = boost::lexical_cast<uxlen_t>(e.mtval);
 	return;
 }
 
 void NUCLEI_ISS::return_from_trap_handler(PrivilegeLevel return_mode) {
 	// update privlege mode
-	prv = csrs.mstatus.fields.mpp;
-	csrs.mstatus.fields.mpp = 0;  // not in the docs but real device seems to do that
+	prv = csrs.mstatus.reg.fields.mpp;
+	csrs.mstatus.reg.fields.mpp = 0;  // not in the docs but real device seems to do that
 
 	// update machine sub-mode
-	csrs.msubm.fields.typ = csrs.msubm.fields.ptyp;
+	csrs.msubm.reg.fields.typ = csrs.msubm.reg.fields.ptyp;
 
 	// update mstatus
-	csrs.mstatus.fields.mie = csrs.mstatus.fields.mpie;
+	csrs.mstatus.reg.fields.mie = csrs.mstatus.reg.fields.mpie;
 
 	// mirror mcause/mstatus MPIE & MPP fields
-	csrs.nuclei_mcause.fields.mpie = csrs.mstatus.fields.mpie;
-	csrs.nuclei_mcause.fields.mpp = csrs.mstatus.fields.mpp;
+	csrs.nuclei_mcause.reg.fields.mpie = csrs.mstatus.reg.fields.mpie;
+	csrs.nuclei_mcause.reg.fields.mpp = csrs.mstatus.reg.fields.mpp;
 
-	if (csrs.nuclei_mcause.fields.interrupt) {
-		csrs.mintstatus.fields.mil = csrs.nuclei_mcause.fields.mpil;
+	if (csrs.nuclei_mcause.reg.fields.interrupt) {
+		csrs.mintstatus.reg.fields.mil = csrs.nuclei_mcause.reg.fields.mpil;
 	}
 	// update pc
-	pc = csrs.mepc.reg;
+	pc = csrs.mepc.reg.val;
 
 	dbbcache.ret_trap(pc);
 	force_slow_path();
@@ -306,30 +306,30 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	prv = MachineMode;
 
 	// update mepc
-	csrs.mepc.reg = pc;
+	csrs.mepc.reg.val = pc;
 
 	// update mstatus
-	csrs.mstatus.fields.mpie = csrs.mstatus.fields.mie;
-	csrs.mstatus.fields.mie = 0;
-	csrs.mstatus.fields.mpp = pp;
+	csrs.mstatus.reg.fields.mpie = csrs.mstatus.reg.fields.mie;
+	csrs.mstatus.reg.fields.mie = 0;
+	csrs.mstatus.reg.fields.mpp = pp;
 
 	// mirror mcause/mstatus MPIE & MPP fields
-	csrs.nuclei_mcause.fields.mpie = csrs.mstatus.fields.mpie;
-	csrs.nuclei_mcause.fields.mpp = csrs.mstatus.fields.mpp;
+	csrs.nuclei_mcause.reg.fields.mpie = csrs.mstatus.reg.fields.mpie;
+	csrs.nuclei_mcause.reg.fields.mpp = csrs.mstatus.reg.fields.mpp;
 
-	csrs.msubm.fields.ptyp = csrs.msubm.fields.typ;
+	csrs.msubm.reg.fields.ptyp = csrs.msubm.reg.fields.typ;
 
-	if (csrs.nuclei_mcause.fields.interrupt) {
+	if (csrs.nuclei_mcause.reg.fields.interrupt) {
 		// Interrupt
 		// update machine sub-mode
-		csrs.msubm.fields.typ = csrs.msubm.Interrupt;
+		csrs.msubm.reg.fields.typ = csrs.msubm.Interrupt;
 
 		// update mcause
-		csrs.nuclei_mcause.fields.mpil = csrs.mintstatus.fields.mil;
+		csrs.nuclei_mcause.reg.fields.mpil = csrs.mintstatus.reg.fields.mil;
 
 		eclic->pending_interrupts_mutex.lock();
 		const auto id = eclic->pending_interrupts.top().id;
-		csrs.nuclei_mcause.fields.exccode = id;
+		csrs.nuclei_mcause.reg.fields.exccode = id;
 
 		if (eclic->clicintattr[id] & 1) {
 			// vectored
@@ -340,15 +340,15 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 				return_from_trap_handler(MachineMode);
 				return;
 			}
-			csrs.nuclei_mcause.fields.minhv = 1;
-			pc = instr_mem->load_instr(csrs.mtvt.reg + id * 4);
-			csrs.nuclei_mcause.fields.minhv = 0;
+			csrs.nuclei_mcause.reg.fields.minhv = 1;
+			pc = instr_mem->load_instr(csrs.mtvt.reg.val + id * 4);
+			csrs.nuclei_mcause.reg.fields.minhv = 0;
 			eclic->pending_interrupts.pop();
 		} else {
 			// non-vectored
-			if (csrs.mtvt2.fields.mtvt2en) {
+			if (csrs.mtvt2.reg.fields.mtvt2en) {
 				// use mtvt2
-				pc = csrs.mtvt2.fields.cmmon_code_entry << 2;
+				pc = csrs.mtvt2.reg.fields.cmmon_code_entry << 2;
 			} else {
 				// use mtvec
 				pc = csrs.nuclei_mtvec.get_base_address();
@@ -358,7 +358,7 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 	} else {
 		// Exception
 		// update machine sub-mode
-		csrs.msubm.fields.typ = csrs.msubm.Exception;
+		csrs.msubm.reg.fields.typ = csrs.msubm.Exception;
 
 		pc = csrs.nuclei_mtvec.get_base_address();
 	}
@@ -383,25 +383,25 @@ void NUCLEI_ISS::switch_to_trap_handler() {
 }
 
 void NUCLEI_ISS::handle_interrupt() {
-	bool pending = !eclic->pending_interrupts.empty() && csrs.mstatus.fields.mie;
+	bool pending = !eclic->pending_interrupts.empty() && csrs.mstatus.reg.fields.mie;
 
 	// Interrupt preemption. Only supported for non-vectored interrupts.
 	// Current running interrupt will only be preempted by a higher non-vectored interrupt.
-	if (pending && csrs.msubm.fields.typ == csrs.msubm.Interrupt) {
-		const auto current_intr_id = csrs.nuclei_mcause.fields.exccode;
+	if (pending && csrs.msubm.reg.fields.typ == csrs.msubm.Interrupt) {
+		const auto current_intr_id = csrs.nuclei_mcause.reg.fields.exccode;
 		const auto pending_intr = eclic->pending_interrupts.top();
 		Interrupt current_intr =
 		    Interrupt(current_intr_id, eclic->clicintctl[current_intr_id], eclic->clicinfo, eclic->cliccfg);
 		pending = (eclic->clicintattr[pending_intr.id] & 1) == 0 && pending_intr.level > current_intr.level;
 	}
 	if (pending) {
-		csrs.nuclei_mcause.fields.interrupt = 1;
+		csrs.nuclei_mcause.reg.fields.interrupt = 1;
 		switch_to_trap_handler();
 	}
 }
 
 void NUCLEI_ISS::handle_trap(SimulationTrap &e, uxlen_t last_pc) {
-	csrs.nuclei_mcause.fields.interrupt = 0;
+	csrs.nuclei_mcause.reg.fields.interrupt = 0;
 	prepare_trap(e, last_pc);
 	switch_to_trap_handler();
 }

@@ -43,12 +43,12 @@ class CAN {
 	uint8_t registers[MCP_RXB1SIDH + 1];
 
 	struct MCPFrame {
-		union {
+		union frame {
 			uint8_t raw[5 + CANFD_MAX_DLEN];
-			struct {
-				union {
+			struct f_fields {
+				union f_id {
 					uint8_t id[4];
-					struct {
+					struct fields {
 						/*
 						    MCP_SIDH        0
 						    MCP_SIDL        1
@@ -58,11 +58,11 @@ class CAN {
 						uint16_t sid;
 						uint16_t eid;
 					} fields;
-				};
+				} f_id;
 				uint8_t length;
 				uint8_t payload[CANFD_MAX_DLEN];
-			} fields;
-		};
+			} f_fields;
+		} frame;
 	};
 
 	MCPFrame txBuf[3];

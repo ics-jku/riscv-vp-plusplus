@@ -85,19 +85,19 @@ struct State {
 
 struct Request {
 	enum class Type : uint8_t { GET_BANK = 1, SET_BIT, REQ_IOF, END_IOF, REQ_START_SIM, REQ_END_SIM } op;
-	union {
-		struct {
+	union Payload {
+		struct SetBit {
 			PinNumber pin : 6;  // current max num pins: 64
 			gpio::Tristate val : 2;
 		} setBit;
 
-		struct {
+		struct ReqIOF {
 			// Todo: Decide how to determine SPI's Chip Select
 			// Perhaps pin shall be one of the hardware CS pins
 			PinNumber pin;
 			gpio::IOFunction iof;  // request a specific IO-function (in advance).
 		} reqIOF;
-	};
+	} payload;
 };
 
 struct Req_IOF_Response {

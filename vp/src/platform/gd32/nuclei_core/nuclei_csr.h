@@ -10,25 +10,25 @@ namespace rv32 {
 
 // RISC-V Standard CSRs adapted by Nuclei
 struct nuclei_csr_mtvec {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned mode : 6;
 			unsigned addr : 26;
 		} fields;
-	};
+	} reg;
 
 	uint32_t get_base_address() {
-		return fields.addr & ~0b11;
+		return reg.fields.addr & ~0b11;
 	}
 
 	enum Mode { CLIC = 0b11, CLINT = 0 };
 };
 
 struct nuclei_csr_mcause {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned exccode : 12;
 			unsigned reserved1 : 4;
 			unsigned mpil : 8;
@@ -38,60 +38,60 @@ struct nuclei_csr_mcause {
 			unsigned minhv : 1;
 			unsigned interrupt : 1;
 		} fields;
-	};
+	} reg;
 };
 
 // Nuclei core specific CSRS
 struct nuclei_csr_milm_ctl {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned ilm_enable : 1;
 			unsigned reserved1 : 9;
 			unsigned ilm_bpa : 22;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mdlm_ctl {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned dlm_enable : 1;
 			unsigned reserved1 : 9;
 			unsigned dlm_bpa : 22;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_msubm {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned reserved1 : 6;
 			unsigned typ : 2;
 			unsigned ptyp : 2;
 			unsigned reserved2 : 22;
 		} fields;
-	};
+	} reg;
 
 	enum Mode { Normal = 0, Interrupt = 1, Exception = 2, NMI = 3 };
 };
 
 struct nuclei_csr_mdcause {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned mdcause : 2;
 			unsigned reserved1 : 30;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mcache_ctl {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned reserved2 : 11;
 			unsigned dc_rwdecc : 1;
 			unsigned dc_rwtecc : 1;
@@ -106,13 +106,13 @@ struct nuclei_csr_mcache_ctl {
 			unsigned ic_scpd_mod : 1;
 			unsigned ic_en : 1;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mmisc_ctl {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned reserved1 : 3;
 			unsigned bpu_enable : 1;
 			unsigned reserved2 : 2;
@@ -121,13 +121,13 @@ struct nuclei_csr_mmisc_ctl {
 			unsigned nmi_cause_ff : 1;
 			unsigned reserved4 : 22;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_msavestatus {
-	union {
-		uint32_t reg = 0;
-		struct {
+	union reg {
+		uint32_t val = 0;
+		struct fields {
 			unsigned mpie1 : 1;
 			unsigned mpp1 : 2;
 			unsigned reserved1 : 3;
@@ -138,75 +138,75 @@ struct nuclei_csr_msavestatus {
 			unsigned ptyp2 : 2;
 			unsigned reserved3 : 16;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mintstatus {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned uil : 8;
 			unsigned reserved1 : 16;
 			unsigned mil : 8;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mtvt2 {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned mtvt2en : 1;
 			unsigned reserved1 : 1;
 			unsigned cmmon_code_entry : 30;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_sleepvalue {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned sleepvalue : 1;
 			unsigned reserved1 : 31;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_txevt {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned txevt : 1;
 			unsigned reserved1 : 31;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_wfe {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned wfe : 1;
 			unsigned reserved1 : 31;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_ucode {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned ov : 1;
 			unsigned reserved1 : 31;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mcfg_info {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned tee : 1;
 			unsigned ecc : 1;
 			unsigned clic : 1;
@@ -220,13 +220,13 @@ struct nuclei_csr_mcfg_info {
 			unsigned dcache : 1;
 			unsigned reserved1 : 21;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_micfg_info {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned ic_set : 4;
 			unsigned ic_way : 3;
 			unsigned ic_lsize : 3;
@@ -235,13 +235,13 @@ struct nuclei_csr_micfg_info {
 			unsigned ilm_xonly : 1;
 			unsigned reserved2 : 10;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mdcfg_info {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned dc_set : 4;
 			unsigned dc_way : 3;
 			unsigned dc_lsize : 3;
@@ -249,13 +249,13 @@ struct nuclei_csr_mdcfg_info {
 			unsigned dlm_size : 5;
 			unsigned reserved2 : 11;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mtlbcfg_info {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned mtlb_set : 4;
 			unsigned mtlb_way : 3;
 			unsigned mtlb_lsize : 3;
@@ -265,47 +265,47 @@ struct nuclei_csr_mtlbcfg_info {
 			unsigned dtlb_size : 3;
 			unsigned reserved2 : 10;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mppicfg_info {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned reserved1 : 1;
 			unsigned ppi_size : 5;
 			unsigned reserved2 : 4;
 			unsigned ppi_bpa : 22;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mfiocfg_info {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned reserved1 : 1;
 			unsigned fio_size : 5;
 			unsigned reserved2 : 4;
 			unsigned fio_bpa : 22;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mecc_lock {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned ecc_lock : 1;
 			unsigned reserved1 : 31;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mecc_code {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned code : 7;       // or 8 or 9
 			unsigned reserved1 : 9;  // or 10 or 11
 			unsigned ramid : 5;
@@ -313,20 +313,20 @@ struct nuclei_csr_mecc_code {
 			unsigned sramid : 5;
 			unsigned reserved3 : 3;
 		} fields;
-	};
+	} reg;
 };
 
 struct nuclei_csr_mtlb_ctl {
-	union {
-		u_int32_t reg = 0;
-		struct {
+	union reg {
+		u_int32_t val = 0;
+		struct fields {
 			unsigned tlb_ecc_en : 1;
 			unsigned tlb_ecc_excp_en : 1;
 			unsigned tlb_rwtecc : 1;
 			unsigned tlb_rwdecc : 1;
 			unsigned reserved1 : 28;
 		} fields;
-	};
+	} reg;
 };
 
 namespace csr {
@@ -436,44 +436,44 @@ struct nuclei_csr_table : public csr_table {
 	nuclei_csr_table() : csr_table() {
 		using namespace csr;
 		// replace some of the standard CSRs
-		register_mapping[MTVEC_ADDR] = &nuclei_mtvec.reg;
-		register_mapping[MCAUSE_ADDR] = &nuclei_mcause.reg;
+		register_mapping[MTVEC_ADDR] = &nuclei_mtvec.reg.val;
+		register_mapping[MCAUSE_ADDR] = &nuclei_mcause.reg.val;
 
 		// add Nuclei CSRs
-		register_mapping[MILM_CTL_ADDR] = &milm_ctl.reg;
-		register_mapping[MDLM_CTL_ADDR] = &mdlm_ctl.reg;
-		register_mapping[MNVEC_ADDR] = &mnvec.reg;
-		register_mapping[MSUBM_ADDR] = &msubm.reg;
-		register_mapping[MDCAUSE_ADDR] = &mdcause.reg;
-		register_mapping[MCACHE_CTL_ADDR] = &mcache_ctl.reg;
-		register_mapping[MMISC_CTL_ADDR] = &mmisc_ctl.reg;
-		register_mapping[MSAVESTATUS_ADDR] = &msavestatus.reg;
-		register_mapping[MSAVEEPC1_ADDR] = &msaveepc1.reg;
-		register_mapping[MSAVECAUSE1_ADDR] = &msaveepc2.reg;
-		register_mapping[MSAVEEPC2_ADDR] = &msavecause1.reg;
-		register_mapping[MSAVECAUSE2_ADDR] = &msavecause2.reg;
-		register_mapping[MTVT_ADDR] = &mtvt.reg;
-		register_mapping[MNXTI_ADDR] = &mnxti.reg;
-		register_mapping[MINTSTATUS_ADDR] = &mintstatus.reg;
-		register_mapping[MTVT2_ADDR] = &mtvt2.reg;
-		register_mapping[JALMNXTI_ADDR] = &jalmnxti.reg;
-		register_mapping[PUSHMSUBM_ADDR] = &pushmsubm.reg;
-		register_mapping[PUSHMCAUSE_ADDR] = &pushmcause.reg;
-		register_mapping[PUSHMEPC_ADDR] = &pushmepc.reg;
-		register_mapping[MSCRATCHCSW_ADDR] = &mscratchcsw.reg;
-		register_mapping[MSCRATCHCSWL_ADDR] = &mscratchcswl.reg;
-		register_mapping[SLEEPVALUE_ADDR] = &sleepvalue.reg;
-		register_mapping[TXEVT_ADDR] = &txevt.reg;
-		register_mapping[WFE_ADDR] = &wfe.reg;
-		register_mapping[MCFG_INFO_ADDR] = &mcfg_info.reg;
-		register_mapping[MICFG_INFO_ADDR] = &micfg_info.reg;
-		register_mapping[MDCFG_INFO_ADDR] = &mdcfg_info.reg;
-		register_mapping[MTLBCFG_INFO_ADDR] = &mtlbcfg_info.reg;
-		register_mapping[MPPICFG_INFO_ADDR] = &mppicfg_info.reg;
-		register_mapping[MFIOCFG_INFO_ADDR] = &mfiocfg_info.reg;
-		register_mapping[MECC_LOCK_ADDR] = &mecc_lock.reg;
-		register_mapping[MECC_CODE_ADDR] = &mecc_code.reg;
-		register_mapping[MTLB_CTL_ADDR] = &mtlb_ctl.reg;
+		register_mapping[MILM_CTL_ADDR] = &milm_ctl.reg.val;
+		register_mapping[MDLM_CTL_ADDR] = &mdlm_ctl.reg.val;
+		register_mapping[MNVEC_ADDR] = &mnvec.reg.val;
+		register_mapping[MSUBM_ADDR] = &msubm.reg.val;
+		register_mapping[MDCAUSE_ADDR] = &mdcause.reg.val;
+		register_mapping[MCACHE_CTL_ADDR] = &mcache_ctl.reg.val;
+		register_mapping[MMISC_CTL_ADDR] = &mmisc_ctl.reg.val;
+		register_mapping[MSAVESTATUS_ADDR] = &msavestatus.reg.val;
+		register_mapping[MSAVEEPC1_ADDR] = &msaveepc1.reg.val;
+		register_mapping[MSAVECAUSE1_ADDR] = &msaveepc2.reg.val;
+		register_mapping[MSAVEEPC2_ADDR] = &msavecause1.reg.val;
+		register_mapping[MSAVECAUSE2_ADDR] = &msavecause2.reg.val;
+		register_mapping[MTVT_ADDR] = &mtvt.reg.val;
+		register_mapping[MNXTI_ADDR] = &mnxti.reg.val;
+		register_mapping[MINTSTATUS_ADDR] = &mintstatus.reg.val;
+		register_mapping[MTVT2_ADDR] = &mtvt2.reg.val;
+		register_mapping[JALMNXTI_ADDR] = &jalmnxti.reg.val;
+		register_mapping[PUSHMSUBM_ADDR] = &pushmsubm.reg.val;
+		register_mapping[PUSHMCAUSE_ADDR] = &pushmcause.reg.val;
+		register_mapping[PUSHMEPC_ADDR] = &pushmepc.reg.val;
+		register_mapping[MSCRATCHCSW_ADDR] = &mscratchcsw.reg.val;
+		register_mapping[MSCRATCHCSWL_ADDR] = &mscratchcswl.reg.val;
+		register_mapping[SLEEPVALUE_ADDR] = &sleepvalue.reg.val;
+		register_mapping[TXEVT_ADDR] = &txevt.reg.val;
+		register_mapping[WFE_ADDR] = &wfe.reg.val;
+		register_mapping[MCFG_INFO_ADDR] = &mcfg_info.reg.val;
+		register_mapping[MICFG_INFO_ADDR] = &micfg_info.reg.val;
+		register_mapping[MDCFG_INFO_ADDR] = &mdcfg_info.reg.val;
+		register_mapping[MTLBCFG_INFO_ADDR] = &mtlbcfg_info.reg.val;
+		register_mapping[MPPICFG_INFO_ADDR] = &mppicfg_info.reg.val;
+		register_mapping[MFIOCFG_INFO_ADDR] = &mfiocfg_info.reg.val;
+		register_mapping[MECC_LOCK_ADDR] = &mecc_lock.reg.val;
+		register_mapping[MECC_CODE_ADDR] = &mecc_code.reg.val;
+		register_mapping[MTLB_CTL_ADDR] = &mtlb_ctl.reg.val;
 	}
 };
 

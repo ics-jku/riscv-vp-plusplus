@@ -79,7 +79,7 @@ class VExtension {
 	VExtension(iss_type& iss) : iss(iss) {
 		assert(ELEN >= 8 && isPowerOfTwo(ELEN));
 		assert(VLEN >= ELEN && isPowerOfTwo(VLEN) && VLEN <= 1 << 16);  // TODO: is last limit realistic?
-		iss.csrs.vlenb.reg = VLENB;
+		iss.csrs.vlenb.reg.val = VLENB;
 		v_regs = malloc(NUM_REGS * VLENB);
 		memset(v_regs, 0, NUM_REGS * VLENB);
 	}
@@ -130,7 +130,7 @@ class VExtension {
 	}
 
 	void set_fp_rm() {
-		auto frm = iss.csrs.fcsr.fields.frm;
+		auto frm = iss.csrs.fcsr.reg.fields.frm;
 		v_assert(frm <= FRM_RMM, "invalid frm");
 		softfloat_roundingMode = frm;
 	}
@@ -254,11 +254,11 @@ class VExtension {
 			requireNotOff();
 		}
 
-		iss.csrs.mstatus.fields.sd = 1;
-		iss.csrs.mstatus.fields.vs = VS_DIRTY;
+		iss.csrs.mstatus.reg.fields.sd = 1;
+		iss.csrs.mstatus.reg.fields.vs = VS_DIRTY;
 
 		if (require_vill) {
-			v_assert(iss.csrs.vtype.fields.vill != 1, "vill == 1");
+			v_assert(iss.csrs.vtype.reg.fields.vill != 1, "vill == 1");
 		}
 
 		if (is_fp) {
@@ -287,11 +287,11 @@ class VExtension {
 	}
 
 	void requireNotOff() {
-		v_assert(iss.csrs.mstatus.fields.vs != VS_OFF, "vs == VS_OFF");
+		v_assert(iss.csrs.mstatus.reg.fields.vs != VS_OFF, "vs == VS_OFF");
 	}
 
 	void finishInstr(bool is_fp) {
-		iss.csrs.vstart.reg = 0;
+		iss.csrs.vstart.reg.val = 0;
 
 		if (is_fp) {
 			iss.fp_finish_instr();
@@ -299,7 +299,7 @@ class VExtension {
 	}
 
 	xlen_reg_t getIntVSew() {
-		return 1 << (iss.csrs.vtype.fields.vsew + 3);
+		return 1 << (iss.csrs.vtype.reg.fields.vsew + 3);
 	}
 
 	s_op_reg_t signExtend(op_reg_t value, xlen_reg_t width) {
@@ -307,7 +307,7 @@ class VExtension {
 	}
 
 	double getVlmul() {
-		xlen_reg_t vlmul = iss.csrs.vtype.fields.vlmul;
+		xlen_reg_t vlmul = iss.csrs.vtype.reg.fields.vlmul;
 		int8_t signed_vlmul = int8_t(vlmul << 5) >> 5;
 		double lmul = signed_vlmul <= 0 ? 1.0 / (1 << -signed_vlmul) : 1 << signed_vlmul;
 		return lmul;
@@ -330,32 +330,32 @@ class VExtension {
 			} else if (rd != 0 && rs1 == 0) {
 				avl = ~0;
 			} else if (rd == 0 && rs1 == 0) {
-				avl = iss.csrs.vl.reg;
+				avl = iss.csrs.vl.reg.val;
 			}
 		}
 		// VL strategy: always set to maximum allowed value
-		iss.csrs.vl.reg = avl <= vlmax ? avl : vlmax;
+		iss.csrs.vl.reg.val = avl <= vlmax ? avl : vlmax;
 
 		/* write new value (incl. possible vill) */
-		iss.csrs.vtype.reg = vtype_new;
+		iss.csrs.vtype.reg.val = vtype_new;
 		/* check -> set possible vill */
-		iss.csrs.vtype.fields.vill |= (lmul * ELEN < SEW_MIN) ||
-		                              /* check reserved bits */
-		                              (vtype_new & ~0xff) ||
-		                              /* check reserved values */
-		                              (intVSew > 64 || vlmul == (1 << 2)) ||
-		                              /* check fractional lmul (see table in spec chapter 4.4.) */
-		                              (intVSew / lmul > ELEN);
+		iss.csrs.vtype.reg.fields.vill |= (lmul * ELEN < SEW_MIN) ||
+		                                  /* check reserved bits */
+		                                  (vtype_new & ~0xff) ||
+		                                  /* check reserved values */
+		                                  (intVSew > 64 || vlmul == (1 << 2)) ||
+		                                  /* check fractional lmul (see table in spec chapter 4.4.) */
+		                                  (intVSew / lmul > ELEN);
 
 		/* reset values, if vill */
-		if (iss.csrs.vtype.fields.vill) {
-			iss.csrs.vl.reg = 0;
-			iss.csrs.vtype.reg = 0;
-			iss.csrs.vtype.fields.vill = 1;
+		if (iss.csrs.vtype.reg.fields.vill) {
+			iss.csrs.vl.reg.val = 0;
+			iss.csrs.vtype.reg.val = 0;
+			iss.csrs.vtype.reg.fields.vill = 1;
 		}
 
 		if ((!is_vsetivli && !(rd == 0 && rs1 == 0)) || is_vsetivli) {
-			iss_reg_write(rd, iss.csrs.vl.reg);
+			iss_reg_write(rd, iss.csrs.vl.reg.val);
 		}
 	}
 
@@ -369,7 +369,7 @@ class VExtension {
 
 	template <typename T>
 	T getRoundingIncrement(T v, op_reg_t d) {
-		op_reg_t vxrm = iss.csrs.vxrm.reg;
+		op_reg_t vxrm = iss.csrs.vxrm.reg.val;
 		op_reg_t r = 0;
 		op_reg_t lsb = (v >> d) & 1;
 		op_reg_t lsb_half = d == 0 ? 0 : (v >> (d - 1)) & 1;
@@ -409,7 +409,7 @@ class VExtension {
 			xlen_reg_t elem_num = index % num_elem_per_reg;
 			xlen_reg_t elem_num_64 = elem_num / (64 / sew);
 			op_reg_t out = readSewSingleOperand(64, vec_idx, elem_num_64);
-			printf("Cpu %lu Reg R v%ld_%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg,
+			printf("Cpu %lu Reg R v%ld_%ld val 0x%016lx mask 0xffffffffffffffff\n", (uint64_t)iss.csrs.mhartid.reg.val,
 			       vec_idx, elem_num_64, out);
 		}
 		return readSewSingleOperand(sew, addr, index);
@@ -506,7 +506,7 @@ class VExtension {
 				v_assert(false);
 		}
 		s_op_reg_t clamped = std::clamp(elem_signed, lower_bound, upper_bound);
-		iss.csrs.vxsat.fields.vxsat |= (clamped != elem_signed);
+		iss.csrs.vxsat.reg.fields.vxsat |= (clamped != elem_signed);
 		return clamped;
 	}
 
@@ -668,11 +668,11 @@ class VExtension {
 
 		xlen_reg_t evl;
 		if (is_masked_instr) {
-			evl = std::ceil((float)iss.csrs.vl.reg / 8.0);
+			evl = std::ceil((float)iss.csrs.vl.reg.val / 8.0);
 		} else if (ldstType == load_store_type_t::whole) {
 			evl = VLEN / eew;
 		} else {
-			evl = iss.csrs.vl.reg;
+			evl = iss.csrs.vl.reg.val;
 		}
 
 		return std::make_pair(effective_mul_idx, evl);
@@ -680,11 +680,11 @@ class VExtension {
 
 	// TODO tail mask agnostic
 	bool vInactiveHandling(xlen_reg_t i) {
-		return vInactiveHandling(i, iss.csrs.vl.reg);
+		return vInactiveHandling(i, iss.csrs.vl.reg.val);
 	}
 
 	bool vInactiveHandling(xlen_reg_t i, xlen_reg_t evl) {
-		if (i < iss.csrs.vstart.reg) {
+		if (i < iss.csrs.vstart.reg.val) {
 			return true;
 		}
 		if (i >= evl) {
@@ -774,7 +774,7 @@ class VExtension {
 		for (xlen_reg_t i = 0; i < evl; ++i) {
 			bool is_inactive = vInactiveHandling(i, evl);
 			if (!is_inactive) {
-				iss.csrs.vstart.reg = i;
+				iss.csrs.vstart.reg.val = i;
 				for (xlen_reg_t field = 0; field < iss.instr.nf() + 1; field++) {
 					xlen_reg_t addr =
 					    iss_reg_read_unsigned(iss.instr.rs1()) + getShiftWidth(ldstType, numBits, i, field);
@@ -806,7 +806,7 @@ class VExtension {
 								if (i == 0) {
 									throw e;
 								} else {
-									iss.csrs.vl.reg = i;
+									iss.csrs.vl.reg.val = i;
 									break_loop = true;
 									break;
 								}
@@ -858,13 +858,13 @@ class VExtension {
 		param_sel = param;
 
 		applyChecks();
-		for (xlen_reg_t i = 0; i < iss.csrs.vl.reg; ++i) {
-			bool is_inactive = ignore_inactive ? false : vInactiveHandling(i, iss.csrs.vl.reg);
+		for (xlen_reg_t i = 0; i < iss.csrs.vl.reg.val; ++i) {
+			bool is_inactive = ignore_inactive ? false : vInactiveHandling(i, iss.csrs.vl.reg.val);
 			if (!is_inactive) {
 				f(i);
 			}
 		}
-		iss.csrs.vstart.reg = 0;
+		iss.csrs.vstart.reg.val = 0;
 	}
 
 	void vLoop(std::function<op_reg_t(op_reg_t, op_reg_t)> func, elem_sel_t elem, param_sel_t param) {
@@ -983,7 +983,7 @@ class VExtension {
 			    func(op2, op1, i, res);
 		    },
 		    elem, param);
-		if (iss.csrs.vl.reg > 0) {
+		if (iss.csrs.vl.reg.val > 0) {
 			if (!added_first) {
 				auto [op1, op2] = getOperandsRed(0, 0);
 				res = op1;
@@ -1026,7 +1026,7 @@ class VExtension {
 	std::function<op_reg_t(op_reg_t, op_reg_t)> vShift(bool shr) {
 		return [=](op_reg_t op2, op_reg_t op1) -> op_reg_t {
 			auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
-			xlen_reg_t shift_mask = getMask(iss.csrs.vtype.fields.vsew + 2 + op2_eew / vd_eew);
+			xlen_reg_t shift_mask = getMask(iss.csrs.vtype.reg.fields.vsew + 2 + op2_eew / vd_eew);
 			xlen_reg_t shift_step = op1 & shift_mask;
 			if (shr) {
 				if (vd_signed) {
@@ -1158,7 +1158,7 @@ class VExtension {
 			auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
 			if (((op2 & getMask(op2_eew)) == 1ul << (op2_eew - 1)) &&
 			    ((op1 & getMask(op1_eew)) == 1ul << (op1_eew - 1))) {
-				iss.csrs.vxsat.fields.vxsat |= true;
+				iss.csrs.vxsat.reg.fields.vxsat |= true;
 				return getMask(op2_eew - 1);
 			}
 
@@ -1171,7 +1171,7 @@ class VExtension {
 	std::function<op_reg_t(op_reg_t, op_reg_t)> vShiftRight(bool clip_result) {
 		return [=](op_reg_t op2, op_reg_t op1) -> op_reg_t {
 			auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
-			xlen_reg_t shift_mask = getMask(iss.csrs.vtype.fields.vsew + 2 + op2_eew / vd_eew);
+			xlen_reg_t shift_mask = getMask(iss.csrs.vtype.reg.fields.vsew + 2 + op2_eew / vd_eew);
 			op_reg_t result;
 			if (vd_signed) {
 				result = vRound(signExtend(op2, op2_eew), op1 & shift_mask);
@@ -1183,7 +1183,7 @@ class VExtension {
 				if (!vd_signed) {
 					if (result > getMask(vd_eew)) {
 						result = getMask(vd_eew);
-						iss.csrs.vxsat.fields.vxsat |= true;
+						iss.csrs.vxsat.reg.fields.vxsat |= true;
 					}
 				} else {
 					result = clampSigned(result, op2_eew, vd_eew);
@@ -1446,7 +1446,7 @@ class VExtension {
 		return [=](op_reg_t op2, op_reg_t op1) -> op_reg_t {
 			auto [vd_eew, vd_signed, op2_eew, op2_signed, op1_eew, op1_signed] = getSignedEew();
 			auto [res, sat] = add_saturate(op2, op1, vd_eew);
-			iss.csrs.vxsat.fields.vxsat |= sat;
+			iss.csrs.vxsat.reg.fields.vxsat |= sat;
 			return res;
 		};
 	}
@@ -1454,7 +1454,7 @@ class VExtension {
 	std::function<op_reg_t(op_reg_t, op_reg_t)> vSaddu() {
 		return [=](op_reg_t op2, op_reg_t op1) -> op_reg_t {
 			auto [res, sat] = addu_saturate(op2, op1);
-			iss.csrs.vxsat.fields.vxsat |= sat;
+			iss.csrs.vxsat.reg.fields.vxsat |= sat;
 			return res;
 		};
 	}
@@ -1480,7 +1480,7 @@ class VExtension {
 				res = maxVal;
 				sat = true;
 			}
-			iss.csrs.vxsat.fields.vxsat |= sat;
+			iss.csrs.vxsat.reg.fields.vxsat |= sat;
 
 			return res;
 		};
@@ -1491,7 +1491,7 @@ class VExtension {
 			op_reg_t res = op2 - op1;
 			bool sat = (res & getMask(getIntVSew())) <= op2;
 			res &= -(sat);
-			iss.csrs.vxsat.fields.vxsat |= (!sat);
+			iss.csrs.vxsat.reg.fields.vxsat |= (!sat);
 			return res;
 		};
 	}
@@ -1657,7 +1657,7 @@ class VExtension {
 	}
 
 	void vMvSx() {
-		if (iss.csrs.vstart.reg < iss.csrs.vl.reg) {
+		if (iss.csrs.vstart.reg.val < iss.csrs.vl.reg.val) {
 			elem_sel = elem_sel_t::xxxuuu;
 			op_reg_t res = signExtend(iss_reg_read(iss.instr.rs1()), iss.xlen);
 			writeGeneric(res, 0);
@@ -1666,7 +1666,7 @@ class VExtension {
 
 	std::function<void(xlen_reg_t)> vSlideUp(xlen_reg_t offset) {
 		return [=](xlen_reg_t index) -> void {
-			if (iss.csrs.vstart.reg < offset && index < offset) {
+			if (iss.csrs.vstart.reg.val < offset && index < offset) {
 				return;
 			}
 			elem_sel = elem_sel_t::xxxsss;
@@ -1710,7 +1710,7 @@ class VExtension {
 	std::function<void(xlen_reg_t)> vSlide1Down(param_sel_t param) {
 		return [=](xlen_reg_t index) -> void {
 			op_reg_t sew = getIntVSew();
-			if (index != (iss.csrs.vl.reg - 1)) {
+			if (index != (iss.csrs.vl.reg.val - 1)) {
 				elem_sel = elem_sel_t::xxxsss;
 
 				op_reg_t res = getSewSingleOperand(sew, iss.instr.rs2(), index + 1, false);
@@ -1769,7 +1769,7 @@ class VExtension {
 
 	void vMvNr() {
 		xlen_reg_t nreg = iss.instr.rs1() + 1;
-		xlen_reg_t start = iss.csrs.vstart.reg;
+		xlen_reg_t start = iss.csrs.vstart.reg.val;
 		xlen_reg_t sew = getIntVSew();
 		xlen_reg_t evl = nreg * VLEN / sew;
 
@@ -2481,7 +2481,7 @@ class VExtension {
 	}
 
 	void vMvSf() {
-		if (iss.csrs.vstart.reg < iss.csrs.vl.reg) {
+		if (iss.csrs.vstart.reg.val < iss.csrs.vl.reg.val) {
 			xlen_reg_t sew = getIntVSew();
 			writeSewSingleOperand(sew, iss.instr.rd(), 0, fp_reg_read(iss.instr.rs1(), sew));
 		}
