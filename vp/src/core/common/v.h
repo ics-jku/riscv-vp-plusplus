@@ -137,7 +137,7 @@ class VExtension {
 
 	op_reg_t fp_reg_read(xlen_reg_t addr, op_reg_t sew) {
 		op_reg_t raw_val = iss.fp_regs.f64(addr).v;
-		op_reg_t actual_val;
+		op_reg_t actual_val = 0;
 		switch (sew) {
 			case 16:
 				actual_val = iss.fp_regs.f16(addr).v;
@@ -2317,7 +2317,7 @@ class VExtension {
 
 	std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> vMfeq() {
 		return [=](op_reg_t op2, op_reg_t op1, op_reg_t vd, xlen_reg_t i) -> void {
-			op_reg_t res;
+			op_reg_t res = 0;
 			switch (getIntVSew()) {
 				case 16:
 					res = f16_eq(f16(op2), f16(op1));
@@ -2340,7 +2340,7 @@ class VExtension {
 
 	std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> vMfneq() {
 		return [=](op_reg_t op2, op_reg_t op1, op_reg_t vd, xlen_reg_t i) -> void {
-			op_reg_t res;
+			op_reg_t res = 0;
 			switch (getIntVSew()) {
 				case 16:
 					res = !f16_eq(f16(op2), f16(op1));
@@ -2364,7 +2364,7 @@ class VExtension {
 
 	std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> vMflt() {
 		return [=](op_reg_t op2, op_reg_t op1, op_reg_t vd, xlen_reg_t i) -> void {
-			op_reg_t res;
+			op_reg_t res = 0;
 			switch (getIntVSew()) {
 				case 16:
 					res = f16_lt(f16(op2), f16(op1));
@@ -2388,7 +2388,7 @@ class VExtension {
 
 	std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> vMfle() {
 		return [=](op_reg_t op2, op_reg_t op1, op_reg_t vd, xlen_reg_t i) -> void {
-			op_reg_t res;
+			op_reg_t res = 0;
 			switch (getIntVSew()) {
 				case 16:
 					res = f16_le(f16(op2), f16(op1));
@@ -2412,7 +2412,7 @@ class VExtension {
 
 	std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> vMfgt() {
 		return [=](op_reg_t op2, op_reg_t op1, op_reg_t vd, xlen_reg_t i) -> void {
-			op_reg_t res;
+			op_reg_t res = 0;
 			switch (getIntVSew()) {
 				case 16:
 					res = f16_lt(f16(op1), f16(op2));
@@ -2436,7 +2436,7 @@ class VExtension {
 
 	std::function<void(op_reg_t, op_reg_t, op_reg_t, xlen_reg_t)> vMfge() {
 		return [=](op_reg_t op2, op_reg_t op1, op_reg_t vd, xlen_reg_t i) -> void {
-			op_reg_t res;
+			op_reg_t res = 0;
 			switch (getIntVSew()) {
 				case 16:
 					res = f16_le(f16(op1), f16(op2));
