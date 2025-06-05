@@ -22,12 +22,13 @@
 #include "memory.h"
 #include "memory_mapped_file.h"
 #include "net_trace.h"
+#include "platform/common/channel_console.h"
+#include "platform/common/fu540_uart.h"
 #include "platform/common/options.h"
 #include "platform/common/terminal.h"
 #include "sensor.h"
 #include "sensor2.h"
 #include "syscall.h"
-#include "uart.h"
 #include "util/options.h"
 
 using namespace rv32;
@@ -123,7 +124,8 @@ int sc_main(int argc, char **argv) {
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	SimpleTerminal term("SimpleTerminal");
-	UART uart("Generic_UART", 6);
+	Channel_Console channel_console;
+	FU540_UART uart("Generic_UART0", &channel_console, 6);
 	ELFLoader loader(opt.input_program.c_str());
 	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");

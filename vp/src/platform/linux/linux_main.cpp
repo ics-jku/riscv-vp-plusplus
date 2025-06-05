@@ -21,14 +21,15 @@
 #include "memory.h"
 #include "memory_mapped_file.h"
 #include "mmu.h"
+#include "platform/common/channel_console.h"
+#include "platform/common/channel_slip.h"
 #include "platform/common/fu540_gpio.h"
+#include "platform/common/fu540_uart.h"
 #include "platform/common/miscdev.h"
 #include "platform/common/options.h"
 #include "platform/common/sifive_spi.h"
 #include "platform/common/sifive_test.h"
-#include "platform/common/slip.h"
 #include "platform/common/spi_sd_card.h"
-#include "platform/common/uart.h"
 #include "platform/common/vncsimplefb.h"
 #include "platform/common/vncsimpleinputkbd.h"
 #include "platform/common/vncsimpleinputptr.h"
@@ -235,8 +236,10 @@ int sc_main(int argc, char **argv) {
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 	PRCI prci("PRCI");
 	MiscDev miscdev("MiscDev");
-	UART uart0("UART0", 4);
-	SLIP slip("SLIP", 5, opt.tun_device);
+	Channel_Console channel_console;
+	FU540_UART uart0("UART0", &channel_console, 4);
+	Channel_SLIP channel_slip(opt.tun_device);
+	FU540_UART slip("UART0", &channel_slip, 5);
 
 	/* interrupts for gpios (idx -> irqnr) */
 	const int gpioInterrupts[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22};

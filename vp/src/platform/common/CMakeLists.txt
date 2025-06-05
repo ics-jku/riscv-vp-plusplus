@@ -3,11 +3,11 @@ file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 add_library(platform-common
 		fe310_plic.cpp
 		fu540_plic.cpp
-		uart_if.cpp
-		fd_abstract_uart.cpp
-		slip.cpp
-		uart.cpp
 		sifive_test.cpp
+		channel_if.cpp
+		channel_console.cpp
+		channel_slip.cpp
+		fu540_uart.cpp
 		fu540_gpio.cpp
 		vncsimplefb.cpp
 		vncsimpleinputptr.cpp

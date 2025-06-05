@@ -7,11 +7,13 @@
 #include <mutex>
 #include <queue>
 
-#include "uart_if.h"
+// #include "uart_if.h"
 
 typedef std::function<void(gpio::UART_Bytes)> UartRXFunction;  // from server to peripheral
 typedef std::function<void(gpio::UART_Bytes)> UartTXFunction;  // from peripheral to server
 
+/* Currently currently not supported - TODO: tunnel-uart must be reworked to channel_tunnel (derived from Channel_IF) */
+#if 0
 class Tunnel_UART : public UART_IF {
 	static constexpr unsigned DROP_AT_FIFO_DEPTH = 1600;
 
@@ -33,3 +35,4 @@ class Tunnel_UART : public UART_IF {
 	std::thread tx_worker;
 	void tx_dequeue(UartTXFunction fun);
 };
+#endif

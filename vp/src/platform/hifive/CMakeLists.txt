@@ -4,7 +4,10 @@ add_executable(hifive-vp
         oled/common.cpp
         oled/oled.cpp
         gpio.cpp
-        tunnel-uart.cpp
+
+        # currently not supported - TODO: tunnel-uart must be reworked to channel_tunnel (derived from Channel_IF)
+        #tunnel-uart.cpp # currently not supported
+
         ../../util/elegantEnums.cpp #sorry :(
         ${HEADERS})
 

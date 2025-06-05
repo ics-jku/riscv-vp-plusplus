@@ -1,4 +1,4 @@
-#include "slip.h"
+#include "channel_slip.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -6,6 +6,7 @@
 #include <linux/if_tun.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -24,26 +25,30 @@
 #define SLIP_ESC_END 0334
 #define SLIP_ESC_ESC 0335
 
-SLIP::SLIP(const sc_core::sc_module_name &name, uint32_t irqsrc, std::string netdev) : FD_ABSTRACT_UART(name, irqsrc) {
+void Channel_SLIP::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
 	tunfd = open("/dev/net/tun", O_RDWR);
-	if (tunfd == -1)
+	if (tunfd == -1) {
 		goto err0;
+	}
 
 	struct ifreq ifr;
 	memset(&ifr, 0, sizeof(ifr));
 	ifr.ifr_flags = IFF_TUN | IFF_NO_PI; /* read/write raw IP packets */
 	strncpy(ifr.ifr_name, netdev.c_str(), IFNAMSIZ);
-	if (ioctl(tunfd, TUNSETIFF, (void *)&ifr) == -1)
+	if (ioctl(tunfd, TUNSETIFF, (void *)&ifr) == -1) {
 		goto err1;
+	}
 
 	sndsiz = 0;
-	if (!(sndbuf = (uint8_t *)malloc(SLIP_SNDBUF_STEP * sizeof(uint8_t))))
+	if (!(sndbuf = (uint8_t *)malloc(SLIP_SNDBUF_STEP * sizeof(uint8_t)))) {
 		goto err1;
+	}
 	rcvsiz = get_mtu(ifr.ifr_name);
-	if (!(rcvbuf = (uint8_t *)malloc(rcvsiz * sizeof(uint8_t))))
+	if (!(rcvbuf = (uint8_t *)malloc(rcvsiz * sizeof(uint8_t)))) {
 		goto err2;
+	}
 
-	start_threads(tunfd);
+	start_threads(tunfd, tx_fifo_depth, rx_fifo_depth);
 	return;
 err2:
 	free(sndbuf);
@@ -54,7 +59,7 @@ err0:
 	std::system_error(errno, std::generic_category());
 }
 
-SLIP::~SLIP(void) {
+void Channel_SLIP::stop() {
 	stop_threads();
 
 	if (sndbuf) {
@@ -70,15 +75,16 @@ SLIP::~SLIP(void) {
 		close(tunfd);
 }
 
-int SLIP::get_mtu(const char *dev) {
+int Channel_SLIP::get_mtu(const char *dev) {
 	struct ifreq ifr;
 
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, dev, IFNAMSIZ);
 
 	int fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (fd == -1)
+	if (fd == -1) {
 		throw std::system_error(errno, std::generic_category());
+	}
 
 	if (ioctl(fd, SIOCGIFMTU, (void *)&ifr) == -1) {
 		close(fd);
@@ -89,7 +95,7 @@ int SLIP::get_mtu(const char *dev) {
 	return ifr.ifr_mtu;
 }
 
-void SLIP::send_packet(void) {
+void Channel_SLIP::send_packet(void) {
 	ssize_t ret = write(tunfd, sndbuf, sndsiz);
 	if (ret == -1) {
 		throw std::system_error(errno, std::generic_category());
@@ -97,15 +103,17 @@ void SLIP::send_packet(void) {
 		throw std::runtime_error("short write");
 	}
 
-	if (sndsiz > SLIP_SNDBUF_STEP && !(sndbuf = (uint8_t *)realloc(sndbuf, SLIP_SNDBUF_STEP)))
+	if (sndsiz > SLIP_SNDBUF_STEP && !(sndbuf = (uint8_t *)realloc(sndbuf, SLIP_SNDBUF_STEP))) {
 		throw std::system_error(errno, std::generic_category());
+	}
 	sndsiz = 0;
 }
 
-void SLIP::handle_input(int fd) {
+void Channel_SLIP::handle_input(int fd) {
 	ssize_t ret = read(fd, rcvbuf, rcvsiz);
-	if (ret <= -1)
+	if (ret <= -1) {
 		throw std::system_error(errno, std::generic_category());
+	}
 
 	for (size_t i = 0; i < static_cast<size_t>(ret); i++) {
 		switch (rcvbuf[i]) {
@@ -125,10 +133,11 @@ void SLIP::handle_input(int fd) {
 	rxpush(SLIP_END);
 }
 
-void SLIP::write_data(uint8_t data) {
+void Channel_SLIP::write_data(uint8_t data) {
 	if (data == SLIP_END) {
-		if (sndsiz > 0)
+		if (sndsiz > 0) {
 			send_packet();
+		}
 		return;
 	}
 
@@ -145,8 +154,9 @@ void SLIP::write_data(uint8_t data) {
 
 	if (sndsiz && sndsiz % SLIP_SNDBUF_STEP == 0) {
 		size_t newsiz = (sndsiz + SLIP_SNDBUF_STEP) * sizeof(uint8_t);
-		if (!(sndbuf = (uint8_t *)realloc(sndbuf, newsiz)))
+		if (!(sndbuf = (uint8_t *)realloc(sndbuf, newsiz))) {
 			throw std::system_error(errno, std::generic_category());
+		}
 	}
 	sndbuf[sndsiz++] = data;
 }

@@ -11,11 +11,11 @@
 #include <systemc>
 #include <thread>
 
+#include "channel_if.h"
 #include "core/common/irq_if.h"
-#include "platform/common/async_event.h"
 #include "util/tlm_map.h"
 
-class UART_IF : public sc_core::sc_module {
+class FU540_UART : public sc_core::sc_module {
    public:
 	typedef uint32_t Register;
 	static constexpr Register UART_TXWM = 1 << 0;
@@ -38,20 +38,21 @@ class UART_IF : public sc_core::sc_module {
 	static constexpr uint8_t IP_REG_ADDR = 0x14;
 	static constexpr uint8_t DIV_REG_ADDR = 0x18;
 
-	interrupt_gateway *plic;
-	tlm_utils::simple_target_socket<UART_IF> tsock;
+	interrupt_gateway *plic = nullptr;
+	tlm_utils::simple_target_socket<FU540_UART> tsock;
 
-	UART_IF(sc_core::sc_module_name, uint32_t irqsrc);
-	virtual ~UART_IF(void);
+	FU540_UART(sc_core::sc_module_name, Channel_IF *channel, uint32_t irq);
+	virtual ~FU540_UART(void);
 
-	SC_HAS_PROCESS(UART_IF);  // interrupt
+	SC_HAS_PROCESS(FU540_UART);  // interrupt
 
    private:
+	Channel_IF *channel;
+	uint32_t irq;
+
 	void register_access_callback(const vp::map::register_access_t &);
 	void transport(tlm::tlm_generic_payload &, sc_core::sc_time &);
 	void interrupt(void);
-
-	uint32_t irq;
 
 	// memory mapped configuration registers
 	uint32_t txdata = 0;
@@ -63,20 +64,4 @@ class UART_IF : public sc_core::sc_module {
 	uint32_t div = 0;
 
 	vp::map::LocalRouter router = {"UART"};
-
-   protected:
-	std::queue<uint8_t> tx_fifo;
-	sem_t txfull;
-	std::queue<uint8_t> rx_fifo;
-	sem_t rxempty;
-	std::mutex rcvmtx, txmtx;
-	AsyncEvent asyncEvent;
-
-	void swait(sem_t *sem);
-	void spost(sem_t *sem);
-
-	// blocking push into SoC
-	void rxpush(uint8_t data);
-	// blocking pull from SoC to remote
-	uint8_t txpull();
 };

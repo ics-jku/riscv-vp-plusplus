@@ -1,4 +1,4 @@
-#include "uart.h"
+#include "channel_console.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -16,34 +16,37 @@
 #define KEY_EXIT 'x'             /* x (character to exit in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
-UART::UART(const sc_core::sc_module_name& name, uint32_t irqsrc) : FD_ABSTRACT_UART(name, irqsrc) {
+void Channel_Console::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
 	// If stdin isn't a tty, it doesn't make much sense to poll from it.
 	// In this case, we will run the UART in write-only mode.
 	bool write_only = !isatty(STDIN_FILENO);
 
 	enableRawMode(STDIN_FILENO);
-	start_threads(STDIN_FILENO, write_only);
+	start_threads(STDIN_FILENO, tx_fifo_depth, rx_fifo_depth, write_only);
 }
 
-UART::~UART(void) {
+void Channel_Console::stop() {
 	stop_threads();
 	disableRawMode(STDIN_FILENO);
 }
 
-void UART::handle_input(int fd) {
+void Channel_Console::handle_input(int fd) {
 	uint8_t buf;
 	ssize_t nread;
 
 	nread = read(fd, &buf, sizeof(buf));
-	if (nread == -1)
+	if (nread == -1) {
 		throw std::system_error(errno, std::generic_category());
-	else if (nread != sizeof(buf))
+	} else if (nread != sizeof(buf)) {
 		throw std::runtime_error("short read");
+	}
 
 	switch (state) {
 		case STATE_NORMAL:
-			if (buf != KEY_ESC)  // filter out first esc sequence
+			if (buf != KEY_ESC) {
+				// filter out first esc sequence
 				rxpush(buf);
+			}
 			break;
 		case STATE_COMMAND:
 			handle_cmd(buf);
@@ -58,7 +61,7 @@ void UART::handle_input(int fd) {
 	}
 }
 
-void UART::handle_cmd(uint8_t cmd) {
+void Channel_Console::handle_cmd(uint8_t cmd) {
 	switch (cmd) {
 		case KEY_ESC: /* double escape */
 			rxpush(cmd);
@@ -72,11 +75,12 @@ void UART::handle_cmd(uint8_t cmd) {
 	}
 }
 
-void UART::write_data(uint8_t data) {
+void Channel_Console::write_data(uint8_t data) {
 	ssize_t nwritten;
 	nwritten = write(STDOUT_FILENO, &data, sizeof(data));
-	if (nwritten == -1)
+	if (nwritten == -1) {
 		throw std::system_error(errno, std::generic_category());
-	else if (nwritten != sizeof(data))
+	} else if (nwritten != sizeof(data)) {
 		throw std::runtime_error("short write");
+	}
 }

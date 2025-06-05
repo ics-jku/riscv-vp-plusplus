@@ -22,11 +22,12 @@
 #include "mem.h"
 #include "memory.h"
 #include "oled/oled.hpp"
+#include "platform/common/channel_console.h"
+#include "platform/common/channel_slip.h"
+#include "platform/common/fu540_uart.h"
 #include "platform/common/options.h"
 #include "platform/common/sifive_spi.h"
 #include "prci.h"
-#include "slip.h"
-#include "uart.h"
 
 // Interrupt numbers	(see platform.h)
 #define INT_RESERVED 0
@@ -171,29 +172,47 @@ int sc_main(int argc, char **argv) {
 
 	SIFIVE_SPI<8> spi2("SPI2", 4);
 
-	std::shared_ptr<UART> uart0;
-	std::shared_ptr<Tunnel_UART> uart0_tunnel;
+	Channel_IF *channel_uart0;
 	if (opt.forward_uart_0) {
+#if 0
+		/* TODO: tunnel-uart must be reworked to channel_tunnel (derived from Channel_IF) */
 		std::cout << "[hifive_main] tunneling UART0 over virtual breadboard protocol" << std::endl;
-		uart0_tunnel = std::make_shared<Tunnel_UART>("UART0", 3);
-		uart0_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(17));
+		Channel_Tunnel *channel_tunnel = new Channel_Tunnel();
+		channel_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(17));
 		gpio0.registerUartReceiveFunction(
-		    16, std::bind(&Tunnel_UART::nonblock_receive, uart0_tunnel, std::placeholders::_1));
+		    16, std::bind(&Tunnel_UART::nonblock_receive, channel_tunnel, std::placeholders::_1));
+		channel_uart0 = channel_tunnel;
+#else
+		std::cerr << "[hifive_main] ERROR: tunneling UART0 over virtual breadboard protocol currently not supported!"
+		          << std::endl;
+		exit(1);
+#endif
 	} else {
-		uart0 = std::make_shared<UART>("UART0", 3);
+		channel_uart0 = new Channel_Console();
 	}
-	std::shared_ptr<SLIP> slip;
-	std::shared_ptr<Tunnel_UART> uart1_tunnel;
+	FU540_UART uart0("UART0", channel_uart0, 3);
+
+	Channel_IF *channel_uart1;
 	if (opt.forward_uart_1) {
+#if 0
+		/* TODO: tunnel-uart must be reworked to channel_tunnel (derived from Channel_IF) */
 		std::cout << "[hifive_main] tunneling UART1 over virtual breadboard protocol" << std::endl;
-		uart1_tunnel = std::make_shared<Tunnel_UART>("UART1", 4);
+		Channel_Tunnel *channel_tunnel = new Channel_Tunnel();
 		// following pins only connected on RevB
-		uart1_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(23));
+		channel_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(23));
 		gpio0.registerUartReceiveFunction(
-		    18, std::bind(&Tunnel_UART::nonblock_receive, uart1_tunnel, std::placeholders::_1));
+		    18, std::bind(&Tunnel_UART::nonblock_receive, channel_tunnel, std::placeholders::_1));
+		channel_uart1 = channel_tunnel;
+#else
+		std::cout << "[hifive_main] ERROR: tunneling UART1 over virtual breadboard protocol currently not supported!"
+		          << std::endl;
+		exit(1);
+#endif
 	} else {
-		slip = std::make_shared<SLIP>("SLIP", 4, opt.tun_device);
+		channel_uart1 = new Channel_SLIP(opt.tun_device);
 	}
+	FU540_UART uart1("UART1", channel_uart1, 4);
+
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
@@ -218,21 +237,13 @@ int sc_main(int argc, char **argv) {
 	bus.ports[4] = new PortMapping(opt.aon_start_addr, opt.aon_end_addr, aon);
 	bus.ports[5] = new PortMapping(opt.prci_start_addr, opt.prci_end_addr, prci);
 	bus.ports[6] = new PortMapping(opt.spi0_start_addr, opt.spi0_end_addr, spi0);
-	if (uart0 != NULL) {
-		bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr, *uart0);
-	} else {
-		bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr, *uart0_tunnel);
-	}
+	bus.ports[7] = new PortMapping(opt.uart0_start_addr, opt.uart0_end_addr, uart0);
 	bus.ports[8] = new PortMapping(opt.maskROM_start_addr, opt.maskROM_end_addr, maskROM);
 	bus.ports[9] = new PortMapping(opt.gpio0_start_addr, opt.gpio0_end_addr, gpio0);
 	bus.ports[10] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
 	bus.ports[11] = new PortMapping(opt.spi1_start_addr, opt.spi1_end_addr, spi1);
 	bus.ports[12] = new PortMapping(opt.spi2_start_addr, opt.spi2_end_addr, spi2);
-	if (slip != NULL) {
-		bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr, *slip);
-	} else {
-		bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr, *uart1_tunnel);
-	}
+	bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr, uart1);
 	bus.mapping_complete();
 
 	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
@@ -256,34 +267,20 @@ int sc_main(int argc, char **argv) {
 	bus.isocks[4].bind(aon.tsock);
 	bus.isocks[5].bind(prci.tsock);
 	bus.isocks[6].bind(spi0.tsock);
-	if (uart0) {
-		bus.isocks[7].bind(uart0->tsock);
-	} else if (uart0_tunnel) {
-		bus.isocks[7].bind(uart0_tunnel->tsock);
-	}
+	bus.isocks[7].bind(uart0.tsock);
 	bus.isocks[8].bind(maskROM.tsock);
 	bus.isocks[9].bind(gpio0.tsock);
 	bus.isocks[10].bind(sys.tsock);
 	bus.isocks[11].bind(spi1.tsock);
 	bus.isocks[12].bind(spi2.tsock);
-	if (slip) {
-		bus.isocks[13].bind(slip->tsock);
-	} else if (uart1_tunnel) {
-		bus.isocks[13].bind(uart1_tunnel->tsock);
-	}
+	bus.isocks[13].bind(uart1.tsock);
 
 	// connect interrupt signals/communication
 	plic.target_harts[0] = &core;
 	clint.target_harts[0] = &core;
 	gpio0.plic = &plic;
-	if (uart0)
-		uart0->plic = &plic;
-	if (uart0_tunnel)
-		uart0_tunnel->plic = &plic;
-	if (slip)
-		slip->plic = &plic;
-	if (uart1_tunnel)
-		uart1_tunnel->plic = &plic;
+	uart0.plic = &plic;
+	uart1.plic = &plic;
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);

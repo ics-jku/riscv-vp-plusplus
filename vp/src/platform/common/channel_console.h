@@ -1,15 +1,13 @@
-#ifndef RISCV_VP_UART_H
-#define RISCV_VP_UART_H
+#ifndef RISCV_VP_CHANNEL_CONSOLE_H
+#define RISCV_VP_CHANNEL_CONSOLE_H
 
-#include <fd_abstract_uart.h>
+#include <channel_if.h>
 #include <stdint.h>
 
-#include <systemc>
-
-class UART : public FD_ABSTRACT_UART {
+class Channel_Console : public Channel_IF {
    public:
-	UART(const sc_core::sc_module_name&, uint32_t);
-	virtual ~UART(void);
+	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) override;
+	void stop() override;
 
    private:
 	typedef enum {
@@ -30,4 +28,4 @@ class UART : public FD_ABSTRACT_UART {
 	void write_data(uint8_t) override;
 };
 
-#endif  // RISCV_VP_UART_H
+#endif  // RISCV_VP_CHANNEL_CONSOLE_H
