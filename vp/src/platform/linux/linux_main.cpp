@@ -13,7 +13,6 @@
 #include "debug.h"
 #include "debug_memory.h"
 #include "elf_loader.h"
-#include "fu540_plic.h"
 #include "gdb-mc/gdb_runner.h"
 #include "gdb-mc/gdb_server.h"
 #include "iss.h"
@@ -34,6 +33,7 @@
 #include "platform/common/vncsimpleinputkbd.h"
 #include "platform/common/vncsimpleinputptr.h"
 #include "prci.h"
+#include "sifive_plic.h"
 #include "syscall.h"
 #include "util/options.h"
 #include "util/vncserver.h"
@@ -232,7 +232,7 @@ int sc_main(int argc, char **argv) {
 	}
 	SimpleBus<NUM_CORES + 1, 19> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	SyscallHandler sys("SyscallHandler");
-	FU540_PLIC plic("PLIC", NUM_CORES);
+	SIFIVE_PLIC plic("PLIC", true, NUM_CORES, 53);
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 	PRCI prci("PRCI");
 	MiscDev miscdev("MiscDev");

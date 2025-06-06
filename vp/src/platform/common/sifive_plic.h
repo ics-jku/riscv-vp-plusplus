@@ -14,9 +14,11 @@
  * This class implements a Platform-Level Interrupt Controller (PLIC) as
  * defined in chapter 10 of the SiFive FU540-C000 manual.
  */
-struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
+struct SIFIVE_PLIC : public sc_core::sc_module, public interrupt_gateway {
    public:
-	static constexpr int NUMIRQ = 53;
+	/* if set: plic supports only M-Mode interrupts (no S-Mode) for hart 0 */
+	const bool FU540_MODE;
+	const unsigned NUMIRQ;
 	static constexpr uint32_t MAX_THR = 7;
 	static constexpr uint32_t MAX_PRIO = 7;
 
@@ -24,23 +26,25 @@ struct FU540_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	static constexpr uint32_t ENABLE_PER_HART = 0x80;
 	static constexpr uint32_t CONTEXT_BASE = 0x200000;
 	static constexpr uint32_t CONTEXT_PER_HART = 0x1000;
-	static constexpr uint32_t HART_REG_SIZE = 2 * sizeof(uint32_t);
+	/* size (in bytes) to fit #numirq interrupts (rounded up to 64 bit registers) (see constructor) */
+	const uint32_t HART_REG_SIZE;
 
-	tlm_utils::simple_target_socket<FU540_PLIC> tsock;
+	tlm_utils::simple_target_socket<SIFIVE_PLIC> tsock;
 	std::vector<external_interrupt_target *> target_harts{};
 
-	FU540_PLIC(sc_core::sc_module_name, unsigned harts = 5);
+	SIFIVE_PLIC(sc_core::sc_module_name, bool fu540_mode, unsigned harts, unsigned numirq);
 	void gateway_trigger_interrupt(uint32_t);
 
-	SC_HAS_PROCESS(FU540_PLIC);
+	SC_HAS_PROCESS(SIFIVE_PLIC);
 
    private:
 	class HartConfig {
 	   public:
+		const unsigned int NUMIRQ;
 		ArrayView<uint32_t> m_mode;
 		ArrayView<uint32_t> s_mode; /* same as m_mode for hart0 */
 
-		HartConfig(RegisterRange &r1, RegisterRange &r2) : m_mode(r1), s_mode(r2) {
+		HartConfig(unsigned numirq, RegisterRange &r1, RegisterRange &r2) : NUMIRQ(numirq), m_mode(r1), s_mode(r2) {
 			return;
 		}
 
