@@ -174,19 +174,12 @@ int sc_main(int argc, char **argv) {
 
 	Channel_IF *channel_uart0;
 	if (opt.forward_uart_0) {
-#if 0
-		/* TODO: tunnel-uart must be reworked to channel_tunnel (derived from Channel_IF) */
 		std::cout << "[hifive_main] tunneling UART0 over virtual breadboard protocol" << std::endl;
 		Channel_Tunnel *channel_tunnel = new Channel_Tunnel();
 		channel_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(17));
 		gpio0.registerUartReceiveFunction(
-		    16, std::bind(&Tunnel_UART::nonblock_receive, channel_tunnel, std::placeholders::_1));
+		    16, std::bind(&Channel_Tunnel::nonblock_receive, channel_tunnel, std::placeholders::_1));
 		channel_uart0 = channel_tunnel;
-#else
-		std::cerr << "[hifive_main] ERROR: tunneling UART0 over virtual breadboard protocol currently not supported!"
-		          << std::endl;
-		exit(1);
-#endif
 	} else {
 		channel_uart0 = new Channel_Console();
 	}
@@ -194,20 +187,13 @@ int sc_main(int argc, char **argv) {
 
 	Channel_IF *channel_uart1;
 	if (opt.forward_uart_1) {
-#if 0
-		/* TODO: tunnel-uart must be reworked to channel_tunnel (derived from Channel_IF) */
 		std::cout << "[hifive_main] tunneling UART1 over virtual breadboard protocol" << std::endl;
 		Channel_Tunnel *channel_tunnel = new Channel_Tunnel();
 		// following pins only connected on RevB
 		channel_tunnel->register_transmit_function(gpio0.getUartTransmitFunction(23));
 		gpio0.registerUartReceiveFunction(
-		    18, std::bind(&Tunnel_UART::nonblock_receive, channel_tunnel, std::placeholders::_1));
+		    18, std::bind(&Channel_Tunnel::nonblock_receive, channel_tunnel, std::placeholders::_1));
 		channel_uart1 = channel_tunnel;
-#else
-		std::cout << "[hifive_main] ERROR: tunneling UART1 over virtual breadboard protocol currently not supported!"
-		          << std::endl;
-		exit(1);
-#endif
 	} else {
 		channel_uart1 = new Channel_SLIP(opt.tun_device);
 	}

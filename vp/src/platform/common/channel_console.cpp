@@ -1,11 +1,6 @@
 #include "channel_console.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <sys/types.h>
 #include <unistd.h>
-
-#include <systemc>
 
 #include "core/common/rawmode.h"
 
@@ -16,17 +11,21 @@
 #define KEY_EXIT 'x'             /* x (character to exit in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
+Channel_Console::~Channel_Console() {
+	stop();
+}
+
 void Channel_Console::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
 	// If stdin isn't a tty, it doesn't make much sense to poll from it.
 	// In this case, we will run the UART in write-only mode.
 	bool write_only = !isatty(STDIN_FILENO);
 
 	enableRawMode(STDIN_FILENO);
-	start_threads(STDIN_FILENO, tx_fifo_depth, rx_fifo_depth, write_only);
+	start_handling(STDIN_FILENO, tx_fifo_depth, rx_fifo_depth, write_only);
 }
 
 void Channel_Console::stop() {
-	stop_threads();
+	stop_handling();
 	disableRawMode(STDIN_FILENO);
 }
 

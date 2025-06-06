@@ -1,20 +1,12 @@
 #include "channel_slip.h"
 
-#include <errno.h>
 #include <fcntl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <termios.h>
 #include <unistd.h>
-
-#include <systemc>
 
 // SLIP (as defined in RFC 1055) doesn't specify an MTU. We therefore
 // subsequently allocate memory for the packet buffer using realloc(3).
@@ -24,6 +16,10 @@
 #define SLIP_ESC 0333
 #define SLIP_ESC_END 0334
 #define SLIP_ESC_ESC 0335
+
+Channel_SLIP::~Channel_SLIP() {
+	stop();
+}
 
 void Channel_SLIP::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
 	tunfd = open("/dev/net/tun", O_RDWR);
@@ -48,7 +44,7 @@ void Channel_SLIP::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth)
 		goto err2;
 	}
 
-	start_threads(tunfd, tx_fifo_depth, rx_fifo_depth);
+	start_handling(tunfd, tx_fifo_depth, rx_fifo_depth);
 	return;
 err2:
 	free(sndbuf);
@@ -60,7 +56,7 @@ err0:
 }
 
 void Channel_SLIP::stop() {
-	stop_threads();
+	stop_handling();
 
 	if (sndbuf) {
 		free(sndbuf);
@@ -71,8 +67,9 @@ void Channel_SLIP::stop() {
 		rcvbuf = NULL;
 	}
 
-	if (tunfd > 0)
+	if (tunfd > 0) {
 		close(tunfd);
+	}
 }
 
 int Channel_SLIP::get_mtu(const char *dev) {

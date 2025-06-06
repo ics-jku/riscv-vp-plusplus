@@ -5,6 +5,7 @@ add_library(platform-common
 		fu540_plic.cpp
 		sifive_test.cpp
 		channel_if.cpp
+		channel_fd_if.cpp
 		channel_console.cpp
 		channel_slip.cpp
 		fu540_uart.cpp

@@ -6,10 +6,10 @@
 #include <systemc>
 #include <thread>
 
+#include "channel_tunnel.h"
 #include "core/common/irq_if.h"
 #include "platform/common/async_event.h"
 #include "platform/common/sifive_spi.h"
-#include "tunnel-uart.hpp"
 #include "util/tlm_map.h"
 
 struct GPIO : public sc_core::sc_module {

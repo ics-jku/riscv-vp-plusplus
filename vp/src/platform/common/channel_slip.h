@@ -1,12 +1,14 @@
 #ifndef RISCV_VP_CHANNEL_SLIP_H
 #define RISCV_VP_CHANNEL_SLIP_H
 
-#include <channel_if.h>
 #include <stdint.h>
 
-class Channel_SLIP : public Channel_IF {
+#include "channel_fd_if.h"
+
+class Channel_SLIP final : public Channel_FD_IF {
    public:
 	Channel_SLIP(std::string netdev) : netdev(netdev){};
+	virtual ~Channel_SLIP();
 
 	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) override;
 	void stop() override;
