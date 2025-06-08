@@ -8,6 +8,7 @@ add_library(platform-common
 		channel_fd_if.cpp
 		channel_console.cpp
 		channel_slip.cpp
+		channel_tcp.cpp
 		fu540_uart.cpp
 		fu540_gpio.cpp
 		vncsimplefb.cpp
