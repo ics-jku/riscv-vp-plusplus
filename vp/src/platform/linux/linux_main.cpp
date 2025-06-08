@@ -239,7 +239,7 @@ int sc_main(int argc, char **argv) {
 	Channel_Console channel_console;
 	FU540_UART uart0("UART0", &channel_console, 4);
 	Channel_SLIP channel_slip(opt.tun_device);
-	FU540_UART slip("UART0", &channel_slip, 5);
+	FU540_UART slip("UART1", &channel_slip, 5);
 
 	/* interrupts for gpios (idx -> irqnr) */
 	const int gpioInterrupts[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22};
