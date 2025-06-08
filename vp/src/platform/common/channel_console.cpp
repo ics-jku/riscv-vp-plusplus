@@ -15,18 +15,13 @@ Channel_Console::~Channel_Console() {
 	stop();
 }
 
-void Channel_Console::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
-	// If stdin isn't a tty, it doesn't make much sense to poll from it.
-	// In this case, we will run the UART in write-only mode.
-	bool write_only = !isatty(STDIN_FILENO);
-
+int Channel_Console::open_fd() {
 	enableRawMode(STDIN_FILENO);
-	start_handling(STDIN_FILENO, tx_fifo_depth, rx_fifo_depth, write_only);
+	return STDIN_FILENO;
 }
 
-void Channel_Console::stop() {
-	stop_handling();
-	disableRawMode(STDIN_FILENO);
+void Channel_Console::close_fd(int fd) {
+	disableRawMode(fd);
 }
 
 void Channel_Console::handle_input(int fd) {

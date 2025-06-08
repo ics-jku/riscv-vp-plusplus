@@ -1,6 +1,6 @@
 #include "channel_if.h"
 
-void Channel_IF::start_handling(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
+void Channel_IF::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
 	this->tx_fifo_depth = tx_fifo_depth;
 	this->rx_fifo_depth = rx_fifo_depth;
 
@@ -10,6 +10,12 @@ void Channel_IF::start_handling(unsigned int tx_fifo_depth, unsigned int rx_fifo
 	if (sem_init(&rxempty, 0, rx_fifo_depth)) {
 		throw std::system_error(errno, std::generic_category());
 	}
+
+	start_handling();
+}
+
+void Channel_IF::stop() {
+	stop_handling();
 }
 
 unsigned int Channel_IF::get_tx_fifo_size() {

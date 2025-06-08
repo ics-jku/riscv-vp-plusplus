@@ -6,14 +6,12 @@ Channel_Tunnel::~Channel_Tunnel() {
 	stop();
 }
 
-void Channel_Tunnel::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
-	start_handling(tx_fifo_depth, rx_fifo_depth);
-
+void Channel_Tunnel::start_handling() {
 	stop_flag = false;
 	rx_worker = std::thread(std::bind(&Channel_Tunnel::rx_dequeue, this));
 }
 
-void Channel_Tunnel::stop() {
+void Channel_Tunnel::stop_handling() {
 	stop_flag = true;
 	if (rx_worker.joinable()) {
 		post_rxempty();  // unblock receive thread
@@ -22,8 +20,6 @@ void Channel_Tunnel::stop() {
 	if (tx_worker.joinable()) {
 		post_txfull();  // unblock transmit thread
 	}
-
-	stop_handling();
 }
 
 void Channel_Tunnel::nonblock_receive(gpio::UART_Bytes bytes) {

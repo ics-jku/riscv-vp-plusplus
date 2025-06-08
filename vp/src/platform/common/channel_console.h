@@ -9,9 +9,6 @@ class Channel_Console final : public Channel_FD_IF {
    public:
 	virtual ~Channel_Console();
 
-	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) override;
-	void stop() override;
-
    private:
 	typedef enum {
 		STATE_COMMAND,
@@ -27,6 +24,8 @@ class Channel_Console final : public Channel_FD_IF {
 	uart_state state = STATE_NORMAL;
 	void handle_cmd(uint8_t);
 
+	int open_fd() override;
+	void close_fd(int fd) override;
 	void handle_input(int fd) override;
 	void write_data(uint8_t) override;
 };

@@ -19,13 +19,13 @@ class Channel_Tunnel final : public Channel_IF {
    public:
 	virtual ~Channel_Tunnel();
 
-	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) override;
-	void stop() override;
-
 	void nonblock_receive(gpio::UART_Bytes bytes);
 	void register_transmit_function(UartTXFunction fun);
 
    private:
+	void start_handling() override;
+	void stop_handling() override;
+
 	std::queue<gpio::UART_Byte> nonblocking_rx_queue;
 	std::mutex nonblock_rx_mutex;
 

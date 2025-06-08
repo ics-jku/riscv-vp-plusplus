@@ -10,17 +10,17 @@ class Channel_SLIP final : public Channel_FD_IF {
 	Channel_SLIP(std::string netdev) : netdev(netdev){};
 	virtual ~Channel_SLIP();
 
-	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) override;
-	void stop() override;
-
    private:
 	const std::string netdev;
 	int get_mtu(const char *);
 	void send_packet(void);
+
+	int open_fd() override;
+	void close_fd(int fd) override;
 	void write_data(uint8_t) override;
 	void handle_input(int fd) override;
 
-	int tunfd;
+	int tunfd = -1;
 
 	uint8_t *sndbuf = NULL, *rcvbuf = NULL;
 	size_t sndsiz, rcvsiz;

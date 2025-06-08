@@ -18,13 +18,8 @@ class Channel_IF {
    public:
 	virtual ~Channel_IF(){};
 
-	/*
-	 * implemented by the concrete channel
-	 * called by the module using the channel (e.g. uart)
-	 * NOTE: stop should be called in the destructor of the concrete channel
-	 */
-	virtual void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) = 0;
-	virtual void stop() = 0;
+	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth);
+	void stop();
 
 	AsyncEvent asyncEvent;
 
@@ -70,12 +65,10 @@ class Channel_IF {
 		spost(&rxempty);
 	}
 
-   protected:
-	/* called by implementations of start and stop (see above ) in concrete channels */
-	void start_handling(unsigned int tx_fifo_depth = 1, unsigned int rx_fifo_depth = 1);
-	void stop_handling(){};
-
    private:
+	virtual void start_handling() = 0;
+	virtual void stop_handling() = 0;
+
 	unsigned int rx_fifo_depth = 1;
 	unsigned int tx_fifo_depth = 1;
 

@@ -21,7 +21,27 @@ Channel_SLIP::~Channel_SLIP() {
 	stop();
 }
 
-void Channel_SLIP::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth) {
+int Channel_SLIP::get_mtu(const char *dev) {
+	struct ifreq ifr;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd == -1) {
+		throw std::system_error(errno, std::generic_category());
+	}
+
+	if (ioctl(fd, SIOCGIFMTU, (void *)&ifr) == -1) {
+		close(fd);
+		throw std::system_error(errno, std::generic_category());
+	}
+
+	close(fd);
+	return ifr.ifr_mtu;
+}
+
+int Channel_SLIP::open_fd() {
 	tunfd = open("/dev/net/tun", O_RDWR);
 	if (tunfd == -1) {
 		goto err0;
@@ -44,8 +64,8 @@ void Channel_SLIP::start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth)
 		goto err2;
 	}
 
-	start_handling(tunfd, tx_fifo_depth, rx_fifo_depth);
-	return;
+	return tunfd;
+
 err2:
 	free(sndbuf);
 	sndbuf = NULL;
@@ -53,11 +73,12 @@ err1:
 	close(tunfd);
 err0:
 	std::system_error(errno, std::generic_category());
+	tunfd = -1;
+
+	return -1;
 }
 
-void Channel_SLIP::stop() {
-	stop_handling();
-
+void Channel_SLIP::close_fd(int fd) {
 	if (sndbuf) {
 		free(sndbuf);
 		sndbuf = NULL;
@@ -72,27 +93,12 @@ void Channel_SLIP::stop() {
 	}
 }
 
-int Channel_SLIP::get_mtu(const char *dev) {
-	struct ifreq ifr;
-
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, dev, IFNAMSIZ);
-
-	int fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (fd == -1) {
-		throw std::system_error(errno, std::generic_category());
-	}
-
-	if (ioctl(fd, SIOCGIFMTU, (void *)&ifr) == -1) {
-		close(fd);
-		throw std::system_error(errno, std::generic_category());
-	}
-
-	close(fd);
-	return ifr.ifr_mtu;
-}
-
 void Channel_SLIP::send_packet(void) {
+	if (tunfd < 0) {
+		/* ignore */
+		return;
+	}
+
 	ssize_t ret = write(tunfd, sndbuf, sndsiz);
 	if (ret == -1) {
 		throw std::system_error(errno, std::generic_category());
