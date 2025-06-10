@@ -49,7 +49,6 @@ void Channel_FD_IF::transmitter_threadf(void) {
 		if (stop_flag) {
 			break;
 		}
-		asyncEvent.notify();
 		write_data(data);
 	}
 }

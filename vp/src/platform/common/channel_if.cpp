@@ -76,6 +76,7 @@ uint8_t Channel_IF::txpull() {
 	data = tx_fifo.front();
 	tx_fifo.pop();
 	txmtx.unlock();
+	asyncEvent.notify();
 
 	return data;
 }
