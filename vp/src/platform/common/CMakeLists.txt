@@ -9,6 +9,7 @@ add_library(platform-common
 		channel_console.cpp
 		channel_slip.cpp
 		channel_tcp.cpp
+		ns16550a_uart.cpp
 		fu540_uart.cpp
 		fu540_gpio.cpp
 		vncsimplefb.cpp
