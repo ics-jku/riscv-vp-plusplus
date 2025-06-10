@@ -534,7 +534,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			entries[0].set_terminal(dbbcache);
 			start_addr = pc;
 			len = 0;
-			this->coherence_cnt = coherence_cnt;
+			coherence_cnt = dbbcache.coherence_cnt;
 			invalidate_links();
 		}
 
