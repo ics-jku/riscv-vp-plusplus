@@ -57,6 +57,7 @@ class Channel_IF {
 	// blocking push into SoC
 	void rxpush(uint8_t data);
 
+   protected:
 	void post_txfull() {
 		spost(&txfull);
 	}
