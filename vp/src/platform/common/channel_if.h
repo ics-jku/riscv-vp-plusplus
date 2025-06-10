@@ -50,7 +50,7 @@ class Channel_IF {
 	 *  true: success
 	 *  false: fifo full
 	 */
-	bool txpush(uint8_t txdata);
+	virtual bool txpush(uint8_t txdata);
 
 	// blocking pull from SoC to remote
 	uint8_t txpull();
@@ -81,6 +81,20 @@ class Channel_IF {
 
 	void swait(sem_t *sem);
 	void spost(sem_t *sem);
+};
+
+/*
+ * dummy channel
+ */
+class Channel_Dummy final : public Channel_IF {
+   public:
+	bool txpush(uint8_t) override {
+		return true;
+	}
+
+   private:
+	void start_handling() override {}
+	void stop_handling() override {}
 };
 
 #endif  // RISCV_VP_CHANNEL_IF_H
