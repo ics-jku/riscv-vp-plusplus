@@ -31,8 +31,8 @@ class SPI_SD_Card : SPI_Device_IF {
 	const static size_t block_size = 512;
 
 	/* VP SPI Interface (spi, chipselect, card detect gpio) */
-	SPI_IF *const spi;
-	const unsigned int spi_cs;
+	[[maybe_unused]] SPI_IF *const spi;
+	[[maybe_unused]] const unsigned int spi_cs;
 	GPIO_IF *const gpio_cd;
 	const unsigned int gpio_cd_nr;
 	const bool gpio_cd_active_high;
