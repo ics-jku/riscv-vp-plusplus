@@ -2,10 +2,10 @@
 
 #include <err.h>
 #include <poll.h>
+#include <string.h>
 #include <unistd.h>
 
 #define stop_fd (stop_pipe[0])
-#define newpollfd(FD) {FD, POLLIN | POLLHUP | POLLERR, 0};
 
 Channel_FD_IF::Channel_FD_IF() {
 	if (pipe(stop_pipe) == -1) {
@@ -81,8 +81,14 @@ void Channel_FD_IF::receiver(int fd) {
 	const int NFDS = 2;
 	struct pollfd fds[NFDS];
 
-	fds[0] = newpollfd(stop_fd);
-	fds[1] = newpollfd(fd);
+	memset(&fds, 0, sizeof(fds));
+	fds[0].fd = stop_fd;
+	fds[0].events = POLLIN | POLLHUP | POLLERR;
+	fds[1].fd = fd;
+	fds[1].events = POLLHUP | POLLERR;
+	if (!write_only) {
+		fds[1].events |= POLLIN;
+	}
 
 	while (!stop_flag) {
 		if (poll(fds, (nfds_t)NFDS, -1) == -1) {

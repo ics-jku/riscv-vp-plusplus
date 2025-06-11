@@ -16,6 +16,12 @@ Channel_Console::~Channel_Console() {
 }
 
 int Channel_Console::open_fd() {
+	/*
+	 * If stdin is not a tty (e.g. vp started with nohup), reads may fail
+	 * -> Disable the receiver in this case!
+	 */
+	set_write_only(!isatty(STDIN_FILENO));
+
 	enableRawMode(STDIN_FILENO);
 	return STDIN_FILENO;
 }

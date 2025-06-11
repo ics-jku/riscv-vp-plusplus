@@ -18,6 +18,15 @@ class Channel_FD_IF : public Channel_IF {
 	Channel_FD_IF();
 	virtual ~Channel_FD_IF(void);
 
+   protected:
+	/*
+	 * disable the receiver
+	 * must be called before or at latest in open_fd
+	 */
+	void set_write_only(bool write_only) {
+		this->write_only = write_only;
+	}
+
    private:
 	virtual void start_handling() override;
 	virtual void stop_handling() override;
@@ -30,6 +39,8 @@ class Channel_FD_IF : public Channel_IF {
 	void transmitter_threadf();
 	void main_threadf();
 	void receiver(int fd);
+
+	bool write_only = false;
 
 	std::thread *main_thread = nullptr;
 	std::thread *transmitter_thread = nullptr;
