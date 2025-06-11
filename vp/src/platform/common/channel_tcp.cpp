@@ -79,5 +79,6 @@ void Channel_TCP::write_data(uint8_t data) {
 	if (clientfd < 0) {
 		return;
 	}
-	write(clientfd, &data, 1);
+	/* explicitly ignore return value */
+	(void)!write(clientfd, &data, 1);
 }
