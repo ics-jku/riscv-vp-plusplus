@@ -82,8 +82,7 @@ struct csr_mstatus {
 	}
 
 	union {
-		// uint64_t reg = 0;
-		uint64_t reg = 0x600;  // TODO WA
+		uint64_t reg = 0;
 		struct {
 			unsigned uie : 1;
 			unsigned sie : 1;

@@ -76,8 +76,7 @@ struct csr_mvendorid {
 
 struct csr_mstatus {
 	union {
-		// uint32_t reg = 0;
-		uint32_t reg = 0x600;  // TODO WA
+		uint32_t reg = 0;
 		struct {
 			unsigned uie : 1;
 			unsigned sie : 1;
