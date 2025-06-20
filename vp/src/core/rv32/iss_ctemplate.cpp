@@ -6720,13 +6720,16 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 			return 0;
 
 		case MSTATUS_ADDR:
-			return read(csrs.mstatus, MSTATUS_MASK);
+			return read(csrs.mstatus, MSTATUS_READ_MASK);
 
 		case SSTATUS_ADDR:
-			return read(csrs.mstatus, SSTATUS_MASK);
+			return read(csrs.mstatus, SSTATUS_READ_MASK);
 
 		case USTATUS_ADDR:
-			return read(csrs.mstatus, USTATUS_MASK);
+			return read(csrs.mstatus, USTATUS_READ_MASK);
+
+		case MSTATUSH_ADDR:
+			return read(csrs.mstatush, MSTATUSH_READ_MASK);
 
 		case MIP_ADDR:
 			return read(csrs.mip, MIP_READ_MASK);
@@ -6819,13 +6822,17 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 			break;
 
 		case MSTATUS_ADDR:
-			write(csrs.mstatus, MSTATUS_MASK);
+			write(csrs.mstatus, MSTATUS_WRITE_MASK);
 			break;
 		case SSTATUS_ADDR:
-			write(csrs.mstatus, SSTATUS_MASK);
+			write(csrs.mstatus, SSTATUS_WRITE_MASK);
 			break;
 		case USTATUS_ADDR:
-			write(csrs.mstatus, USTATUS_MASK);
+			write(csrs.mstatus, USTATUS_WRITE_MASK);
+			break;
+
+		case MSTATUSH_ADDR:
+			write(csrs.mstatush, MSTATUSH_WRITE_MASK);
 			break;
 
 		case MIP_ADDR:

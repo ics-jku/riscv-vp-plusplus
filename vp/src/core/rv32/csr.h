@@ -84,7 +84,7 @@ struct csr_mstatus {
 			unsigned mie : 1;
 			unsigned upie : 1;
 			unsigned spie : 1;
-			unsigned wpri2 : 1;
+			unsigned ube : 1;
 			unsigned mpie : 1;
 			unsigned spp : 1;
 			unsigned vs : 2;
@@ -99,6 +99,18 @@ struct csr_mstatus {
 			unsigned tsr : 1;
 			unsigned wpri4 : 8;
 			unsigned sd : 1;
+		} fields;
+	};
+};
+
+struct csr_mstatush {
+	union {
+		uint32_t reg = 0;
+		struct {
+			unsigned wpri1 : 4;
+			unsigned sbe : 1;
+			unsigned mbe : 1;
+			unsigned wpri2 : 26;
 		} fields;
 	};
 };
@@ -366,9 +378,15 @@ constexpr uint32_t MCOUNTINHIBIT_MASK = 0b101;
 constexpr uint32_t SEDELEG_MASK = 0b1011000111111111;
 constexpr uint32_t SIDELEG_MASK = MIDELEG_MASK;
 
-constexpr uint32_t MSTATUS_MASK = 0b10000000011111111111111110111011;
-constexpr uint32_t SSTATUS_MASK = 0b10000000000011011110011100110011;
-constexpr uint32_t USTATUS_MASK = 0b00000000000000000000000000010001;
+constexpr uint64_t MSTATUS_WRITE_MASK = 0b10000000011111111111111110111011;
+constexpr uint64_t MSTATUS_READ_MASK = 0b10000000011111111111111111111011;
+constexpr uint32_t SSTATUS_WRITE_MASK = 0b10000000000011011110011100110011;
+constexpr uint32_t SSTATUS_READ_MASK = 0b10000000000011011110011101110011;
+constexpr uint32_t USTATUS_WRITE_MASK = 0b00000000000000000000000000010001;
+constexpr uint32_t USTATUS_READ_MASK = 0b00000000000000000000000001010001;
+
+constexpr uint32_t MSTATUSH_WRITE_MASK = 0b00000000000000000000000000000000;
+constexpr uint32_t MSTATUSH_READ_MASK = 0b00000000000000000000000000110000;
 
 constexpr uint32_t SATP_MASK = 0b10000000001111111111111111111111;
 constexpr uint32_t SATP_MODE = 0b10000000000000000000000000000000;
@@ -413,6 +431,7 @@ constexpr unsigned MIMPID_ADDR = 0xF13;
 constexpr unsigned MHARTID_ADDR = 0xF14;
 
 constexpr unsigned MSTATUS_ADDR = 0x300;
+constexpr unsigned MSTATUSH_ADDR = 0x310;
 constexpr unsigned MISA_ADDR = 0x301;
 constexpr unsigned MEDELEG_ADDR = 0x302;
 constexpr unsigned MIDELEG_ADDR = 0x303;
@@ -650,6 +669,7 @@ struct csr_table {
 	csr_32 mhartid;
 
 	csr_mstatus mstatus;
+	csr_mstatus mstatush;
 	csr_misa_32 misa;
 	csr_32 medeleg;
 	csr_32 mideleg;
@@ -721,6 +741,7 @@ struct csr_table {
 		register_mapping[MHARTID_ADDR] = &mhartid.reg;
 
 		register_mapping[MSTATUS_ADDR] = &mstatus.reg;
+		register_mapping[MSTATUSH_ADDR] = &mstatush.reg;
 		register_mapping[MISA_ADDR] = &misa.reg;
 		register_mapping[MEDELEG_ADDR] = &medeleg.reg;
 		register_mapping[MIDELEG_ADDR] = &mideleg.reg;
