@@ -6606,6 +6606,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval
 				          << ", pc=" << boost::format("%x") % last_pc << std::endl;
 			}
+			stats.inc_trap(e.reason);
 
 			/*
 			 * If a instruction traps, the number of instructions and cycles are

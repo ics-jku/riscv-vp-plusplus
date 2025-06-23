@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  */
 
 #ifndef RISCV_ISA_ISS_STATS_H
 #define RISCV_ISA_ISS_STATS_H
 
 #include <cstdint>
+#include <iostream>
 
 /*
  * dummy implementation
@@ -40,11 +41,14 @@ class ISSStatsDummy {
 	void inc_csr() {}
 	void inc_amo() {}
 	void inc_set_zero() {}
+	void inc_trap(unsigned int trapnr) {}
 	void print() {}
 };
 
 class ISSStats : public ISSStatsDummy {
    private:
+	static constexpr unsigned int TRAPNR_MAX = 31;
+
 	struct {
 		uint64_t cnt;
 		uint64_t fast_fdd;
@@ -65,6 +69,8 @@ class ISSStats : public ISSStatsDummy {
 		uint64_t csr;
 		uint64_t amo;
 		uint64_t set_zero;
+		uint64_t trap_sum;
+		uint64_t trap[TRAPNR_MAX + 1];
 	} s;
 
    public:
@@ -145,6 +151,14 @@ class ISSStats : public ISSStatsDummy {
 	}
 	void inc_set_zero() {
 		s.set_zero++;
+	}
+	void inc_trap(unsigned int trapnr) {
+		if (trapnr > TRAPNR_MAX) {
+			std::cerr << "ISS_STATS: invalid trap nr " << trapnr << std::endl;
+			return;
+		}
+		s.trap_sum++;
+		s.trap[trapnr]++;
 	}
 
 	void print();
