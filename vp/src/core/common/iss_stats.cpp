@@ -34,6 +34,12 @@ void ISSStats::print() {
 	std::cout << " CSR:                       " << ISSSTATS_STAT_RATE_CNT(s.csr);
 	std::cout << " AMO:                       " << ISSSTATS_STAT_RATE_CNT(s.amo);
 	std::cout << " set_zero:                  " << ISSSTATS_STAT_RATE_CNT(s.set_zero);
+	std::cout << " fence_i:                   " << ISSSTATS_STAT_RATE_CNT(s.fence_i);
+	std::cout << " fence_vma:                 " << ISSSTATS_STAT_RATE_CNT(s.fence_vma);
+	std::cout << " wfi:                       " << ISSSTATS_STAT_RATE_CNT(s.wfi);
+	std::cout << " uret:                      " << ISSSTATS_STAT_RATE_CNT(s.uret);
+	std::cout << " sret:                      " << ISSSTATS_STAT_RATE_CNT(s.sret);
+	std::cout << " mret:                      " << ISSSTATS_STAT_RATE_CNT(s.mret);
 	std::cout << " trap_sum:                  " << s.trap_sum << "\n";
 	for (unsigned int trapnr = 0; trapnr <= TRAPNR_MAX; trapnr++) {
 		if (s.trap[trapnr] == 0) {

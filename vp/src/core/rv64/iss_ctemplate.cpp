@@ -824,6 +824,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FENCE_I) {
 					dbbcache.fence_i(pc);
+					stats.inc_fence_i();
 				}
 				OP_END();
 
@@ -6825,6 +6826,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					if (u_mode() && csrs.misa.has_supervisor_mode_extension())
 						RAISE_ILLEGAL_INSTRUCTION();
 
+					stats.inc_wfi();
 					if (!ignore_wfi) {
 						while (!has_local_pending_enabled_interrupts()) {
 							sc_core::wait(wfi_event);
@@ -6838,6 +6840,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						RAISE_ILLEGAL_INSTRUCTION();
 					dbbcache.fence_vma(pc);
 					lscache.fence_vma();
+					stats.inc_fence_vma();
 				}
 				OP_END();
 
@@ -6845,6 +6848,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					if (!csrs.misa.has_user_mode_extension())
 						RAISE_ILLEGAL_INSTRUCTION();
 					return_from_trap_handler(UserMode);
+					stats.inc_uret();
 				}
 				OP_END();
 
@@ -6852,11 +6856,13 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.reg.fields.tsr))
 						RAISE_ILLEGAL_INSTRUCTION();
 					return_from_trap_handler(SupervisorMode);
+					stats.inc_sret();
 				}
 				OP_END();
 
 				OP_CASE(MRET) {
 					return_from_trap_handler(MachineMode);
+					stats.inc_mret();
 				}
 				OP_END();
 			}

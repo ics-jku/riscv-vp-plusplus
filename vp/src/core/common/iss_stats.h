@@ -41,6 +41,12 @@ class ISSStatsDummy {
 	void inc_csr() {}
 	void inc_amo() {}
 	void inc_set_zero() {}
+	void inc_fence_i() {}
+	void inc_fence_vma() {}
+	void inc_wfi() {}
+	void inc_uret() {}
+	void inc_mret() {}
+	void inc_sret() {}
 	void inc_trap(unsigned int trapnr) {}
 	void print() {}
 };
@@ -69,6 +75,12 @@ class ISSStats : public ISSStatsDummy {
 		uint64_t csr;
 		uint64_t amo;
 		uint64_t set_zero;
+		uint64_t fence_i;
+		uint64_t fence_vma;
+		uint64_t wfi;
+		uint64_t uret;
+		uint64_t mret;
+		uint64_t sret;
 		uint64_t trap_sum;
 		uint64_t trap[TRAPNR_MAX + 1];
 	} s;
@@ -151,6 +163,24 @@ class ISSStats : public ISSStatsDummy {
 	}
 	void inc_set_zero() {
 		s.set_zero++;
+	}
+	void inc_fence_i() {
+		s.fence_i++;
+	}
+	void inc_fence_vma() {
+		s.fence_vma++;
+	}
+	void inc_wfi() {
+		s.wfi++;
+	}
+	void inc_uret() {
+		s.uret++;
+	}
+	void inc_mret() {
+		s.mret++;
+	}
+	void inc_sret() {
+		s.sret++;
 	}
 	void inc_trap(unsigned int trapnr) {
 		if (trapnr > TRAPNR_MAX) {
