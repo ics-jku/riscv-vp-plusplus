@@ -239,10 +239,37 @@ void *ISS_CT::genOpMap() {
 	OP_LABEL(op_global_fast_finalize_and_fdd) : __attribute__((unused));           \
 	{OP_FAST_FINALIZE_AND_FDD()}
 
-#define OP_CASE(_op)                                          \
-	OP_LABEL_OP(_op)                                          \
-	    : static struct op_label_entry OP_LABEL_ENTRY_OP(_op) \
-	          __attribute__((used, section(OP_LABLE_ENTRIES_SEC_STR))) = {Operation::OpId::_op, &&OP_LABEL_OP(_op)};
+#define OP_CASE(_op)                                                                                                 \
+	OP_LABEL_OP(_op)                                                                                                 \
+	    : static struct op_label_entry OP_LABEL_ENTRY_OP(_op)                                                        \
+	          __attribute__((used, section(OP_LABLE_ENTRIES_SEC_STR))) = {Operation::OpId::_op, &&OP_LABEL_OP(_op)}; \
+	stats.inc_op(Operation::OpId::_op);
+
+#define OP_INVALID_END()                                                                                             \
+	if (trace) {                                                                                                     \
+		std::cout << "[ISS] WARNING: RV64 instruction not supported on RV32 " << std::to_string(instr.data())        \
+		          << "' at address '" << std::to_string(dbbcache.get_last_pc_before_callback()) << "'" << std::endl; \
+	}                                                                                                                \
+	RAISE_ILLEGAL_INSTRUCTION();
+
+#undef OP_CASE_NOP
+#undef OP_CASE_INVALID
+#ifdef ISS_CT_STATS_ENABLED
+/* ensure correct counting of opIds (see OP_CASE) -> treat each nop as dedicated case with its own OP_END (no
+ * fallthough, but higher overhead (cache)) */
+#define OP_CASE_NOP(_op) \
+	OP_CASE(_op)         \
+	stats.inc_nops();    \
+	OP_END();
+#define OP_CASE_INVALID(_op) \
+	OP_CASE(_op)             \
+	OP_INVALID_END();
+
+#else /* ISS_CT_STATS_ENABLED */
+/* disabled stats -> fall through to common OP_END (less overhead -> more efficient (cache)) */
+#define OP_CASE_NOP(_op) OP_CASE(_op)
+#define OP_CASE_INVALID(_op) OP_CASE(_op)
+#endif /* ISS_CT_STATS_ENABLED */
 
 #ifdef ISS_CT_OP_TAIL_FAST_FDD_ENABLED
 #define OP_END() OP_FAST_FINALIZE_AND_FDD()
@@ -391,110 +418,103 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				 * RV64 instructions not supported on RV32
 				 */
 				// RV64I
-				OP_CASE(SD)
-				OP_CASE(LD)
-				OP_CASE(LWU)
-				OP_CASE(ADDIW)
-				OP_CASE(ADDIW_NOP)
-				OP_CASE(SLLIW)
-				OP_CASE(SLLIW_NOP)
-				OP_CASE(SRLIW)
-				OP_CASE(SRLIW_NOP)
-				OP_CASE(SRAIW)
-				OP_CASE(SRAIW_NOP)
-				OP_CASE(ADDW)
-				OP_CASE(ADDW_NOP)
-				OP_CASE(SUBW)
-				OP_CASE(SUBW_NOP)
-				OP_CASE(SLLW)
-				OP_CASE(SLLW_NOP)
-				OP_CASE(SRLW)
-				OP_CASE(SRLW_NOP)
-				OP_CASE(SRAW)
-				OP_CASE(SRAW_NOP)
+				OP_CASE_INVALID(SD)
+				OP_CASE_INVALID(LD)
+				OP_CASE_INVALID(LWU)
+				OP_CASE_INVALID(ADDIW)
+				OP_CASE_INVALID(ADDIW_NOP)
+				OP_CASE_INVALID(SLLIW)
+				OP_CASE_INVALID(SLLIW_NOP)
+				OP_CASE_INVALID(SRLIW)
+				OP_CASE_INVALID(SRLIW_NOP)
+				OP_CASE_INVALID(SRAIW)
+				OP_CASE_INVALID(SRAIW_NOP)
+				OP_CASE_INVALID(ADDW)
+				OP_CASE_INVALID(ADDW_NOP)
+				OP_CASE_INVALID(SUBW)
+				OP_CASE_INVALID(SUBW_NOP)
+				OP_CASE_INVALID(SLLW)
+				OP_CASE_INVALID(SLLW_NOP)
+				OP_CASE_INVALID(SRLW)
+				OP_CASE_INVALID(SRLW_NOP)
+				OP_CASE_INVALID(SRAW)
+				OP_CASE_INVALID(SRAW_NOP)
 				// RV64M
-				OP_CASE(MULW)
-				OP_CASE(MULW_NOP)
-				OP_CASE(DIVW)
-				OP_CASE(DIVW_NOP)
-				OP_CASE(DIVUW)
-				OP_CASE(DIVUW_NOP)
-				OP_CASE(REMW)
-				OP_CASE(REMW_NOP)
-				OP_CASE(REMUW)
-				OP_CASE(REMUW_NOP)
+				OP_CASE_INVALID(MULW)
+				OP_CASE_INVALID(MULW_NOP)
+				OP_CASE_INVALID(DIVW)
+				OP_CASE_INVALID(DIVW_NOP)
+				OP_CASE_INVALID(DIVUW)
+				OP_CASE_INVALID(DIVUW_NOP)
+				OP_CASE_INVALID(REMW)
+				OP_CASE_INVALID(REMW_NOP)
+				OP_CASE_INVALID(REMUW)
+				OP_CASE_INVALID(REMUW_NOP)
 				// RV64A
-				OP_CASE(LR_D)
-				OP_CASE(SC_D)
-				OP_CASE(AMOSWAP_D)
-				OP_CASE(AMOADD_D)
-				OP_CASE(AMOXOR_D)
-				OP_CASE(AMOAND_D)
-				OP_CASE(AMOOR_D)
-				OP_CASE(AMOMIN_D)
-				OP_CASE(AMOMINU_D)
-				OP_CASE(AMOMAX_D)
-				OP_CASE(AMOMAXU_D)
+				OP_CASE_INVALID(LR_D)
+				OP_CASE_INVALID(SC_D)
+				OP_CASE_INVALID(AMOSWAP_D)
+				OP_CASE_INVALID(AMOADD_D)
+				OP_CASE_INVALID(AMOXOR_D)
+				OP_CASE_INVALID(AMOAND_D)
+				OP_CASE_INVALID(AMOOR_D)
+				OP_CASE_INVALID(AMOMIN_D)
+				OP_CASE_INVALID(AMOMINU_D)
+				OP_CASE_INVALID(AMOMAX_D)
+				OP_CASE_INVALID(AMOMAXU_D)
 				// RV64Zfh
-				OP_CASE(FCVT_L_H)
-				OP_CASE(FCVT_LU_H)
-				OP_CASE(FCVT_H_L)
-				OP_CASE(FCVT_H_LU)
+				OP_CASE_INVALID(FCVT_L_H)
+				OP_CASE_INVALID(FCVT_LU_H)
+				OP_CASE_INVALID(FCVT_H_L)
+				OP_CASE_INVALID(FCVT_H_LU)
 				// RV64F
-				OP_CASE(FCVT_L_S)
-				OP_CASE(FCVT_LU_S)
-				OP_CASE(FCVT_S_L)
-				OP_CASE(FCVT_S_LU)
+				OP_CASE_INVALID(FCVT_L_S)
+				OP_CASE_INVALID(FCVT_LU_S)
+				OP_CASE_INVALID(FCVT_S_L)
+				OP_CASE_INVALID(FCVT_S_LU)
 				// RV64D
-				OP_CASE(FCVT_L_D)
-				OP_CASE(FCVT_LU_D)
-				OP_CASE(FMV_X_D)
-				OP_CASE(FCVT_D_L)
-				OP_CASE(FCVT_D_LU)
-				OP_CASE(FMV_D_X) {
-					if (trace)
-						std::cout << "[ISS] WARNING: RV64 instruction not supported on RV32 "
-						          << std::to_string(instr.data()) << "' at address '"
-						          << std::to_string(dbbcache.get_last_pc_before_callback()) << "'" << std::endl;
-					RAISE_ILLEGAL_INSTRUCTION();
-				}
-				OP_END();
+				OP_CASE_INVALID(FCVT_L_D)
+				OP_CASE_INVALID(FCVT_LU_D)
+				OP_CASE_INVALID(FMV_X_D)
+				OP_CASE_INVALID(FCVT_D_L)
+				OP_CASE_INVALID(FCVT_D_LU)
+				OP_CASE_INVALID(FMV_D_X)
+				OP_INVALID_END(); /* needed for fallthrough (see definition of OP_CASE_INVALID above) */
 
 				/*
 				 * NOP instruction variants
 				 * instructions decoded with rd == zero/x0 and no side effects -> nothing to do
 				 */
-				OP_CASE(LUI_NOP)
-				OP_CASE(AUIPC_NOP)
-				OP_CASE(ADDI_NOP)
-				OP_CASE(SLTI_NOP)
-				OP_CASE(SLTIU_NOP)
-				OP_CASE(XORI_NOP)
-				OP_CASE(ORI_NOP)
-				OP_CASE(ANDI_NOP)
-				OP_CASE(SLLI_NOP)
-				OP_CASE(SRLI_NOP)
-				OP_CASE(SRAI_NOP)
-				OP_CASE(ADD_NOP)
-				OP_CASE(SUB_NOP)
-				OP_CASE(SLL_NOP)
-				OP_CASE(SLT_NOP)
-				OP_CASE(SLTU_NOP)
-				OP_CASE(XOR_NOP)
-				OP_CASE(SRL_NOP)
-				OP_CASE(SRA_NOP)
-				OP_CASE(OR_NOP)
-				OP_CASE(AND_NOP)
-				OP_CASE(MUL_NOP)
-				OP_CASE(MULH_NOP)
-				OP_CASE(MULHSU_NOP)
-				OP_CASE(MULHU_NOP)
-				OP_CASE(DIV_NOP)
-				OP_CASE(DIVU_NOP)
-				OP_CASE(REM_NOP)
-				OP_CASE(REMU_NOP)
-				stats.inc_nops();
-				OP_END();
+				OP_CASE_NOP(LUI_NOP)
+				OP_CASE_NOP(AUIPC_NOP)
+				OP_CASE_NOP(ADDI_NOP)
+				OP_CASE_NOP(SLTI_NOP)
+				OP_CASE_NOP(SLTIU_NOP)
+				OP_CASE_NOP(XORI_NOP)
+				OP_CASE_NOP(ORI_NOP)
+				OP_CASE_NOP(ANDI_NOP)
+				OP_CASE_NOP(SLLI_NOP)
+				OP_CASE_NOP(SRLI_NOP)
+				OP_CASE_NOP(SRAI_NOP)
+				OP_CASE_NOP(ADD_NOP)
+				OP_CASE_NOP(SUB_NOP)
+				OP_CASE_NOP(SLL_NOP)
+				OP_CASE_NOP(SLT_NOP)
+				OP_CASE_NOP(SLTU_NOP)
+				OP_CASE_NOP(XOR_NOP)
+				OP_CASE_NOP(SRL_NOP)
+				OP_CASE_NOP(SRA_NOP)
+				OP_CASE_NOP(OR_NOP)
+				OP_CASE_NOP(AND_NOP)
+				OP_CASE_NOP(MUL_NOP)
+				OP_CASE_NOP(MULH_NOP)
+				OP_CASE_NOP(MULHSU_NOP)
+				OP_CASE_NOP(MULHU_NOP)
+				OP_CASE_NOP(DIV_NOP)
+				OP_CASE_NOP(DIVU_NOP)
+				OP_CASE_NOP(REM_NOP)
+				OP_CASE_NOP(REMU_NOP)
+				OP_END(); /* needed for fallthrough (see definition of OP_CASE_NOP above) */
 
 				OP_CASE(ADDI) {
 					regs[instr.rd()] = regs[instr.rs1()] + instr.I_imm();

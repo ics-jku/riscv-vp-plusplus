@@ -3,13 +3,20 @@
 #include <cstring>
 #include <iostream>
 
+/*
+ * enable/disabled opId stat output (disabled by default)
+ * (counting is always enabled in ISSStats)
+ */
+// #define ISS_STATS_OUTPUT_OPID_STATS_ENABLED
+#undef ISS_STATS_OUTPUT_OPID_STATS_ENABLED
+
 void ISSStats::reset() {
 	memset(&s, 0, sizeof(s));
 }
 
-#define ISSSTATS_STAT_RATE(_val, _sum) (_val) << "\t\t(" << (double)(_val) / (_sum) << ")\n"
+#define ISSSTATS_STAT_RATE_ONLY(_val, _sum) "(" << (double)(_val) / (_sum) << ")\n"
+#define ISSSTATS_STAT_RATE(_val, _sum) (_val) << "\t\t" << ISSSTATS_STAT_RATE_ONLY(_val, _sum)
 #define ISSSTATS_STAT_RATE_CNT(_val) ISSSTATS_STAT_RATE(_val, s.cnt)
-#define ISSSTATS_STAT_RATE_TRAP_SUM(_val) ISSSTATS_STAT_RATE(_val, s.trap_sum)
 
 void ISSStats::print() {
 	std::cout << "============================================================================================="
@@ -45,8 +52,22 @@ void ISSStats::print() {
 		if (s.trap[trapnr] == 0) {
 			continue;
 		}
-		std::cout << "    " << trapnr << "            " << ISSSTATS_STAT_RATE_TRAP_SUM(s.trap[trapnr]);
+		char tmp[255];
+		sprintf(tmp, "%6u:    %10lu", trapnr, s.trap[trapnr]);
+		std::cout << "    " << tmp << ISSSTATS_STAT_RATE_ONLY(s.trap[trapnr], s.trap_sum);
 	}
+
+#ifdef ISS_STATS_OUTPUT_OPID_STATS_ENABLED
+	std::cout << " op_sum:                  " << s.op_sum << "\n";
+	for (unsigned int opId = 0; opId < Operation::OpId::NUMBER_OF_OPERATIONS; opId++) {
+		if (s.op[opId] == 0) {
+			continue;
+		}
+		char tmp[255];
+		sprintf(tmp, "%6u   %-30s    :    %10lu", opId, Operation::opIdStr.at(opId), s.op[opId]);
+		std::cout << "    " << tmp << ISSSTATS_STAT_RATE_ONLY(s.op[opId], s.op_sum);
+	}
+#endif /* ISS_STATS_OUTPUT_OPID_STATS_ENABLED */
 
 	std::cout << "============================================================================================="
 	             "==============================\n";

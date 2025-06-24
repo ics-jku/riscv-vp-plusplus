@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <iostream>
 
+#include "instr.h"
+
 /*
  * dummy implementation
  * = interface and high efficient (all calls optimized out)
@@ -48,6 +50,7 @@ class ISSStatsDummy {
 	void inc_mret() {}
 	void inc_sret() {}
 	void inc_trap(unsigned int trapnr) {}
+	void inc_op(Operation::OpId opId) {}
 	void print() {}
 };
 
@@ -83,6 +86,8 @@ class ISSStats : public ISSStatsDummy {
 		uint64_t sret;
 		uint64_t trap_sum;
 		uint64_t trap[TRAPNR_MAX + 1];
+		uint64_t op_sum;
+		uint64_t op[Operation::OpId::NUMBER_OF_OPERATIONS];
 	} s;
 
    public:
@@ -181,6 +186,10 @@ class ISSStats : public ISSStatsDummy {
 	}
 	void inc_sret() {
 		s.sret++;
+	}
+	void inc_op(Operation::OpId opId) {
+		s.op_sum++;
+		s.op[opId]++;
 	}
 	void inc_trap(unsigned int trapnr) {
 		if (trapnr > TRAPNR_MAX) {
