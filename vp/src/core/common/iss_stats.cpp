@@ -47,6 +47,18 @@ void ISSStats::print() {
 	std::cout << " uret:                      " << ISSSTATS_STAT_RATE_CNT(s.uret);
 	std::cout << " sret:                      " << ISSSTATS_STAT_RATE_CNT(s.sret);
 	std::cout << " mret:                      " << ISSSTATS_STAT_RATE_CNT(s.mret);
+
+	std::cout << " irq_trig_sum:              " << s.irq_trig_sum << "\n";
+	std::cout << " irq_trig_ext_U:            " << ISSSTATS_STAT_RATE(s.irq_trig_ext[UserMode + 1], s.irq_trig_sum);
+	std::cout << " irq_trig_ext_S:            "
+	          << ISSSTATS_STAT_RATE(s.irq_trig_ext[SupervisorMode + 1], s.irq_trig_sum);
+	std::cout << " irq_trig_ext_H:            "
+	          << ISSSTATS_STAT_RATE(s.irq_trig_ext[HypervisorMode + 1], s.irq_trig_sum);
+	std::cout << " irq_trig_ext_M:            " << ISSSTATS_STAT_RATE(s.irq_trig_ext[MachineMode + 1], s.irq_trig_sum);
+	std::cout << " irq_trig_ext_None:         " << ISSSTATS_STAT_RATE(s.irq_trig_ext[NoneMode + 1], s.irq_trig_sum);
+	std::cout << " irq_trig_timer:            " << ISSSTATS_STAT_RATE(s.irq_trig_timer, s.irq_trig_sum);
+	std::cout << " irq_trig_sw:               " << ISSSTATS_STAT_RATE(s.irq_trig_sw, s.irq_trig_sum);
+
 	std::cout << " trap_sum:                  " << s.trap_sum << "\n";
 	for (unsigned int trapnr = 0; trapnr <= TRAPNR_MAX; trapnr++) {
 		if (s.trap[trapnr] == 0) {

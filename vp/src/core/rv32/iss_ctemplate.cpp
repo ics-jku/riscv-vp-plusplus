@@ -7139,6 +7139,8 @@ void ISS_CT::return_from_trap_handler(PrivilegeLevel return_mode) {
 }
 
 void ISS_CT::trigger_external_interrupt(PrivilegeLevel level) {
+	stats.inc_irq_trig_ext(level);
+
 	if (trace)
 		std::cout << "[vp::iss] trigger external interrupt, " << sc_core::sc_time_stamp() << std::endl;
 
@@ -7175,6 +7177,8 @@ void ISS_CT::clear_external_interrupt(PrivilegeLevel level) {
 }
 
 void ISS_CT::trigger_timer_interrupt() {
+	stats.inc_irq_trig_timer();
+
 	if (trace)
 		std::cout << "[vp::iss] trigger timer interrupt, " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.reg.fields.mtip = true;
@@ -7188,6 +7192,8 @@ void ISS_CT::clear_timer_interrupt() {
 }
 
 void ISS_CT::trigger_software_interrupt() {
+	stats.inc_irq_trig_sw();
+
 	if (trace)
 		std::cout << "[vp::iss] trigger software interrupt, " << sc_core::sc_time_stamp() << std::endl;
 	csrs.mip.reg.fields.msip = true;

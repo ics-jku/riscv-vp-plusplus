@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "instr.h"
+#include "irq_if.h"
 
 /*
  * dummy implementation
@@ -49,6 +50,9 @@ class ISSStatsDummy {
 	void inc_uret() {}
 	void inc_mret() {}
 	void inc_sret() {}
+	void inc_irq_trig_ext(PrivilegeLevel level) {}
+	void inc_irq_trig_timer() {}
+	void inc_irq_trig_sw() {}
 	void inc_trap(unsigned int trapnr) {}
 	void inc_op(Operation::OpId opId) {}
 	void print() {}
@@ -84,6 +88,10 @@ class ISSStats : public ISSStatsDummy {
 		uint64_t uret;
 		uint64_t mret;
 		uint64_t sret;
+		uint64_t irq_trig_sum;
+		uint64_t irq_trig_ext[MachineMode + 2];
+		uint64_t irq_trig_timer;
+		uint64_t irq_trig_sw;
 		uint64_t trap_sum;
 		uint64_t trap[TRAPNR_MAX + 1];
 		uint64_t op_sum;
@@ -190,6 +198,18 @@ class ISSStats : public ISSStatsDummy {
 	void inc_op(Operation::OpId opId) {
 		s.op_sum++;
 		s.op[opId]++;
+	}
+	void inc_irq_trig_ext(PrivilegeLevel level) {
+		s.irq_trig_sum++;
+		s.irq_trig_ext[level + 1]++;
+	}
+	void inc_irq_trig_timer() {
+		s.irq_trig_sum++;
+		s.irq_trig_timer++;
+	}
+	void inc_irq_trig_sw() {
+		s.irq_trig_sum++;
+		s.irq_trig_sw++;
 	}
 	void inc_trap(unsigned int trapnr) {
 		if (trapnr > TRAPNR_MAX) {
