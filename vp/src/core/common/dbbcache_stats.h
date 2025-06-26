@@ -1,10 +1,16 @@
 /*
- * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  * see dbbcache.h
  */
 
 #ifndef RISCV_ISA_DBBCACHE_STATS_H
 #define RISCV_ISA_DBBCACHE_STATS_H
+
+/*
+ * enable/disabled raw csv output of all stats (disabled by default)
+ */
+// #define DBBCACHE_STATS_OUTPUT_CSV_ENABLED
+#undef DBBCACHE_STATS_OUTPUT_CSV_ENABLED
 
 #include <climits>
 #include <cstdint>
@@ -70,7 +76,7 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 	friend T_DBBCache;
 
    protected:
-	/* must be used for all entries in struct below */
+	/* must be used for all entries in struct below (see csv print) */
 	using selem_t = uint64_t;
 	/* use struct to simplifiy reset */
 	struct {
@@ -303,6 +309,16 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 		std::cout << " fast_abort:                " << DBBCACHE_STAT_RATE(s.fast_abort, s.cnt);
 		std::cout << " miss:                      " << DBBCACHE_STAT_RATE(s.cnt - s.hit, s.cnt);
 		std::cout << " err invalid pc:            " << s.err_invalid_pc << "\n";
+
+#ifdef DBBCACHE_STATS_OUTPUT_CSV_ENABLED
+		/* raw output (csv for machine interpreters) */
+		printf("\nRAWCSV;DBBCACHE_STATS;%lu;", this->dbbcache.hartId);
+		selem_t *raw_s = (selem_t *)&s;
+		for (unsigned int i = 0; i < sizeof(s) / sizeof(selem_t); i++) {
+			printf("%lu;", raw_s[i]);
+		}
+		printf("\n");
+#endif /* DBBCACHE_STATS_OUTPUT_CSV_ENABLED */
 
 		auto blkAllocLenHist = Histogram_T<0, 10000>("BlockAllocLen");
 		auto blkLenHist = Histogram_T<0, 10000>("BlockLen");

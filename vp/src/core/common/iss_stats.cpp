@@ -10,6 +10,12 @@
 // #define ISS_STATS_OUTPUT_OPID_STATS_ENABLED
 #undef ISS_STATS_OUTPUT_OPID_STATS_ENABLED
 
+/*
+ * enable/disabled raw csv output of all stats (disabled by default)
+ */
+// #define ISS_STATS_OUTPUT_CSV_ENABLED
+#undef ISS_STATS_OUTPUT_CSV_ENABLED
+
 void ISSStats::reset() {
 	memset(&s, 0, sizeof(s));
 }
@@ -80,6 +86,16 @@ void ISSStats::print() {
 		std::cout << "    " << tmp << ISSSTATS_STAT_RATE_ONLY(s.op[opId], s.op_sum);
 	}
 #endif /* ISS_STATS_OUTPUT_OPID_STATS_ENABLED */
+
+#ifdef ISS_STATS_OUTPUT_CSV_ENABLED
+	/* raw output (csv for machine interpreters) */
+	printf("\nRAWCSV;ISS_STATS;%lu;", this->hartId);
+	selem_t *raw_s = (selem_t *)&s;
+	for (unsigned int i = 0; i < sizeof(s) / sizeof(selem_t); i++) {
+		printf("%lu;", raw_s[i]);
+	}
+	printf("\n");
+#endif /* ISS_STATS_OUTPUT_CSV_ENABLED */
 
 	std::cout << "============================================================================================="
 	             "==============================\n";

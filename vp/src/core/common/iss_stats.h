@@ -62,7 +62,7 @@ class ISSStats : public ISSStatsDummy {
    private:
 	static constexpr unsigned int TRAPNR_MAX = 31;
 
-	/* must be used for all entries in struct below */
+	/* must be used for all entries in struct below (see csv print) */
 	using selem_t = uint64_t;
 	/* use struct to simplifiy reset */
 	struct {

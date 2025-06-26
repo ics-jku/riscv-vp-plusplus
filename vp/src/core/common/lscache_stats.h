@@ -1,10 +1,16 @@
 /*
- * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  * see lscache.h
  */
 
 #ifndef RISCV_ISA_LSCACHE_STATS_H
 #define RISCV_ISA_LSCACHE_STATS_H
+
+/*
+ * enable/disabled raw csv output of all stats (disabled by default)
+ */
+// #define LSCACHE_STATS_OUTPUT_CSV_ENABLED
+#undef LSCACHE_STATS_OUTPUT_CSV_ENABLED
 
 #include <climits>
 #include <cstdint>
@@ -41,7 +47,7 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 	friend T_LSCache;
 
    protected:
-	/* must be used for all entries in struct below */
+	/* must be used for all entries in struct below (see csv print) */
 	using selem_t = uint64_t;
 	/* use struct to simplifiy reset */
 	struct {
@@ -121,6 +127,17 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 		std::cout << " hit_load:                  " << LSCACHE_STAT_RATE(s.hit_load, s.loads);
 		std::cout << " hit_store:                 " << LSCACHE_STAT_RATE(s.hit_store, s.stores);
 		std::cout << " hit:                       " << LSCACHE_STAT_RATE(s.hit, s.cnt);
+
+#ifdef LSCACHE_STATS_OUTPUT_CSV_ENABLED
+		/* raw output (csv for machine interpreters) */
+		printf("\nRAWCSV;LSCACHE_STATS;%lu;", this->lscache.hartId);
+		selem_t *raw_s = (selem_t *)&s;
+		for (unsigned int i = 0; i < sizeof(s) / sizeof(selem_t); i++) {
+			printf("%lu;", raw_s[i]);
+		}
+		printf("\n");
+#endif /* LSCACHE_STATS_OUTPUT_CSV_ENABLED */
+
 		std::cout << "============================================================================================="
 		             "==============================\n";
 
