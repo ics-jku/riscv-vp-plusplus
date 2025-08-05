@@ -1428,14 +1428,20 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMIN_H) {
 					fp_prepare_instr();
-
+					/*
+					 * 0. check for signaling NaN input -> raise invalid operation execution flag
+					 * 1. check if input is NaN
+					 *    1.a check if both inputs are NaN -> return canonical NaN
+					 *    1.b else return input, that is not NaN
+					 */
 					bool rs1_smaller = f16_lt_quiet(fp_regs.f16(RS1), fp_regs.f16(RS2)) ||
 					                   (f16_eq(fp_regs.f16(RS1), fp_regs.f16(RS2)) && f16_isNegative(fp_regs.f16(RS1)));
-
-					if (f16_isNaN(fp_regs.f16(RS1)) && f16_isNaN(fp_regs.f16(RS2))) {
+					bool rs1_isnan = f16_isNaN(fp_regs.f16(RS1));
+					bool rs2_isnan = f16_isNaN(fp_regs.f16(RS2));
+					if (rs1_isnan && rs2_isnan) {
 						fp_regs.write(RD, f16_defaultNaN);
 					} else {
-						if (rs1_smaller)
+						if (rs1_smaller || rs2_isnan)
 							fp_regs.write(RD, fp_regs.f16(RS1));
 						else
 							fp_regs.write(RD, fp_regs.f16(RS2));
@@ -1447,14 +1453,20 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMAX_H) {
 					fp_prepare_instr();
-
+					/*
+					 * 0. check for signaling NaN input -> raise invalid operation execution flag
+					 * 1. check if input is NaN
+					 *    1.a check if both inputs are NaN -> return canonical NaN
+					 *    1.b else return input, that is not NaN
+					 */
 					bool rs1_greater = f16_lt_quiet(fp_regs.f16(RS2), fp_regs.f16(RS1)) ||
 					                   (f16_eq(fp_regs.f16(RS2), fp_regs.f16(RS1)) && f16_isNegative(fp_regs.f16(RS2)));
-
-					if (f16_isNaN(fp_regs.f16(RS1)) && f16_isNaN(fp_regs.f16(RS2))) {
+					bool rs1_isnan = f16_isNaN(fp_regs.f16(RS1));
+					bool rs2_isnan = f16_isNaN(fp_regs.f16(RS2));
+					if (rs1_isnan && rs2_isnan) {
 						fp_regs.write(RD, f16_defaultNaN);
 					} else {
-						if (rs1_greater)
+						if (rs1_greater || rs2_isnan)
 							fp_regs.write(RD, fp_regs.f16(RS1));
 						else
 							fp_regs.write(RD, fp_regs.f16(RS2));
@@ -1736,14 +1748,20 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMIN_S) {
 					fp_prepare_instr();
-
+					/*
+					 * 0. check for signaling NaN input -> raise invalid operation execution flag
+					 * 1. check if input is NaN
+					 *    1.a check if both inputs are NaN -> return canonical NaN
+					 *    1.b else return input, that is not NaN
+					 */
 					bool rs1_smaller = f32_lt_quiet(fp_regs.f32(RS1), fp_regs.f32(RS2)) ||
 					                   (f32_eq(fp_regs.f32(RS1), fp_regs.f32(RS2)) && f32_isNegative(fp_regs.f32(RS1)));
-
-					if (f32_isNaN(fp_regs.f32(RS1)) && f32_isNaN(fp_regs.f32(RS2))) {
+					bool rs1_isnan = f32_isNaN(fp_regs.f32(RS1));
+					bool rs2_isnan = f32_isNaN(fp_regs.f32(RS2));
+					if (rs1_isnan && rs2_isnan) {
 						fp_regs.write(RD, f32_defaultNaN);
 					} else {
-						if (rs1_smaller)
+						if (rs1_smaller || rs2_isnan)
 							fp_regs.write(RD, fp_regs.f32(RS1));
 						else
 							fp_regs.write(RD, fp_regs.f32(RS2));
@@ -1755,14 +1773,20 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMAX_S) {
 					fp_prepare_instr();
-
+					/*
+					 * 0. check for signaling NaN input -> raise invalid operation execution flag
+					 * 1. check if input is NaN
+					 *    1.a check if both inputs are NaN -> return canonical NaN
+					 *    1.b else return input, that is not NaN
+					 */
 					bool rs1_greater = f32_lt_quiet(fp_regs.f32(RS2), fp_regs.f32(RS1)) ||
 					                   (f32_eq(fp_regs.f32(RS2), fp_regs.f32(RS1)) && f32_isNegative(fp_regs.f32(RS2)));
-
-					if (f32_isNaN(fp_regs.f32(RS1)) && f32_isNaN(fp_regs.f32(RS2))) {
+					bool rs1_isnan = f32_isNaN(fp_regs.f32(RS1));
+					bool rs2_isnan = f32_isNaN(fp_regs.f32(RS2));
+					if (rs1_isnan && rs2_isnan) {
 						fp_regs.write(RD, f32_defaultNaN);
 					} else {
-						if (rs1_greater)
+						if (rs1_greater || rs2_isnan)
 							fp_regs.write(RD, fp_regs.f32(RS1));
 						else
 							fp_regs.write(RD, fp_regs.f32(RS2));
@@ -2009,14 +2033,20 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMIN_D) {
 					fp_prepare_instr();
-
+					/*
+					 * 0. check for signaling NaN input -> raise invalid operation execution flag
+					 * 1. check if input is NaN
+					 *    1.a check if both inputs are NaN -> return canonical NaN
+					 *    1.b else return input, that is not NaN
+					 */
 					bool rs1_smaller = f64_lt_quiet(fp_regs.f64(RS1), fp_regs.f64(RS2)) ||
 					                   (f64_eq(fp_regs.f64(RS1), fp_regs.f64(RS2)) && f64_isNegative(fp_regs.f64(RS1)));
-
-					if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
+					bool rs1_isnan = f64_isNaN(fp_regs.f64(RS1));
+					bool rs2_isnan = f64_isNaN(fp_regs.f64(RS2));
+					if (rs1_isnan && rs2_isnan) {
 						fp_regs.write(RD, f64_defaultNaN);
 					} else {
-						if (rs1_smaller)
+						if (rs1_smaller || rs2_isnan)
 							fp_regs.write(RD, fp_regs.f64(RS1));
 						else
 							fp_regs.write(RD, fp_regs.f64(RS2));
@@ -2028,14 +2058,20 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMAX_D) {
 					fp_prepare_instr();
-
+					/*
+					 * 0. check for signaling NaN input -> raise invalid operation execution flag
+					 * 1. check if input is NaN
+					 *    1.a check if both inputs are NaN -> return canonical NaN
+					 *    1.b else return input, that is not NaN
+					 */
 					bool rs1_greater = f64_lt_quiet(fp_regs.f64(RS2), fp_regs.f64(RS1)) ||
 					                   (f64_eq(fp_regs.f64(RS2), fp_regs.f64(RS1)) && f64_isNegative(fp_regs.f64(RS2)));
-
-					if (f64_isNaN(fp_regs.f64(RS1)) && f64_isNaN(fp_regs.f64(RS2))) {
+					bool rs1_isnan = f64_isNaN(fp_regs.f64(RS1));
+					bool rs2_isnan = f64_isNaN(fp_regs.f64(RS2));
+					if (rs1_isnan && rs2_isnan) {
 						fp_regs.write(RD, f64_defaultNaN);
 					} else {
-						if (rs1_greater)
+						if (rs1_greater || rs2_isnan)
 							fp_regs.write(RD, fp_regs.f64(RS1));
 						else
 							fp_regs.write(RD, fp_regs.f64(RS2));

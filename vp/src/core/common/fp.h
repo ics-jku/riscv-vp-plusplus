@@ -55,7 +55,7 @@ inline bool f16_isNaN(float16_t x) {
 	// - sign bit can be 0 or 1
 	// - all exponent bits set
 	// - at least one fraction bit set
-	return ((~x.v & 0x7E00) == 0) && (x.v & 0x01FF);
+	return ((x.v & 0x7C00) == 0x7C00) && (x.v & 0x03FF);
 }
 
 inline bool f32_isNaN(float32_t x) {
@@ -63,12 +63,12 @@ inline bool f32_isNaN(float32_t x) {
 	// - sign bit can be 0 or 1
 	// - all exponent bits set
 	// - at least one fraction bit set
-	return ((~x.v & 0x7F800000) == 0) && (x.v & 0x007FFFFF);
+	return ((x.v & 0x7F800000) == 0x7F800000) && (x.v & 0x007FFFFF);
 }
 
 inline bool f64_isNaN(float64_t x) {
 	// similar to f32 NaN
-	return ((~x.v & 0x7FF0000000000000) == 0) && (x.v & 0x000FFFFFFFFFFFFF);
+	return ((x.v & 0x7FF0000000000000) == 0x7FF0000000000000) && (x.v & 0x000FFFFFFFFFFFFF);
 }
 
 inline float16_t f16_sgnj(float16_t f1, float16_t f2) {
