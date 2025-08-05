@@ -1579,7 +1579,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FMV_X_H) {
 					fp_prepare_instr();
-					regs[RD] = fp_regs.f16(RS1).v;
+					regs[RD] = (xlen_t)((int16_t)fp_regs.u32(RS1));
 					reset_reg_zero();
 				}
 				OP_END();
