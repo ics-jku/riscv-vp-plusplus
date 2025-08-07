@@ -70,4 +70,4 @@ codestyle:
 			-path "./*/build/*"					\
 		\)								\
 		-print								\
-		| xargs clang-format -i -style=file
+		| xargs clang-format-14 -i -style=file
