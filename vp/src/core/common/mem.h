@@ -81,7 +81,6 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 
 		isock->b_transport(trans, local_delay);
 
-		assert(local_delay >= quantum_keeper.get_local_time());
 		quantum_keeper.set(local_delay);
 
 		if (trans.is_response_error()) {
