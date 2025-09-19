@@ -41,3 +41,7 @@ INSTALL(TARGETS
 	linux-vp
 	linux-sc-vp
 	RUNTIME DESTINATION bin)
+
+# Install the script from the "dt" subdirectory
+install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/dt/linux-dt-gen.py
+    DESTINATION bin)
