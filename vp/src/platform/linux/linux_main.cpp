@@ -22,6 +22,7 @@
 #include "mmu.h"
 #include "platform/common/channel_console.h"
 #include "platform/common/channel_slip.h"
+#include "platform/common/ds1307.h"
 #include "platform/common/fu540_gpio.h"
 #include "platform/common/fu540_i2c.h"
 #include "platform/common/fu540_uart.h"
@@ -264,6 +265,9 @@ int sc_main(int argc, char **argv) {
 	if (opt.sd_card_image.length()) {
 		spi_sd_card.insert(opt.sd_card_image);
 	}
+
+	DS1307 *rtc_ds1307 = new DS1307();
+	i2c.register_device(0x68, rtc_ds1307);
 
 	Core *cores[NUM_CORES];
 	for (unsigned i = 0; i < NUM_CORES; i++) {

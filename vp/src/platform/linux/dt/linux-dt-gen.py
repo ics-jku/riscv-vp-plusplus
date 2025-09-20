@@ -376,6 +376,14 @@ dt_base = """
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "okay";
+
+			rtc@68 {
+				compatible = "dallas,ds1307";
+				reg = <0x68>;
+				//interrupt-parent = <&gpio4>;
+				//interrupts = <20 0>;
+				//trickle-resistor-ohms = <250>;
+			};
 		};
 
 		qspi0: spi@10040000 {
