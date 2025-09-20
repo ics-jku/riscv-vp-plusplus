@@ -18,6 +18,7 @@ add_library(platform-common
 		spi_sd_card.cpp
 		options.cpp
 		net_trace.cpp
+		fu540_i2c.cpp
 		${HEADERS})
 
 target_include_directories(platform-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -364,6 +364,20 @@ dt_base = """
 			status = "okay";
 		};
 
+		i2c0: i2c@10030000 {
+			compatible = "sifive,fu540-c000-i2c", "sifive,i2c0";
+			reg = <0x0 0x10030000 0x0 0x1000>;
+			interrupt-parent = <&plic0>;
+			interrupts = <50>;
+			//clocks = <&prci FU540_PRCI_CLK_TLCLK>;
+			clocks = <&refclk>;
+			reg-shift = <2>;
+			reg-io-width = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+		};
+
 		qspi0: spi@10040000 {
 			/* spi flash interface not supported yet */
 			compatible = "sifive,fu540-c000-spi", "sifive,spi0";
