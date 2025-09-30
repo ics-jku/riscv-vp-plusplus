@@ -145,12 +145,15 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	uint64_t get_progam_counter(void) override;
 	void enable_debug(void) override;
 
-	void enable_trace(bool ena) {
+	void enable_trace(bool ena) override {
 		trace = ena;
 		force_slow_path();
 	}
-	bool trace_enabled(void) {
+	bool trace_enabled(void) override {
 		return trace;
+	}
+	void print_stats(void) override {
+		stats.print();
 	}
 
 	CoreExecStatus get_status(void) override {

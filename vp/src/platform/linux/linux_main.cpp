@@ -272,6 +272,9 @@ int sc_main(int argc, char **argv) {
 	Core *cores[NUM_CORES];
 	for (unsigned i = 0; i < NUM_CORES; i++) {
 		cores[i] = new Core(&isa_config, i, dmi);
+
+		// enable interactive debug via console
+		channel_console.debug_targets_add(&cores[i]->iss);
 	}
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();

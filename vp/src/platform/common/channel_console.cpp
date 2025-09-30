@@ -8,11 +8,36 @@
 #define CTRL(c) ((c)&0x1f)
 
 #define KEY_ESC CTRL('a')        /* Ctrl-a (character to enter command mode) */
+#define KEY_HELP 'h'             /* h (print help) */
+#define KEY_TRACE 't'            /* t (toggle trace mode) */
+#define KEY_STATS 's'            /* s (print statistics) */
 #define KEY_EXIT 'x'             /* x (character to exit in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
 Channel_Console::~Channel_Console() {
 	stop();
+}
+
+void Channel_Console::debug_targets_toggle_trace_mode(void) {
+	trace_mode = !trace_mode;
+	if (trace_mode) {
+		std::cout << "CONSOLE: enable trace mode" << std::endl;
+	}
+	for (debug_target_if *debug_target : debug_targets) {
+		debug_target->enable_trace(trace_mode);
+	}
+	if (!trace_mode) {
+		std::cout << "CONSOLE: disable trace mode" << std::endl;
+	}
+}
+
+void Channel_Console::debug_targets_print_stats(void) {
+	std::cout << "CONSOLE: print stats" << std::endl;
+	std::cout << "++++++++++++++++++++" << std::endl;
+	for (debug_target_if *debug_target : debug_targets) {
+		debug_target->print_stats();
+	}
+	std::cout << "++++++++++++++++++++" << std::endl;
 }
 
 int Channel_Console::open_fd() {
@@ -21,6 +46,8 @@ int Channel_Console::open_fd() {
 	 * -> Disable the receiver in this case!
 	 */
 	set_write_only(!isatty(STDIN_FILENO));
+
+	std::cout << "CONSOLE: press ^A-h for help" << std::endl;
 
 	enableRawMode(STDIN_FILENO);
 	return STDIN_FILENO;
@@ -65,6 +92,21 @@ void Channel_Console::handle_cmd(uint8_t cmd) {
 	switch (cmd) {
 		case KEY_ESC: /* double escape */
 			rxpush(cmd);
+			break;
+		case KEY_HELP:
+			std::cout << "CONSOLE: HELP:\n"
+			          << "    ^a-^a  send ^A (ctrl-a)\n"
+			          << "    ^a-h   print this help\n"
+			          << "    ^a-s   print stats of debug targets\n"
+			          << "           (empty by default - check compile flags)\n"
+			          << "    ^a-t   toggle trace mode of debug targets\n"
+			          << "    ^a-x   stop simulation and exit" << std::endl;
+			break;
+		case KEY_TRACE:
+			debug_targets_toggle_trace_mode();
+			break;
+		case KEY_STATS:
+			debug_targets_print_stats();
 			break;
 		case KEY_EXIT:
 		case KEY_CEXIT:

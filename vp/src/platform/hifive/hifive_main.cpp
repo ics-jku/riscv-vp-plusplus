@@ -181,7 +181,12 @@ int sc_main(int argc, char **argv) {
 		    16, std::bind(&Channel_Tunnel::nonblock_receive, channel_tunnel, std::placeholders::_1));
 		channel_uart0 = channel_tunnel;
 	} else {
-		channel_uart0 = new Channel_Console();
+		Channel_Console *channel_console = new Channel_Console();
+
+		// enable interactive debug via console
+		channel_console->debug_targets_add(&core);
+
+		channel_uart0 = channel_console;
 	}
 	FU540_UART uart0("UART0", channel_uart0, 3);
 

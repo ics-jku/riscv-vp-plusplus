@@ -141,6 +141,9 @@ int sc_main(int argc, char **argv) {
 	Display display("Display");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
+	// enable interactive debug via console
+	channel_console.debug_targets_add(&core);
+
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
 	InstrMemoryProxy instr_mem(dmi, core);
 
