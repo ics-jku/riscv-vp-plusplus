@@ -36,7 +36,7 @@ struct csr_misa_64 : csr_misa {
 		uint64_t val = 0;
 		struct fields {
 			unsigned extensions : 26;
-			unsigned long wiri : 36;
+			uint64_t wiri : 36;
 			unsigned mxl : 2;
 		} fields;
 	} reg;
@@ -120,8 +120,8 @@ struct csr_mtvec {
 	union reg {
 		uint64_t val = 0;
 		struct fields {
-			unsigned mode : 2;        // WARL
-			unsigned long base : 62;  // WARL
+			unsigned mode : 2;   // WARL
+			uint64_t base : 62;  // WARL
 		} fields;
 	} reg;
 
@@ -157,7 +157,7 @@ struct csr_mie {
 			unsigned wpri3 : 1;
 			unsigned meie : 1;
 
-			unsigned long wpri4 : 52;
+			uint64_t wpri4 : 52;
 		} fields;
 	} reg;
 };
@@ -181,7 +181,7 @@ struct csr_mip {
 			unsigned wiri3 : 1;
 			unsigned meip : 1;
 
-			unsigned long wiri4 : 52;
+			uint64_t wiri4 : 52;
 		} fields;
 	} reg;
 };
@@ -196,7 +196,7 @@ struct csr_mcause {
 	union reg {
 		uint64_t val = 0;
 		struct fields {
-			unsigned long exception_code : 63;  // WLRL
+			uint64_t exception_code : 63;  // WLRL
 			unsigned interrupt : 1;
 		} fields;
 	} reg;
@@ -209,7 +209,7 @@ struct csr_mcounteren {
 			unsigned CY : 1;
 			unsigned TM : 1;
 			unsigned IR : 1;
-			unsigned long reserved : 61;
+			uint64_t reserved : 61;
 		} fields;
 	} reg;
 };
@@ -221,7 +221,7 @@ struct csr_mcountinhibit {
 			unsigned CY : 1;
 			unsigned zero : 1;
 			unsigned IR : 1;
-			unsigned long reserved : 61;
+			uint64_t reserved : 61;
 		} fields;
 	} reg;
 };
@@ -236,7 +236,7 @@ struct csr_pmpaddr {
 	union reg {
 		uint64_t val = 0;
 		struct fields {
-			unsigned long address : 54;
+			uint64_t address : 54;
 			unsigned zero : 10;
 		} fields;
 	} reg;
@@ -250,9 +250,9 @@ struct csr_satp {
 	union reg {
 		uint64_t val = 0;
 		struct fields {
-			unsigned long ppn : 44;  // WARL
-			unsigned asid : 16;      // WARL
-			unsigned mode : 4;       // WARL
+			uint64_t ppn : 44;   // WARL
+			unsigned asid : 16;  // WARL
+			unsigned mode : 4;   // WARL
 		} fields;
 	} reg;
 };
@@ -285,7 +285,7 @@ struct csr_vtype {
 			unsigned vsew : 3;
 			unsigned vta : 1;
 			unsigned vma : 1;
-			unsigned long reserved : 55;
+			uint64_t reserved : 55;
 			unsigned vill : 1;
 		} fields;
 	} reg;
@@ -308,7 +308,7 @@ struct csr_vxrm {
 		uint64_t val = 0;
 		struct fields {
 			unsigned vxrm : 2;
-			unsigned long zero : 62;
+			uint64_t zero : 62;
 		} fields;
 	} reg;
 };
@@ -318,7 +318,7 @@ struct csr_vxsat {
 		uint64_t val = 0;
 		struct fields {
 			unsigned vxsat : 1;
-			unsigned long zero : 63;
+			uint64_t zero : 63;
 		} fields;
 	} reg;
 };
@@ -329,7 +329,7 @@ struct csr_vcsr {
 		struct fields {
 			unsigned vxsat : 1;
 			unsigned vxrm : 2;
-			unsigned long reserved : 61;
+			uint64_t reserved : 61;
 		} fields;
 	} reg;
 };
