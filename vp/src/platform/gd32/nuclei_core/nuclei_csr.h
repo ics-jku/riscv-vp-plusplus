@@ -143,7 +143,7 @@ struct nuclei_csr_msavestatus {
 
 struct nuclei_csr_mintstatus {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned uil : 8;
 			unsigned reserved1 : 16;
@@ -154,7 +154,7 @@ struct nuclei_csr_mintstatus {
 
 struct nuclei_csr_mtvt2 {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned mtvt2en : 1;
 			unsigned reserved1 : 1;
@@ -165,7 +165,7 @@ struct nuclei_csr_mtvt2 {
 
 struct nuclei_csr_sleepvalue {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned sleepvalue : 1;
 			unsigned reserved1 : 31;
@@ -175,7 +175,7 @@ struct nuclei_csr_sleepvalue {
 
 struct nuclei_csr_txevt {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned txevt : 1;
 			unsigned reserved1 : 31;
@@ -185,7 +185,7 @@ struct nuclei_csr_txevt {
 
 struct nuclei_csr_wfe {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned wfe : 1;
 			unsigned reserved1 : 31;
@@ -195,7 +195,7 @@ struct nuclei_csr_wfe {
 
 struct nuclei_csr_ucode {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned ov : 1;
 			unsigned reserved1 : 31;
@@ -205,7 +205,7 @@ struct nuclei_csr_ucode {
 
 struct nuclei_csr_mcfg_info {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned tee : 1;
 			unsigned ecc : 1;
@@ -225,7 +225,7 @@ struct nuclei_csr_mcfg_info {
 
 struct nuclei_csr_micfg_info {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned ic_set : 4;
 			unsigned ic_way : 3;
@@ -240,7 +240,7 @@ struct nuclei_csr_micfg_info {
 
 struct nuclei_csr_mdcfg_info {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned dc_set : 4;
 			unsigned dc_way : 3;
@@ -254,7 +254,7 @@ struct nuclei_csr_mdcfg_info {
 
 struct nuclei_csr_mtlbcfg_info {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned mtlb_set : 4;
 			unsigned mtlb_way : 3;
@@ -270,7 +270,7 @@ struct nuclei_csr_mtlbcfg_info {
 
 struct nuclei_csr_mppicfg_info {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned reserved1 : 1;
 			unsigned ppi_size : 5;
@@ -282,7 +282,7 @@ struct nuclei_csr_mppicfg_info {
 
 struct nuclei_csr_mfiocfg_info {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned reserved1 : 1;
 			unsigned fio_size : 5;
@@ -294,7 +294,7 @@ struct nuclei_csr_mfiocfg_info {
 
 struct nuclei_csr_mecc_lock {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned ecc_lock : 1;
 			unsigned reserved1 : 31;
@@ -304,7 +304,7 @@ struct nuclei_csr_mecc_lock {
 
 struct nuclei_csr_mecc_code {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned code : 7;       // or 8 or 9
 			unsigned reserved1 : 9;  // or 10 or 11
@@ -318,7 +318,7 @@ struct nuclei_csr_mecc_code {
 
 struct nuclei_csr_mtlb_ctl {
 	union reg {
-		u_int32_t val = 0;
+		uint32_t val = 0;
 		struct fields {
 			unsigned tlb_ecc_en : 1;
 			unsigned tlb_ecc_excp_en : 1;
