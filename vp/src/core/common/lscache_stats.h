@@ -43,16 +43,16 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
    protected:
 	/* use struct to simplifiy reset */
 	struct {
-		unsigned long cnt;
-		unsigned long flushs;
-		unsigned long loads;
-		unsigned long stores;
-		unsigned long bus_locked;
-		unsigned long no_dmi;
-		unsigned long dmi;
-		unsigned long hit;
-		unsigned long hit_load;
-		unsigned long hit_store;
+		uint64_t cnt;
+		uint64_t flushs;
+		uint64_t loads;
+		uint64_t stores;
+		uint64_t bus_locked;
+		uint64_t no_dmi;
+		uint64_t dmi;
+		uint64_t hit;
+		uint64_t hit_load;
+		uint64_t hit_store;
 	} s;
 
 	LSCacheStats_T(T_LSCache &lscache) : LSCacheStatsDummy_T<T_LSCache>(lscache) {
@@ -104,7 +104,7 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 	}
 
    public:
-#define LSCACHE_STAT_RATE(_val, _cnt) (_val) << "\t\t(" << (float)(_val) / (_cnt) << ")\n"
+#define LSCACHE_STAT_RATE(_val, _cnt) (_val) << "\t\t(" << (double)(_val) / (_cnt) << ")\n"
 	void print() {
 		std::cout << "============================================================================================="
 		             "==============================\n";

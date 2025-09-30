@@ -71,53 +71,53 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 
    protected:
 	struct {
-		unsigned long cnt;
-		unsigned long cache_ignored_instr;
+		uint64_t cnt;
+		uint64_t cache_ignored_instr;
 
-		unsigned long fetches;
-		unsigned long decodes;
-		unsigned long fetch_exceptions;
+		uint64_t fetches;
+		uint64_t decodes;
+		uint64_t fetch_exceptions;
 
-		unsigned long coherence_updates;
-		unsigned long refetches;
-		unsigned long refetch_exceptions;
-		unsigned long redecodes;
+		uint64_t coherence_updates;
+		uint64_t refetches;
+		uint64_t refetch_exceptions;
+		uint64_t redecodes;
 
-		unsigned long blocks;
+		uint64_t blocks;
 
-		unsigned long map_search;
-		unsigned long map_found;
+		uint64_t map_search;
+		uint64_t map_found;
 
-		unsigned long branches;
-		unsigned long branches_not_taken;
-		unsigned long branches_taken;
-		unsigned long sjumps;
-		unsigned long branch_sjump;
-		unsigned long branch_sjump_fast_hits;
-		unsigned long branch_sjump_slow_hits;
-		unsigned long branch_sjump_hits;
-		unsigned long djumps;
-		unsigned long djump_hits;
-		unsigned long trap_enters;
-		unsigned long trap_enter_hits;
-		unsigned long trap_rets;
-		unsigned long swtch;
-		unsigned long swtch_same;
-		unsigned long swtch_same_fast;
-		unsigned long swtch_same_slow;
-		unsigned long swtch_other;
+		uint64_t branches;
+		uint64_t branches_not_taken;
+		uint64_t branches_taken;
+		uint64_t sjumps;
+		uint64_t branch_sjump;
+		uint64_t branch_sjump_fast_hits;
+		uint64_t branch_sjump_slow_hits;
+		uint64_t branch_sjump_hits;
+		uint64_t djumps;
+		uint64_t djump_hits;
+		uint64_t trap_enters;
+		uint64_t trap_enter_hits;
+		uint64_t trap_rets;
+		uint64_t swtch;
+		uint64_t swtch_same;
+		uint64_t swtch_same_fast;
+		uint64_t swtch_same_slow;
+		uint64_t swtch_other;
 
-		unsigned long hit;
-		unsigned long fast_hit;
-		unsigned long fast_abort;
-		unsigned long med_hit;
-		unsigned long slow_hit;
+		uint64_t hit;
+		uint64_t fast_hit;
+		uint64_t fast_abort;
+		uint64_t med_hit;
+		uint64_t slow_hit;
 
-		unsigned long err_invalid_pc;
+		uint64_t err_invalid_pc;
 
-		unsigned long stats_cnt;
-		unsigned long long usedCohMemSum;
-		unsigned long long overallCohMemSum;
+		uint64_t stats_cnt;
+		uint64_t usedCohMemSum;
+		uint64_t overallCohMemSum;
 	} s;
 
 	DBBCacheStats_T(T_DBBCache &lscache) : DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCACHE_SIZE>(lscache) {
@@ -256,7 +256,7 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 	}
 
    public:
-#define DBBCACHE_STAT_RATE(_val, _cnt) (_val) << "\t\t(" << (float)(_val) / (_cnt) << ")\n"
+#define DBBCACHE_STAT_RATE(_val, _cnt) (_val) << "\t\t(" << (double)(_val) / (_cnt) << ")\n"
 	void print() {
 		s.stats_cnt++;
 
@@ -306,12 +306,12 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 		auto blkLenHist = Histogram_T<0, 10000>("BlockLen");
 		auto jumpDynLinkCacheHist = Histogram_T<1, T_JUMPDYNLINKCACHE_SIZE>("JumpDynLinkCache");
 		auto branchLinkListHist = Histogram_T<1, 10000>("branchLinkList");
-		unsigned int n_blocks = 0;
-		unsigned int n_coherent_blocks = 0;
-		unsigned int n_alloc_entries = 0;
-		unsigned int n_coherent_alloc_entries = 0;
-		unsigned int n_entries = 0;
-		unsigned int n_coherent_entries = 0;
+		uint64_t n_blocks = 0;
+		uint64_t n_coherent_blocks = 0;
+		uint64_t n_alloc_entries = 0;
+		uint64_t n_coherent_alloc_entries = 0;
+		uint64_t n_entries = 0;
+		uint64_t n_coherent_entries = 0;
 		for (const auto &it : this->dbbcache.blockmap) {
 			n_blocks++;
 			n_alloc_entries += it.second->alloc_len;
@@ -334,35 +334,37 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 		std::cout << " trapCacheUse:        " << this->dbbcache.trapLinkCache.n_dirty() << "/"
 		          << this->dbbcache.trapLinkCache.size() << "\n";
 
-		unsigned int usedCohMem =
+		uint64_t usedCohMem =
 		    n_coherent_blocks * sizeof(class T_DBBCache::Block) + n_coherent_entries * sizeof(class T_DBBCache::Entry);
-		std::cout << " usedCoherentMem:     " << usedCohMem << " bytes\t\t(" << (float)usedCohMem / 1024.0 << " KiB)\n";
-		unsigned int overallCohMem = n_coherent_blocks * sizeof(class T_DBBCache::Block) +
-		                             n_coherent_alloc_entries * sizeof(class T_DBBCache::Entry);
-		std::cout << " overallCoherentMem:  " << overallCohMem << " bytes\t\t(" << (float)overallCohMem / 1024.0
+		std::cout << " usedCoherentMem:     " << usedCohMem << " bytes\t\t(" << (double)usedCohMem / 1024.0
 		          << " KiB)\n";
-		unsigned int wastedCohMem = overallCohMem - usedCohMem;
-		std::cout << " wastedCoherentMem:   " << wastedCohMem << " bytes\t\t(" << (float)wastedCohMem / 1024.0
+		uint64_t overallCohMem = n_coherent_blocks * sizeof(class T_DBBCache::Block) +
+		                         n_coherent_alloc_entries * sizeof(class T_DBBCache::Entry);
+		std::cout << " overallCoherentMem:  " << overallCohMem << " bytes\t\t(" << (double)overallCohMem / 1024.0
 		          << " KiB)\n";
-		std::cout << " CohMemOverhead:      " << (float)overallCohMem / usedCohMem << "\n";
+		uint64_t wastedCohMem = overallCohMem - usedCohMem;
+		std::cout << " wastedCoherentMem:   " << wastedCohMem << " bytes\t\t(" << (double)wastedCohMem / 1024.0
+		          << " KiB)\n";
+		std::cout << " CohMemOverhead:      " << (double)overallCohMem / usedCohMem << "\n";
 
 		s.usedCohMemSum += usedCohMem;
-		unsigned int usedCohMemAvg = s.usedCohMemSum / s.stats_cnt;
-		std::cout << " usedCoherentMemAvg:  " << usedCohMemAvg << " bytes\t\t(" << (float)usedCohMemAvg / 1024.0
+		uint64_t usedCohMemAvg = s.usedCohMemSum / s.stats_cnt;
+		std::cout << " usedCoherentMemAvg:  " << usedCohMemAvg << " bytes\t\t(" << (double)usedCohMemAvg / 1024.0
 		          << " KiB)\n";
 		s.overallCohMemSum += overallCohMem;
-		unsigned int overallCohMemAvg = s.overallCohMemSum / s.stats_cnt;
-		std::cout << " overallCohMemAvg:    " << overallCohMemAvg << " bytes\t\t(" << (float)overallCohMemAvg / 1024.0
+		uint64_t overallCohMemAvg = s.overallCohMemSum / s.stats_cnt;
+		std::cout << " overallCohMemAvg:    " << overallCohMemAvg << " bytes\t\t(" << (double)overallCohMemAvg / 1024.0
 		          << " KiB)\n";
 
-		unsigned int usedMem = n_blocks * sizeof(class T_DBBCache::Block) + n_entries * sizeof(class T_DBBCache::Entry);
-		std::cout << " usedMem:             " << usedMem << " bytes\t\t(" << (float)usedMem / 1024.0 << " KiB)\n";
-		unsigned int overallMem =
+		uint64_t usedMem = n_blocks * sizeof(class T_DBBCache::Block) + n_entries * sizeof(class T_DBBCache::Entry);
+		std::cout << " usedMem:             " << usedMem << " bytes\t\t(" << (double)usedMem / 1024.0 << " KiB)\n";
+		uint64_t overallMem =
 		    n_blocks * sizeof(class T_DBBCache::Block) + n_alloc_entries * sizeof(class T_DBBCache::Entry);
-		std::cout << " overallMem:          " << overallMem << " bytes\t\t(" << (float)overallMem / 1024.0 << " KiB)\n";
-		unsigned int wastedMem = overallMem - usedMem;
-		std::cout << " wastedMem:           " << wastedMem << " bytes\t\t(" << (float)wastedMem / 1024.0 << " KiB)\n";
-		std::cout << " memOverhead:         " << (float)overallMem / usedMem << "\n";
+		std::cout << " overallMem:          " << overallMem << " bytes\t\t(" << (double)overallMem / 1024.0
+		          << " KiB)\n";
+		uint64_t wastedMem = overallMem - usedMem;
+		std::cout << " wastedMem:           " << wastedMem << " bytes\t\t(" << (double)wastedMem / 1024.0 << " KiB)\n";
+		std::cout << " memOverhead:         " << (double)overallMem / usedMem << "\n";
 
 		std::cout << "============================================================================================="
 		             "==============================\n";

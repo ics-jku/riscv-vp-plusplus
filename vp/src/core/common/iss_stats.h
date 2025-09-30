@@ -46,25 +46,25 @@ class ISSStatsDummy {
 class ISSStats : public ISSStatsDummy {
    private:
 	struct {
-		unsigned long cnt;
-		unsigned long fast_fdd;
-		unsigned long fast_fdd_abort;
-		unsigned long med_fdd;
-		unsigned long slow_fdd;
-		unsigned long lr_sc;
-		unsigned long commit_instructions;
-		unsigned long commit_cycles;
-		unsigned long qk_need_sync;
-		unsigned long qk_sync;
-		unsigned long nops;
-		unsigned long jal;
-		unsigned long j;
-		unsigned long jalr;
-		unsigned long jr;
-		unsigned long loadstore;
-		unsigned long csr;
-		unsigned long amo;
-		unsigned long set_zero;
+		uint64_t cnt;
+		uint64_t fast_fdd;
+		uint64_t fast_fdd_abort;
+		uint64_t med_fdd;
+		uint64_t slow_fdd;
+		uint64_t lr_sc;
+		uint64_t commit_instructions;
+		uint64_t commit_cycles;
+		uint64_t qk_need_sync;
+		uint64_t qk_sync;
+		uint64_t nops;
+		uint64_t jal;
+		uint64_t j;
+		uint64_t jalr;
+		uint64_t jr;
+		uint64_t loadstore;
+		uint64_t csr;
+		uint64_t amo;
+		uint64_t set_zero;
 	} s;
 
    public:

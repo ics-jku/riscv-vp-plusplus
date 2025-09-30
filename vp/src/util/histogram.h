@@ -22,7 +22,7 @@ class Histogram_T {
 	unsigned int hist[SIZE];
 	unsigned int min;
 	unsigned int max;
-	unsigned long sum;
+	unsigned long long sum;
 
 	Histogram_T(const char *name) : name(name) {
 		reset();
