@@ -18,12 +18,15 @@
  * "
  *
  * Motivation was simple mass storage in Linux -> Rudimentary support
- * Tested on linux-6.10.X
+ * Tested on linux-6.10.X and linux-6.15.X
  *  * detection -> OK
  *  * read(dd) -> OK
  *  * write(dd) -> OK
  *  * mount/blkdev readonly -> OK
  *  * mount/blkdev readwrite -> OK
+ * Tested on u-boot 2025.04
+ *  * detection -> OK
+ *  * read (partitions, ls, load) -> OK
  */
 
 class SPI_SD_Card : SPI_Device_IF {

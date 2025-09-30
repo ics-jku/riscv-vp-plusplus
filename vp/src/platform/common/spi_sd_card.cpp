@@ -359,11 +359,16 @@ void SPI_SD_Card::do_cmd(uint8_t cmd, uint32_t arg) {
 		// SET_BLOCKLEN
 		case 16:
 			/*
-			 * TODO: Not implemented yet
+			 * TODO: Not fully implemented yet
 			 * On sdhc/sdxc only used to set length of lock_unlock (CMD43) which is not implemented yet
+			 * The current implementation only allows for setting the default value of 512 bytes (see CSD READ_BL_LEN
+			 * above)
 			 */
-			std::cerr << "SPI_SD_Card: WARNING: Missing implementation for CMD" << (unsigned int)cmd << std::endl;
-			status_R1 |= STATUS_R1_ILLEGAL;
+			if (arg != 512) {
+				std::cerr << "SPI_SD_Card: WARNING: Missing implementation for CMD" << (unsigned int)cmd
+				          << " with READ_BL_LEN = " << arg << " (only 512 allowed)" << std::endl;
+				status_R1 |= STATUS_R1_ILLEGAL;
+			}
 			transmitter.set_R1();
 			break;
 
