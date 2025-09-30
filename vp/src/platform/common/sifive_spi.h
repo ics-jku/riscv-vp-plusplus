@@ -15,10 +15,6 @@
 #include "platform/common/spi_if.h"
 #include "util/tlm_map.h"
 
-/* see code below */
-//#define SIFIVE_SPI_QUEUE_FULL_HANDING_ALT
-#undef SIFIVE_SPI_QUEUE_FULL_HANDING_ALT
-
 template <unsigned int FIFO_QUEUE_SIZE>
 class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 	// single queue for all targets
@@ -126,19 +122,6 @@ class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 					rxdata = rxqueue.front();
 					rxqueue.pop();
 				}
-			} else {
-				/*
-				 * QUEUE FULL HANDLING ALTERNATIVE - EXPERIMENTAL!
-				 * Uses the rxqueue to model TX FIFO full -> if firmware is implemented correctly drops of rx (see
-				 * below) should never happen
-				 */
-#ifdef SIFIVE_SPI_QUEUE_FULL_HANDING_ALT
-				if (r.vptr == &txdata) {
-					if (rxqueue.size() == queue_size) {
-						txdata = 1 << 31;
-					}
-				}
-#endif /* SIFIVE_SPI_QUEUE_HANDING_ALT */
 			}
 		}
 
@@ -165,9 +148,8 @@ class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 				// add with overflow
 				rxqueue.push(rxdata);
 				/*
-				 * QUEUE_FULL HANDLING (see above)
+				 * QUEUE_FULL HANDLING
 				 * drop oldest element in rxqueue if too many rx (i.e. tx without rx)
-				 * see SIFIVE_SPI_QUEUE_FULL_HANDING_ALT for alternative behavior
 				 */
 				if (rxqueue.size() > queue_size) {
 					rxqueue.pop();
