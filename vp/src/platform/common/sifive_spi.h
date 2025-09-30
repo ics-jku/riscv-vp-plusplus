@@ -17,9 +17,9 @@
 
 template <unsigned int FIFO_QUEUE_SIZE>
 class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
-	// single queue for all targets
+	// rx fifo
 	static constexpr uint_fast8_t queue_size = FIFO_QUEUE_SIZE;
-	std::queue<uint8_t> rxqueue;
+	std::queue<uint8_t> rxfifo;
 
 	// number of chip selects
 	const uint32_t cs_width;
@@ -69,13 +69,14 @@ class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 		IE_REG_ADDR = 0x70,
 		IP_REG_ADDR = 0x74,
 	};
-
+	static constexpr uint_fast8_t FMT_DIR = (1 << 3);
 	enum CSMODE_VALS { AUTO = 0, RESERVED = 1, HOLD = 2, OFF = 3 };
 
 	static constexpr uint_fast8_t SIFIVE_SPI_IP_TXWM = 0x1;
 	static constexpr uint_fast8_t SIFIVE_SPI_IP_RXWM = 0x2;
 
 	vp::map::LocalRouter router = {"SIFIVE_SPI"};
+
 	void trigger_interrupt() {
 		if (plic == nullptr || interrupt < 0) {
 			return;
@@ -111,16 +112,52 @@ class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 		}
 	}
 
+	bool txdata_post_write() {
+		bool trigger_interrupt = false;
+		bool txonly = (fmt & FMT_DIR);
+		uint8_t rxdata_tmp = 0;
+
+		if (txonly || rxfifo.size() < queue_size) {
+			/* tx only, space in rxfifo -> transfer */
+			transfer(csid, cs_select, cs_deselect, txdata, rxdata_tmp);
+		} else {
+			/* tx+rx, but no space in rxfifo -> ignore write
+			 * (backpressure from tx to rxfifo according to RTL
+			 */
+			return trigger_interrupt;
+		}
+
+		if (!txonly) {
+			/* tx+rx -> add received data to rxfifo */
+			rxfifo.push(rxdata_tmp);
+			assert(rxfifo.size() <= queue_size);
+		}
+
+		if (txmark > 0) {
+			ip |= SIFIVE_SPI_IP_TXWM;
+			if (ie & SIFIVE_SPI_IP_TXWM) {
+				trigger_interrupt = true;
+			}
+		} else {
+			ip &= ~SIFIVE_SPI_IP_TXWM;
+		}
+
+		// TODO: Model latency.
+		txdata = 0;
+
+		return trigger_interrupt;
+	}
+
 	void register_access_callback(const vp::map::register_access_t &r) {
 		bool trigger_interrupt = false;
 
 		if (r.read) {
 			if (r.vptr == &rxdata) {
-				if (rxqueue.empty()) {
+				if (rxfifo.empty()) {
 					rxdata = 1 << 31;
 				} else {
-					rxdata = rxqueue.front();
-					rxqueue.pop();
+					rxdata = rxfifo.front();
+					rxfifo.pop();
 				}
 			}
 		}
@@ -142,34 +179,13 @@ class SIFIVE_SPI : public sc_core::sc_module, public SPI_IF {
 				update_csmode();
 
 			} else if (r.vptr == &txdata) {
-				uint8_t rxdata;
-				transfer(csid, cs_select, cs_deselect, txdata, rxdata);
-
-				// add with overflow
-				rxqueue.push(rxdata);
-				/*
-				 * QUEUE_FULL HANDLING
-				 * drop oldest element in rxqueue if too many rx (i.e. tx without rx)
-				 */
-				if (rxqueue.size() > queue_size) {
-					rxqueue.pop();
+				if (txdata_post_write()) {
+					trigger_interrupt = true;
 				}
-
-				if (txmark > 0) {
-					ip |= SIFIVE_SPI_IP_TXWM;
-					if (ie & SIFIVE_SPI_IP_TXWM) {
-						trigger_interrupt = true;
-					}
-				} else {
-					ip &= ~SIFIVE_SPI_IP_TXWM;
-				}
-
-				// TODO: Model latency.
-				txdata = 0;
 			}
 		}
 
-		if (rxqueue.size() > rxmark) {
+		if (rxfifo.size() > rxmark) {
 			ip |= SIFIVE_SPI_IP_RXWM;
 			if (ie & SIFIVE_SPI_IP_RXWM) {
 				trigger_interrupt = true;
