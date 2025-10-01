@@ -892,7 +892,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		coherence_cnt = 0;
 
-		for (const auto it : blockmap) {
+		for (const auto &it : blockmap) {
 			delete it.second;
 		}
 
