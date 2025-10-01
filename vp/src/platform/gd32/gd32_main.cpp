@@ -24,7 +24,7 @@ namespace po = boost::program_options;
 
 class GD32Options : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint32_t addr_t;
 
 	addr_t eclic_start_addr = 0xD2000000;
 	addr_t eclic_end_addr = 0xD200FFFF;

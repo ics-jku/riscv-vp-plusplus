@@ -48,7 +48,7 @@ namespace po = boost::program_options;
 
 class HifiveOptions : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint32_t addr_t;
 
 	addr_t maskROM_start_addr = 0x00001000;
 	addr_t maskROM_end_addr = 0x00001FFF;

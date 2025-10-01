@@ -25,7 +25,7 @@ namespace po = boost::program_options;
 
 class BasicOptions : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint32_t addr_t;
 
 	addr_t clint_start_addr = 0x2000000;
 	addr_t clint_end_addr = 0x200ffff;

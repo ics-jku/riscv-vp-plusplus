@@ -20,7 +20,7 @@ namespace po = boost::program_options;
 
 struct TinyOptions : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint32_t addr_t;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications

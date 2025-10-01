@@ -29,7 +29,7 @@ namespace po = boost::program_options;
 
 class HwitlOptions : public Options {
    public:
-	typedef unsigned int addr_t;
+	typedef uint32_t addr_t;
 
 	std::string virtual_bus_device;
 	unsigned virtual_bus_baudrate = 0;
