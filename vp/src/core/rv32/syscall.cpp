@@ -212,34 +212,34 @@ uint64_t SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1,
 	// NOTE: when linking with CRT, the most basic example only calls *gettimeofday* and finally *exit*
 
 	switch (n) {
-		case SYS_fstat:
+		case Syscall::Nr::fstat:
 			return sys_fstat(this, _a0, (rv32_stat *)_a1);
 
-		case SYS_gettimeofday:
+		case Syscall::Nr::gettimeofday:
 			return sys_gettimeofday(this, (struct rv32_timeval *)_a0, (void *)_a1);
 
-		case SYS_brk:
+		case Syscall::Nr::brk:
 			return sys_brk(this, _a0);
 
-		case SYS_time:
+		case Syscall::Nr::time:
 			return sys_time(this, (rv32_time_t *)_a0);
 
-		case SYS_write:
+		case Syscall::Nr::write:
 			return sys_write(this, _a0, (void *)_a1, _a2);
 
-		case SYS_read:
+		case Syscall::Nr::read:
 			return sys_read(this, _a0, (void *)_a1, _a2);
 
-		case SYS_lseek:
+		case Syscall::Nr::lseek:
 			return sys_lseek(_a0, _a1, _a2);
 
-		case SYS_open:
+		case Syscall::Nr::open:
 			return sys_open(this, (const char *)_a0, _a1, _a2);
 
-		case SYS_close:
+		case Syscall::Nr::close:
 			return sys_close(_a0);
 
-		case SYS_exit:
+		case Syscall::Nr::exit:
 			// If the software requested a non-zero exit code then terminate directly.
 			// Otherwise, stop the SystemC simulation and exit with a zero exit code.
 			if (_a0)
@@ -248,22 +248,21 @@ uint64_t SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1,
 			shall_exit = true;
 			return 0;
 
-		case SYS_host_error:
-			throw std::runtime_error("SYS_host_error");
+		case Syscall::Nr::host_error:
+			throw std::runtime_error("Syscall::Nr::host_error");
 
-		case SYS_host_test_pass:
+		case Syscall::Nr::host_test_pass:
 			std::cout << "TEST_PASS" << std::endl;
 			shall_exit = true;
 			return 0;
 
-		case SYS_host_test_fail:
+		case Syscall::Nr::host_test_fail:
 			std::cout << "TEST_FAIL (testnum = " << _a0 << ")" << std::endl;
 			shall_exit = true;
 			return 0;
 	}
 
 	std::cerr << "unsupported syscall '" << n << "'" << std::endl;
-	std::cerr << "is this perhaps a trap ExceptionCode? " << std::endl;
 	throw std::runtime_error("unsupported syscall '" + std::to_string(n) + "'");
 }
 }  // namespace rv32

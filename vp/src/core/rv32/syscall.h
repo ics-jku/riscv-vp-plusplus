@@ -3,60 +3,6 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <stdint.h>
-
-#include <boost/lexical_cast.hpp>
-
-// see: newlib/libgloss/riscv @
-// https://github.com/riscv/riscv-newlib/tree/riscv-newlib-2.5.0/libgloss/riscv
-
-#define SYS_exit 93
-#define SYS_exit_group 94
-#define SYS_getpid 172
-#define SYS_kill 129
-#define SYS_read 63
-#define SYS_write 64
-#define SYS_open 1024
-#define SYS_openat 56
-#define SYS_close 57
-#define SYS_lseek 62
-#define SYS_brk 214
-#define SYS_link 1025
-#define SYS_unlink 1026
-#define SYS_mkdir 1030
-#define SYS_chdir 49
-#define SYS_getcwd 17
-#define SYS_stat 1038
-#define SYS_fstat 80
-#define SYS_lstat 1039
-#define SYS_fstatat 79
-#define SYS_access 1033
-#define SYS_faccessat 48
-#define SYS_pread 67
-#define SYS_pwrite 68
-#define SYS_uname 160
-#define SYS_getuid 174
-#define SYS_geteuid 175
-#define SYS_getgid 176
-#define SYS_getegid 177
-#define SYS_mmap 222
-#define SYS_munmap 215
-#define SYS_mremap 216
-#define SYS_time 1062
-#define SYS_getmainvars 2011
-#define SYS_rt_sigaction 134
-#define SYS_writev 66
-#define SYS_gettimeofday 169
-#define SYS_times 153
-#define SYS_fcntl 25
-#define SYS_getdents 61
-#define SYS_dup 23
-
-// custom extensions
-#define SYS_host_error \
-	1  // indicate an error, i.e. this instruction should never be reached so something went wrong during exec.
-#define SYS_host_test_pass 2  // RISC-V test execution successfully completed
-#define SYS_host_test_fail 3  // RISC-V test execution failed
-
 #include <tlm_utils/simple_target_socket.h>
 
 #include <systemc>
@@ -65,6 +11,62 @@
 #include "iss.h"
 
 namespace rv32 {
+
+namespace Syscall {
+// based on newlib/libgloss/riscv @
+// https://github.com/riscvarchive/riscv-newlib/blob/riscv-newlib-2.5.0/libgloss/riscv/machine/syscall.h
+enum Nr {
+	exit = 93,
+	exit_group = 94,
+	getpid = 172,
+	kill = 129,
+	read = 63,
+	write = 64,
+	open = 1024,
+	openat = 56,
+	close = 57,
+	lseek = 62,
+	brk = 214,
+	link = 1025,
+	unlink = 1026,
+	mkdir = 1030,
+	chdir = 49,
+	getcwd = 17,
+	stat = 1038,
+	fstat = 80,
+	lstat = 1039,
+	fstatat = 79,
+	access = 1033,
+	faccessat = 48,
+	pread = 67,
+	pwrite = 68,
+	uname = 160,
+	getuid = 174,
+	geteuid = 175,
+	getgid = 176,
+	getegid = 177,
+	mmap = 222,
+	munmap = 215,
+	mremap = 216,
+	time = 1062,
+	getmainvars = 2011,
+	rt_sigaction = 134,
+	writev = 66,
+	gettimeofday = 169,
+	times = 153,
+	fcntl = 25,
+	getdents = 61,
+	dup = 23,
+
+	// custom extensions
+	// indicate an error, i.e. this instruction should never be reached so something went wrong during exec
+	host_error = 1,
+	// RISC-V test execution successfully completed
+	host_test_pass = 2,
+	// RISC-V test execution failed
+	host_test_fail = 3,
+};
+}  // namespace Syscall
 
 struct SyscallHandler : public sc_core::sc_module, syscall_emulator_if {
 	tlm_utils::simple_target_socket<SyscallHandler> tsock;
