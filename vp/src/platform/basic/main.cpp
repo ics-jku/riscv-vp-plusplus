@@ -75,7 +75,7 @@ class BasicOptions : public Options {
 
 	bool quiet = false;
 
-	OptionValue<unsigned long> entry_point;
+	OptionValue<uint64_t> entry_point;
 
 	BasicOptions(void) {
 		// clang-format off
@@ -102,7 +102,7 @@ class BasicOptions : public Options {
 	void parse(int argc, char **argv) override {
 		Options::parse(argc, argv);
 
-		entry_point.finalize(parse_ulong_option);
+		entry_point.finalize(parse_uint64_option);
 		mem_end_addr = mem_start_addr + mem_size - 1;
 		assert((mem_end_addr < clint_start_addr || mem_start_addr > display_end_addr) &&
 		       "RAM too big, would overlap memory");

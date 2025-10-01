@@ -51,7 +51,7 @@ class HwitlOptions : public Options {
 	addr_t virtual_bus_start_addr = 0x50000000;
 	addr_t virtual_bus_end_addr = 0x5FFFFFFF;
 
-	OptionValue<unsigned long> entry_point;
+	OptionValue<uint64_t> entry_point;
 
 	HwitlOptions(void) {
 		// clang-format off
@@ -69,7 +69,7 @@ class HwitlOptions : public Options {
 
 	void parse(int argc, char** argv) override {
 		Options::parse(argc, argv);
-		entry_point.finalize(parse_ulong_option);
+		entry_point.finalize(parse_uint64_option);
 	}
 };
 

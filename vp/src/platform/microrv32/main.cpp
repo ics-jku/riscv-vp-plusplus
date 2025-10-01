@@ -44,7 +44,7 @@ class BasicOptions : public Options {
 
 	bool use_E_base_isa = false;
 
-	OptionValue<unsigned long> entry_point;
+	OptionValue<uint64_t> entry_point;
 
 	BasicOptions(void) {
 		// clang-format off
@@ -57,7 +57,7 @@ class BasicOptions : public Options {
 	void parse(int argc, char **argv) override {
 		Options::parse(argc, argv);
 
-		entry_point.finalize(parse_ulong_option);
+		entry_point.finalize(parse_uint64_option);
 	}
 };
 

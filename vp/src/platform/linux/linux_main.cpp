@@ -121,7 +121,7 @@ struct LinuxOptions : public Options {
 	addr_t i2c_start_addr = 0x10030000;
 	addr_t i2c_end_addr = 0x10031000;
 
-	OptionValue<unsigned long> entry_point;
+	OptionValue<uint64_t> entry_point;
 	std::string dtb_file;
 	std::string kernel_file;
 	std::string tun_device = "tun0";
@@ -151,7 +151,7 @@ struct LinuxOptions : public Options {
 
 	void parse(int argc, char **argv) override {
 		Options::parse(argc, argv);
-		entry_point.finalize(parse_ulong_option);
+		entry_point.finalize(parse_uint64_option);
 		mem_end_addr = mem_start_addr + mem_size - 1;
 		mram_root_end_addr = mram_root_start_addr + mram_root_size - 1;
 		assert(mram_root_end_addr < mram_data_start_addr && "MRAM root too big, would overlap MRAM root");

@@ -19,4 +19,4 @@ struct OptionValue {
 	}
 };
 
-unsigned long parse_ulong_option(const std::string &s);
+uint64_t parse_uint64_option(const std::string &s);
