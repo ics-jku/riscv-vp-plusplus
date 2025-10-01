@@ -10,7 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace rv32;
+namespace rv32 {
 
 // see: riscv-gnu-toolchain/riscv-newlib/libgloss/riscv/
 // for syscall implementation in the risc-v C lib (many are ignored and just return -1)
@@ -266,3 +266,4 @@ uint64_t SyscallHandler::execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1,
 	std::cerr << "is this perhaps a trap ExceptionCode? " << std::endl;
 	throw std::runtime_error("unsupported syscall '" + std::to_string(n) + "'");
 }
+}  // namespace rv32

@@ -14,7 +14,7 @@
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
 
-using namespace rv64;
+namespace rv64 {
 
 #define VExt VExtension<ISS_CT>
 
@@ -127,6 +127,7 @@ void ISS_CT::print_trace() {
 	}
 	puts("");
 }
+}  // namespace rv64
 
 /*
  * label generation
@@ -156,6 +157,7 @@ extern void *const OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_START;
 extern const struct op_label_entry OP_LABEL_ENTIRES_SEC_START;
 extern const struct op_label_entry OP_LABEL_ENTIRES_SEC_STOP;
 
+namespace rv64 {
 void *ISS_CT::genOpMap() {
 	bool error = false;
 	struct op_label_entry *entry = (struct op_label_entry *)&OP_LABEL_ENTIRES_SEC_START;
@@ -7600,3 +7602,4 @@ void ISS_CT::show() {
 	std::cout << "pc = " << std::hex << pc << std::endl;
 	std::cout << "num-instr = " << std::dec << csrs.instret.reg.val << std::endl;
 }
+}  // namespace rv64
