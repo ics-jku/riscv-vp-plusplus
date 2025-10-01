@@ -54,8 +54,8 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 		opMap[i].labelPtr = nullptr;
 	}
 
-	unsigned long memory_access_cycles = 4 * cycle_time.value() / 1000;
-	unsigned long mul_div_cycles = 8 * cycle_time.value() / 1000;
+	uint64_t memory_access_cycles = 4 * cycle_time.value() / 1000;
+	uint64_t mul_div_cycles = 8 * cycle_time.value() / 1000;
 
 	opMap[Operation::OpId::LB].instr_time = memory_access_cycles;
 	opMap[Operation::OpId::LBU].instr_time = memory_access_cycles;
@@ -269,9 +269,8 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 	 * Check quantum in fast path roughly every tenth of a quantum (heuristic)
 	 * Uncertainties: time is also increasing outside of ISS; not every instruction has cycle_time
 	 */
-	const unsigned long fast_quantum_ins_granularity =
-	    quantum_keeper.get_global_quantum().value() / cycle_time.value() / 10;
-	unsigned long ninstr = 0;
+	const uint64_t fast_quantum_ins_granularity = quantum_keeper.get_global_quantum().value() / cycle_time.value() / 10;
+	uint64_t ninstr = 0;
 
 	// TODO: remove?
 	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");

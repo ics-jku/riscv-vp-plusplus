@@ -113,7 +113,7 @@
 struct OpMapEntry {
 	/* order optimized for alignment */
 	Operation::OpId opId;
-	unsigned long instr_time;
+	uint64_t instr_time;
 	void *labelPtr;
 };
 

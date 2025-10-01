@@ -112,7 +112,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		quantum_keeper.inc(cycle_counter_raw_inc_sysc);
 	}
 
-	inline void commit_instructions(unsigned long &ninstr) {
+	inline void commit_instructions(uint64_t &ninstr) {
 		stats.inc_commit_instructions();
 
 		if (!csrs.mcountinhibit.reg.fields.IR) {

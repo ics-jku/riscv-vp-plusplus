@@ -35,9 +35,9 @@ enum ExceptionCode {
 
 struct SimulationTrap {
 	ExceptionCode reason;
-	unsigned long mtval;
+	uint64_t mtval;
 };
 
-inline void raise_trap(ExceptionCode exc, unsigned long mtval) {
+inline void raise_trap(ExceptionCode exc, uint64_t mtval) {
 	throw SimulationTrap({exc, mtval});
 }
