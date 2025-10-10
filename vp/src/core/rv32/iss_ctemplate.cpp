@@ -43,12 +43,12 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 	 */
 	for (int i = 0; i < Operation::OpId::NUMBER_OF_OPERATIONS; ++i) {
 		opMap[i].opId = (Operation::OpId)i;
-		opMap[i].instr_time = cycle_time.value() / 1000; /* ns */
+		opMap[i].instr_time = cycle_time.value(); /* ps */
 		opMap[i].labelPtr = nullptr;
 	}
 
-	uint64_t memory_access_cycles = 4 * cycle_time.value() / 1000;
-	uint64_t mul_div_cycles = 8 * cycle_time.value() / 1000;
+	uint64_t memory_access_cycles = 4 * cycle_time.value();
+	uint64_t mul_div_cycles = 8 * cycle_time.value();
 
 	opMap[Operation::OpId::LB].instr_time = memory_access_cycles;
 	opMap[Operation::OpId::LBU].instr_time = memory_access_cycles;

@@ -105,7 +105,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		cycle_counter_raw_last = cycle_counter_raw;
 
 		/* update csr and quantum_keeper */
-		sc_core::sc_time cycle_counter_raw_inc_sysc = sc_core::sc_time(cycle_counter_raw_inc, sc_core::SC_NS);
+		sc_core::sc_time cycle_counter_raw_inc_sysc = sc_core::sc_time(cycle_counter_raw_inc, sc_core::SC_PS);
 		if (!csrs.mcountinhibit.reg.fields.CY) {
 			cycle_counter += cycle_counter_raw_inc_sysc;
 		}
