@@ -19,7 +19,7 @@ class Timer {
 		Callback fn;
 		void *arg;
 
-		Context(usecs _duration, Callback _fn, void *_arg) : duration(_duration), fn(_fn), arg(_arg){};
+		Context(usecs _duration, Callback _fn, void *_arg) : duration(_duration), fn(_fn), arg(_arg) {};
 	};
 
 	Timer(Callback fn, void *arg);

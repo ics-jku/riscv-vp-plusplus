@@ -33,20 +33,20 @@
  * if disabled, the dummy implementation is used
  */
 #define LSCACHE_ENABLED
-//#undef LSCACHE_ENABLED
+// #undef LSCACHE_ENABLED
 
 /*
  * forces the cache to be always enabled, independent of the runtime configuration
  * this eliminates the runtime checks (located in cache miss) -> max performance
  */
-//#define LSCACHE_FORCED_ENABLED
+// #define LSCACHE_FORCED_ENABLED
 #undef LSCACHE_FORCED_ENABLED
 
 /*
  * enable statistics
  * (expensive)
  */
-//#define LSCACHE_STATS_ENABLED
+// #define LSCACHE_STATS_ENABLED
 #undef LSCACHE_STATS_ENABLED
 
 /******************************************************************************
@@ -178,13 +178,13 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 	lscachestats_t stats = lscachestats_t(*this);
 
 #define LSCACHE_SETS (1 << 8)
-#define LSCACHE_OFF(_virt_page_addr) ((_virt_page_addr)&0x00FFF)
-#define LSCACHE_IDX(_virt_page_addr) (((_virt_page_addr)&0xFF000) >> 12)
+#define LSCACHE_OFF(_virt_page_addr) ((_virt_page_addr) & 0x00FFF)
+#define LSCACHE_IDX(_virt_page_addr) (((_virt_page_addr) & 0xFF000) >> 12)
 #define LSCACHE_TAG(_virt_page_addr) ((_virt_page_addr) & (~0xFFFFF))
 #define LSCACHE_LOAD_VALID_BITS (1 << 0)
 #define LSCACHE_STORE_VALID_BITS ((1 << 1) | LSCACHE_LOAD_VALID_BITS)  // load & store
-#define LSCACHE_IS_LOAD_VALID(_virt_page_addr) ((_virt_page_addr)&LOAD_VALID_BITS)
-#define LSCACHE_IS_STORE_VALID(_virt_page_addr) ((_virt_page_addr)&STORE_VALID_BITS)
+#define LSCACHE_IS_LOAD_VALID(_virt_page_addr) ((_virt_page_addr) & LOAD_VALID_BITS)
+#define LSCACHE_IS_STORE_VALID(_virt_page_addr) ((_virt_page_addr) & STORE_VALID_BITS)
 
 	struct Entry {
 		T_uxlen_t tag_valid;

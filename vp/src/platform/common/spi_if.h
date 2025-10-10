@@ -33,7 +33,7 @@ class SPI_SimpleDevice : public SPI_Device_IF {
 
 	/* implementation of SPI_Device_IF */
    protected:
-	void select(bool ena) override{};
+	void select(bool ena) override {};
 	uint8_t transfer(uint8_t mosi) override {
 		return transferF(mosi);
 	};

@@ -5,7 +5,7 @@
 #include "core/common/rawmode.h"
 
 /* character → control key */
-#define CTRL(c) ((c)&0x1f)
+#define CTRL(c) ((c) & 0x1f)
 
 #define KEY_ESC CTRL('a')        /* Ctrl-a (character to enter command mode) */
 #define KEY_HELP 'h'             /* h (print help) */

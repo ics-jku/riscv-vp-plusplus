@@ -296,7 +296,7 @@ uint8_t CAN::modifyRegister(uint8_t byte) {
 		uint8_t mask;
 		uint8_t data;
 
-		ModReg() : state(_address), address(0), mask(0), data(0){};
+		ModReg() : state(_address), address(0), mask(0), data(0) {};
 	} command;
 
 	// std::cout << "\t[CAN] modReg ";

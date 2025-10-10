@@ -68,8 +68,7 @@ class GpioClient : public GpioCommon {
 
 	// Intended to be used by the devices in the environment model
 	bool registerSPIOnChange(gpio::PinNumber pin, OnChange_SPI fun, bool noResponse = false);
-	bool registerPINOnChange(
-	    gpio::PinNumber pin, OnChange_PIN fun = [](gpio::Tristate) {});
+	bool registerPINOnChange(gpio::PinNumber pin, OnChange_PIN fun = [](gpio::Tristate) {});
 	// registerI2C...
 	// registerUART...
 	bool registerEXMCOnChange(gpio::PinNumber pin, OnChange_EXMC fun);

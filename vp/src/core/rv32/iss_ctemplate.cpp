@@ -233,7 +233,7 @@ void *ISS_CT::genOpMap() {
 	stats.inc_fast_fdd_abort();                                                    \
 	goto OP_LABEL(op_global_fdd);                                                  \
 	OP_LABEL(op_global_fast_finalize_and_fdd) : __attribute__((unused));           \
-	{ OP_FAST_FINALIZE_AND_FDD() }
+	{OP_FAST_FINALIZE_AND_FDD()}
 
 #define OP_CASE(_op)                                          \
 	OP_LABEL_OP(_op)                                          \

@@ -7,7 +7,7 @@
  * print unmet traps (reasons) to stdout
  * (see v_assert)
  */
-//#define DEBUG_PRINT_TRAPS
+// #define DEBUG_PRINT_TRAPS
 #undef DEBUG_PRINT_TRAPS
 
 // TODO these should be compile arguments

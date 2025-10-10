@@ -33,7 +33,7 @@ Options::Options(void) {
 	pos.add("input-file", 1);
 }
 
-Options::~Options(){};
+Options::~Options() {};
 
 void Options::parse(int argc, char **argv) {
 	try {

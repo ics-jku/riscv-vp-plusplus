@@ -10,7 +10,7 @@
 
 class Channel_Console final : public Channel_FD_IF {
    public:
-	Channel_Console(std::set<debug_target_if *> debug_targets = {}) : debug_targets(debug_targets){};
+	Channel_Console(std::set<debug_target_if *> debug_targets = {}) : debug_targets(debug_targets) {};
 	virtual ~Channel_Console();
 
 	void debug_targets_set(std::set<debug_target_if *> debug_targets) {

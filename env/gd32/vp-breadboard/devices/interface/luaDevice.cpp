@@ -132,9 +132,7 @@ bool LuaDevice::SPI_Interface_Lua::implementsInterface(const LuaRef& ref) {
 }
 
 LuaDevice::Config_Interface_Lua::Config_Interface_Lua(luabridge::LuaRef& ref)
-    : m_getConf(ref["getConfig"]),
-      m_setConf(ref["setConfig"]),
-      m_env(ref){
+    : m_getConf(ref["getConfig"]), m_setConf(ref["setConfig"]), m_env(ref) {
 
       };
 

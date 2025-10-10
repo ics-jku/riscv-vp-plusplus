@@ -86,20 +86,20 @@
  * if disabled, the dummy implementation is used
  */
 #define DBBCACHE_ENABLED
-//#undef DBBCACHE_ENABLED
+// #undef DBBCACHE_ENABLED
 
 /*
  * forces the cache to be always enabled, independent of the runtime configuration
  * this eliminates the runtime checks (located in cache miss) -> max performance
  */
-//#define LSCACHE_FORCED_ENABLED
+// #define LSCACHE_FORCED_ENABLED
 #undef LSCACHE_FORCED_ENABLED
 
 /*
  * enable statistics
  * (expensive)
  */
-//#define DBBCACHE_STATS_ENABLED
+// #define DBBCACHE_STATS_ENABLED
 #undef DBBCACHE_STATS_ENABLED
 
 /******************************************************************************

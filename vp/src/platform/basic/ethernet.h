@@ -123,8 +123,7 @@ struct EthernetDevice : public sc_core::sc_module {
 			// check if data is available on the socket, if yes store it in an
 			// internal buffer
 			if (!has_frame) {
-				while (!try_recv_raw_frame())
-					;
+				while (!try_recv_raw_frame());
 				if (has_frame)
 					plic->gateway_trigger_interrupt(irq_number);
 			}

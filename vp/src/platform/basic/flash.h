@@ -24,7 +24,7 @@ struct Blockbuffer {
 	bool dirty;
 	bool active;
 	int fd;
-	Blockbuffer(int fileDescriptor) : offs(0), dirty(false), active(false), fd(fileDescriptor){};
+	Blockbuffer(int fileDescriptor) : offs(0), dirty(false), active(false), fd(fileDescriptor) {};
 
 	void setPos(uint64_t blockOffset) {
 		if (blockOffset != offs || !active) {

@@ -26,8 +26,7 @@ int main(unsigned hart_id) {
 	// behave differently based on the core (i.e. hart) id
 	for (unsigned i = 0; i < n_iter; ++i) {
 		// simulate independent processing
-		for (unsigned int j = 0; j < i * (10 * (hart_id + 1)); j++)
-			;
+		for (unsigned int j = 0; j < i * (10 * (hart_id + 1)); j++);
 
 		// print (shared ressource; locking)
 		unsigned int lock_n_iter = spin_lock(&print_lock);

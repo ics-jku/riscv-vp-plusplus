@@ -9,7 +9,7 @@ namespace rv32 {
 struct NUCLEI_ISS : public NUCLEI_ISS_BASE, public eclic_interrupt_target {
 	ECLIC<NUMBER_INTERRUPTS, MAX_PRIORITY>* eclic = nullptr;
 
-	NUCLEI_ISS(RV_ISA_Config* isa_config, uxlen_t hart_id) : NUCLEI_ISS_BASE(isa_config, hart_id){};
+	NUCLEI_ISS(RV_ISA_Config* isa_config, uxlen_t hart_id) : NUCLEI_ISS_BASE(isa_config, hart_id) {};
 
 	void trigger_eclic_interrupt() override;
 

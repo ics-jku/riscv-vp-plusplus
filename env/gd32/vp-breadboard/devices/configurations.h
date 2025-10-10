@@ -40,7 +40,7 @@ struct ConfigElem {
 		char* string;
 	} value;
 
-	ConfigElem() : type(Type::invalid){};
+	ConfigElem() : type(Type::invalid) {};
 	ConfigElem(const ConfigElem& e) {
 		type = e.type;
 		if (type == Type::string) {

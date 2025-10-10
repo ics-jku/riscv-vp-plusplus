@@ -7,7 +7,7 @@
 #define SIZE (WIDTH * HEIGHT * BPP)
 
 /* Area tracking is more costly to simulation than full update in rfb thread */
-//#define TRACK_CHANGED_AREA
+// #define TRACK_CHANGED_AREA
 #undef TRACK_CHANGED_AREA
 
 VNCSimpleFB::VNCSimpleFB(sc_core::sc_module_name, VNCServer &vncServer) : vncServer(vncServer) {

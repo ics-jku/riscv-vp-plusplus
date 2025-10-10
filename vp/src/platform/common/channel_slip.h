@@ -7,7 +7,7 @@
 
 class Channel_SLIP final : public Channel_FD_IF {
    public:
-	Channel_SLIP(std::string netdev) : netdev(netdev){};
+	Channel_SLIP(std::string netdev) : netdev(netdev) {};
 	virtual ~Channel_SLIP();
 
    private:

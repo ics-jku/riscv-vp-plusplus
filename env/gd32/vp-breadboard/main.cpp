@@ -90,7 +90,9 @@ int main(int argc, char *argv[]) {
 			scriptpath = scriptpath_c;
 		}
 	}
-	{ overwrite_integrated_devices = input.cmdOptionExists("--overwrite"); }
+	{
+		overwrite_integrated_devices = input.cmdOptionExists("--overwrite");
+	}
 
 	MainWindow w(QString(configfile.c_str()), scriptpath.c_str(), host.c_str(), overwrite_integrated_devices);
 	w.show();

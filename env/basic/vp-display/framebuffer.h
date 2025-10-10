@@ -15,16 +15,16 @@ struct Framebuffer {
 	struct Point {
 		uint32_t x;
 		uint32_t y;
-		inline Point() : x(0), y(0){};
-		inline Point(uint32_t x, uint32_t y) : x(x), y(y){};
+		inline Point() : x(0), y(0) {};
+		inline Point(uint32_t x, uint32_t y) : x(x), y(y) {};
 	};
 
 	struct PointF {
 		float x;
 		float y;
-		inline PointF() : x(0), y(0){};
-		inline PointF(float x, float y) : x(x), y(y){};
-		inline PointF(Point p) : x(p.x), y(p.y){};
+		inline PointF() : x(0), y(0) {};
+		inline PointF(float x, float y) : x(x), y(y) {};
+		inline PointF(Point p) : x(p.x), y(p.y) {};
 	};
 
 	struct Frame {
@@ -53,12 +53,12 @@ struct Framebuffer {
 			PointF to;
 			Color color;
 		} line;
-		inline Parameter(){};
+		inline Parameter() {};
 	} parameter;
 	Frame frames[2];
 	Frame background;
 
-	Framebuffer() : activeFrame(0), command(Command::none){};
+	Framebuffer() : activeFrame(0), command(Command::none) {};
 
 	Frame& getActiveFrame() {
 		return frames[activeFrame % 2];

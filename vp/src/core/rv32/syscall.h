@@ -13,7 +13,7 @@
 namespace rv32 {
 
 struct SyscallHandler : public SyscallHandlerBase {
-	SyscallHandler(sc_core::sc_module_name name) : SyscallHandlerBase(name){};
+	SyscallHandler(sc_core::sc_module_name name) : SyscallHandlerBase(name) {};
 	uint64_t execute_syscall(uint64_t n, uint64_t _a0, uint64_t _a1, uint64_t _a2, uint64_t _a3) override;
 };
 

@@ -1,7 +1,7 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
-//#define MICRORV
+// #define MICRORV
 
 #ifdef MICRORV
 // LED

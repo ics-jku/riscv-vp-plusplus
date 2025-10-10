@@ -16,7 +16,7 @@
  */
 class Channel_IF {
    public:
-	virtual ~Channel_IF(){};
+	virtual ~Channel_IF() {};
 
 	void start(unsigned int tx_fifo_depth, unsigned int rx_fifo_depth);
 	void stop();

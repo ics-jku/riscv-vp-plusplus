@@ -30,11 +30,11 @@ struct debug_target_if {
 	virtual void run_step(void) = 0;
 
 	/* other debug stuff (not needed for gdb) */
-	virtual void enable_trace(bool ena){};
+	virtual void enable_trace(bool ena) {};
 	virtual bool trace_enabled(void) {
 		return false;
 	};
-	virtual void print_stats(void){};
+	virtual void print_stats(void) {};
 };
 
 #endif

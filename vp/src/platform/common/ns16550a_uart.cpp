@@ -9,7 +9,7 @@
 
 /* enable debug messages */
 #undef DEBUG
-//#define DEBUG
+// #define DEBUG
 
 #define FORCE_DBG_PRINTF(...) fprintf(stderr, "NS16550A_UART: DEBUG: " __VA_ARGS__);
 #ifdef DEBUG

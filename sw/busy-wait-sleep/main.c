@@ -16,8 +16,7 @@ int main() {
 	uint64_t ticks = usec / DIVIDEND;
 
 	uint64_t target = *MTIME_REG + ticks;
-	while (*MTIME_REG < target)
-		;
+	while (*MTIME_REG < target);
 
 	return 0;
 }
