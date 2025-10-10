@@ -21,7 +21,14 @@ struct MaskROM : public sc_core::sc_module {
 	    "/include/ 0x20004;"
 	    "};";
 
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+
+	sc_core::sc_time access_delay_base;
+
 	MaskROM(sc_core::sc_module_name) {
+		access_delay_base = prop_clock_cycle_period / 2;
+
 		tsock.register_b_transport(this, &MaskROM::transport);
 	}
 
@@ -43,7 +50,7 @@ struct MaskROM : public sc_core::sc_module {
 		if (addr + len <= 0x000C + sizeof(uint32_t)) {
 			uint32_t buf = baseAddr + configStringOffs;
 			memcpy(ptr, &buf, sizeof(uint32_t));
-			delay += sc_core::sc_time(len * 5, sc_core::SC_NS);
+			delay += len * access_delay_base;
 			return;
 		}
 
@@ -64,7 +71,7 @@ struct MaskROM : public sc_core::sc_module {
 		}
 
 		memset(ptr, 0, len);
-		delay += sc_core::sc_time(len * 5, sc_core::SC_NS);
+		delay += len * access_delay_base;
 
 		return;
 	}

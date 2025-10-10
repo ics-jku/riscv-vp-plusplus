@@ -45,10 +45,14 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 
 	static constexpr uint64_t scaler = 1000000;  // scale from PS resolution (default in SystemC) to US
 	                                             // resolution (apparently required by FreeRTOS)
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 2;
+
+	sc_core::sc_time access_delay;
 
 	tlm_utils::simple_target_socket<LWRT_CLINT> tsock;
 
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
 	sc_core::sc_event irq_event;
 
 	RegisterRange regs_mtime{0xBFF8, 8};
@@ -67,6 +71,8 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 	SC_HAS_PROCESS(LWRT_CLINT);
 
 	LWRT_CLINT(sc_core::sc_module_name) {
+		access_delay = prop_clock_cycle_period * prop_access_clock_cycles;
+
 		tsock.register_b_transport(this, &LWRT_CLINT::transport);
 
 		regs_mtimecmp.alignment = 4;
@@ -141,8 +147,7 @@ struct LWRT_CLINT : public clint_if, public sc_core::sc_module {
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		delay += 2 * clock_cycle;
-
+		delay += access_delay;
 		vp::mm::route("CLINT", register_ranges, trans, delay);
 	}
 

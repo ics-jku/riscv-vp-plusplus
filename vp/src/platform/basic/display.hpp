@@ -20,6 +20,11 @@ using namespace tlm_utils;
 struct Display : public sc_core::sc_module {
 	static const size_t addressRange = sizeof(Framebuffer);
 
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+
+	sc_core::sc_time access_delay_base;
+
 	simple_target_socket<Display> tsock;
 
 	union {

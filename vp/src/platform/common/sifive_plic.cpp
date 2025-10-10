@@ -24,8 +24,8 @@ SIFIVE_PLIC::SIFIVE_PLIC(sc_core::sc_module_name, bool fu540_mode, unsigned hart
     : FU540_MODE(fu540_mode), NUMIRQ(numirq), HART_REG_SIZE(((NUMIRQ + 63) / 64) * sizeof(uint64_t)) {
 	target_harts = std::vector<external_interrupt_target *>(harts, NULL);
 
-	/* Values copied from FE310_PLIC */
-	clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
+	access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
+	irq_trigger_delay = prop_irq_trigger_clock_cycles * prop_clock_cycle_period;
 
 	create_registers();
 	tsock.register_b_transport(this, &SIFIVE_PLIC::transport);
@@ -89,7 +89,7 @@ void SIFIVE_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 }
 
 void SIFIVE_PLIC::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-	delay += 4 * clock_cycle; /* copied from FE310_PLIC */
+	delay += access_delay;
 	vp::mm::route("SIFIVE_PLIC", register_ranges, trans, delay);
 };
 
@@ -98,7 +98,7 @@ void SIFIVE_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 		throw std::invalid_argument("IRQ value is invalid");
 
 	pending_interrupts[GET_IDX(irq)] |= GET_OFF(irq);
-	e_run.notify(clock_cycle);
+	e_run.notify(irq_trigger_delay);
 };
 
 bool SIFIVE_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, PrivilegeLevel level) {

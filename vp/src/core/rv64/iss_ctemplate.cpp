@@ -37,10 +37,9 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 	csrs.misa.reg.fields.extensions = isa_config->get_misa_extensions();
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
-	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
 
-	assert(qt >= cycle_time);
-	assert(qt % cycle_time == sc_core::SC_ZERO_TIME);
+	assert(qt >= prop_clock_cycle_period);
+	assert(qt % prop_clock_cycle_period == sc_core::SC_ZERO_TIME);
 
 	/*
 	 * NOTE: The cycle model below is a static cycle model -> Value changes at
@@ -50,12 +49,12 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 	 */
 	for (int i = 0; i < Operation::OpId::NUMBER_OF_OPERATIONS; ++i) {
 		opMap[i].opId = (Operation::OpId)i;
-		opMap[i].instr_time = cycle_time.value(); /* ps */
+		opMap[i].instr_time = prop_clock_cycle_period.value(); /* ps */
 		opMap[i].labelPtr = nullptr;
 	}
 
-	uint64_t memory_access_cycles = 4 * cycle_time.value();
-	uint64_t mul_div_cycles = 8 * cycle_time.value();
+	uint64_t memory_access_cycles = 4 * prop_clock_cycle_period.value();
+	uint64_t mul_div_cycles = 8 * prop_clock_cycle_period.value();
 
 	opMap[Operation::OpId::LB].instr_time = memory_access_cycles;
 	opMap[Operation::OpId::LBU].instr_time = memory_access_cycles;
@@ -269,7 +268,8 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 	 * Check quantum in fast path roughly every tenth of a quantum (heuristic)
 	 * Uncertainties: time is also increasing outside of ISS; not every instruction has cycle_time
 	 */
-	const uint64_t fast_quantum_ins_granularity = quantum_keeper.get_global_quantum().value() / cycle_time.value() / 10;
+	const uint64_t fast_quantum_ins_granularity =
+	    quantum_keeper.get_global_quantum().value() / prop_clock_cycle_period.value() / 10;
 	uint64_t ninstr = 0;
 
 	// TODO: remove?
@@ -6903,10 +6903,10 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 #pragma GCC diagnostic pop
 
 uint64_t ISS_CT::_compute_and_get_current_cycles() {
-	assert(cycle_counter % cycle_time == sc_core::SC_ZERO_TIME);
-	assert(cycle_counter.value() % cycle_time.value() == 0);
+	assert(cycle_counter % prop_clock_cycle_period == sc_core::SC_ZERO_TIME);
+	assert(cycle_counter.value() % prop_clock_cycle_period.value() == 0);
 
-	uint64_t num_cycles = cycle_counter.value() / cycle_time.value();
+	uint64_t num_cycles = cycle_counter.value() / prop_clock_cycle_period.value();
 
 	return num_cycles;
 }

@@ -65,10 +65,13 @@ struct vm_info {
 
 template <typename T_RVX_ISS>
 struct MMU_T {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_mmu_access_clock_cycles = 3;
+
 	T_RVX_ISS &core;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time mmu_access_delay = clock_cycle * 3;
+	sc_core::sc_time mmu_access_delay;
 
 	mmu_memory_if *mem = nullptr;
 	bool page_fault_on_AD = false;
@@ -85,6 +88,8 @@ struct MMU_T {
 	tlb_entry_t tlb[NUM_MODES][NUM_ACCESS_TYPES][TLB_ENTRIES];
 
 	MMU_T(T_RVX_ISS &core) : core(core), quantum_keeper(core.quantum_keeper) {
+		mmu_access_delay = prop_clock_cycle_period * prop_mmu_access_clock_cycles;
+
 		flush_tlb();
 	}
 

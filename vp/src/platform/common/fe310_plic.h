@@ -23,6 +23,14 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	// this does not work for the snake example
 	// static constexpr unsigned WORDS_FOR_INTERRUPT_ENTRIES = (NumberInterruptEntries+(32))/32;
 
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 4;
+	unsigned int prop_irq_trigger_clock_cycles = 1;
+
+	sc_core::sc_time access_delay;
+	sc_core::sc_time irq_trigger_delay;
+
 	tlm_utils::simple_target_socket<FE310_PLIC> tsock;
 
 	std::array<external_interrupt_target *, NumberCores> target_harts{};
@@ -53,12 +61,13 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	std::array<bool, NumberCores> hart_eip{};
 
 	sc_core::sc_event e_run;
-	sc_core::sc_time clock_cycle;
 
 	SC_HAS_PROCESS(FE310_PLIC);
 
 	FE310_PLIC(sc_core::sc_module_name, PrivilegeLevel level = MachineMode) {
-		clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
+		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
+		irq_trigger_delay = prop_irq_trigger_clock_cycles * prop_clock_cycle_period;
+
 		tsock.register_b_transport(this, &FE310_PLIC::transport);
 
 		regs_pending_interrupts.readonly = true;
@@ -117,7 +126,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 		pending_interrupts[idx] |= 1 << off;
 
-		e_run.notify(clock_cycle);
+		e_run.notify(irq_trigger_delay);
 	}
 
 	void clear_pending_interrupt(unsigned irq_id) {
@@ -163,7 +172,7 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
-		delay += 4 * clock_cycle;
+		delay += access_delay;
 		// std::cout << "[vp::plic] Writing at 0x" << trans.get_address() << " value 0x" <<
 		// *reinterpret_cast<uint32_t*>(trans.get_data_ptr()) << std::endl;
 		vp::mm::route("FE310_PLIC", register_ranges, trans, delay);

@@ -22,6 +22,9 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
                                 public debug_target_if,
                                 public initiator_if {
    protected:
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+
 	// protected: must not modified directly (would break FastISS)
 	RV_ISA_Config *isa_config = nullptr;
 	uxlen_t pc = 0;
@@ -70,7 +73,6 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	std::string systemc_name;
 	tlm_utils::tlm_quantumkeeper quantum_keeper;
-	sc_core::sc_time cycle_time;
 	sc_core::sc_time cycle_counter;  // use a separate cycle counter, since cycle count can be inhibited
 	struct OpMapEntry opMap[Operation::OpId::NUMBER_OF_OPERATIONS];
 

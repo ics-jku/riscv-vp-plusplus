@@ -13,6 +13,12 @@
 #include "load_if.h"
 
 struct SimpleMemory : public sc_core::sc_module, public load_if {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 1;
+
+	sc_core::sc_time access_delay;
+
 	tlm_utils::simple_target_socket<SimpleMemory> tsock;
 
 	uint8_t *data;
@@ -21,6 +27,8 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 
 	SimpleMemory(sc_core::sc_module_name, uint64_t size, bool read_only = false)
 	    : data(new uint8_t[size]()), size(size), read_only(read_only) {
+		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
+
 		tsock.register_b_transport(this, &SimpleMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &SimpleMemory::get_direct_mem_ptr);
 		tsock.register_transport_dbg(this, &SimpleMemory::transport_dbg);
@@ -72,7 +80,7 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
 		transport_dbg(trans);
-		delay += sc_core::sc_time(10, sc_core::SC_NS);
+		delay += access_delay;
 	}
 
 	unsigned transport_dbg(tlm::tlm_generic_payload &trans) {

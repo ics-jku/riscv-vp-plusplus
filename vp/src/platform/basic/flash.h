@@ -84,6 +84,12 @@ struct Flashcontroller : public sc_core::sc_module {
 	static const unsigned int DATA_ADDR = FLASH_SIZE_REG + sizeof(uint64_t);
 	static const unsigned int ADDR_SPACE = DATA_ADDR + BLOCKSIZE;
 
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+
+	sc_core::sc_time reg_access_delay_base;
+	sc_core::sc_time blk_access_delay_base;
+
 	simple_target_socket<Flashcontroller> tsock;
 	uint8_t blockbufRaw[sizeof(Blockbuffer<BLOCKSIZE>)];
 	Blockbuffer<BLOCKSIZE>* blockBuf;
@@ -102,6 +108,11 @@ struct Flashcontroller : public sc_core::sc_module {
 	int mFiledescriptor;
 
 	Flashcontroller(sc_module_name, string& filepath) : blockBuf(nullptr), mFilepath(filepath), mFiledescriptor(-1) {
+		/* synchronous timing -> based on clock */
+		reg_access_delay_base = 3 * prop_clock_cycle_period;
+		/* asynchronous timing -> fixed */
+		blk_access_delay_base = sc_core::sc_time(1, sc_core::SC_US);
+
 		tsock.register_b_transport(this, &Flashcontroller::transport);
 
 		if (filepath.length() == 0) {  // No file
@@ -153,14 +164,16 @@ struct Flashcontroller : public sc_core::sc_module {
 			} else {
 				sc_assert(false && "unsupported tlm command");
 			}
-			delay += sc_core::sc_time(len * 30, sc_core::SC_NS);
+			delay += len * reg_access_delay_base;
+
 		} else if (addr >= FLASH_SIZE_REG && addr < DATA_ADDR) {  // Size register
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				memcpy(ptr, &mDeviceNumBlocks.asRaw[addr - FLASH_SIZE_REG], len);
 			} else {
 				sc_assert(false && "unsupported tlm command");
 			}
-			delay += sc_core::sc_time(len * 30, sc_core::SC_NS);
+			delay += len * reg_access_delay_base;
+
 		} else {  // Data region
 			assert(mTargetBlock.asInt < mDeviceNumBlocks.asInt && "Access Flash out of bounds!");
 
@@ -173,7 +186,7 @@ struct Flashcontroller : public sc_core::sc_module {
 				sc_assert(false && "unsupported tlm command");
 			}
 			// TODO: Add delay based on blockBuf cache
-			delay += sc_core::sc_time(len, sc_core::SC_US);
+			delay += len * blk_access_delay_base;
 		}
 	}
 };

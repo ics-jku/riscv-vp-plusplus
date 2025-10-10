@@ -15,6 +15,12 @@ using namespace sc_core;
 using namespace tlm_utils;
 
 struct MemoryMappedFile : public sc_core::sc_module {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 3;
+
+	sc_core::sc_time access_delay_base;
+
 	simple_target_socket<MemoryMappedFile> tsock;
 
 	string mFilepath;
@@ -22,6 +28,8 @@ struct MemoryMappedFile : public sc_core::sc_module {
 	fstream file;
 
 	MemoryMappedFile(sc_module_name, string &filepath, uint32_t size) : mFilepath(filepath), mSize(size) {
+		access_delay_base = prop_access_clock_cycles * prop_clock_cycle_period;
+
 		tsock.register_b_transport(this, &MemoryMappedFile::transport);
 
 		if (filepath.size() == 0 || size == 0) {  // no file
@@ -91,6 +99,6 @@ struct MemoryMappedFile : public sc_core::sc_module {
 			sc_assert(false && "unsupported tlm command");
 		}
 
-		delay += sc_core::sc_time(len * 30, sc_core::SC_NS);
+		delay += len * access_delay_base;
 	}
 };

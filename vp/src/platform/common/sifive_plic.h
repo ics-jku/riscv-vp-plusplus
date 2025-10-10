@@ -29,6 +29,14 @@ struct SIFIVE_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	/* size (in bytes) to fit #numirq interrupts (rounded up to 64 bit registers) (see constructor) */
 	const uint32_t HART_REG_SIZE;
 
+	/* config properties (copied from FE310_PLIC) */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 4;
+	unsigned int prop_irq_trigger_clock_cycles = 1;
+
+	sc_core::sc_time access_delay;
+	sc_core::sc_time irq_trigger_delay;
+
 	tlm_utils::simple_target_socket<SIFIVE_PLIC> tsock;
 	std::vector<external_interrupt_target *> target_harts{};
 
@@ -52,7 +60,6 @@ struct SIFIVE_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	};
 
 	sc_core::sc_event e_run;
-	sc_core::sc_time clock_cycle;
 
 	std::vector<RegisterRange *> register_ranges;
 

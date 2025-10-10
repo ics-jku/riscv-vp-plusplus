@@ -18,6 +18,8 @@ typedef Framebuffer::Color Color;
 typedef Framebuffer::Frame Frame;
 
 Display::Display(sc_module_name) {
+	access_delay_base = prop_clock_cycle_period / 2;
+
 	tsock.register_b_transport(this, &Display::transport);
 	createSM();
 	memset(frame.raw, 0, sizeof(Framebuffer));
@@ -84,7 +86,7 @@ void Display::transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay
 	} else {
 		sc_assert(false && "unsupported tlm command");
 	}
-	delay += sc_core::sc_time(len * 5, sc_core::SC_NS);
+	delay += len * access_delay_base;
 }
 
 void Display::fillFrame(Framebuffer::Type type, Color color) {

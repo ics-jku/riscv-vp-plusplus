@@ -13,13 +13,19 @@
  */
 template <typename T_RVX_ISS>
 struct InstrMemoryProxy_T : public instr_memory_if {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 2;
+
 	MemoryDMI dmi;
 
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time access_delay = clock_cycle * 2;
 
-	InstrMemoryProxy_T(const MemoryDMI &dmi, T_RVX_ISS &owner) : dmi(dmi), quantum_keeper(owner.quantum_keeper) {}
+	sc_core::sc_time access_delay;
+
+	InstrMemoryProxy_T(const MemoryDMI &dmi, T_RVX_ISS &owner) : dmi(dmi), quantum_keeper(owner.quantum_keeper) {
+		access_delay = prop_clock_cycle_period * prop_access_clock_cycles;
+	}
 
 	virtual uint32_t load_instr(uint64_t pc) override {
 		quantum_keeper.inc(access_delay);
@@ -32,6 +38,10 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
                                    public instr_memory_if,
                                    public data_memory_if_T<T_sxlen_t, T_uxlen_t>,
                                    public mmu_memory_if {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_dmi_access_clock_cycles = 4;
+
 	T_RVX_ISS &iss;
 	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;
@@ -40,8 +50,7 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 
 	// optionally add DMI ranges for optimization
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
+	sc_core::sc_time dmi_access_delay;
 	std::vector<MemoryDMI> dmi_ranges;
 
 	tlm::tlm_generic_payload trans;
@@ -54,6 +63,8 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 
 	CombinedMemoryInterface_T(sc_core::sc_module_name, T_RVX_ISS &owner, MMU_T<T_RVX_ISS> *mmu = nullptr)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
+		dmi_access_delay = prop_clock_cycle_period * prop_dmi_access_clock_cycles;
+
 		ext = new initiator_ext(&owner);  // tlm_generic_payload frees all extension objects in destructor, therefore
 		                                  // dynamic allocation is needed
 		trans.set_extension<initiator_ext>(ext);

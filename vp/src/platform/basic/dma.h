@@ -11,6 +11,9 @@
 #include "util/initiator_if.h"
 
 struct SimpleDMA : public sc_core::sc_module, public initiator_if {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+
 	tlm_utils::simple_initiator_socket<SimpleDMA> isock;
 	tlm_utils::simple_target_socket<SimpleDMA> tsock;
 
@@ -144,7 +147,7 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 
 		// post read/write actions
 		if ((cmd == tlm::TLM_WRITE_COMMAND) && (addr == OP_ADDR)) {
-			run_event.notify(sc_core::sc_time(10, sc_core::SC_NS));
+			run_event.notify(prop_clock_cycle_period);
 		}
 
 		(void)delay;  // zero delay

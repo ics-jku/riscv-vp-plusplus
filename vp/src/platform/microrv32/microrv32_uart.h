@@ -9,6 +9,12 @@
 #include <systemc>
 
 struct MicroRV32UART : public sc_core::sc_module {
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_access_clock_cycles = 5;
+
+	sc_core::sc_time access_delay;
+
 	tlm_utils::simple_target_socket<MicroRV32UART> tsock;
 
 	sc_core::sc_event run_event;
@@ -22,6 +28,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 	SC_HAS_PROCESS(MicroRV32UART);
 
 	MicroRV32UART(sc_core::sc_module_name) {
+		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 		tsock.register_b_transport(this, &MicroRV32UART::transport);
 		SC_THREAD(run);
 	}
@@ -59,8 +66,8 @@ struct MicroRV32UART : public sc_core::sc_module {
 		}
 		// std::cout << "sc_time: " << sc_core::sc_time_stamp() << std::endl;
 		// (void)delay;  // zero delay
-		// wait(sc_core::sc_time(50, sc_core::SC_NS));
-		delay += sc_core::sc_time(50, sc_core::SC_NS);
+		// wait(access_delay);
+		delay += access_delay;
 	}
 
 	// untested
