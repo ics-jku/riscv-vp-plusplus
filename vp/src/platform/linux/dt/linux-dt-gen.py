@@ -49,8 +49,8 @@ argp.add_argument("-t", "--target",
                   choices = ["linux32-sc-vp", "linux32-vp", "linux-sc-vp", "linux-vp"],
                   required = True)
 argp.add_argument("-m", "--memory-start",
-                  help = "memory start address (default: 0x8000_0000)",
-                  default = "0x8000_0000")
+                  help = "memory start address (default: 0x80000000)",
+                  default = "0x80000000")
 argp.add_argument("-s", "--memory-size",
                   help = "memory size in bytes (default: rv32: 1GiB; rv64: 2GiB)")
 argp.add_argument("-b", "--bootargs",
@@ -128,7 +128,7 @@ def gen_riscv_isa_dt(isa_base, isa_ext):
         if len(e) == 1:
             res += e
         else:
-            res += f"_{e}"
+            res += "_" + e
     return res
 
 # Function to generate RISC-V ISA extensions string
@@ -148,7 +148,7 @@ def gen_riscv_isa_extensions_dt(isa_base, isa_ext):
 def gen_mem_size_dt(mem_size):
     high = mem_size >> 32  # Extract the upper 32 bits
     low = mem_size & ((1 << 32) - 1)  # Extract the lower 32 bits
-    return f"0x{high:X} 0x{low:08X}"
+    return "0x{high:X} 0x{low:08X}".format(high = high, low = low)
 
 
 cfg.RISCV_ISA_CPU0_DT = \
@@ -169,7 +169,7 @@ cfg.RISCV_ISA_EXTENSIONS_DT = \
             cfg.RISCV_ISA_BASE,
             cfg.RISCV_ISA_EXTENSIONS)
 
-cfg.MEM_START_HEX = f'{cfg.MEM_START:x}'
+cfg.MEM_START_HEX = "{mem_start:x}".format(mem_start = cfg.MEM_START)
 cfg.MEM_START_DT = gen_mem_size_dt(cfg.MEM_START)
 cfg.MEM_SIZE_DT = gen_mem_size_dt(cfg.MEM_SIZE)
 
