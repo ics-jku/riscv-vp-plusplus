@@ -175,8 +175,8 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 		std::cerr << "[VP] cannot halt initiator " << this->name() << std::endl;
 	}
 
-	std::string name() {
-		return this->name();
+	std::string name() override {
+		return sc_core::sc_module::name();
 	}
 };
 
