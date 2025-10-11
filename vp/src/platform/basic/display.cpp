@@ -12,12 +12,17 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
+#include "util/propertymap.h"
+
 typedef Framebuffer::Point Point;
 typedef Framebuffer::PointF PointF;
 typedef Framebuffer::Color Color;
 typedef Framebuffer::Frame Frame;
 
 Display::Display(sc_module_name) {
+	/* get config properties from global property tree (or use default) */
+	VPPP_PROPERTY_GET("Display." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+
 	access_delay_base = prop_clock_cycle_period / 2;
 
 	tsock.register_b_transport(this, &Display::transport);

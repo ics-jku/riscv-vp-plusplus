@@ -6,6 +6,7 @@
 #include <systemc>
 
 #include "core/common/irq_if.h"
+#include "util/propertymap.h"
 #include "util/tlm_map.h"
 
 struct MaskROM : public sc_core::sc_module {
@@ -27,6 +28,9 @@ struct MaskROM : public sc_core::sc_module {
 	sc_core::sc_time access_delay_base;
 
 	MaskROM(sc_core::sc_module_name) {
+		/* get config properties from global property tree (or use default) */
+		VPPP_PROPERTY_GET("MaskROM." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+
 		access_delay_base = prop_clock_cycle_period / 2;
 
 		tsock.register_b_transport(this, &MaskROM::transport);

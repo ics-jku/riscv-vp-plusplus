@@ -7,6 +7,7 @@
 
 #include "irq_if.h"
 #include "mmu_mem_if.h"
+#include "util/propertymap.h"
 
 constexpr unsigned PTE_PPN_SHIFT = 10;
 constexpr unsigned PGSHIFT = 12;
@@ -88,6 +89,13 @@ struct MMU_T {
 	tlb_entry_t tlb[NUM_MODES][NUM_ACCESS_TYPES][TLB_ENTRIES];
 
 	MMU_T(T_RVX_ISS &core) : core(core), quantum_keeper(core.quantum_keeper) {
+		/*
+		 * get config properties from global property tree (or use default)
+		 * Note: Instance has no name -> use the owners name is used as instance identifier
+		 */
+		VPPP_PROPERTY_GET("MMU." + core.name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("MMU." + core.name(), "mmu_access_clock_cycles", uint64, prop_mmu_access_clock_cycles);
+
 		mmu_access_delay = prop_clock_cycle_period * prop_mmu_access_clock_cycles;
 
 		flush_tlb();

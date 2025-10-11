@@ -18,6 +18,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "usart.h"
+#include "util/propertymap.h"
 
 using namespace rv32;
 namespace po = boost::program_options;
@@ -87,6 +88,10 @@ int sc_main(int argc, char **argv) {
 	opt.parse(argc, argv);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
+
+	/* set global clock explicitly to 100 MHz */
+	// PropertyMap::global()->set_debug(true);
+	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_time, sc_core::sc_time(10, sc_core::SC_NS));
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 

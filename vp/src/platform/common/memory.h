@@ -11,6 +11,7 @@
 
 #include "bus.h"
 #include "load_if.h"
+#include "util/propertymap.h"
 
 struct SimpleMemory : public sc_core::sc_module, public load_if {
 	/* config properties */
@@ -27,6 +28,10 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 
 	SimpleMemory(sc_core::sc_module_name, uint64_t size, bool read_only = false)
 	    : data(new uint8_t[size]()), size(size), read_only(read_only) {
+		/* get config properties from global property tree (or use default) */
+		VPPP_PROPERTY_GET("SimpleMemory." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("SimpleMemory." + name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
+
 		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 
 		tsock.register_b_transport(this, &SimpleMemory::transport);

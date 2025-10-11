@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include "util/initiator_if.h"
+#include "util/propertymap.h"
 
 struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 	/* config properties */
@@ -55,6 +56,9 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 	SC_HAS_PROCESS(SimpleDMA);
 
 	SimpleDMA(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
+		/* get config properties from global property tree (or use default) */
+		VPPP_PROPERTY_GET("SimpleDMA." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+
 		tsock.register_b_transport(this, &SimpleDMA::transport);
 
 		ext = new initiator_ext(this);  // tlm_generic_payload frees all extension objects in destructor, therefore

@@ -8,6 +8,7 @@
 #include "clint_if.h"
 #include "irq_if.h"
 #include "util/memory_map.h"
+#include "util/propertymap.h"
 
 template <unsigned NumberOfCores>
 struct CLINT : public clint_if, public sc_core::sc_module {
@@ -64,6 +65,10 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	SC_HAS_PROCESS(CLINT);
 
 	CLINT(sc_core::sc_module_name) {
+		/* get config properties from global property tree (or use default) */
+		VPPP_PROPERTY_GET("CLINT." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("CLINT." + name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
+
 		access_delay = prop_clock_cycle_period * prop_access_clock_cycles;
 
 		tsock.register_b_transport(this, &CLINT::transport);

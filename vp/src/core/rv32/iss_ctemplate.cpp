@@ -13,6 +13,8 @@
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
 
+#include "util/propertymap.h"
+
 namespace rv32 {
 
 #define VExt VExtension<ISS_CT>
@@ -28,6 +30,9 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
     : isa_config(isa_config), stats(hart_id), v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
 	csrs.mhartid.reg.val = hart_id;
 	csrs.misa.reg.fields.extensions = isa_config->get_misa_extensions();
+
+	/* get config properties from global property tree (or use default) */
+	VPPP_PROPERTY_GET("ISS." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 

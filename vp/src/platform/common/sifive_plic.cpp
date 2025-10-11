@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "util/propertymap.h"
+
 inline uint32_t GET_IDX(uint32_t &irq) {
 	return irq / 32;
 }
@@ -22,6 +24,11 @@ static void assert_addr(size_t start, size_t end, RegisterRange *range) {
 
 SIFIVE_PLIC::SIFIVE_PLIC(sc_core::sc_module_name, bool fu540_mode, unsigned harts, unsigned numirq)
     : FU540_MODE(fu540_mode), NUMIRQ(numirq), HART_REG_SIZE(((NUMIRQ + 63) / 64) * sizeof(uint64_t)) {
+	/* get config properties from global property tree (or use default) */
+	VPPP_PROPERTY_GET("SIFIVE_PLIC." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+	VPPP_PROPERTY_GET("SIFIVE_PLIC." + name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
+	VPPP_PROPERTY_GET("SIFIVE_PLIC." + name(), "irq_trigger_clock_cycles", uint64, prop_irq_trigger_clock_cycles);
+
 	target_harts = std::vector<external_interrupt_target *>(harts, NULL);
 
 	access_delay = prop_access_clock_cycles * prop_clock_cycle_period;

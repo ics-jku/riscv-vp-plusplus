@@ -8,6 +8,8 @@
 #include <queue>
 #include <systemc>
 
+#include "util/propertymap.h"
+
 struct MicroRV32UART : public sc_core::sc_module {
 	/* config properties */
 	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
@@ -28,6 +30,9 @@ struct MicroRV32UART : public sc_core::sc_module {
 	SC_HAS_PROCESS(MicroRV32UART);
 
 	MicroRV32UART(sc_core::sc_module_name) {
+		/* get config properties from global property tree (or use default) */
+		VPPP_PROPERTY_GET("MicroRV32UART." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+
 		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 		tsock.register_b_transport(this, &MicroRV32UART::transport);
 		SC_THREAD(run);

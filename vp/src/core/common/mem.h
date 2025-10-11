@@ -6,6 +6,7 @@
 #include "mem_if.h"
 #include "mmu.h"
 #include "util/initator_ext.h"
+#include "util/propertymap.h"
 
 /*
  * For optimization, use DMI to fetch instructions
@@ -24,6 +25,12 @@ struct InstrMemoryProxy_T : public instr_memory_if {
 	sc_core::sc_time access_delay;
 
 	InstrMemoryProxy_T(const MemoryDMI &dmi, T_RVX_ISS &owner) : dmi(dmi), quantum_keeper(owner.quantum_keeper) {
+		/*
+		 * get config properties from global property tree (or use default)
+		 * Note: Instance has no name -> use the owners name is used as instance identifier
+		 */
+		VPPP_PROPERTY_GET("InstrMemoryProxy." + owner.name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("InstrMemoryProxy." + owner.name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
 		access_delay = prop_clock_cycle_period * prop_access_clock_cycles;
 	}
 
@@ -63,6 +70,15 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 
 	CombinedMemoryInterface_T(sc_core::sc_module_name, T_RVX_ISS &owner, MMU_T<T_RVX_ISS> *mmu = nullptr)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
+		/*
+		 * get config properties from global property tree (or use default)
+		 * Note: Instance has no name -> use the owners name is used as instance identifier
+		 */
+		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "clock_cycle_period", sc_time,
+		                  prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "dmi_access_clock_cycles", uint64,
+		                  prop_dmi_access_clock_cycles);
+
 		dmi_access_delay = prop_clock_cycle_period * prop_dmi_access_clock_cycles;
 
 		ext = new initiator_ext(&owner);  // tlm_generic_payload frees all extension objects in destructor, therefore
