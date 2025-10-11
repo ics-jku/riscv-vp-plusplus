@@ -29,8 +29,10 @@ struct InstrMemoryProxy_T : public instr_memory_if {
 		 * get config properties from global property tree (or use default)
 		 * Note: Instance has no name -> use the owners name is used as instance identifier
 		 */
-		VPPP_PROPERTY_GET("InstrMemoryProxy." + owner.name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
-		VPPP_PROPERTY_GET("InstrMemoryProxy." + owner.name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
+		VPPP_PROPERTY_GET("InstrMemoryProxy." + owner.name(), "clock_cycle_period", sc_core::sc_time,
+		                  prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("InstrMemoryProxy." + owner.name(), "access_clock_cycles", uint64_t,
+		                  prop_access_clock_cycles);
 		access_delay = prop_clock_cycle_period * prop_access_clock_cycles;
 	}
 
@@ -74,9 +76,9 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		 * get config properties from global property tree (or use default)
 		 * Note: Instance has no name -> use the owners name is used as instance identifier
 		 */
-		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "clock_cycle_period", sc_time,
+		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "clock_cycle_period", sc_core::sc_time,
 		                  prop_clock_cycle_period);
-		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "dmi_access_clock_cycles", uint64,
+		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "dmi_access_clock_cycles", uint64_t,
 		                  prop_dmi_access_clock_cycles);
 
 		dmi_access_delay = prop_clock_cycle_period * prop_dmi_access_clock_cycles;

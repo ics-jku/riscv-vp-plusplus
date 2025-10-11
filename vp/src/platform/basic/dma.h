@@ -57,7 +57,7 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 
 	SimpleDMA(sc_core::sc_module_name, uint32_t irq_number) : irq_number(irq_number) {
 		/* get config properties from global property tree (or use default) */
-		VPPP_PROPERTY_GET("SimpleDMA." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("SimpleDMA." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
 
 		tsock.register_b_transport(this, &SimpleDMA::transport);
 

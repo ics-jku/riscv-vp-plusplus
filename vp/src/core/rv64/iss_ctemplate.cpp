@@ -39,7 +39,7 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 	csrs.misa.reg.fields.extensions = isa_config->get_misa_extensions();
 
 	/* get config properties from global property tree (or use default) */
-	VPPP_PROPERTY_GET("ISS." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+	VPPP_PROPERTY_GET("ISS." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
 
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 

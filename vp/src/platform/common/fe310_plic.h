@@ -67,9 +67,9 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 
 	FE310_PLIC(sc_core::sc_module_name, PrivilegeLevel level = MachineMode) {
 		/* get config properties from global property tree (or use default) */
-		VPPP_PROPERTY_GET("FE310_PLIC." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
-		VPPP_PROPERTY_GET("FE310_PLIC." + name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
-		VPPP_PROPERTY_GET("FE310_PLIC." + name(), "irq_trigger_clock_cycles", uint64, prop_irq_trigger_clock_cycles);
+		VPPP_PROPERTY_GET("FE310_PLIC." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("FE310_PLIC." + name(), "access_clock_cycles", uint64_t, prop_access_clock_cycles);
+		VPPP_PROPERTY_GET("FE310_PLIC." + name(), "irq_trigger_clock_cycles", uint64_t, prop_irq_trigger_clock_cycles);
 
 		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 		irq_trigger_delay = prop_irq_trigger_clock_cycles * prop_clock_cycle_period;

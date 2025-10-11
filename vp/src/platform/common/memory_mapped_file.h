@@ -30,8 +30,9 @@ struct MemoryMappedFile : public sc_core::sc_module {
 
 	MemoryMappedFile(sc_module_name, string &filepath, uint32_t size) : mFilepath(filepath), mSize(size) {
 		/* get config properties from global property tree (or use default) */
-		VPPP_PROPERTY_GET("MemoryMappedFile." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
-		VPPP_PROPERTY_GET("MemoryMappedFile." + name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
+		VPPP_PROPERTY_GET("MemoryMappedFile." + name(), "clock_cycle_period", sc_core::sc_time,
+		                  prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("MemoryMappedFile." + name(), "access_clock_cycles", uint64_t, prop_access_clock_cycles);
 
 		access_delay_base = prop_access_clock_cycles * prop_clock_cycle_period;
 

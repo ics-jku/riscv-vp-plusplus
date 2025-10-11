@@ -21,7 +21,7 @@ typedef Framebuffer::Frame Frame;
 
 Display::Display(sc_module_name) {
 	/* get config properties from global property tree (or use default) */
-	VPPP_PROPERTY_GET("Display." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+	VPPP_PROPERTY_GET("Display." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
 
 	access_delay_base = prop_clock_cycle_period / 2;
 

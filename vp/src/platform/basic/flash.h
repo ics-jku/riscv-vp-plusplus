@@ -110,7 +110,7 @@ struct Flashcontroller : public sc_core::sc_module {
 
 	Flashcontroller(sc_module_name, string& filepath) : blockBuf(nullptr), mFilepath(filepath), mFiledescriptor(-1) {
 		/* get config properties from global property tree (or use default) */
-		VPPP_PROPERTY_GET("Flashcontroller." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("Flashcontroller." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
 
 		/* synchronous timing -> based on clock */
 		reg_access_delay_base = 3 * prop_clock_cycle_period;

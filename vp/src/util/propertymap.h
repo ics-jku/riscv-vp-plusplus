@@ -86,12 +86,12 @@ class PropertyMap {
 	void set_raw(const std::string& desc, const std::string& name, const std::string& val, bool force = false);
 
 	template <typename RET>
-	RET get_raw(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name,
-	            bool def = false, const RET& def_val = RET()) {
+	RET get_raw(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name, bool def,
+	            const RET& def_val) {
 		std::string str = "";
 
 		if (debug) {
-			std::cout << "PropertyMap: Get: start: " << desc << "." << name << std::endl;
+			std::cout << "PropertyMap::get_raw: start: " << desc << "." << name << std::endl;
 		}
 
 		/* search */
@@ -101,7 +101,7 @@ class PropertyMap {
 			if (it != pmap.end()) {
 				str = it->second;
 				if (debug) {
-					std::cout << "PropertyMap: Get: match: " << cd << "." << name << " => " << str << std::endl;
+					std::cout << "PropertyMap::get_raw: match: " << cd << "." << name << " => " << str << std::endl;
 				}
 				break;
 			}
@@ -120,34 +120,34 @@ class PropertyMap {
 			/* if not found and default value given -> return default */
 			if (def) {
 				if (debug) {
-					std::cout << "PropertyMap: Get: no-match, use default: " << desc << "." << name << " => " << def_val
-					          << std::endl;
+					std::cout << "PropertyMap::get_raw: no-match, use default: " << desc << "." << name << " => "
+					          << def_val << std::endl;
 				}
 				return def_val;
 			}
-			throw std::runtime_error("PropertyMap: Get: Missing property \"" + desc + "." + name + "\"");
+			throw std::runtime_error("PropertyMap::get_raw: Missing property \"" + desc + "." + name + "\"");
 		}
 
 		/* handle conversion */
 		try {
 			return fconv(str);
 		} catch (const std::invalid_argument& e) {
-			throw std::runtime_error("PropertyMap: Get: Invalid value \"" + str + "\": not a valid number");
+			throw std::runtime_error("PropertyMap::get_raw: Invalid value \"" + str + "\": not a valid number");
 		} catch (const std::out_of_range& e) {
-			throw std::runtime_error("PropertyMap: Get: Invalid value \"" + str +
+			throw std::runtime_error("PropertyMap::get_raw: Invalid value \"" + str +
 			                         "\": number out of range for uint64_t");
 		}
 	}
 
 	/* variant without default value */
 	template <typename RET>
-	RET get(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name) {
-		return get_raw(fconv, desc, name, false);
+	RET get_raw(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name) {
+		return get_raw(fconv, desc, name, false, RET());
 	}
 
 	/* variant with default value */
 	template <typename RET>
-	RET get(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name, RET def_val) {
+	RET get_raw(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name, RET def_val) {
 		return get_raw(fconv, desc, name, true, def_val);
 	}
 
@@ -182,71 +182,67 @@ class PropertyMap {
 		return pmap.count(desc + "." + name) > 0;
 	}
 
-	void set_string(const std::string& desc, const std::string& name, const std::string& val) {
-		set_raw(desc, name, val);
-	}
-
-	template <typename... Args>
-	std::string get_string(Args... args) {
-		return get<std::string>([](const std::string& str) -> std::string { return str; }, args...);
-	}
-
-	void set_bool(const std::string& desc, const std::string& name, bool val) {
-		std::string str = val ? "true" : "false";
-		set_string(desc, name, str);
-	}
-
-	template <typename... Args>
-	bool get_bool(Args... args) {
-		return get<bool>(
-		    [](const std::string& str) -> bool {
-			    if (!str.compare("false")) {
-				    return false;
-			    } else if (!str.compare("true")) {
-				    return true;
-			    } else {
-				    throw std::runtime_error("PropertyMap: Get: Invalid value \"" + str +
-				                             "\": not \"true\" or \"false\"");
-			    }
-		    },
-		    args...);
-	}
-
-	void set_uint64(const std::string& desc, const std::string& name, uint64_t val) {
+	template <typename VAL>
+	void set(const std::string& desc, const std::string& name, VAL val) {
 		std::stringstream stream;
-		stream << "0x" << std::hex << val;
-		set_string(desc, name, stream.str());
+
+		if constexpr (std::is_same_v<VAL, std::string>) {
+			stream << val;
+
+		} else if constexpr (std::is_same_v<VAL, bool>) {
+			stream << (val ? "true" : "false");
+
+		} else if constexpr (std::is_same_v<VAL, uint64_t>) {
+			stream << "0x" << std::hex << val;
+
+		} else if constexpr (std::is_same_v<VAL, int64_t>) {
+			stream << val;
+
+		} else if constexpr (std::is_same_v<VAL, sc_core::sc_time>) {
+			stream << val.value();
+
+		} else {
+			throw std::runtime_error(std::string("PropertyMap::set: Not implemented for type ") + typeid(VAL).name());
+		}
+
+		set_raw(desc, name, stream.str());
 	}
 
-	template <typename... Args>
-	uint64_t get_uint64(Args... args) {
-		return get<uint64_t>([](const std::string& str) -> uint64_t { return std::stoull(str, nullptr, 0); }, args...);
-	}
+	template <typename RET, typename... Args>
+	RET get(Args... args) {
+		std::function<RET(std::string)> fconv;
 
-	void set_int64(const std::string& desc, const std::string& name, int64_t val) {
-		std::stringstream stream;
-		stream << val;
-		set_string(desc, name, stream.str());
-	}
+		if constexpr (std::is_same_v<RET, std::string>) {
+			fconv = [](const std::string& str) -> std::string { return str; };
 
-	template <typename... Args>
-	int64_t get_int64(Args... args) {
-		return get<int64_t>([](const std::string& str) -> int64_t { return std::stoll(str, nullptr, 0); }, args...);
-	}
+		} else if constexpr (std::is_same_v<RET, bool>) {
+			fconv = [](const std::string& str) -> bool {
+				if (!str.compare("false")) {
+					return false;
+				} else if (!str.compare("true")) {
+					return true;
+				} else {
+					throw std::runtime_error("PropertyMap::get: Invalid value \"" + str +
+					                         "\": not \"true\" or \"false\"");
+				}
+			};
 
-	/* systemc related -> could be factored out in a subclass */
+		} else if constexpr (std::is_same_v<RET, uint64_t>) {
+			fconv = [](const std::string& str) -> int64_t { return std::stoll(str, nullptr, 0); };
 
-	void set_sc_time(const std::string& desc, const std::string& name, sc_core::sc_time val) {
-		set_int64(desc, name, val.value());
-	}
+		} else if constexpr (std::is_same_v<RET, int64_t>) {
+			fconv = [](const std::string& str) -> int64_t { return std::stoll(str, nullptr, 0); };
 
-	template <typename... Args>
-	sc_core::sc_time get_sc_time(Args... args) {
-		return get<sc_core::sc_time>(
-		    [](const std::string& str) -> sc_core::sc_time {
-			    return sc_core::sc_time(std::stoll(str, nullptr, 0), sc_core::SC_PS);
-		    },
-		    args...);
+		} else if constexpr (std::is_same_v<RET, sc_core::sc_time>) {
+			fconv = [](const std::string& str) -> sc_core::sc_time {
+				return sc_core::sc_time(std::stoll(str, nullptr, 0), sc_core::SC_PS);
+			};
+
+		} else {
+			throw std::runtime_error(std::string("PropertyMap::get: Not implemented for type ") + typeid(RET).name());
+		}
+
+		return get_raw<RET>(fconv, args...);
 	}
 
 	/* vp++ related -> could be factored out in a subclass / include file */
@@ -258,12 +254,12 @@ class PropertyMap {
 	                            : (std::string(".") + std::string(std::string("") + _desc))))
 	/* api */
 
-#define VPPP_PROPERTY_GET(_desc, _property_name, _type, _property)                                    \
-	(_property) = PropertyMap::global()->M_JOIN(get_, _type)(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), \
-	                                                         (_property_name), (_property))
+#define VPPP_PROPERTY_GET(_desc, _property_name, _type, _property) \
+	(_property) =                                                  \
+	    PropertyMap::global()->get<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_property))
 
 #define VPPP_PROPERTY_SET(_desc, _property_name, _type, _val) \
-	PropertyMap::global()->M_JOIN(set_, _type)(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_val))
+	PropertyMap::global()->set<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_val))
 };
 
 #endif /* RISCV_UTIL_PROPERTYMAP_H */

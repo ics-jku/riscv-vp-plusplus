@@ -66,8 +66,8 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 
 	CLINT(sc_core::sc_module_name) {
 		/* get config properties from global property tree (or use default) */
-		VPPP_PROPERTY_GET("CLINT." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
-		VPPP_PROPERTY_GET("CLINT." + name(), "access_clock_cycles", uint64, prop_access_clock_cycles);
+		VPPP_PROPERTY_GET("CLINT." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("CLINT." + name(), "access_clock_cycles", uint64_t, prop_access_clock_cycles);
 
 		access_delay = prop_clock_cycle_period * prop_access_clock_cycles;
 

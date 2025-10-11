@@ -119,7 +119,7 @@ int sc_main(int argc, char **argv) {
 
 	/* set global clock explicitly to 100 MHz */
 	// PropertyMap::global()->set_debug(true);
-	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_time, sc_core::sc_time(10, sc_core::SC_NS));
+	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_core::sc_time, sc_core::sc_time(10, sc_core::SC_NS));
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 

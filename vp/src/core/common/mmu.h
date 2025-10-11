@@ -93,8 +93,8 @@ struct MMU_T {
 		 * get config properties from global property tree (or use default)
 		 * Note: Instance has no name -> use the owners name is used as instance identifier
 		 */
-		VPPP_PROPERTY_GET("MMU." + core.name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
-		VPPP_PROPERTY_GET("MMU." + core.name(), "mmu_access_clock_cycles", uint64, prop_mmu_access_clock_cycles);
+		VPPP_PROPERTY_GET("MMU." + core.name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("MMU." + core.name(), "mmu_access_clock_cycles", uint64_t, prop_mmu_access_clock_cycles);
 
 		mmu_access_delay = prop_clock_cycle_period * prop_mmu_access_clock_cycles;
 

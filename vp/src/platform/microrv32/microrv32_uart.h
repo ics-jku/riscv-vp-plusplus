@@ -31,7 +31,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 
 	MicroRV32UART(sc_core::sc_module_name) {
 		/* get config properties from global property tree (or use default) */
-		VPPP_PROPERTY_GET("MicroRV32UART." + name(), "clock_cycle_period", sc_time, prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("MicroRV32UART." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
 
 		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 		tsock.register_b_transport(this, &MicroRV32UART::transport);

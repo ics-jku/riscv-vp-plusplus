@@ -218,7 +218,7 @@ int sc_main(int argc, char **argv) {
 
 	/* set global clock explicitly to 100 MHz */
 	// PropertyMap::global()->set_debug(true);
-	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_time, sc_core::sc_time(10, sc_core::SC_NS));
+	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_core::sc_time, sc_core::sc_time(10, sc_core::SC_NS));
 
 	if (opt.use_E_base_isa) {
 		std::cerr << "Error: The Linux VP does not support RV32E/RV64E!" << std::endl;
