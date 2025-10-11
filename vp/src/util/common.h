@@ -46,8 +46,12 @@ inline uint32_t rv32_align_address(uint32_t addr) {
 }
 
 /* Allow to provide a custom function name for a SystemC thread to avoid duplicate name warning in case the same
- * SystemC module is instantiated multiple times. */
-#define SC_NAMED_THREAD(func, name) declare_thread_process(func##_handle, name, SC_CURRENT_USER_MODULE, func)
+ * SystemC module is instantiated multiple times.
+ * Compatible with SystemC 3.0.1 (see systemc-3.0.1/src/sysc/kernel/sc_module.h line 477ff)
+ */
+#define SC_NAMED_THREAD(func, name) \
+	SC_PROCESS_MACRO_BEGIN_         \
+	this->declare_thread_process(SC_MAKE_FUNC_PTR(SC_CURRENT_USER_MODULE_TYPE, func), name) SC_PROCESS_MACRO_END_
 
 #if defined(COLOR_THEME_LIGHT) || defined(COLOR_THEME_DARK)
 #define COLORFRMT "\e[38;5;%um%s\e[39m"
