@@ -5,6 +5,8 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 
+#include "util/propertymap.h"
+
 namespace po = boost::program_options;
 
 Options::Options(void) {
@@ -27,6 +29,10 @@ Options::Options(void) {
 		("debug-bus-mode", po::bool_switch(&use_debug_bus), "dump tlm transaction data via TCP connection")
 		("debug-bus-port", po::value<unsigned int>(&debug_bus_port),"select port number for tlm transaction data")
 		("break-on-transaction", po::bool_switch(&break_on_transaction),"break on every transaction when in --debug-mode")
+
+		("property-map", po::value<std::string>(&property_map_file)->default_value(""),"ProppertyMap json file to load or save (see property-map-export)")
+		("property-map-export", po::bool_switch(&property_map_export), "save a ProppertyMap (--property-map) of the model properties and default values (elaboration phase) and exit")
+
 		("input-file", po::value<std::string>(&input_program)->required(), "input file to use for execution");
 	// clang-format on
 
@@ -69,6 +75,24 @@ void Options::parse(int argc, char **argv) {
 			    << std::endl;
 			error_on_zero_traphandler = true;
 		}
+
+		/* check & handle property map parameters */
+		if (property_map_file.empty() && property_map_export) {
+			std::cerr << "[Options] Error: switch 'propety_map_export' set, but 'property_map' not given" << std::endl;
+			exit(1);
+		}
+		if (property_map_export) {
+			/* export enabled -> add non-existing properties and default values on get */
+			PropertyMap::global()->set_update_on_get(true);
+		}
+		if (!property_map_file.empty() && !property_map_export) {
+			/* property map given and export disabled -> load */
+			PropertyMap::global()->load_json(property_map_file);
+			/* indicate top-level to not override values */
+			property_map_is_loaded = true;
+			std::cout << "PropertyMap loaded from \"" << property_map_file << "\"" << std::endl;
+		}
+
 	} catch (po::error &e) {
 		std::cerr << "Error parsing command line options: " << e.what() << std::endl;
 
@@ -87,4 +111,14 @@ void Options::printValues(std::ostream &os) const {
 	os << "tlm_global_quantum: " << tlm_global_quantum << std::endl;
 	os << "use_instr_dmi: " << use_instr_dmi << std::endl;
 	os << "use_data_dmi: " << use_data_dmi << std::endl;
+}
+
+void Options::handle_property_export_and_exit() {
+	if (!property_map_export) {
+		return;
+	}
+	/* property map export enabled -> save and stop */
+	PropertyMap::global()->save_json(property_map_file);
+	std::cout << "PropertyMap exported to \"" << property_map_file << "\" -> exit" << std::endl;
+	exit(0);
 }

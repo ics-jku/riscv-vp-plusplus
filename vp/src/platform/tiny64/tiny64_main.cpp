@@ -54,14 +54,22 @@ struct TinyOptions : public Options {
 };
 
 int sc_main(int argc, char **argv) {
+	// PropertyMap::global()->set_debug(true);
+
 	TinyOptions opt;
 	opt.parse(argc, argv);
 
-	/* set global clock explicitly to 100 MHz */
-	// PropertyMap::global()->set_debug(true);
-	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_core::sc_time, sc_core::sc_time(10, sc_core::SC_NS));
-
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
+
+	if (!opt.property_map_is_loaded) {
+		/*
+		 * property map was not loaded by Options -> use default model properties
+		 * and values
+		 */
+
+		/* set global clock explicitly to 100 MHz */
+		VPPP_PROPERTY_SET("", "clock_cycle_period", sc_core::sc_time, sc_core::sc_time(10, sc_core::SC_NS));
+	}
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
@@ -133,6 +141,9 @@ int sc_main(int argc, char **argv) {
 	} else {
 		new DirectCoreRunner(core);
 	}
+
+	/* may not return (exit) */
+	opt.handle_property_export_and_exit();
 
 	if (opt.quiet)
 		sc_core::sc_report_handler::set_verbosity_level(sc_core::SC_NONE);

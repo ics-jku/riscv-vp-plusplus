@@ -213,12 +213,20 @@ void handle_kernel_file(const LinuxOptions opt, SimpleMemory &mem) {
 }
 
 int sc_main(int argc, char **argv) {
+	// PropertyMap::global()->set_debug(true);
+
 	LinuxOptions opt;
 	opt.parse(argc, argv);
 
-	/* set global clock explicitly to 100 MHz */
-	// PropertyMap::global()->set_debug(true);
-	VPPP_PROPERTY_SET("", "clock_cycle_period", sc_core::sc_time, sc_core::sc_time(10, sc_core::SC_NS));
+	if (!opt.property_map_is_loaded) {
+		/*
+		 * property map was not loaded by Options -> use default model properties
+		 * and values
+		 */
+
+		/* set global clock explicitly to 100 MHz */
+		VPPP_PROPERTY_SET("", "clock_cycle_period", sc_core::sc_time, sc_core::sc_time(10, sc_core::SC_NS));
+	}
 
 	if (opt.use_E_base_isa) {
 		std::cerr << "Error: The Linux VP does not support RV32E/RV64E!" << std::endl;
@@ -413,6 +421,9 @@ int sc_main(int argc, char **argv) {
 			new DirectCoreRunner(cores[i]->iss);
 		}
 	}
+
+	/* may not return (exit) */
+	opt.handle_property_export_and_exit();
 
 	sc_core::sc_start();
 	for (size_t i = 0; i < NUM_CORES; i++) {

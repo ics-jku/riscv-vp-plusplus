@@ -56,10 +56,6 @@
  *    -> match "vppp.clock_cycle_period" -> 10ns
  *
  * For more examples see VP++ module and top-level implementations
- *
- * TODO/Ideas:
- *  * add properties if missing on get -> would be useful to create a
- *    property map from actual gets of a model (e.g. for validation)
  */
 #ifndef RISCV_UTIL_PROPERTYMAP_H
 #define RISCV_UTIL_PROPERTYMAP_H
@@ -82,6 +78,7 @@ class PropertyMap {
 
 	std::map<std::string, std::string> pmap;
 	bool debug = false;
+	bool update_on_get = false;
 
 	void set_raw(const std::string& desc, const std::string& name, const std::string& val, bool force = false);
 
@@ -103,6 +100,12 @@ class PropertyMap {
 				if (debug) {
 					std::cout << "PropertyMap::get_raw: match: " << cd << "." << name << " => " << str << std::endl;
 				}
+				if (update_on_get && !contains(desc, name)) {
+					if (debug) {
+						std::cout << "PropertyMap::get_raw: update_on_get with full desc and match" << std::endl;
+					}
+					set_raw(desc, name, str);
+				}
 				break;
 			}
 
@@ -122,6 +125,12 @@ class PropertyMap {
 				if (debug) {
 					std::cout << "PropertyMap::get_raw: no-match, use default: " << desc << "." << name << " => "
 					          << def_val << std::endl;
+				}
+				if (update_on_get && !contains(desc, name)) {
+					if (debug) {
+						std::cout << "PropertyMap::get_raw: update_on_get with full desc and default" << std::endl;
+					}
+					set<std::decay_t<decltype(def_val)>>(desc, name, def_val);
 				}
 				return def_val;
 			}
@@ -166,6 +175,19 @@ class PropertyMap {
 
 	void set_debug(bool debug) {
 		this->debug = debug;
+	}
+
+	/*
+	 * add properties if missing on get -> useful to create a property map
+	 * from actual gets (properties and default values) of a model
+	 * (e.g. for validation)
+	 */
+	bool is_update_on_get() {
+		return update_on_get;
+	}
+
+	void set_update_on_get(bool update_on_get) {
+		this->update_on_get = update_on_get;
 	}
 
 	void clear();
