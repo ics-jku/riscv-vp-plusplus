@@ -11,7 +11,8 @@
 #define KEY_HELP 'h'             /* h (print help) */
 #define KEY_TRACE 't'            /* t (toggle trace mode) */
 #define KEY_STATS 's'            /* s (print statistics) */
-#define KEY_EXIT 'x'             /* x (character to exit in command mode) */
+#define KEY_QUIT 'q'             /* q (character to quit (sc_stop) in command mode) */
+#define KEY_EXIT 'x'             /* x (character to exit (exit) in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
 Channel_Console::~Channel_Console() {
@@ -100,13 +101,17 @@ void Channel_Console::handle_cmd(uint8_t cmd) {
 			          << "    ^a-s   print stats of debug targets\n"
 			          << "           (empty by default - check compile flags)\n"
 			          << "    ^a-t   toggle trace mode of debug targets\n"
-			          << "    ^a-x   stop simulation and exit" << std::endl;
+			          << "    ^a-q   quit - stop simulation with sc_stop\n"
+			          << "    ^a-x   exit - hard stop of simulation with exit" << std::endl;
 			break;
 		case KEY_TRACE:
 			debug_targets_toggle_trace_mode();
 			break;
 		case KEY_STATS:
 			debug_targets_print_stats();
+			break;
+		case KEY_QUIT:
+			sc_core::sc_stop();
 			break;
 		case KEY_EXIT:
 		case KEY_CEXIT:
