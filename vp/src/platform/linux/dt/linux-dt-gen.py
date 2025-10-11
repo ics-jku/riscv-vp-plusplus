@@ -62,9 +62,6 @@ argp.add_argument("-q", "--quiet",
                   action = "store_true")
 args = argp.parse_args()
 
-if args.output_file is not None:
-    output_device = open(args.output_file, "w")
-
 
 #
 # Configuration
@@ -502,4 +499,6 @@ dt = cfg.apply(dt_base)
 #
 # Output
 #
+if args.output_file is not None:
+    output_device = open(args.output_file, "w")
 output_device.write(dt)
