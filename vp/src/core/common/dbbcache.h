@@ -92,8 +92,8 @@
  * forces the cache to be always enabled, independent of the runtime configuration
  * this eliminates the runtime checks (located in cache miss) -> max performance
  */
-// #define LSCACHE_FORCED_ENABLED
-#undef LSCACHE_FORCED_ENABLED
+// #define DBBCACHE_FORCED_ENABLED
+#undef DBBCACHE_FORCED_ENABLED
 
 /*
  * enable statistics
