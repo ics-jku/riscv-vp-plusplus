@@ -7,7 +7,7 @@ void ISSStats::reset() {
 	memset(&s, 0, sizeof(s));
 }
 
-#define ISSSTATS_STAT_RATE(_val) (_val) << "\t\t(" << (float)(_val) / s.cnt << ")\n"
+#define ISSSTATS_STAT_RATE(_val) (_val) << "\t\t(" << (double)(_val) / s.cnt << ")\n"
 void ISSStats::print() {
 	std::cout << "============================================================================================="
 	             "==============================\n";
