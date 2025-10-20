@@ -260,7 +260,6 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 	void print() {
 		s.stats_cnt++;
 
-		// TODO: hartid
 		std::cout << "============================================================================================="
 		             "==============================\n";
 		std::cout << "DBBCache Stats (hartId: " << this->dbbcache.hartId << "):\n" << std::dec;
