@@ -41,18 +41,20 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 	friend T_LSCache;
 
    protected:
+	/* must be used for all entries in struct below */
+	using selem_t = uint64_t;
 	/* use struct to simplifiy reset */
 	struct {
-		uint64_t cnt;
-		uint64_t flushs;
-		uint64_t loads;
-		uint64_t stores;
-		uint64_t bus_locked;
-		uint64_t no_dmi;
-		uint64_t dmi;
-		uint64_t hit;
-		uint64_t hit_load;
-		uint64_t hit_store;
+		selem_t cnt;
+		selem_t flushs;
+		selem_t loads;
+		selem_t stores;
+		selem_t bus_locked;
+		selem_t no_dmi;
+		selem_t dmi;
+		selem_t hit;
+		selem_t hit_load;
+		selem_t hit_store;
 	} s;
 
 	LSCacheStats_T(T_LSCache &lscache) : LSCacheStatsDummy_T<T_LSCache>(lscache) {

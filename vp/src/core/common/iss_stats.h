@@ -62,40 +62,43 @@ class ISSStats : public ISSStatsDummy {
    private:
 	static constexpr unsigned int TRAPNR_MAX = 31;
 
+	/* must be used for all entries in struct below */
+	using selem_t = uint64_t;
+	/* use struct to simplifiy reset */
 	struct {
-		uint64_t cnt;
-		uint64_t fast_fdd;
-		uint64_t fast_fdd_abort;
-		uint64_t med_fdd;
-		uint64_t slow_fdd;
-		uint64_t lr_sc;
-		uint64_t commit_instructions;
-		uint64_t commit_cycles;
-		uint64_t qk_need_sync;
-		uint64_t qk_sync;
-		uint64_t nops;
-		uint64_t jal;
-		uint64_t j;
-		uint64_t jalr;
-		uint64_t jr;
-		uint64_t loadstore;
-		uint64_t csr;
-		uint64_t amo;
-		uint64_t set_zero;
-		uint64_t fence_i;
-		uint64_t fence_vma;
-		uint64_t wfi;
-		uint64_t uret;
-		uint64_t mret;
-		uint64_t sret;
-		uint64_t irq_trig_sum;
-		uint64_t irq_trig_ext[MachineMode + 2];
-		uint64_t irq_trig_timer;
-		uint64_t irq_trig_sw;
-		uint64_t trap_sum;
-		uint64_t trap[TRAPNR_MAX + 1];
-		uint64_t op_sum;
-		uint64_t op[Operation::OpId::NUMBER_OF_OPERATIONS];
+		selem_t cnt;
+		selem_t fast_fdd;
+		selem_t fast_fdd_abort;
+		selem_t med_fdd;
+		selem_t slow_fdd;
+		selem_t lr_sc;
+		selem_t commit_instructions;
+		selem_t commit_cycles;
+		selem_t qk_need_sync;
+		selem_t qk_sync;
+		selem_t nops;
+		selem_t jal;
+		selem_t j;
+		selem_t jalr;
+		selem_t jr;
+		selem_t loadstore;
+		selem_t csr;
+		selem_t amo;
+		selem_t set_zero;
+		selem_t fence_i;
+		selem_t fence_vma;
+		selem_t wfi;
+		selem_t uret;
+		selem_t mret;
+		selem_t sret;
+		selem_t irq_trig_sum;
+		selem_t irq_trig_ext[MachineMode + 2];
+		selem_t irq_trig_timer;
+		selem_t irq_trig_sw;
+		selem_t trap_sum;
+		selem_t trap[TRAPNR_MAX + 1];
+		selem_t op_sum;
+		selem_t op[Operation::OpId::NUMBER_OF_OPERATIONS];
 	} s;
 
    public:
