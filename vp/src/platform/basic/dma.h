@@ -10,6 +10,7 @@
 
 #include "util/initiator_if.h"
 #include "util/propertymap.h"
+#include "util/tlm_ext_initiator.h"
 
 struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 	/* config properties */
@@ -19,7 +20,7 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 	tlm_utils::simple_target_socket<SimpleDMA> tsock;
 
 	tlm::tlm_generic_payload trans;
-	initiator_ext *ext;
+	tlm_ext_initiator *ext;
 
 	interrupt_gateway *plic = 0;
 	uint32_t irq_number = 0;
@@ -61,9 +62,9 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 
 		tsock.register_b_transport(this, &SimpleDMA::transport);
 
-		ext = new initiator_ext(this);  // tlm_generic_payload frees all extension objects in destructor, therefore
-		                                // dynamic allocation is needed
-		trans.set_extension<initiator_ext>(ext);
+		ext = new tlm_ext_initiator(this);  // tlm_generic_payload frees all extension objects in destructor, therefore
+		                                    // dynamic allocation is needed
+		trans.set_extension<tlm_ext_initiator>(ext);
 
 		SC_THREAD(run);
 

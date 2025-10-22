@@ -5,8 +5,8 @@
 #include "dmi.h"
 #include "mem_if.h"
 #include "mmu.h"
-#include "util/initator_ext.h"
 #include "util/propertymap.h"
+#include "util/tlm_ext_initiator.h"
 
 /*
  * For optimization, use DMI to fetch instructions
@@ -63,7 +63,7 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 	std::vector<MemoryDMI> dmi_ranges;
 
 	tlm::tlm_generic_payload trans;
-	initiator_ext *ext;
+	tlm_ext_initiator *ext;
 
 	MMU_T<T_RVX_ISS> *mmu;
 
@@ -83,9 +83,9 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 
 		dmi_access_delay = prop_clock_cycle_period * prop_dmi_access_clock_cycles;
 
-		ext = new initiator_ext(&owner);  // tlm_generic_payload frees all extension objects in destructor, therefore
-		                                  // dynamic allocation is needed
-		trans.set_extension<initiator_ext>(ext);
+		ext = new tlm_ext_initiator(&owner);  // tlm_generic_payload frees all extension objects in destructor,
+		                                      // therefore dynamic allocation is needed
+		trans.set_extension<tlm_ext_initiator>(ext);
 	}
 
 	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {

@@ -12,7 +12,7 @@
 #include <systemc>
 
 #include "net_trace.h"
-#include "util/initator_ext.h"
+#include "util/tlm_ext_initiator.h"
 
 struct PortMapping {
 	uint64_t start;
@@ -77,7 +77,7 @@ struct SimpleBus : sc_core::sc_module {
 	}
 
 	static inline initiator_if *get_tlm_initiator(tlm::tlm_generic_payload &trans) {
-		auto init_ext = trans.get_extension<initiator_ext>();
+		auto init_ext = trans.get_extension<tlm_ext_initiator>();
 		if (init_ext != nullptr) {
 			/* note: may be nullptr either */
 			return init_ext->initiator;
