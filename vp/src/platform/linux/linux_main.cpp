@@ -283,17 +283,15 @@ int sc_main(int argc, char **argv) {
 	i2c.register_device(0x68, rtc_ds1307);
 
 	Core *cores[NUM_CORES];
+	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	for (unsigned i = 0; i < NUM_CORES; i++) {
 		cores[i] = new Core(&isa_config, i, dmi);
 
-		// enable interactive debug via console
-		channel_console.debug_targets_add(&cores[i]->iss);
-	}
-
-	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
-	for (size_t i = 0; i < NUM_CORES; i++) {
 		cores[i]->memif.bus_lock = bus_lock;
 		cores[i]->mmu.mem = &cores[i]->memif;
+
+		// enable interactive debug via console
+		channel_console.debug_targets_add(&cores[i]->iss);
 	}
 
 	uint64_t entry_point = loader.get_entrypoint();
