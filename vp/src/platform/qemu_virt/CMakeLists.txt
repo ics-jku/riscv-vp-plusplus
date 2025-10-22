@@ -10,25 +10,25 @@ set(LIBS platform-common gdb-mc
 add_executable(qemu_virt32-sc-vp ${SOURCES})
 target_compile_definitions(qemu_virt32-sc-vp PUBLIC
 	TARGET_RV32
-	NUM_CORES=2)
+	NUM_CORES=1)
 target_link_libraries(qemu_virt32-sc-vp rv32 ${LIBS})
 
 add_executable(qemu_virt32-mc-vp ${SOURCES})
 target_compile_definitions(qemu_virt32-mc-vp PUBLIC
 	TARGET_RV32
-	NUM_CORES=5)
+	NUM_CORES=4)
 target_link_libraries(qemu_virt32-mc-vp rv32 ${LIBS})
 
 add_executable(qemu_virt64-sc-vp ${SOURCES})
 target_compile_definitions(qemu_virt64-sc-vp PUBLIC
 	TARGET_RV64
-	NUM_CORES=2)
+	NUM_CORES=1)
 target_link_libraries(qemu_virt64-sc-vp rv64 ${LIBS})
 
 add_executable(qemu_virt64-mc-vp ${SOURCES})
 target_compile_definitions(qemu_virt64-mc-vp PUBLIC
 	TARGET_RV64
-	NUM_CORES=5)
+	NUM_CORES=4)
 target_link_libraries(qemu_virt64-mc-vp rv64 ${LIBS})
 
 INSTALL(TARGETS

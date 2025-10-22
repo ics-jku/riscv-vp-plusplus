@@ -39,14 +39,14 @@ cfg = Config()
 #
 
 print("""\
-RISC-V VP++ Device Tree Generator for qemu-virt VPs
+RISC-V VP++ Device Tree Generator for qemu-virt VPs (based on DT exported from QEMU)
 (C) 2025 Manfred Schlaegl <manfred.schlaegl@jku.at>, Institute for Complex Systems, JKU Linz
 """)
 
 argp = argparse.ArgumentParser()
 argp.add_argument("-t", "--target",
                   help = "vp variant",
-                  choices = ["qemu_virt32-sc-vp", "qemu_virt32-vp", "qemu_virt64-sc-vp", "qemu_virt64-vp"],
+                  choices = ["qemu_virt32-sc-vp", "qemu_virt32-mc-vp", "qemu_virt64-sc-vp", "qemu_virt64-mc-vp"],
                   required = True)
 argp.add_argument("-m", "--memory-start",
                   help = "memory start address (default: 0x80000000)",
@@ -78,37 +78,34 @@ if args.memory_size is not None:
 cfg.MEM_START = int(args.memory_start, 0)
 
 # fixed configuration
-cfg.RISCV_ISA_EXTENSIONS_CPU0 = ["i", "m", "a", "c", "zicntr", "zicsr", "zifencei"]
 cfg.RISCV_ISA_EXTENSIONS = ["i", "m", "a", "f", "d", "c", "v", "zicntr", "zicsr", "zifencei"]
 
 
 if args.target == "qemu_virt32-sc-vp":
     cfg.RISCV_ISA_BASE = "rv32i"
     cfg.NUM_CORES = 1
-elif args.target == "qemu_virt32-vp":
+elif args.target == "qemu_virt32-mc-vp":
     cfg.RISCV_ISA_BASE = "rv32i"
     cfg.NUM_CORES = 4
 elif args.target == "qemu_virt64-sc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.NUM_CORES = 1
-elif args.target == "qemu_virt64-vp":
+elif args.target == "qemu_virt64-mc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.NUM_CORES = 4
 else:
     print("Internal error: Invalid target: \"" + str(args.target) + "\"!")
     sys.exit(1)
 
+if cfg.MEM_SIZE is None:
+    cfg.MEM_SIZE = 2*1024**3  # 2GiB
 
 if cfg.RISCV_ISA_BASE == "rv32i":
     cfg.MMU_TYPE = "riscv,sv32"
-    cfg.MRAM_SIZE = "0x4000000"   # 64MiB
-    if cfg.MEM_SIZE is None:
-        cfg.MEM_SIZE = 1*1024**3  # 1GiB
+    cfg.PCI_RANGES = "<0x1000000 0x00 0x00 0x00 0x3000000 0x00 0x10000 0x2000000 0x00 0x40000000 0x00 0x40000000 0x00 0x40000000 0x3000000 0x03 0x00 0x03 0x00 0x01 0x00>"
 elif cfg.RISCV_ISA_BASE == "rv64i":
-    cfg.MMU_TYPE="riscv,sv39"
-    cfg.MRAM_SIZE="0x20000000"    # 512MiB
-    if cfg.MEM_SIZE is None:
-        cfg.MEM_SIZE = 2*1024**3  # 2GiB
+    cfg.MMU_TYPE = "riscv,sv57"
+    cfg.PCI_RANGES = "<0x1000000 0x00 0x00 0x00 0x3000000 0x00 0x10000 0x2000000 0x00 0x40000000 0x00 0x40000000 0x00 0x40000000 0x3000000 0x04 0x00 0x04 0x00 0x04 0x00>"
 else:
     print("Internal error: invalid ISA base \"" + str(cfg.RISCV_ISA_BASE) + "\"!")
     sys.exit(1)
@@ -151,19 +148,11 @@ def gen_mem_size_dt(mem_size):
     return "0x{high:X} 0x{low:08X}".format(high = high, low = low)
 
 
-cfg.RISCV_ISA_CPU0_DT = \
-    gen_riscv_isa_dt(
-            cfg.RISCV_ISA_BASE,
-            cfg.RISCV_ISA_EXTENSIONS_CPU0)
 cfg.RISCV_ISA_DT = \
     gen_riscv_isa_dt(
             cfg.RISCV_ISA_BASE,
             cfg.RISCV_ISA_EXTENSIONS)
 
-cfg.RISCV_ISA_EXTENSIONS_CPU0_DT = \
-    gen_riscv_isa_extensions_dt(
-            cfg.RISCV_ISA_BASE,
-            cfg.RISCV_ISA_EXTENSIONS_CPU0)
 cfg.RISCV_ISA_EXTENSIONS_DT = \
     gen_riscv_isa_extensions_dt(
             cfg.RISCV_ISA_BASE,
@@ -186,18 +175,20 @@ if not args.quiet:
 
 cpu_base_dt = """\
 cpu@CPU_NR@: cpu@@CPU_NR@ {
-	compatible = "sifive,u54-mc", "sifive,rocket0", "riscv";
 	device_type = "cpu";
-	mmu-type = "@MMU_TYPE@";
 	reg = <@CPU_NR@>;
-	riscv,isa = "@RISCV_ISA_DT@";
-	riscv,isa-base = "@RISCV_ISA_BASE@";
+	status = "okay";
+	compatible = "riscv";
 	riscv,isa-extensions = @RISCV_ISA_EXTENSIONS_DT@;
+	riscv,isa-base = "@RISCV_ISA_BASE@";
+	riscv,isa = "@RISCV_ISA_DT@";
 	clock-frequency = <100000000>;
+	mmu-type = "@MMU_TYPE@";
+
 	cpu@CPU_NR@_intc: interrupt-controller {
-		#interrupt-cells = <1>;
-		compatible = "riscv,cpu-intc";
+		#interrupt-cells = <0x01>;
 		interrupt-controller;
+		compatible = "riscv,cpu-intc";
 	};
 };"""
 
@@ -207,277 +198,47 @@ core@CPU_NR@ {
 };"""
 
 
-cfg.PLIC_INT_EXT = "\n\t\t\t\t<&cpu0_intc 0xffffffff>"
-cfg.CLINT_INT_EXT = "\n\t\t\t\t<&cpu0_intc 3>, <&cpu0_intc 7>"
+cfg.PLIC_INT_EXT = ""
+cfg.CLINT_INT_EXT = ""
 cfg.CPUS = ""
 cfg.CPU_MAP = ""
-for cfg.CPU_NR in range(1, cfg.NUM_CORES + 1):
+for cfg.CPU_NR in range(0, cfg.NUM_CORES):
     cfg.CPUS += cfg.apply(cpu_base_dt, line_prefix = "\t\t") + "\n"
     cfg.CPU_MAP += cfg.apply(cpu_map_base_dt, line_prefix = "\t\t\t\t") + "\n"
-    cfg.CLINT_INT_EXT += ",\n\t\t\t\t<&cpu{cpu_nr}_intc 3>, <&cpu{cpu_nr}_intc 7>".format(
+    cfg.CLINT_INT_EXT += "\n\t\t\t\t<&cpu{cpu_nr}_intc 0x03>, <&cpu{cpu_nr}_intc 0x07>,".format(
             cpu_nr = cfg.CPU_NR)
-    cfg.PLIC_INT_EXT += ",\n\t\t\t\t<&cpu{cpu_nr}_intc 0xffffffff>, <&cpu{cpu_nr}_intc 9>".format(
+    cfg.PLIC_INT_EXT += "\n\t\t\t\t<&cpu{cpu_nr}_intc 0x0b>, <&cpu{cpu_nr}_intc 0x09>,".format(
             cpu_nr = cfg.CPU_NR)
-
+cfg.CLINT_INT_EXT = cfg.CLINT_INT_EXT[:-1]
+cfg.PLIC_INT_EXT = cfg.PLIC_INT_EXT[:-1]
 
 #
 # Full Device Tree generation
 #
 
-dt_base = """
+dt_base = """\
 // SPDX-License-Identifier: (GPL-2.0 OR MIT)
 /*
- * Copyright (c) 2022-2025 Manfred SCHLAEGL <manfred.schlaegl@gmx.at>
- * Copyright (c) 2018-2019 SiFive, Inc
+ * Copyright (c) 2025 Manfred SCHLAEGL <manfred.schlaegl@gmx.at>
+ *
+ * based on QEMU DT export for rv32/rv64, and 1(sc) and 4(mc) cpus:
+ * ```
+ * qemu-system-riscv<32|64> -M virt -m 2048 -smp cpus=<1|4> -nographic -machine dumpdtb=qemu.dtb
+ * ```
+ * with adaptations for RISC-V VP++ qemu_virt:
+ *  * commented out components not supported by RISC-V VP++
+ *  * added bootargs to chosen node
+ *  * configurable memory size and location
+ *  * properties in "cpus" adapted to RISC-V VP++ ISS and CLINT
  */
 
 /dts-v1/;
 
 / {
-	#address-cells = <2>;
-	#size-cells = <2>;
-	compatible = "sifive,fu540-c000", "sifive,fu540";
-
-	aliases {
-		serial0 = &uart0;
-		serial1 = &uart1;
-	};
-
-	chosen {
-		@BOOTARGS@
-		stdout-path = &uart0;
-	};
-
-	cpus {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		timebase-frequency = <1000000>;
-
-		cpu0: cpu@0 {
-			compatible = "sifive,e51", "sifive,rocket0", "riscv";
-			device_type = "cpu";
-			reg = <0>;
-			riscv,isa = "@RISCV_ISA_CPU0_DT@";
-			riscv,isa-base = "@RISCV_ISA_BASE@";
-			riscv,isa-extensions = @RISCV_ISA_EXTENSIONS_CPU0_DT@;
-			clock-frequency = <100000000>;
-			status = "disabled";
-			cpu0_intc: interrupt-controller {
-				#interrupt-cells = <1>;
-				compatible = "riscv,cpu-intc";
-				interrupt-controller;
-			};
-		};
-@CPUS@
-		cpu-map {
-			cluster0 {
-				core0 {
-					cpu = <&cpu0>;
-				};
-@CPU_MAP@
-			};
-		};
-	};
-
-	memory@@MEM_START_HEX@ {
-		device_type = "memory";
-		reg = <@MEM_START_DT@ @MEM_SIZE_DT@>;
-	};
-
-	refclk: refclk {
-		#clock-cells = <0>;
-		compatible = "fixed-clock";
-		clock-frequency = <33333333>;
-		clock-output-names = "refclk";
-	};
-
-	soc {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		compatible = "simple-bus";
-		ranges;
-
-		test: test@100000 {
-			reg = <0x0 0x100000 0x0 0x1000>;
-			compatible = "sifive,test1", "sifive,test0", "syscon";
-		};
-
-		clint0: clint@2000000 {
-			compatible = "sifive,fu540-c000-clint", "sifive,clint0";
-			reg = <0x0 0x2000000 0x0 0xC000>;
-			interrupts-extended = @CLINT_INT_EXT@;
-		};
-
-		plic0: interrupt-controller@c000000 {
-			compatible = "sifive,fu540-c000-plic", "sifive,plic-1.0.0";
-			reg = <0x0 0xc000000 0x0 0x4000000>;
-			#address-cells = <0>;
-			#interrupt-cells = <1>;
-			interrupt-controller;
-			interrupts-extended = @PLIC_INT_EXT@;
-			riscv,ndev = <53>;
-		};
-
-		rng: hwrng@10001000 {
-			compatible = "timeriomem_rng";
-			reg = <0x0 0x10001000 0x0 0x4>;
-			period = <1>;
-			quality = <100>;
-		};
-
-		uart0: serial@10010000 {
-			compatible = "sifive,fu540-c000-uart", "sifive,uart0";
-			reg = <0x0 0x10010000 0x0 0x1000>;
-			interrupt-parent = <&plic0>;
-			interrupts = <4>;
-			clocks = <&refclk>;
-			current-speed = <115200>;
-			status = "okay";
-		};
-
-		uart1: serial@10011000 {
-			compatible = "sifive,fu540-c000-uart", "sifive,uart0";
-			reg = <0x0 0x10011000 0x0 0x1000>;
-			interrupt-parent = <&plic0>;
-			interrupts = <5>;
-			clocks = <&refclk>;
-			current-speed = <115200>;
-			status = "okay";
-		};
-
-		gpio: gpio@10060000 {
-			compatible = "sifive,fu540-c000-gpio", "sifive,gpio0";
-			interrupt-parent = <&plic0>;
-			interrupts = <7>, <8>, <9>, <10>, <11>, <12>, <13>,
-					<14>, <15>, <16>, <17>, <18>, <19>, <20>,
-					<21>, <22>;
-			reg = <0x0 0x10060000 0x0 0x1000>;
-			gpio-controller;
-			#gpio-cells = <2>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
-			clocks = <&refclk>;
-			status = "okay";
-		};
-
-		i2c0: i2c@10030000 {
-			compatible = "sifive,fu540-c000-i2c", "sifive,i2c0";
-			reg = <0x0 0x10030000 0x0 0x1000>;
-			interrupt-parent = <&plic0>;
-			interrupts = <50>;
-			//clocks = <&prci FU540_PRCI_CLK_TLCLK>;
-			clocks = <&refclk>;
-			reg-shift = <2>;
-			reg-io-width = <1>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "okay";
-
-			rtc@68 {
-				compatible = "dallas,ds1307";
-				reg = <0x68>;
-				//interrupt-parent = <&gpio4>;
-				//interrupts = <20 0>;
-				//trickle-resistor-ohms = <250>;
-			};
-		};
-
-		qspi0: spi@10040000 {
-			/* spi flash interface not supported yet */
-			compatible = "sifive,fu540-c000-spi", "sifive,spi0";
-			reg = <0x0 0x10040000 0x0 0x1000>;
-			interrupt-parent = <&plic0>;
-			interrupts = <51>;
-			clocks = <&refclk>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "okay";
-		};
-
-		qspi1: spi@10041000 {
-			/* spi flash interface not supported yet */
-			compatible = "sifive,fu540-c000-spi", "sifive,spi0";
-			reg = <0x0 0x10041000 0x0 0x1000>;
-			interrupt-parent = <&plic0>;
-			interrupts = <52>;
-			clocks = <&refclk>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "okay";
-		};
-
-		qspi2: spi@10050000 {
-			compatible = "sifive,fu540-c000-spi", "sifive,spi0";
-			reg = <0x0 0x10050000 0x0 0x1000>;
-			interrupt-parent = <&plic0>;
-			interrupts = <6>;
-			clocks = <&refclk>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "okay";
-
-			mmc@0 {
-				compatible = "mmc-spi-slot";
-				reg = <0>;
-				spi-max-frequency = <20000000>;
-				voltage-ranges = <3300 3300>;
-				disable-wp;
-				/* dt includes not handled yet */
-				//gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
-				gpios = <&gpio 11 1>;
-			};
-		};
-
-		framebuffer0: framebuffer@11000000 {
-			compatible = "allwinner,simple-framebuffer", "simple-framebuffer";
-			reg = <0x0 0x11000000 0x0 0x1000000>;
-			width = <800>;
-			height = <480>;
-			stride = <1600>; /* width * byte/pixel */
-			format = "r5g6b5";
-		};
-
-		simpleinputptr0: simpleinputptr@12000000 {
-			reg = <0x0 0x12000000 0x0 0x0000fff>;
-			interrupt-parent = <&plic0>;
-			interrupts = <10>;
-			compatible = "ics,simpleinputptr";
-		};
-
-		simpleinputkbd0: simpleinputkbd@12001000 {
-			reg = <0x0 0x12001000 0x0 0x0000fff>;
-			interrupt-parent = <&plic0>;
-			interrupts = <11>;
-			compatible = "ics,simpleinputkbd";
-		};
-
-		mram_rootfs: mram@40000000 {
-			reg = <0x0 0x40000000 0x0 @MRAM_SIZE@>;
-			bank-width = <4>;
-			compatible = "mtd-ram";
-
-			#address-cells = <2>;
-			#size-cells = <2>;
-			rootfs@0 {
-				label = "rootfs";
-				reg = <0x0 0x00000000 0x0 @MRAM_SIZE@>;
-			};
-		};
-
-		mram_data: mram@60000000 {
-			reg = <0x0 0x60000000 0x0 @MRAM_SIZE@>;
-			bank-width = <4>;
-			compatible = "mtd-ram";
-
-			#address-cells = <2>;
-			#size-cells = <2>;
-			data@0 {
-				label = "data";
-				reg = <0x0 0x00000000 0x0 @MRAM_SIZE@>;
-			};
-		};
-	};
+	#address-cells = <0x02>;
+	#size-cells = <0x02>;
+	compatible = "riscv-virtio";
+	model = "riscv-virtio,qemu";
 
 	poweroff {
 		value = <0x5555>;
@@ -491,6 +252,206 @@ dt_base = """
 		offset = <0x00>;
 		regmap = <&test>;
 		compatible = "syscon-reboot";
+	};
+
+	platform-bus@4000000 {
+		interrupt-parent = <&plic>;
+		ranges = <0x00 0x00 0x4000000 0x2000000>;
+		#address-cells = <0x01>;
+		#size-cells = <0x01>;
+		compatible = "qemu,platform", "simple-bus";
+	};
+
+	memory@@MEM_START_HEX@ {
+		device_type = "memory";
+		reg = <@MEM_START_DT@ @MEM_SIZE_DT@>;
+	};
+
+	cpus {
+		#address-cells = <0x01>;
+		#size-cells = <0x00>;
+
+		timebase-frequency = <1000000>;
+
+@CPUS@
+		cpu-map {
+			cluster0 {
+@CPU_MAP@
+			};
+		};
+	};
+
+	pmu {
+		riscv,event-to-mhpmcounters = <0x01 0x01 0x7fff9 0x02 0x02 0x7fffc 0x10019 0x10019 0x7fff8 0x1001b 0x1001b 0x7fff8 0x10021 0x10021 0x7fff8>;
+		compatible = "riscv,pmu";
+	};
+
+/*
+	// NOT SUPPORTED IN RISC-V VP++
+	fw-cfg@10100000 {
+		dma-coherent;
+		reg = <0x00 0x10100000 0x00 0x18>;
+		compatible = "qemu,fw-cfg-mmio";
+	};
+*/
+
+/*
+	// NOT SUPPORTED IN RISC-V VP++
+	flash@20000000 {
+		bank-width = <0x04>;
+		reg = <0x00 0x20000000 0x00 0x2000000 0x00 0x22000000 0x00 0x2000000>;
+		compatible = "cfi-flash";
+	};
+*/
+
+	aliases {
+		serial0 = "/soc/serial@10000000";
+	};
+
+	chosen {
+		@BOOTARGS@
+		stdout-path = "/soc/serial@10000000";
+		rng-seed = <0xb6c7b060 0x8c471ce0 0xbcc9cdf8 0xe56bbd 0x8f629034 0xb9b4c9d2 0x545f8145 0xd80458e3>;
+	};
+
+	soc {
+		#address-cells = <0x02>;
+		#size-cells = <0x02>;
+		compatible = "simple-bus";
+		ranges;
+
+/*
+		// NOT SUPPORTED IN RISC-V VP++
+		rtc@101000 {
+			interrupts = <0x0b>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x101000 0x00 0x1000>;
+			compatible = "google,goldfish-rtc";
+		};
+*/
+
+		serial@10000000 {
+			interrupts = <0x0a>;
+			interrupt-parent = <&plic>;
+			clock-frequency = "", "8@";
+			reg = <0x00 0x10000000 0x00 0x100>;
+			compatible = "ns16550a";
+		};
+
+		test: test@100000 {
+			reg = <0x00 0x100000 0x00 0x1000>;
+			compatible = "sifive,test1", "sifive,test0", "syscon";
+		};
+
+/*
+		// NOT SUPPORTED IN RISC-V VP++
+		virtio_mmio@10008000 {
+			interrupts = <0x08>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10008000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10007000 {
+			interrupts = <0x07>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10007000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10006000 {
+			interrupts = <0x06>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10006000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10005000 {
+			interrupts = <0x05>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10005000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10004000 {
+			interrupts = <0x04>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10004000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10003000 {
+			interrupts = <0x03>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10003000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10002000 {
+			interrupts = <0x02>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10002000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+
+		virtio_mmio@10001000 {
+			interrupts = <0x01>;
+			interrupt-parent = <&plic>;
+			reg = <0x00 0x10001000 0x00 0x1000>;
+			compatible = "virtio,mmio";
+		};
+*/
+
+		plic: plic@c000000 {
+			phandle = <0x03>;
+			riscv,ndev = <0x5f>;
+			reg = <0x00 0xc000000 0x00 0x600000>;
+			interrupts-extended = @PLIC_INT_EXT@;
+			interrupt-controller;
+			compatible = "sifive,plic-1.0.0", "riscv,plic0";
+			#address-cells = <0x00>;
+			#interrupt-cells = <0x01>;
+		};
+
+		clint@2000000 {
+			interrupts-extended = @CLINT_INT_EXT@;
+			reg = <0x00 0x2000000 0x00 0x10000>;
+			compatible = "sifive,clint0", "riscv,clint0";
+		};
+
+/*
+		// NOT SUPPORTED IN RISC-V VP++
+		pci@30000000 {
+			interrupt-map-mask = <0x1800 0x00 0x00 0x07>;
+			interrupt-map =
+				<0x00 0x00 0x00 0x01 &plic 0x20>,
+				<0x00 0x00 0x00 0x02 &plic 0x21>,
+				<0x00 0x00 0x00 0x03 &plic 0x22>,
+				<0x00 0x00 0x00 0x04 &plic 0x23>,
+				<0x800 0x00 0x00 0x01 &plic 0x21>,
+				<0x800 0x00 0x00 0x02 &plic 0x22>,
+				<0x800 0x00 0x00 0x03 &plic 0x23>,
+				<0x800 0x00 0x00 0x04 &plic 0x20>,
+				<0x1000 0x00 0x00 0x01 &plic 0x22>,
+				<0x1000 0x00 0x00 0x02 &plic 0x23>,
+				<0x1000 0x00 0x00 0x03 &plic 0x20>,
+				<0x1000 0x00 0x00 0x04 &plic 0x21>,
+				<0x1800 0x00 0x00 0x01 &plic 0x23>,
+				<0x1800 0x00 0x00 0x02 &plic 0x20>,
+				<0x1800 0x00 0x00 0x03 &plic 0x21>,
+				<0x1800 0x00 0x00 0x04 &plic 0x22>;
+			ranges = @PCI_RANGES@;
+			reg = <0x00 0x30000000 0x00 0x10000000>;
+			dma-coherent;
+			bus-range = <0x00 0xff>;
+			linux,pci-domain = <0x00>;
+			device_type = "pci";
+			compatible = "pci-host-ecam-generic";
+			#size-cells = <0x02>;
+			#interrupt-cells = <0x01>;
+			#address-cells = <0x03>;
+		};
+*/
 	};
 };
 """
