@@ -1,7 +1,6 @@
 #ifndef RISCV_GDB_NG
 #define RISCV_GDB_NG
 
-#include <core/common/mmu_mem_if.h>
 #include <libgdb/parser2.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -16,9 +15,10 @@
 #include <thread>
 #include <tuple>
 
-#include "core_defs.h"
-#include "debug.h"
-#include "debug_memory.h"  // DebugMemoryInterface
+#include "core/common/core_defs.h"
+#include "core/common/debug.h"
+#include "core/common/debug_memory.h"  // DebugMemoryInterface
+#include "core/common/mmu_mem_if.h"
 #include "platform/common/async_event.h"
 
 SC_MODULE(GDBServer) {

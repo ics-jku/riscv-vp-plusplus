@@ -20,6 +20,7 @@
 #include "core/common/clint_if.h"
 #include "core/common/dbbcache.h"
 #include "core/common/debug.h"
+#include "core/common/fp.h"
 #include "core/common/instr.h"
 #include "core/common/irq_if.h"
 #include "core/common/iss_stats.h"
@@ -28,12 +29,11 @@
 #include "core/common/regfile.h"
 #include "core/common/syscall_if.h"
 #include "core/common/trap.h"
+#include "core/common/v.h"
 #include "csr.h"
-#include "fp.h"
 #include "platform/gd32/nuclei_core/nuclei_csr.h"
 #include "util/common.h"
 #include "util/initiator_if.h"
-#include "v.h"
 
 namespace rv32 {
 

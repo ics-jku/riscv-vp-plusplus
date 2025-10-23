@@ -15,6 +15,3 @@ elseif(COLOR_THEME STREQUAL "DARK")
 	message("> using color theme DARK")
 	target_compile_definitions(rv32 PRIVATE COLOR_THEME_DARK)
 endif()
-
-
-target_include_directories(rv32 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

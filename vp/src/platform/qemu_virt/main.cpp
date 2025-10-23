@@ -1,3 +1,13 @@
+/* if not defined externally fall back to TARGET_RV64 */
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#define TARGET_RV64
+#endif
+
+/* if not defined externally fall back to four worker cores */
+#if !defined(NUM_CORES)
+#define NUM_CORES 1
+#endif
+
 #include <termios.h>
 #include <unistd.h>
 
@@ -9,34 +19,41 @@
 #include <iostream>
 
 #include "core/common/clint.h"
+#include "core/common/debug.h"
+#include "core/common/debug_memory.h"
+#include "core/common/gdb-mc/gdb_runner.h"
+#include "core/common/gdb-mc/gdb_server.h"
 #include "core/common/lwrt_clint.h"
-#include "debug.h"
-#include "debug_memory.h"
-#include "elf_loader.h"
-#include "gdb-mc/gdb_runner.h"
-#include "gdb-mc/gdb_server.h"
-#include "iss.h"
-#include "mem.h"
-#include "memory.h"
-#include "mmu.h"
+
+/*
+ * It should be possible to remove the ifdefs here and include all files
+ * without any conflicts, and indeed: If we remove the ifdefs we get no
+ * compilation errors. However, when we start the resulting VP (especially
+ * with CHERI) we get a lot of errors like:
+ * [ISS] Error: Multiple implementations for operation 955 (AMOSWAP_C)
+ * -> TODO: find/fix cause and remove ifdefs (not critical)
+ */
+#if defined(TARGET_RV32)
+#include "core/rv32/elf_loader.h"
+#include "core/rv32/iss.h"
+#include "core/rv32/mem.h"
+#include "core/rv32/mmu.h"
+#elif defined(TARGET_RV64) || defined(TARGET_RV64_CHERIV9)
+#include "core/rv64/elf_loader.h"
+#include "core/rv64/iss.h"
+#include "core/rv64/mem.h"
+#include "core/rv64/mmu.h"
+#endif
+
 #include "platform/common/channel_console.h"
 #include "platform/common/dummy_tlm_target.h"
+#include "platform/common/memory.h"
 #include "platform/common/ns16550a_uart.h"
 #include "platform/common/options.h"
+#include "platform/common/sifive_plic.h"
 #include "platform/common/sifive_test.h"
-#include "sifive_plic.h"
 #include "util/options.h"
 #include "util/propertymap.h"
-
-/* if not defined externally fall back to TARGET_RV64 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
-#define TARGET_RV64
-#endif
-
-/* if not defined externally fall back to four worker cores */
-#if !defined(NUM_CORES)
-#define NUM_CORES 1
-#endif
 
 #define MEM_SIZE_MB 2048  // MB ram
 

@@ -9,8 +9,8 @@
 #include <iostream>
 #include <systemc>
 
-#include "bus.h"
-#include "load_if.h"
+#include "core/common/load_if.h"
+#include "platform/common/bus.h"
 #include "util/propertymap.h"
 
 struct SimpleMemory : public sc_core::sc_module, public load_if {

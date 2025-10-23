@@ -3,7 +3,7 @@
 
 #include <systemc>
 
-#include "debug.h"
+#include "core/common/debug.h"
 #include "gdb_server.h"
 
 SC_MODULE(GDBServerRunner) {

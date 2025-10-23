@@ -5,7 +5,7 @@
 
 #include <sstream>
 
-#include "core_defs.h"
+#include "core/common/core_defs.h"
 
 class RegisterFormater {
    private:

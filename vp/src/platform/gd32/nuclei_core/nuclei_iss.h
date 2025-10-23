@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../eclic.h"
-#include "iss.h"
+#include "core/rv32/iss.h"
 #include "nuclei_csr.h"
 
 namespace rv32 {

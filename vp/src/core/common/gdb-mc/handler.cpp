@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "debug.h"
+#include "core/common/debug.h"
 #include "gdb_server.h"
 #include "register_format.h"
 

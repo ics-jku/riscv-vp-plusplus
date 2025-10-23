@@ -15,13 +15,12 @@
 #ifndef RISCV_ISA_LSCACHE_H
 #define RISCV_ISA_LSCACHE_H
 
-#include <mem_if.h>
-
 #include <climits>
 #include <cstdint>
 #include <string>
 
 #include "lscache_stats.h"
+#include "mem_if.h"
 #include "util/common.h"
 
 /******************************************************************************

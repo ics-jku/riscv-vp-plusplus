@@ -9,25 +9,45 @@
 #include <iostream>
 
 #include "core/common/clint.h"
+#include "core/common/debug.h"
+#include "core/common/debug_memory.h"
+#include "core/common/gdb-mc/gdb_runner.h"
+#include "core/common/gdb-mc/gdb_server.h"
 #include "core/common/lwrt_clint.h"
-#include "debug.h"
-#include "debug_memory.h"
-#include "elf_loader.h"
-#include "gdb-mc/gdb_runner.h"
-#include "gdb-mc/gdb_server.h"
-#include "iss.h"
-#include "mem.h"
-#include "memory.h"
-#include "memory_mapped_file.h"
-#include "mmu.h"
+
+/*
+ * It should be possible to remove the ifdefs here and include all files
+ * without any conflicts, and indeed: If we remove the ifdefs we get no
+ * compilation errors. However, when we start the resulting VP (especially
+ * with CHERI) we get a lot of errors like:
+ * [ISS] Error: Multiple implementations for operation 955 (AMOSWAP_C)
+ * -> TODO: find/fix cause and remove ifdefs (not critical)
+ */
+#if defined(TARGET_RV32)
+#include "core/rv32/elf_loader.h"
+#include "core/rv32/iss.h"
+#include "core/rv32/mem.h"
+#include "core/rv32/mmu.h"
+#include "core/rv32/syscall.h"
+#elif defined(TARGET_RV64)
+#include "core/rv64/elf_loader.h"
+#include "core/rv64/iss.h"
+#include "core/rv64/mem.h"
+#include "core/rv64/mmu.h"
+#include "core/rv64/syscall.h"
+#endif
+
 #include "platform/common/channel_console.h"
 #include "platform/common/channel_slip.h"
 #include "platform/common/ds1307.h"
 #include "platform/common/fu540_gpio.h"
 #include "platform/common/fu540_i2c.h"
 #include "platform/common/fu540_uart.h"
+#include "platform/common/memory.h"
+#include "platform/common/memory_mapped_file.h"
 #include "platform/common/miscdev.h"
 #include "platform/common/options.h"
+#include "platform/common/sifive_plic.h"
 #include "platform/common/sifive_spi.h"
 #include "platform/common/sifive_test.h"
 #include "platform/common/spi_sd_card.h"
@@ -35,8 +55,6 @@
 #include "platform/common/vncsimpleinputkbd.h"
 #include "platform/common/vncsimpleinputptr.h"
 #include "prci.h"
-#include "sifive_plic.h"
-#include "syscall.h"
 #include "util/options.h"
 #include "util/propertymap.h"
 #include "util/vncserver.h"

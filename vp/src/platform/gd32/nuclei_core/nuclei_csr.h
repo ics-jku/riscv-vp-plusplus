@@ -4,7 +4,7 @@ See: https://doc.nucleisys.com/nuclei_spec/isa/core_csr.html
 */
 #pragma once
 
-#include "csr.h"
+#include "core/rv32/csr.h"
 
 namespace rv32 {
 

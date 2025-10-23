@@ -11,7 +11,7 @@
 #include <iostream>
 #include <systemc>
 
-#include "bus.h"
+#include "platform/common/bus.h"
 #include "util/propertymap.h"
 
 using namespace std;

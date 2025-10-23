@@ -4,7 +4,7 @@
 
 #include <systemc>
 
-#include "clint_if.h"
+#include "core/common/clint_if.h"
 #include "nuclei_core/nuclei_irq_if.h"
 #include "util/memory_map.h"
 

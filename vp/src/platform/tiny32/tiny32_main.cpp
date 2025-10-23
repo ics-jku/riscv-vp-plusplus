@@ -5,16 +5,16 @@
 #include <iomanip>
 #include <iostream>
 
+#include "core/common/debug_memory.h"
+#include "core/common/gdb-mc/gdb_runner.h"
+#include "core/common/gdb-mc/gdb_server.h"
 #include "core/common/real_clint.h"
-#include "debug_memory.h"
-#include "elf_loader.h"
-#include "gdb-mc/gdb_runner.h"
-#include "gdb-mc/gdb_server.h"
-#include "iss.h"
-#include "mem.h"
-#include "memory.h"
+#include "core/rv32/elf_loader.h"
+#include "core/rv32/iss.h"
+#include "core/rv32/mem.h"
+#include "core/rv32/syscall.h"
+#include "platform/common/memory.h"
 #include "platform/common/options.h"
-#include "syscall.h"
 #include "util/propertymap.h"
 
 using namespace rv32;

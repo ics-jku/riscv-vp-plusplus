@@ -6,14 +6,14 @@
 #include <iostream>
 
 #include "core/common/clint.h"
-#include "elf_loader.h"
-#include "gdb-mc/gdb_runner.h"
-#include "gdb-mc/gdb_server.h"
-#include "iss.h"
-#include "mem.h"
-#include "memory.h"
+#include "core/common/gdb-mc/gdb_runner.h"
+#include "core/common/gdb-mc/gdb_server.h"
+#include "core/rv64/elf_loader.h"
+#include "core/rv64/iss.h"
+#include "core/rv64/mem.h"
+#include "core/rv64/syscall.h"
+#include "platform/common/memory.h"
 #include "platform/common/options.h"
-#include "syscall.h"
 #include "util/propertymap.h"
 
 using namespace rv64;
