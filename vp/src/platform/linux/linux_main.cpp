@@ -211,7 +211,7 @@ class Core {
 	}
 };
 
-void handle_kernel_file(const LinuxOptions opt, SimpleMemory &mem) {
+void handle_kernel_file(const LinuxOptions opt, load_if &mem) {
 	if (opt.kernel_file.size() == 0) {
 		return;
 	}
@@ -220,14 +220,13 @@ void handle_kernel_file(const LinuxOptions opt, SimpleMemory &mem) {
 	ELFLoader elf(opt.kernel_file.c_str());
 	if (elf.is_elf()) {
 		/* load elf (use physical addresses) */
-		std::cout << "as ELF file (to physical addresses defined in ELF)";
-		elf.load_executable_image(mem, mem.size, opt.mem_start_addr, false);
+		std::cout << "as ELF file (to physical addresses defined in ELF)" << std::endl;
+		elf.load_executable_image(mem, mem.get_size(), opt.mem_start_addr, false);
 	} else {
 		/* load raw to KERNEL_LOAD_ADDR */
-		std::cout << "as RAW file (to 0x" << std::hex << KERNEL_LOAD_ADDR << std::dec << ")";
+		std::cout << "as RAW file (to 0x" << std::hex << KERNEL_LOAD_ADDR << std::dec << ")" << std::endl;
 		mem.load_binary_file(opt.kernel_file, KERNEL_LOAD_ADDR - opt.mem_start_addr);
 	}
-	std::cout << std::endl;
 }
 
 int sc_main(int argc, char **argv) {
@@ -288,7 +287,7 @@ int sc_main(int argc, char **argv) {
 	VNCSimpleInputPtr vncsimpleinputptr("VNCSimpleInputPtr", vncServer, 10);
 	VNCSimpleInputKbd vncsimpleinputkbd("VNCSimpleInputKbd", vncServer, 11);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
 	MemoryMappedFile mramRoot("MRAM_Root", opt.mram_root_image, opt.mram_root_size);
 	MemoryMappedFile mramData("MRAM_Data", opt.mram_data_image, opt.mram_data_size);
 
@@ -316,8 +315,8 @@ int sc_main(int argc, char **argv) {
 	if (opt.entry_point.available)
 		entry_point = opt.entry_point.value;
 
-	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.size, opt.mem_start_addr));
+	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, opt.use_dbbcache, opt.use_lscache, &clint, entry_point,
 		               rv64_align_address(opt.mem_end_addr));

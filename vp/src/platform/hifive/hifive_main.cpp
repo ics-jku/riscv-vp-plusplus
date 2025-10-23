@@ -220,8 +220,8 @@ int sc_main(int argc, char **argv) {
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.size);
-	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.size);
+	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.get_size());
+	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.get_size());
 	InstrMemoryProxy instr_mem(flash_dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -250,11 +250,11 @@ int sc_main(int argc, char **argv) {
 	bus.ports[13] = new PortMapping(opt.uart1_start_addr, opt.uart1_end_addr, uart1);
 	bus.mapping_complete();
 
-	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
-	loader.load_executable_image(dram, dram.size, opt.dram_start_addr, false);
+	loader.load_executable_image(flash, flash.get_size(), opt.flash_start_addr, false);
+	loader.load_executable_image(dram, dram.get_size(), opt.dram_start_addr, false);
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	          rv32_align_address(opt.dram_end_addr));
-	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr(dram.size, opt.dram_start_addr, false));
+	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr(dram.get_size(), opt.dram_start_addr, false));
 	sys.register_core(&core);
 
 	if (opt.intercept_syscalls)

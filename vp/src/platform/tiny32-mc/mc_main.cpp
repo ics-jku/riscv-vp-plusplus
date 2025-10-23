@@ -98,14 +98,14 @@ int sc_main(int argc, char **argv) {
 	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
 	bus.mapping_complete();
 
-	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
+	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 
 	core0.init(&core0_mem_if, opt.use_dbbcache, &core0_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	           opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
 	core1.init(&core1_mem_if, opt.use_dbbcache, &core1_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	           opt.mem_end_addr - 32767);
 
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.size, opt.mem_start_addr));
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core0);
 	sys.register_core(&core1);
 

@@ -139,8 +139,8 @@ int sc_main(int argc, char **argv) {
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	MemoryDMI sram_dmi = MemoryDMI::create_start_size_mapping(sram.data, opt.sram_start_addr, sram.size);
-	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.size);
+	MemoryDMI sram_dmi = MemoryDMI::create_start_size_mapping(sram.data, opt.sram_start_addr, sram.get_size());
+	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.get_size());
 	InstrMemoryProxy instr_mem(flash_dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -174,8 +174,8 @@ int sc_main(int argc, char **argv) {
 	}
 	ahb.mapping_complete();
 
-	loader.load_executable_image(flash, flash.size, opt.flash_start_addr, false);
-	loader.load_executable_image(sram, sram.size, opt.sram_start_addr, false);
+	loader.load_executable_image(flash, flash.get_size(), opt.flash_start_addr, false);
+	loader.load_executable_image(sram, sram.get_size(), opt.sram_start_addr, false);
 
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &timer, loader.get_entrypoint(),
 	          rv32_align_address(opt.sram_end_addr));

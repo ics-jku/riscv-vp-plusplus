@@ -4,9 +4,6 @@
 #include <stdint.h>
 #include <tlm_utils/simple_target_socket.h>
 
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <fstream>
-#include <iostream>
 #include <systemc>
 
 #include "core/common/load_if.h"
@@ -43,6 +40,10 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 		delete[] data;
 	}
 
+	uint64_t get_size() override {
+		return size;
+	}
+
 	void load_data(const char *src, uint64_t dst_addr, size_t n) override {
 		assert(dst_addr + n <= size);
 		memcpy(&data[dst_addr], src, n);
@@ -51,24 +52,6 @@ struct SimpleMemory : public sc_core::sc_module, public load_if {
 	void load_zero(uint64_t dst_addr, size_t n) override {
 		assert(dst_addr + n <= size);
 		memset(&data[dst_addr], 0, n);
-	}
-
-	void load_binary_file(const std::string &filename, uint64_t addr) {
-		/*
-		 * check, if file exists, is readable and don't has zero size
-		 * (prevent segfault on mapped_source_file)
-		 */
-		std::ifstream file;
-		file.open(filename, std::ifstream::in | std::ifstream::binary | std::ios::ate);
-		if (file.fail() || file.tellg() == 0) {
-			std::cerr << name() << ": ERROR: Open: \"" << filename << "\"!" << std::endl;
-			assert(0);
-		}
-		file.close();
-
-		boost::iostreams::mapped_file_source mf(filename);
-		assert(mf.is_open());
-		write_data(addr, (const uint8_t *)mf.data(), mf.size());
 	}
 
 	void write_data(uint64_t addr, const uint8_t *src, unsigned num_bytes) {

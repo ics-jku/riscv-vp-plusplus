@@ -156,7 +156,7 @@ int sc_main(int argc, char **argv) {
 	// enable interactive debug via console
 	channel_console.debug_targets_add(&core);
 
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
 	InstrMemoryProxy instr_mem(dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -180,7 +180,7 @@ int sc_main(int argc, char **argv) {
 	if (opt.entry_point.available)
 		entry_point = opt.entry_point.value;
 	try {
-		loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
+		loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 	} catch (ELFLoader::load_executable_exception &e) {
 		std::cerr << e.what() << std::endl;
 		std::cerr << "Memory map: " << std::endl;
@@ -194,7 +194,7 @@ int sc_main(int argc, char **argv) {
 	 */
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, entry_point,
 	          rv64_align_address(opt.mem_end_addr));
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.size, opt.mem_start_addr));
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core);
 
 	if (opt.intercept_syscalls)

@@ -91,7 +91,7 @@ int sc_main(int argc, char **argv) {
 	std::vector<clint_interrupt_target *> clint_targets{&core};
 	RealCLINT clint("CLINT", clint_targets);
 
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.size);
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
 	InstrMemoryProxy instr_mem(dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -106,10 +106,10 @@ int sc_main(int argc, char **argv) {
 		core_mem_if.dmi_ranges.emplace_back(dmi);
 	}
 
-	loader.load_executable_image(mem, mem.size, opt.mem_start_addr);
+	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	          rv64_align_address(opt.mem_end_addr));
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.size, opt.mem_start_addr));
+	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core);
 
 	if (opt.intercept_syscalls)
