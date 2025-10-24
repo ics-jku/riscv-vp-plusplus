@@ -245,7 +245,15 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 	}
 	template <typename T>
 	void _atomic_store_data(uint64_t addr, T value) {
-		assert(bus_lock->is_locked(iss.get_hart_id()));
+		/*
+		 * This is sometimes triggerd when running RV64 debian and apt.
+		 * TODO: check cause and fix
+		 */
+		if (unlikely(!bus_lock->is_locked(iss.get_hart_id()))) {
+			std::cerr << "CombinedMemoryInterface: WARNING: bus not locked in _atomic_store_data (please report to VP "
+			             "developers)"
+			          << std::endl;
+		}
 		_store_data(addr, value);
 	}
 	template <typename T>
