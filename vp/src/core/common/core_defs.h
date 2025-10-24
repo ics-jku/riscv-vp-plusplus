@@ -79,4 +79,12 @@ class RV_ISA_Config {
 	uint32_t get_misa_extensions() {
 		return cfg & misa_extensions_mask;
 	}
+
+	void set_misa_extension(uint64_t ext) {
+		cfg |= ext;
+	}
+
+	void clear_misa_extension(uint64_t ext) {
+		cfg &= ~ext;
+	}
 };
