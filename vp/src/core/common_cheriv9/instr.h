@@ -1,0 +1,1430 @@
+#ifndef RISCV_ISA_INSTR_H
+#define RISCV_ISA_INSTR_H
+
+#include <stdint.h>
+
+#include <array>
+#include <iostream>
+
+#include "core_defs.h"
+#include "util/common.h"
+
+namespace Operation {
+
+// each instruction is mapped by the decoder to the following ids
+enum OpId {
+	/* instruction not known by decoder */
+	UNDEF = 0,
+	/* instruction not supported (e.g. extension not enabled in misa csr) */
+	UNSUP = 1,
+
+	// RV32I base instruction set
+	LUI = 2,
+	LUI_NOP,
+	AUIPC,
+	AUIPC_NOP,
+	JAL,
+	J,
+	JALR,
+	JR,
+	BEQ,
+	BNE,
+	BLT,
+	BGE,
+	BLTU,
+	BGEU,
+	LB,
+	LH,
+	LW,
+	LBU,
+	LHU,
+	SB,
+	SH,
+	SW,
+	ADDI,
+	ADDI_NOP,
+	SLTI,
+	SLTI_NOP,
+	SLTIU,
+	SLTIU_NOP,
+	XORI,
+	XORI_NOP,
+	ORI,
+	ORI_NOP,
+	ANDI,
+	ANDI_NOP,
+	SLLI,
+	SLLI_NOP,
+	SRLI,
+	SRLI_NOP,
+	SRAI,
+	SRAI_NOP,
+	ADD,
+	ADD_NOP,
+	SUB,
+	SUB_NOP,
+	SLL,
+	SLL_NOP,
+	SLT,
+	SLT_NOP,
+	SLTU,
+	SLTU_NOP,
+	XOR,
+	XOR_NOP,
+	SRL,
+	SRL_NOP,
+	SRA,
+	SRA_NOP,
+	OR,
+	OR_NOP,
+	AND,
+	AND_NOP,
+	FENCE,
+	ECALL,
+	EBREAK,
+
+	// Zifencei standard extension
+	FENCE_I,
+
+	// Zicsr standard extension
+	CSRRW,
+	CSRRS,
+	CSRRC,
+	CSRRWI,
+	CSRRSI,
+	CSRRCI,
+
+	// RV32M standard extension
+	MUL,
+	MUL_NOP,
+	MULH,
+	MULH_NOP,
+	MULHSU,
+	MULHSU_NOP,
+	MULHU,
+	MULHU_NOP,
+	DIV,
+	DIV_NOP,
+	DIVU,
+	DIVU_NOP,
+	REM,
+	REM_NOP,
+	REMU,
+	REMU_NOP,
+
+	// RV32A standard extension
+	LR_W,
+	SC_W,
+	AMOSWAP_W,
+	AMOADD_W,
+	AMOXOR_W,
+	AMOAND_W,
+	AMOOR_W,
+	AMOMIN_W,
+	AMOMAX_W,
+	AMOMINU_W,
+	AMOMAXU_W,
+
+	// RV64I base integer set (addition to RV32I)
+	LWU,
+	LD,
+	SD,
+	ADDIW,
+	ADDIW_NOP,
+	SLLIW,
+	SLLIW_NOP,
+	SRLIW,
+	SRLIW_NOP,
+	SRAIW,
+	SRAIW_NOP,
+	ADDW,
+	ADDW_NOP,
+	SUBW,
+	SUBW_NOP,
+	SLLW,
+	SLLW_NOP,
+	SRLW,
+	SRLW_NOP,
+	SRAW,
+	SRAW_NOP,
+
+	// RV64M standard extension (addition to RV32M)
+	MULW,
+	MULW_NOP,
+	DIVW,
+	DIVW_NOP,
+	DIVUW,
+	DIVUW_NOP,
+	REMW,
+	REMW_NOP,
+	REMUW,
+	REMUW_NOP,
+
+	// RV64A standard extension (addition to RV32A)
+	LR_D,
+	SC_D,
+	AMOSWAP_D,
+	AMOADD_D,
+	AMOXOR_D,
+	AMOAND_D,
+	AMOOR_D,
+	AMOMIN_D,
+	AMOMAX_D,
+	AMOMINU_D,
+	AMOMAXU_D,
+
+	// RV32Zfh standard extension
+	FLH,
+	FSH,
+	FMADD_H,
+	FMSUB_H,
+	FNMADD_H,
+	FNMSUB_H,
+	FADD_H,
+	FSUB_H,
+	FMUL_H,
+	FDIV_H,
+	FSQRT_H,
+	FSGNJ_H,
+	FSGNJN_H,
+	FSGNJX_H,
+	FMIN_H,
+	FMAX_H,
+	FCVT_W_H,
+	FCVT_WU_H,
+	FMV_X_H,
+	FEQ_H,
+	FLT_H,
+	FLE_H,
+	FCLASS_H,
+	FCVT_H_W,
+	FCVT_H_WU,
+	FMV_H_X,
+	FCVT_S_H,
+	FCVT_H_S,
+	FCVT_H_D,
+	FCVT_D_H,
+
+	// RV64Zfh standard extension
+	FCVT_L_H,
+	FCVT_LU_H,
+	FCVT_H_L,
+	FCVT_H_LU,
+
+	// RV32F standard extension
+	FLW,
+	FSW,
+	FMADD_S,
+	FMSUB_S,
+	FNMADD_S,
+	FNMSUB_S,
+	FADD_S,
+	FSUB_S,
+	FMUL_S,
+	FDIV_S,
+	FSQRT_S,
+	FSGNJ_S,
+	FSGNJN_S,
+	FSGNJX_S,
+	FMIN_S,
+	FMAX_S,
+	FCVT_W_S,
+	FCVT_WU_S,
+	FMV_X_W,
+	FEQ_S,
+	FLT_S,
+	FLE_S,
+	FCLASS_S,
+	FCVT_S_W,
+	FCVT_S_WU,
+	FMV_W_X,
+
+	// RV64F standard extension (addition to RV32F)
+	FCVT_L_S,
+	FCVT_LU_S,
+	FCVT_S_L,
+	FCVT_S_LU,
+
+	// RV32D standard extension
+	FLD,
+	FSD,
+	FMADD_D,
+	FMSUB_D,
+	FNMSUB_D,
+	FNMADD_D,
+	FADD_D,
+	FSUB_D,
+	FMUL_D,
+	FDIV_D,
+	FSQRT_D,
+	FSGNJ_D,
+	FSGNJN_D,
+	FSGNJX_D,
+	FMIN_D,
+	FMAX_D,
+	FCVT_S_D,
+	FCVT_D_S,
+	FEQ_D,
+	FLT_D,
+	FLE_D,
+	FCLASS_D,
+	FCVT_W_D,
+	FCVT_WU_D,
+	FCVT_D_W,
+	FCVT_D_WU,
+
+	// RV64D standard extension (addition to RV32D)
+	FCVT_L_D,
+	FCVT_LU_D,
+	FMV_X_D,
+	FCVT_D_L,
+	FCVT_D_LU,
+	FMV_D_X,
+
+	// RV-V Extension Start -- Placeholder 4
+	VSETVLI,
+	VSETIVLI,
+	VSETVL,
+	VLM_V,
+	VSM_V,
+	VLE8_V,
+	VLE16_V,
+	VLE32_V,
+	VLE64_V,
+	VSE8_V,
+	VSE16_V,
+	VSE32_V,
+	VSE64_V,
+	VLSE8_V,
+	VLSE16_V,
+	VLSE32_V,
+	VLSE64_V,
+	VSSE8_V,
+	VSSE16_V,
+	VSSE32_V,
+	VSSE64_V,
+	VLUXEI8_V,
+	VLUXEI16_V,
+	VLUXEI32_V,
+	VLUXEI64_V,
+	VLOXEI8_V,
+	VLOXEI16_V,
+	VLOXEI32_V,
+	VLOXEI64_V,
+	VSUXEI8_V,
+	VSUXEI16_V,
+	VSUXEI32_V,
+	VSUXEI64_V,
+	VSOXEI8_V,
+	VSOXEI16_V,
+	VSOXEI32_V,
+	VSOXEI64_V,
+	VLE8FF_V,
+	VLE16FF_V,
+	VLE32FF_V,
+	VLE64FF_V,
+	VLSEG2E8_V,
+	VLSEG2E16_V,
+	VLSEG2E32_V,
+	VLSEG2E64_V,
+	VSSEG2E8_V,
+	VSSEG2E16_V,
+	VSSEG2E32_V,
+	VSSEG2E64_V,
+	VLSSEG2E8_V,
+	VLSSEG2E16_V,
+	VLSSEG2E32_V,
+	VLSSEG2E64_V,
+	VSSSEG2E8_V,
+	VSSSEG2E16_V,
+	VSSSEG2E32_V,
+	VSSSEG2E64_V,
+	VLUXSEG2EI8_V,
+	VLUXSEG2EI16_V,
+	VLUXSEG2EI32_V,
+	VLUXSEG2EI64_V,
+	VLOXSEG2EI8_V,
+	VLOXSEG2EI16_V,
+	VLOXSEG2EI32_V,
+	VLOXSEG2EI64_V,
+	VSUXSEG2EI8_V,
+	VSUXSEG2EI16_V,
+	VSUXSEG2EI32_V,
+	VSUXSEG2EI64_V,
+	VSOXSEG2EI8_V,
+	VSOXSEG2EI16_V,
+	VSOXSEG2EI32_V,
+	VSOXSEG2EI64_V,
+	VLSEG2E8FF_V,
+	VLSEG2E16FF_V,
+	VLSEG2E32FF_V,
+	VLSEG2E64FF_V,
+	VLSEG3E8_V,
+	VLSEG3E16_V,
+	VLSEG3E32_V,
+	VLSEG3E64_V,
+	VSSEG3E8_V,
+	VSSEG3E16_V,
+	VSSEG3E32_V,
+	VSSEG3E64_V,
+	VLSSEG3E8_V,
+	VLSSEG3E16_V,
+	VLSSEG3E32_V,
+	VLSSEG3E64_V,
+	VSSSEG3E8_V,
+	VSSSEG3E16_V,
+	VSSSEG3E32_V,
+	VSSSEG3E64_V,
+	VLUXSEG3EI8_V,
+	VLUXSEG3EI16_V,
+	VLUXSEG3EI32_V,
+	VLUXSEG3EI64_V,
+	VLOXSEG3EI8_V,
+	VLOXSEG3EI16_V,
+	VLOXSEG3EI32_V,
+	VLOXSEG3EI64_V,
+	VSUXSEG3EI8_V,
+	VSUXSEG3EI16_V,
+	VSUXSEG3EI32_V,
+	VSUXSEG3EI64_V,
+	VSOXSEG3EI8_V,
+	VSOXSEG3EI16_V,
+	VSOXSEG3EI32_V,
+	VSOXSEG3EI64_V,
+	VLSEG3E8FF_V,
+	VLSEG3E16FF_V,
+	VLSEG3E32FF_V,
+	VLSEG3E64FF_V,
+	VLSEG4E8_V,
+	VLSEG4E16_V,
+	VLSEG4E32_V,
+	VLSEG4E64_V,
+	VSSEG4E8_V,
+	VSSEG4E16_V,
+	VSSEG4E32_V,
+	VSSEG4E64_V,
+	VLSSEG4E8_V,
+	VLSSEG4E16_V,
+	VLSSEG4E32_V,
+	VLSSEG4E64_V,
+	VSSSEG4E8_V,
+	VSSSEG4E16_V,
+	VSSSEG4E32_V,
+	VSSSEG4E64_V,
+	VLUXSEG4EI8_V,
+	VLUXSEG4EI16_V,
+	VLUXSEG4EI32_V,
+	VLUXSEG4EI64_V,
+	VLOXSEG4EI8_V,
+	VLOXSEG4EI16_V,
+	VLOXSEG4EI32_V,
+	VLOXSEG4EI64_V,
+	VSUXSEG4EI8_V,
+	VSUXSEG4EI16_V,
+	VSUXSEG4EI32_V,
+	VSUXSEG4EI64_V,
+	VSOXSEG4EI8_V,
+	VSOXSEG4EI16_V,
+	VSOXSEG4EI32_V,
+	VSOXSEG4EI64_V,
+	VLSEG4E8FF_V,
+	VLSEG4E16FF_V,
+	VLSEG4E32FF_V,
+	VLSEG4E64FF_V,
+	VLSEG5E8_V,
+	VLSEG5E16_V,
+	VLSEG5E32_V,
+	VLSEG5E64_V,
+	VSSEG5E8_V,
+	VSSEG5E16_V,
+	VSSEG5E32_V,
+	VSSEG5E64_V,
+	VLSSEG5E8_V,
+	VLSSEG5E16_V,
+	VLSSEG5E32_V,
+	VLSSEG5E64_V,
+	VSSSEG5E8_V,
+	VSSSEG5E16_V,
+	VSSSEG5E32_V,
+	VSSSEG5E64_V,
+	VLUXSEG5EI8_V,
+	VLUXSEG5EI16_V,
+	VLUXSEG5EI32_V,
+	VLUXSEG5EI64_V,
+	VLOXSEG5EI8_V,
+	VLOXSEG5EI16_V,
+	VLOXSEG5EI32_V,
+	VLOXSEG5EI64_V,
+	VSUXSEG5EI8_V,
+	VSUXSEG5EI16_V,
+	VSUXSEG5EI32_V,
+	VSUXSEG5EI64_V,
+	VSOXSEG5EI8_V,
+	VSOXSEG5EI16_V,
+	VSOXSEG5EI32_V,
+	VSOXSEG5EI64_V,
+	VLSEG5E8FF_V,
+	VLSEG5E16FF_V,
+	VLSEG5E32FF_V,
+	VLSEG5E64FF_V,
+	VLSEG6E8_V,
+	VLSEG6E16_V,
+	VLSEG6E32_V,
+	VLSEG6E64_V,
+	VSSEG6E8_V,
+	VSSEG6E16_V,
+	VSSEG6E32_V,
+	VSSEG6E64_V,
+	VLSSEG6E8_V,
+	VLSSEG6E16_V,
+	VLSSEG6E32_V,
+	VLSSEG6E64_V,
+	VSSSEG6E8_V,
+	VSSSEG6E16_V,
+	VSSSEG6E32_V,
+	VSSSEG6E64_V,
+	VLUXSEG6EI8_V,
+	VLUXSEG6EI16_V,
+	VLUXSEG6EI32_V,
+	VLUXSEG6EI64_V,
+	VLOXSEG6EI8_V,
+	VLOXSEG6EI16_V,
+	VLOXSEG6EI32_V,
+	VLOXSEG6EI64_V,
+	VSUXSEG6EI8_V,
+	VSUXSEG6EI16_V,
+	VSUXSEG6EI32_V,
+	VSUXSEG6EI64_V,
+	VSOXSEG6EI8_V,
+	VSOXSEG6EI16_V,
+	VSOXSEG6EI32_V,
+	VSOXSEG6EI64_V,
+	VLSEG6E8FF_V,
+	VLSEG6E16FF_V,
+	VLSEG6E32FF_V,
+	VLSEG6E64FF_V,
+	VLSEG7E8_V,
+	VLSEG7E16_V,
+	VLSEG7E32_V,
+	VLSEG7E64_V,
+	VSSEG7E8_V,
+	VSSEG7E16_V,
+	VSSEG7E32_V,
+	VSSEG7E64_V,
+	VLSSEG7E8_V,
+	VLSSEG7E16_V,
+	VLSSEG7E32_V,
+	VLSSEG7E64_V,
+	VSSSEG7E8_V,
+	VSSSEG7E16_V,
+	VSSSEG7E32_V,
+	VSSSEG7E64_V,
+	VLUXSEG7EI8_V,
+	VLUXSEG7EI16_V,
+	VLUXSEG7EI32_V,
+	VLUXSEG7EI64_V,
+	VLOXSEG7EI8_V,
+	VLOXSEG7EI16_V,
+	VLOXSEG7EI32_V,
+	VLOXSEG7EI64_V,
+	VSUXSEG7EI8_V,
+	VSUXSEG7EI16_V,
+	VSUXSEG7EI32_V,
+	VSUXSEG7EI64_V,
+	VSOXSEG7EI8_V,
+	VSOXSEG7EI16_V,
+	VSOXSEG7EI32_V,
+	VSOXSEG7EI64_V,
+	VLSEG7E8FF_V,
+	VLSEG7E16FF_V,
+	VLSEG7E32FF_V,
+	VLSEG7E64FF_V,
+	VLSEG8E8_V,
+	VLSEG8E16_V,
+	VLSEG8E32_V,
+	VLSEG8E64_V,
+	VSSEG8E8_V,
+	VSSEG8E16_V,
+	VSSEG8E32_V,
+	VSSEG8E64_V,
+	VLSSEG8E8_V,
+	VLSSEG8E16_V,
+	VLSSEG8E32_V,
+	VLSSEG8E64_V,
+	VSSSEG8E8_V,
+	VSSSEG8E16_V,
+	VSSSEG8E32_V,
+	VSSSEG8E64_V,
+	VLUXSEG8EI8_V,
+	VLUXSEG8EI16_V,
+	VLUXSEG8EI32_V,
+	VLUXSEG8EI64_V,
+	VLOXSEG8EI8_V,
+	VLOXSEG8EI16_V,
+	VLOXSEG8EI32_V,
+	VLOXSEG8EI64_V,
+	VSUXSEG8EI8_V,
+	VSUXSEG8EI16_V,
+	VSUXSEG8EI32_V,
+	VSUXSEG8EI64_V,
+	VSOXSEG8EI8_V,
+	VSOXSEG8EI16_V,
+	VSOXSEG8EI32_V,
+	VSOXSEG8EI64_V,
+	VLSEG8E8FF_V,
+	VLSEG8E16FF_V,
+	VLSEG8E32FF_V,
+	VLSEG8E64FF_V,
+	VL1RE8_V,
+	VL1RE16_V,
+	VL1RE32_V,
+	VL1RE64_V,
+	VS1R_V,
+	VL2RE8_V,
+	VL2RE16_V,
+	VL2RE32_V,
+	VL2RE64_V,
+	VS2R_V,
+	VL4RE8_V,
+	VL4RE16_V,
+	VL4RE32_V,
+	VL4RE64_V,
+	VS4R_V,
+	VL8RE8_V,
+	VL8RE16_V,
+	VL8RE32_V,
+	VL8RE64_V,
+	VS8R_V,
+	VADD_VV,
+	VADD_VI,
+	VADD_VX,
+	VSUB_VV,
+	VSUB_VX,
+	VRSUB_VX,
+	VRSUB_VI,
+	VWADD_VV,
+	VWADD_VX,
+	VWSUB_VV,
+	VWSUB_VX,
+	VWADDU_VV,
+	VWADDU_VX,
+	VWSUBU_VV,
+	VWSUBU_VX,
+	VWADD_WV,
+	VWADD_WX,
+	VWSUB_WV,
+	VWSUB_WX,
+	VWADDU_WV,
+	VWADDU_WX,
+	VWSUBU_WV,
+	VWSUBU_WX,
+	VZEXT_VF2,
+	VSEXT_VF2,
+	VZEXT_VF4,
+	VSEXT_VF4,
+	VZEXT_VF8,
+	VSEXT_VF8,
+	VADC_VVM,
+	VADC_VXM,
+	VADC_VIM,
+	VMADC_VVM,
+	VMADC_VXM,
+	VMADC_VIM,
+	VMADC_VV,
+	VMADC_VX,
+	VMADC_VI,
+	VSBC_VVM,
+	VSBC_VXM,
+	VMSBC_VVM,
+	VMSBC_VXM,
+	VMSBC_VV,
+	VMSBC_VX,
+	VAND_VI,
+	VAND_VV,
+	VAND_VX,
+	VOR_VV,
+	VOR_VI,
+	VOR_VX,
+	VXOR_VV,
+	VXOR_VI,
+	VXOR_VX,
+	VSLL_VI,
+	VSLL_VV,
+	VSLL_VX,
+	VSRL_VV,
+	VSRL_VI,
+	VSRL_VX,
+	VSRA_VV,
+	VSRA_VI,
+	VSRA_VX,
+	VNSRL_WV,
+	VNSRL_WI,
+	VNSRL_WX,
+	VNSRA_WV,
+	VNSRA_WI,
+	VNSRA_WX,
+	VMSEQ_VV,
+	VMSEQ_VX,
+	VMSEQ_VI,
+	VMSNE_VV,
+	VMSNE_VX,
+	VMSNE_VI,
+	VMSLTU_VV,
+	VMSLTU_VX,
+	VMSLT_VV,
+	VMSLT_VX,
+	VMSLEU_VV,
+	VMSLEU_VX,
+	VMSLEU_VI,
+	VMSLE_VV,
+	VMSLE_VX,
+	VMSLE_VI,
+	VMSGTU_VX,
+	VMSGTU_VI,
+	VMSGT_VX,
+	VMSGT_VI,
+	VMINU_VV,
+	VMINU_VX,
+	VMIN_VV,
+	VMIN_VX,
+	VMAXU_VV,
+	VMAXU_VX,
+	VMAX_VV,
+	VMAX_VX,
+	VMUL_VV,
+	VMUL_VX,
+	VMULH_VV,
+	VMULH_VX,
+	VMULHU_VV,
+	VMULHU_VX,
+	VMULHSU_VV,
+	VMULHSU_VX,
+	VDIVU_VV,
+	VDIVU_VX,
+	VDIV_VV,
+	VDIV_VX,
+	VREMU_VV,
+	VREMU_VX,
+	VREM_VV,
+	VREM_VX,
+	VWMUL_VV,
+	VWMUL_VX,
+	VWMULU_VV,
+	VWMULU_VX,
+	VWMULSU_VV,
+	VWMULSU_VX,
+	VMACC_VV,
+	VMACC_VX,
+	VNMSAC_VV,
+	VNMSAC_VX,
+	VMADD_VV,
+	VMADD_VX,
+	VNMSUB_VV,
+	VNMSUB_VX,
+	VWMACCU_VV,
+	VWMACCU_VX,
+	VWMACC_VV,
+	VWMACC_VX,
+	VWMACCSU_VV,
+	VWMACCSU_VX,
+	VWMACCUS_VX,
+	VMERGE_VVM,
+	VMERGE_VXM,
+	VMERGE_VIM,
+	VMV_V_V,
+	VMV_V_X,
+	VMV_V_I,
+	VSADDU_VV,
+	VSADDU_VX,
+	VSADDU_VI,
+	VSADD_VV,
+	VSADD_VX,
+	VSADD_VI,
+	VSSUBU_VV,
+	VSSUBU_VX,
+	VSSUB_VV,
+	VSSUB_VX,
+	VAADDU_VV,
+	VAADDU_VX,
+	VAADD_VV,
+	VAADD_VX,
+	VASUBU_VV,
+	VASUBU_VX,
+	VASUB_VV,
+	VASUB_VX,
+	VSMUL_VV,
+	VSMUL_VX,
+	VSSRL_VV,
+	VSSRL_VX,
+	VSSRL_VI,
+	VSSRA_VV,
+	VSSRA_VX,
+	VSSRA_VI,
+	VNCLIPU_WV,
+	VNCLIPU_WX,
+	VNCLIPU_WI,
+	VNCLIP_WV,
+	VNCLIP_WX,
+	VNCLIP_WI,
+	VFADD_VV,
+	VFADD_VF,
+	VFSUB_VV,
+	VFSUB_VF,
+	VFRSUB_VF,
+	VFWADD_VV,
+	VFWADD_VF,
+	VFWSUB_VV,
+	VFWSUB_VF,
+	VFWADD_WV,
+	VFWADD_WF,
+	VFWSUB_WV,
+	VFWSUB_WF,
+	VFMUL_VV,
+	VFMUL_VF,
+	VFDIV_VV,
+	VFDIV_VF,
+	VFRDIV_VF,
+	VFWMUL_VV,
+	VFWMUL_VF,
+	VFMACC_VV,
+	VFMACC_VF,
+	VFNMACC_VV,
+	VFNMACC_VF,
+	VFMSAC_VV,
+	VFMSAC_VF,
+	VFNMSAC_VV,
+	VFNMSAC_VF,
+	VFMADD_VV,
+	VFMADD_VF,
+	VFNMADD_VV,
+	VFNMADD_VF,
+	VFMSUB_VV,
+	VFMSUB_VF,
+	VFNMSUB_VV,
+	VFNMSUB_VF,
+	VFWMACC_VV,
+	VFWMACC_VF,
+	VFWNMACC_VV,
+	VFWNMACC_VF,
+	VFWMSAC_VV,
+	VFWMSAC_VF,
+	VFWNMSAC_VV,
+	VFWNMSAC_VF,
+	VFSQRT_V,
+	VFRSQRT7_V,
+	VFREC7_V,
+	VFMIN_VV,
+	VFMIN_VF,
+	VFMAX_VV,
+	VFMAX_VF,
+	VFSGNJ_VV,
+	VFSGNJ_VF,
+	VFSGNJN_VV,
+	VFSGNJN_VF,
+	VFSGNJX_VV,
+	VFSGNJX_VF,
+	VMFEQ_VV,
+	VMFEQ_VF,
+	VMFNE_VV,
+	VMFNE_VF,
+	VMFLT_VV,
+	VMFLT_VF,
+	VMFLE_VV,
+	VMFLE_VF,
+	VMFGT_VF,
+	VMFGE_VF,
+	VFCLASS_V,
+	VFMERGE_VFM,
+	VFMV_V_F,
+	VFCVT_XU_F_V,
+	VFCVT_X_F_V,
+	VFCVT_RTZ_XU_F_V,
+	VFCVT_RTZ_X_F_V,
+	VFCVT_F_XU_V,
+	VFCVT_F_X_V,
+	VFWCVT_XU_F_V,
+	VFWCVT_X_F_V,
+	VFWCVT_RTZ_XU_F_V,
+	VFWCVT_RTZ_X_F_V,
+	VFWCVT_F_XU_V,
+	VFWCVT_F_X_V,
+	VFWCVT_F_F_V,
+	VFNCVT_XU_F_W,
+	VFNCVT_X_F_W,
+	VFNCVT_RTZ_XU_F_W,
+	VFNCVT_RTZ_X_F_W,
+	VFNCVT_F_XU_W,
+	VFNCVT_F_X_W,
+	VFNCVT_F_F_W,
+	VFNCVT_ROD_F_F_W,
+	VREDSUM_VS,
+	VREDMAXU_VS,
+	VREDMAX_VS,
+	VREDMINU_VS,
+	VREDMIN_VS,
+	VREDAND_VS,
+	VREDOR_VS,
+	VREDXOR_VS,
+	VWREDSUMU_VS,
+	VWREDSUM_VS,
+	VFREDUSUM_VS,
+	VFREDOSUM_VS,
+	VFREDMAX_VS,
+	VFREDMIN_VS,
+	VFWREDUSUM_VS,
+	VFWREDOSUM_VS,
+	VMAND_MM,
+	VMNAND_MM,
+	VMANDN_MM,
+	VMXOR_MM,
+	VMOR_MM,
+	VMNOR_MM,
+	VMORN_MM,
+	VMXNOR_MM,
+	VCPOP_M,
+	VFIRST_M,
+	VMSBF_M,
+	VMSIF_M,
+	VMSOF_M,
+	VIOTA_M,
+	VID_V,
+	VMV_X_S,
+	VMV_S_X,
+	VFMV_F_S,
+	VFMV_S_F,
+	VSLIDEUP_VX,
+	VSLIDEUP_VI,
+	VSLIDEDOWN_VX,
+	VSLIDEDOWN_VI,
+	VSLIDE1UP_VX,
+	VFSLIDE1UP_VF,
+	VSLIDE1DOWN_VX,
+	VFSLIDE1DOWN_VF,
+	VRGATHER_VV,
+	VRGATHEREI16_VV,
+	VRGATHER_VX,
+	VRGATHER_VI,
+	VCOMPRESS_VM,
+	VMV_NR_R_V,
+	// RV-V Extension End -- Placeholder 4
+
+	// privileged instructions
+	URET,
+	SRET,
+	MRET,
+	WFI,
+	SFENCE_VMA,
+
+	NUMBER_OF_OPERATIONS
+};
+
+// type denotes the instruction format
+enum class Type {
+	UNKNOWN = 0,
+	R,
+	I,
+	S,
+	B,
+	U,
+	J,
+	R4,
+	V,
+	V_SET_I,
+	V_LS,
+};
+
+extern std::array<const char *, OpId::NUMBER_OF_OPERATIONS> opIdStr;
+
+Type getType(OpId opId);
+}  // namespace Operation
+
+struct Instruction {
+	// opcode masks used to decode an instruction
+	enum Parts {
+		OP_LUI = 0b0110111,
+
+		OP_AUIPC = 0b0010111,
+
+		OP_JAL = 0b1101111,
+
+		OP_JALR = 0b1100111,
+		F3_JALR = 0b000,
+
+		OP_LB = 0b0000011,
+		F3_LB = 0b000,
+		F3_LH = 0b001,
+		F3_LW = 0b010,
+		F3_LBU = 0b100,
+		F3_LHU = 0b101,
+		F3_LWU = 0b110,
+		F3_LD = 0b011,
+
+		OP_SB = 0b0100011,
+		F3_SB = 0b000,
+		F3_SH = 0b001,
+		F3_SW = 0b010,
+		F3_SD = 0b011,
+
+		OP_BEQ = 0b1100011,
+		F3_BEQ = 0b000,
+		F3_BNE = 0b001,
+		F3_BLT = 0b100,
+		F3_BGE = 0b101,
+		F3_BLTU = 0b110,
+		F3_BGEU = 0b111,
+
+		OP_ADDI = 0b0010011,
+		F3_ADDI = 0b000,
+		F3_SLTI = 0b010,
+		F3_SLTIU = 0b011,
+		F3_XORI = 0b100,
+		F3_ORI = 0b110,
+		F3_ANDI = 0b111,
+		F3_SLLI = 0b001,
+		F3_SRLI = 0b101,
+		F7_SRLI = 0b0000000,
+		F7_SRAI = 0b0100000,
+		F6_SRLI = 0b000000,  // RV64 special case
+		F6_SRAI = 0b010000,  // RV64 special case
+
+		OP_ADD = 0b0110011,
+		F3_ADD = 0b000,
+		F7_ADD = 0b0000000,
+		F3_SUB = 0b000,
+		F7_SUB = 0b0100000,
+		F3_SLL = 0b001,
+		F3_SLT = 0b010,
+		F3_SLTU = 0b011,
+		F3_XOR = 0b100,
+		F3_SRL = 0b101,
+		F3_SRA = 0b101,
+		F3_OR = 0b110,
+		F3_AND = 0b111,
+
+		F3_MUL = 0b000,
+		F7_MUL = 0b0000001,
+		F3_MULH = 0b001,
+		F3_MULHSU = 0b010,
+		F3_MULHU = 0b011,
+		F3_DIV = 0b100,
+		F3_DIVU = 0b101,
+		F3_REM = 0b110,
+		F3_REMU = 0b111,
+
+		OP_FENCE = 0b0001111,
+		F3_FENCE = 0b000,
+		F3_FENCE_I = 0b001,
+
+		OP_ECALL = 0b1110011,
+		F3_SYS = 0b000,
+		F12_ECALL = 0b000000000000,
+		F12_EBREAK = 0b000000000001,
+		// begin:privileged-instructions
+		F12_URET = 0b000000000010,
+		F12_SRET = 0b000100000010,
+		F12_MRET = 0b001100000010,
+		F12_WFI = 0b000100000101,
+		F7_SFENCE_VMA = 0b0001001,
+		// end:privileged-instructions
+		F3_CSRRW = 0b001,
+		F3_CSRRS = 0b010,
+		F3_CSRRC = 0b011,
+		F3_CSRRWI = 0b101,
+		F3_CSRRSI = 0b110,
+		F3_CSRRCI = 0b111,
+
+		OP_AMO = 0b0101111,
+		F5_LR_W = 0b00010,
+		F5_SC_W = 0b00011,
+		F5_AMOSWAP_W = 0b00001,
+		F5_AMOADD_W = 0b00000,
+		F5_AMOXOR_W = 0b00100,
+		F5_AMOAND_W = 0b01100,
+		F5_AMOOR_W = 0b01000,
+		F5_AMOMIN_W = 0b10000,
+		F5_AMOMAX_W = 0b10100,
+		F5_AMOMINU_W = 0b11000,
+		F5_AMOMAXU_W = 0b11100,
+
+		F3_AMO_W = 0b010,
+		F3_AMO_D = 0b011,
+
+		OP_ADDIW = 0b0011011,
+		F3_ADDIW = 0b000,
+		F3_SLLIW = 0b001,
+		F3_SRLIW = 0b101,
+		F7_SRLIW = 0b0000000,
+		F7_SRAIW = 0b0100000,
+
+		OP_ADDW = 0b0111011,
+		F3_ADDW = 0b000,
+		F7_ADDW = 0b0000000,
+		F3_SUBW = 0b000,
+		F7_SUBW = 0b0100000,
+		F3_SLLW = 0b001,
+		F3_SRLW = 0b101,
+		F7_SRLW = 0b0000000,
+		F3_SRAW = 0b101,
+		F7_SRAW = 0b0100000,
+		F7_MULW = 0b0000001,
+		F3_MULW = 0b000,
+		F3_DIVW = 0b100,
+		F3_DIVUW = 0b101,
+		F3_REMW = 0b110,
+		F3_REMUW = 0b111,
+
+		// Zfh extension
+		F3_FLH = 0b001,
+		F3_FSH = 0b001,
+		F2_FMADD_H = 0b10,
+		F2_FMSUB_H = 0b10,
+		F2_FNMSUB_H = 0b10,
+		F2_FNMADD_H = 0b10,
+		F7_FADD_H = 0b0000010,
+		F7_FSUB_H = 0b0000110,
+		F7_FMUL_H = 0b0001010,
+		F7_FDIV_H = 0b0001110,
+		F7_FSQRT_H = 0b0101110,
+		F7_FSGNJ_H = 0b0010010,
+		F3_FSGNJ_H = 0b000,
+		F3_FSGNJN_H = 0b001,
+		F3_FSGNJX_H = 0b010,
+
+		F7_FMIN_H = 0b0010110,
+		F3_FMIN_H = 0b000,
+		F3_FMAX_H = 0b001,
+
+		F7_FCVT_S_H = 0b0100000,
+		F7_FCVT_H_S = 0b0100010,
+		F7_FCVT_D_H = 0b0100001,
+		F7_FCVT_H_D = 0b0100010,
+
+		F7_FLE_H = 0b1010010,
+		F3_FLE_H = 0b000,
+		F3_FLT_H = 0b001,
+		F3_FEQ_H = 0b010,
+
+		F3_FCLASS_H = 0b001,
+		F7_FCVT_W_H = 0b1100010,
+		RS2_FCVT_W_H = 0b00000,
+		F7_FCVT_WU_H = 0b1100010,
+		RS2_FCVT_WU_H = 0b00001,
+		F7_FMV_X_H = 0b1110010,
+		F3_FMV_X_H = 0b000,
+		F7_FCVT_H_W = 0b1101010,
+		RS2_FCVT_H_W = 0b00000,
+		F7_FCVT_H_WU = 0b1101010,
+		RS2_FCVT_H_WU = 0b00001,
+		F7_FMV_H_X = 0b1111010,
+
+		RS2_FCVT_S_H = 0b00010,
+		RS2_FCVT_H_S = 0b00000,
+		RS2_FCVT_D_H = 0b00010,
+		RS2_FCVT_H_D = 0b00001,
+
+		RS2_FCVT_H_L = 0b00010,
+		RS2_FCVT_H_LU = 0b00011,
+		RS2_FCVT_L_H = 0b00010,
+		RS2_FCVT_LU_H = 0b00011,
+
+		// F and D extension
+		OP_FMADD_S = 0b1000011,
+		F2_FMADD_S = 0b00,
+		F2_FMADD_D = 0b01,
+		OP_FADD_S = 0b1010011,
+		F7_FADD_S = 0b0000000,
+		F7_FADD_D = 0b0000001,
+		F7_FSUB_S = 0b0000100,
+		F7_FSUB_D = 0b0000101,
+		F7_FCVT_D_S = 0b0100001,
+		F7_FMUL_S = 0b0001000,
+		F7_FMUL_D = 0b0001001,
+		F7_FDIV_S = 0b0001100,
+		F7_FDIV_D = 0b0001101,
+		F7_FLE_S = 0b1010000,
+		F3_FLE_S = 0b000,
+		F3_FLT_S = 0b001,
+		F3_FEQ_S = 0b010,
+		F7_FSGNJ_D = 0b0010001,
+		F3_FSGNJ_D = 0b000,
+		F3_FSGNJN_D = 0b001,
+		F3_FSGNJX_D = 0b010,
+		F7_FMIN_S = 0b0010100,
+		F3_FMIN_S = 0b000,
+		F3_FMAX_S = 0b001,
+		F7_FMIN_D = 0b0010101,
+		F3_FMIN_D = 0b000,
+		F3_FMAX_D = 0b001,
+		F7_FCVT_S_D = 0b0100000,
+		F7_FSGNJ_S = 0b0010000,
+		F3_FSGNJ_S = 0b000,
+		F3_FSGNJN_S = 0b001,
+		F3_FSGNJX_S = 0b010,
+		F7_FLE_D = 0b1010001,
+		F3_FLE_D = 0b000,
+		F3_FLT_D = 0b001,
+		F3_FEQ_D = 0b010,
+		RS2_FCVT_S_D = 0b00001,
+		RS2_FCVT_D_S = 0b00000,
+		F7_FCVT_S_W = 0b1101000,
+		RS2_FCVT_S_W = 0b00000,
+		RS2_FCVT_S_WU = 0b00001,
+		RS2_FCVT_S_L = 0b00010,
+		RS2_FCVT_S_LU = 0b00011,
+		F7_FCVT_D_W = 0b1101001,
+		RS2_FCVT_D_W = 0b00000,
+		RS2_FCVT_D_WU = 0b00001,
+		RS2_FCVT_D_L = 0b00010,
+		RS2_FCVT_D_LU = 0b00011,
+		F7_FCVT_W_D = 0b1100001,
+		RS2_FCVT_W_D = 0b00000,
+		RS2_FCVT_WU_D = 0b00001,
+		RS2_FCVT_L_D = 0b00010,
+		RS2_FCVT_LU_D = 0b00011,
+		F7_FSQRT_S = 0b0101100,
+		F7_FSQRT_D = 0b0101101,
+		F7_FCVT_W_S = 0b1100000,
+		RS2_FCVT_W_S = 0b00000,
+		RS2_FCVT_WU_S = 0b00001,
+		RS2_FCVT_L_S = 0b00010,
+		RS2_FCVT_LU_S = 0b00011,
+		F7_FMV_X_W = 0b1110000,
+		F3_FMV_X_W = 0b000,
+		F3_FCLASS_S = 0b001,
+		F7_FMV_X_D = 0b1110001,
+		F3_FMV_X_D = 0b000,
+		F3_FCLASS_D = 0b001,
+		F7_FMV_W_X = 0b1111000,
+		F7_FMV_D_X = 0b1111001,
+		OP_FLW = 0b0000111,
+		F3_FLW = 0b010,
+		F3_FLD = 0b011,
+		OP_FSW = 0b0100111,
+		F3_FSW = 0b010,
+		F3_FSD = 0b011,
+		OP_FMSUB_S = 0b1000111,
+		F2_FMSUB_S = 0b00,
+		F2_FMSUB_D = 0b01,
+		OP_FNMSUB_S = 0b1001011,
+		F2_FNMSUB_S = 0b00,
+		F2_FNMSUB_D = 0b01,
+		OP_FNMADD_S = 0b1001111,
+		F2_FNMADD_S = 0b00,
+		F2_FNMADD_D = 0b01,
+
+		// reserved opcodes for custom instructions
+		OP_CUST1 = 0b0101011,
+		OP_CUST0 = 0b0001011,
+	};
+
+	Instruction() : instr(0) {}
+
+	Instruction(uint32_t instr) : instr(instr) {}
+
+	inline uint32_t quadrant() {
+		return instr & 0x3;
+	}
+
+	inline bool is_compressed() {
+		return quadrant() < 3;
+	}
+
+	inline uint32_t c_format() {
+		return instr & 0xffff;
+	}
+
+	inline uint32_t c_opcode() {
+		return BIT_SLICE(instr, 15, 13);
+	}
+
+	inline uint32_t c_b12() {
+		return BIT_SINGLE_P1(instr, 12);
+	}
+
+	inline uint32_t c_rd() {
+		return rd();
+	}
+
+	inline uint32_t c_rd_small() {
+		return BIT_SLICE(instr, 9, 7) | 8;
+	}
+
+	inline uint32_t c_rs2_small() {
+		return BIT_SLICE(instr, 4, 2) | 8;
+	}
+
+	inline uint32_t c_rs2() {
+		return BIT_SLICE(instr, 6, 2);
+	}
+
+	inline uint32_t c_imm() {
+		return BIT_SLICE(instr, 6, 2) | EXTRACT_SIGN_BIT(instr, 12, 5);
+	}
+
+	inline uint32_t c_uimm() {
+		return BIT_SLICE(instr, 6, 2) | (BIT_SINGLE_P1(instr, 12) << 5);
+	}
+
+	inline uint32_t c_f2_high() {
+		return BIT_SLICE(instr, 11, 10);
+	}
+
+	inline uint32_t c_f2_low() {
+		return BIT_SLICE(instr, 6, 5);
+	}
+
+	Operation::OpId decode_normal(Architecture arch, const RV_ISA_Config &isa_config);
+
+	Operation::OpId decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config);
+
+	inline uint32_t csr() {
+		// cast to unsigned to avoid sign extension when shifting
+		return BIT_RANGE((uint32_t)instr, 31, 20) >> 20;
+	}
+
+	inline uint32_t zimm() {
+		return BIT_RANGE(instr, 19, 15) >> 15;
+	}
+
+	inline unsigned shamt() {
+		return (BIT_RANGE(instr, 25, 20) >> 20);
+	}
+
+	inline unsigned shamt_w() {
+		return (BIT_RANGE(instr, 24, 20) >> 20);
+	}
+
+	inline int32_t funct2() {
+		return (BIT_RANGE(instr, 26, 25) >> 25);
+	}
+
+	inline int32_t funct3() {
+		return (BIT_RANGE(instr, 14, 12) >> 12);
+	}
+
+	inline int32_t funct12() {
+		// cast to unsigned to avoid sign extension when shifting
+		return (BIT_RANGE((uint32_t)instr, 31, 20) >> 20);
+	}
+
+	inline int32_t funct7() {
+		// cast to unsigned to avoid sign extension when shifting
+		return (BIT_RANGE((uint32_t)instr, 31, 25) >> 25);
+	}
+
+	inline int32_t funct6() {
+		// cast to unsigned to avoid sign extension when shifting
+		return (BIT_RANGE((uint32_t)instr, 31, 26) >> 26);
+	}
+
+	inline int32_t funct5() {
+		// cast to unsigned to avoid sign extension when shifting
+		return (BIT_RANGE((uint32_t)instr, 31, 27) >> 27);
+	}
+
+	inline uint32_t frm() {
+		return BIT_SLICE(instr, 14, 12);
+	}
+
+	inline uint32_t fence_succ() {
+		return BIT_SLICE(instr, 23, 20);
+	}
+
+	inline uint32_t fence_pred() {
+		return BIT_SLICE(instr, 27, 24);
+	}
+
+	inline uint32_t fence_fm() {
+		return BIT_SLICE(instr, 31, 28);
+	}
+
+	inline bool aq() {
+		return BIT_SINGLE(instr, 26);
+	}
+
+	inline bool rl() {
+		return BIT_SINGLE(instr, 25);
+	}
+
+	inline int32_t opcode() {
+		return BIT_RANGE(instr, 6, 0);
+	}
+
+	inline int32_t J_imm() {
+		return (BIT_SINGLE(instr, 31) >> 11) | BIT_RANGE(instr, 19, 12) | (BIT_SINGLE(instr, 20) >> 9) |
+		       (BIT_RANGE(instr, 30, 21) >> 20);
+	}
+
+	inline int32_t I_imm() {
+		return BIT_RANGE(instr, 31, 20) >> 20;
+	}
+
+	inline int32_t S_imm() {
+		return (BIT_RANGE(instr, 31, 25) >> 20) | (BIT_RANGE(instr, 11, 7) >> 7);
+	}
+
+	inline int32_t B_imm() {
+		return (BIT_SINGLE(instr, 31) >> 19) | (BIT_SINGLE(instr, 7) << 4) | (BIT_RANGE(instr, 30, 25) >> 20) |
+		       (BIT_RANGE(instr, 11, 8) >> 7);
+	}
+
+	inline int32_t U_imm() {
+		return BIT_RANGE(instr, 31, 12);
+	}
+
+	inline uint32_t rs1() {
+		return BIT_RANGE(instr, 19, 15) >> 15;
+	}
+
+	inline uint32_t rs2() {
+		return BIT_RANGE(instr, 24, 20) >> 20;
+	}
+
+	inline uint32_t rs3() {
+		return BIT_RANGE((uint32_t)instr, 31, 27) >> 27;
+	}
+
+	inline uint32_t rd() {
+		return BIT_RANGE(instr, 11, 7) >> 7;
+	}
+
+	inline uint32_t data() {
+		return instr;
+	}
+
+	// RV-V Extension Start -- Placeholder 5
+	inline uint32_t bhigh() {
+		return BIT_SINGLE_P1((uint32_t)instr, 31);
+	}
+	inline uint32_t bhigh2() {
+		return BIT_SINGLE_P1(instr, 30);
+	}
+	inline uint32_t zimm_10() {
+		return BIT_RANGE(instr, 30, 20) >> 20;
+	}
+	inline uint32_t zimm_9() {
+		return BIT_RANGE(instr, 29, 20) >> 20;
+	}
+	inline uint32_t nf() {
+		return BIT_RANGE((uint32_t)instr, 31, 29) >> 29;
+	}
+	inline uint32_t mop() {
+		return BIT_RANGE(instr, 27, 26) >> 26;
+	}
+	inline uint32_t mew() {
+		return BIT_SINGLE_P1(instr, 28);
+	}
+	inline uint32_t vm() {
+		return BIT_SINGLE_P1(instr, 25);
+	}
+	inline uint32_t lusumop() {
+		return BIT_RANGE(instr, 24, 20) >> 20;
+	}
+	// RV-V Extension End -- Placeholder 5
+
+   private:
+	// use signed variable to have correct sign extension in immediates
+	int32_t instr;
+};
+
+#endif  // RISCV_ISA_INSTR_H

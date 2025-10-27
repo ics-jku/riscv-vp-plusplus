@@ -1,0 +1,17 @@
+file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+
+add_library(rv64
+		iss.cpp
+		syscall.cpp
+        ${HEADERS})
+
+target_link_libraries(rv64 systemc core-common softfloat)
+
+
+if(COLOR_THEME STREQUAL "LIGHT")
+	message("> using color theme LIGHT")
+	target_compile_definitions(rv64 PRIVATE COLOR_THEME_LIGHT)
+elseif(COLOR_THEME STREQUAL "DARK")
+	message("> using color theme DARK")
+	target_compile_definitions(rv64 PRIVATE COLOR_THEME_DARK)
+endif()
