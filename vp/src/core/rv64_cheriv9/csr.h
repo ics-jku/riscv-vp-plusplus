@@ -6,11 +6,13 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "cheri_prelude.h"
 #include "core/common/core_defs.h"
 #include "core/common/trap.h"
+#include "core/common_cheriv9/cheri_types.h"
 #include "util/common.h"
 
-namespace rv64 {
+namespace cheriv9::rv64 {
 
 constexpr unsigned FS_OFF = 0b00;
 constexpr unsigned FS_INITIAL = 0b01;
@@ -55,6 +57,10 @@ struct csr_misa_64 : csr_misa {
 
 	bool has_supervisor_mode_extension() {
 		return reg.fields.extensions & S;
+	}
+
+	bool has_N_extension() {
+		return reg.fields.extensions & N;
 	}
 
 	void init() {
@@ -340,6 +346,75 @@ struct csr_vlenb {
 	} reg;
 };
 
+struct csr_ccsr {
+	union {
+		uint64_t val = 0;
+		struct {
+			uint8_t e : 1;  // Enable
+			uint32_t reserved : 29;
+			uint8_t nr : 1;  // No DDC/PCC relocation
+			uint8_t tc : 1;  // Tag clearing error sematnics
+			uint32_t upper : 32;
+		} fields;
+	} reg;
+};
+
+struct csr_capability {
+	Capability cap;
+	csr_capability() {
+		cap = cNullCap;
+	}
+	csr_capability(Capability cap) : cap(cap) {}
+
+	// Cast to csr64
+	operator csr_64 &() {
+		return *reinterpret_cast<csr_64 *>(&cap.fields.address);
+	}
+	operator Capability() {
+		return cap;
+	}
+};
+
+struct csr_mtvec_capability {
+	Capability cap;
+
+	// default ctor
+	csr_mtvec_capability() {
+		cap = cNullCap;
+	}
+
+	// ctor from capability
+	csr_mtvec_capability(Capability cap) : cap(cap) {}
+	// Cast to csr_mtvec
+	operator csr_mtvec &() {
+		return *reinterpret_cast<csr_mtvec *>(&cap.fields.address);
+	}
+
+	operator Capability() {
+		return cap;
+	}
+	Capability get_base_address() {
+		Capability legalized = cap;
+		legalized.fields.address =
+		    static_cast<int64_t>(reinterpret_cast<csr_mtvec *>(&cap.fields.address)->get_base_address());
+		return legalized;
+	}
+};
+
+struct csr_eepc_capability {
+	Capability cap;
+	csr_eepc_capability() {
+		cap = cNullCap;
+	}
+	csr_eepc_capability(Capability cap) : cap(cap) {}
+	operator csr_mepc &() {
+		return *reinterpret_cast<csr_mepc *>(&cap.fields.address);
+	}
+	operator Capability() {
+		return cap;
+	}
+};
+
 namespace csr {
 template <typename T>
 inline bool is_bitset(T &csr, unsigned bitpos) {
@@ -355,7 +430,8 @@ constexpr uint64_t MIP_READ_MASK = MIE_MASK;
 constexpr uint64_t SIP_MASK = 0b11;
 constexpr uint64_t UIP_MASK = 0b1;
 
-constexpr uint64_t MEDELEG_MASK = 0b1011101111111111;
+constexpr uint64_t MEDELEG_MASK = 0b11100000000001011101111111111;  // Adds cheri dependent bits
+// constexpr uint64_t MEDELEG_MASK = 0b1011101111111111; // TODO: Mask cheri dependent?
 constexpr uint64_t MIDELEG_MASK = MIE_MASK;
 
 constexpr uint64_t MTVEC_MASK = ~2;
@@ -624,7 +700,31 @@ constexpr unsigned VCSR_ADDR = 0x00F;
 constexpr unsigned VL_ADDR = 0xC20;
 constexpr unsigned VTYPE_ADDR = 0xC21;
 constexpr unsigned VLENB_ADDR = 0xC22;
+
+// CHERI CSRs
+constexpr unsigned UCCSR_ADDR = 0x8C0;  // User Capability Control and Status Register
+constexpr unsigned SCCSR_ADDR = 0x9C0;  // Supervisor Capability Control and Status Register
+constexpr unsigned MCCSR_ADDR = 0xBC0;  // Machine Capability Control and Status Register
 }  // namespace csr
+
+inline csr_ccsr legalizeCCSR(csr_ccsr ccsr, uint64_t v) {
+	// 		  // write only the defined bits, leaving the other bits untouched
+	//   // Technically, WPRI does not need a legalizer, since software is
+	//   // assumed to legalize; so we could remove this function.
+	//   let v = Mk_ccsr(v);
+	//   /* For now the e bit is not really supported so hardwired to true */
+	//   let c = update_e(c, 0b1);
+	//   /* Read-only feature bits to allow for software to detect CHERI semantics. */
+	//   let c = update_nr(c, bool_to_bits(not(have_cheri_relocation())));
+	//   let c = update_tc(c, 0b1);
+	csr_ccsr c;
+	c.reg.val = v;
+	c.reg.fields.e = 1;  // For now the e bit is not really supported so hardwired to true
+	// Read-only feature bits to allow for software to detect CHERI semantics.
+	c.reg.fields.nr = !(have_cheri_relocation());
+	c.reg.fields.tc = 1;
+	return c;
+}
 
 struct csr_table {
 	csr_64 cycle;
@@ -641,15 +741,16 @@ struct csr_table {
 	csr_64 medeleg;
 	csr_64 mideleg;
 	csr_mie mie;
-	csr_mtvec mtvec;
+	csr_mtvec_capability mtcc;
 	csr_mcounteren mcounteren;
 	csr_mcountinhibit mcountinhibit;
 
-	csr_64 mscratch;
-	csr_mepc mepc;
+	csr_capability mscratchc;
+	csr_eepc_capability mepcc;
 	csr_mcause mcause;
 	csr_64 mtval;
 	csr_mip mip;
+	Capability mtdc;
 
 	// pmp configuration
 	std::array<csr_pmpaddr, 16> pmpaddr;
@@ -659,18 +760,20 @@ struct csr_table {
 	// some are required but have the same fields, hence the machine mode classes are used)
 	csr_64 sedeleg;
 	csr_64 sideleg;
-	csr_mtvec stvec;
+	csr_mtvec_capability stcc;
 	csr_mcounteren scounteren;
-	csr_64 sscratch;
-	csr_mepc sepc;
+	csr_capability sscratchc;
+	csr_eepc_capability sepcc;
 	csr_mcause scause;
 	csr_64 stval;
 	csr_satp satp;
+	Capability stdc;
 
 	// user csrs (see above comment)
-	csr_mtvec utvec;
-	csr_64 uscratch;
-	csr_mepc uepc;
+	csr_mtvec_capability utcc;
+	Capability utdc;
+	csr_capability uscratchc;
+	csr_eepc_capability uepcc;
 	csr_mcause ucause;
 	csr_64 utval;
 
@@ -684,9 +787,35 @@ struct csr_table {
 	csr_vl vl;
 	csr_vl vlenb;
 
+	// CHERI CSRs
+	csr_ccsr uccsr;
+	csr_ccsr sccsr;
+	csr_ccsr mccsr;
+
+	// CSRs replaced by cheri with capabilities, which are now only used to access address of capability
+	// This ensures that existing code does not need to be changed
+	csr_mtvec &utvec;
+	csr_64 &uscratch;
+	csr_mepc &uepc;
+	csr_mtvec &stvec;
+	csr_mepc &sepc;
+	csr_64 &sscratch;
+	csr_mtvec &mtvec;
+	csr_64 &mscratch;
+	csr_mepc &mepc;
+
 	std::unordered_map<unsigned, uint64_t *> register_mapping;
 
-	csr_table() {
+	csr_table()
+	    : utvec(utcc),
+	      uscratch(uscratchc),
+	      uepc(uepcc),
+	      stvec(stcc),
+	      sepc(sepcc),
+	      sscratch(sscratchc),
+	      mtvec(mtcc),
+	      mscratch(mscratchc),
+	      mepc(mepcc) {
 		using namespace csr;
 
 		register_mapping[CYCLE_ADDR] = &cycle.reg.val;
@@ -745,6 +874,12 @@ struct csr_table {
 		register_mapping[VL_ADDR] = &vl.reg.val;
 		register_mapping[VTYPE_ADDR] = &vtype.reg.val;
 		register_mapping[VLENB_ADDR] = &vlenb.reg.val;
+
+		register_mapping[UCCSR_ADDR] = &uccsr.reg.val;
+		register_mapping[SCCSR_ADDR] = &sccsr.reg.val;
+		register_mapping[MCCSR_ADDR] = &mccsr.reg.val;
+
+		reset();
 	}
 
 	bool is_valid_csr64_addr(unsigned addr) {
@@ -761,6 +896,128 @@ struct csr_table {
 		auto it = register_mapping.find(addr);
 		ensure((it != register_mapping.end()) && "validate address before calling this function");
 		return *it->second;
+	}
+
+	void reset() {
+		// Set all registers to 0, except for hartid
+		// Reset all CSRs to zero
+		cycle.reg.val = 0;
+		time.reg.val = 0;
+		instret.reg.val = 0;
+
+		mvendorid.reg.val = 0;
+		marchid.reg.val = 0;
+		mimpid.reg.val = 0;
+		// Do NOT reset mhartid
+		// mhartid = 0;
+
+		mstatus = {};
+		// Do NOT reset misa
+		// misa = {};
+		medeleg.reg.val = 0;
+		mideleg.reg.val = 0;
+		mie = {};
+		// mtvec = {};
+		mcounteren.reg.val = 0;
+		mcountinhibit.reg.val = 0;
+
+		// mscratch.reg.val = 0;
+		// mepc = {};
+		mcause = {};
+		mtval.reg.val = 0;
+		mip = {};
+
+		// Reset pmp configuration
+		for (auto &pmp : pmpaddr) {
+			pmp = {};
+		}
+		for (auto &cfg : pmpcfg) {
+			cfg = {};
+		}
+
+		// Reset supervisor CSRs
+		sedeleg.reg.val = 0;
+		sideleg.reg.val = 0;
+		// stvec = {};
+		scounteren.reg.val = 0;
+		// sscratch.reg.val = 0;
+		// sepc = {};
+		scause = {};
+		stval.reg.val = 0;
+		satp = {};
+
+		// Reset user CSRs
+		// utvec = {};
+		// uscratch.reg.val = 0;
+		// uepc = {};
+		ucause = {};
+		utval.reg.val = 0;
+
+		// Reset floating-point CSRs
+		fcsr = {};
+
+		// Reset vector CSRs
+		vstart = {};
+		vxsat = {};
+		vxrm = {};
+		vcsr = {};
+		vtype = {};
+		vl = {};
+		vlenb = {};
+
+		// Reset cheri CSRs
+		mccsr = legalizeCCSR(mccsr, 0);
+		sccsr = legalizeCCSR(sccsr, 0);
+		uccsr = legalizeCCSR(uccsr, 0);
+
+		utcc = cDefaultCap;
+		utdc = cNullCap;
+		uscratchc = cNullCap;
+		uepcc = cDefaultCap;
+
+		stcc = cDefaultCap;
+		stdc = cNullCap;
+		sscratchc = cNullCap;
+		sepcc = cDefaultCap;
+
+		mtcc = cDefaultCap;
+		mtdc = cNullCap;
+		mscratchc = cNullCap;
+		mepcc = cDefaultCap;
+	}
+	const char *scr_name_map(uint32_t scr) {
+		switch (scr) {
+			case 0b00000:
+				return "pcc";
+			case 0b00001:
+				return "ddc";
+			case 0b00100:
+				return "utcc";
+			case 0b00101:
+				return "utdc";
+			case 0b00110:
+				return "uscratchc";
+			case 0b00111:
+				return "uepcc";
+			case 0b01100:
+				return "stcc";
+			case 0b01101:
+				return "stdc";
+			case 0b01110:
+				return "sscratchc";
+			case 0b01111:
+				return "sepcc";
+			case 0b11100:
+				return "mtcc";
+			case 0b11101:
+				return "mtdc";
+			case 0b11110:
+				return "mscratchc";
+			case 0b11111:
+				return "mepcc";
+			default:
+				return "unknown";
+		}
 	}
 };
 
@@ -853,4 +1110,4 @@ struct csr_table {
 	case MHPMEVENT30_ADDR:                    \
 	case MHPMEVENT31_ADDR
 
-}  // namespace rv64
+} /* namespace cheriv9::rv64 */

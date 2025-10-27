@@ -1,3 +1,5 @@
 subdirs(common)
 subdirs(rv32)
 subdirs(rv64)
+subdirs(common_cheriv9)
+subdirs(rv64_cheriv9)

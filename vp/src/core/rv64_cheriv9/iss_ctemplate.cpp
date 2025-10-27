@@ -16,7 +16,7 @@
 
 #include "util/propertymap.h"
 
-namespace rv64 {
+namespace cheriv9::rv64 {
 
 #define VExt VExtension<ISS_CT>
 
@@ -26,7 +26,7 @@ namespace rv64 {
 typedef __int128_t int128_t;
 typedef __uint128_t uint128_t;
 
-#define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data());
+#define RAISE_ILLEGAL_INSTRUCTION() raise_trap(EXC_ILLEGAL_INSTR, instr.data(), &rvfi_dii_output);
 
 #define RD instr.rd()
 #define RS1 instr.rs1()
@@ -35,6 +35,7 @@ typedef __uint128_t uint128_t;
 
 ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
     : isa_config(isa_config), stats(hart_id), v_ext(*this), systemc_name("Core-" + std::to_string(hart_id)) {
+	ISS_CT::init_cheri_regs();
 	csrs.mhartid.reg.val = hart_id;
 	csrs.misa.reg.fields.extensions = isa_config->get_misa_extensions();
 
@@ -91,10 +92,22 @@ void ISS_CT::print_trace() {
 	 */
 	Operation::OpId opId = instr.decode_normal(ARCH, *isa_config);
 
-	printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg.val, prv, dbbcache.get_last_pc_before_callback(),
-	       mem_word, Operation::opIdStr.at(opId));
+	printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg.val, prv,
+	       dbbcache.get_last_pc_before_callback()->fields.address, mem_word, Operation::opIdStr.at(opId));
 	switch (Operation::getType(opId)) {
 		case Operation::Type::R:
+			if (opId == Operation::OpId::C_SPECIAL_R_W) {
+				printf(COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
+				       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]));
+				printf(", %s(0x%x)", csrs.scr_name_map(instr.rs2()), instr.rs2());
+				break;
+			}
+			// TODO Special cases for most Capability instructions...
+			if (opId == Operation::OpId::C_MOVE) {
+				printf(COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
+				       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]));
+				break;
+			}
 			printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT,
 			       COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]),
@@ -107,6 +120,12 @@ void ISS_CT::print_trace() {
 			       COLORPRINT(regcolors[instr.rs2()], RegFile::regnames[instr.rs2()]),
 			       COLORPRINT(regcolors[instr.rs3()], RegFile::regnames[instr.rs3()]));
 			break;
+		case Operation::Type::R_Q_M: {
+			uint8_t q = (instr.rs1() & 0b11000) >> 3;                 // TODO: Check mask, make constant
+			uint8_t m = ((instr.rs1() & 0b00111) << 5) | instr.rd();  // TODO: Check mask, make constant
+			printf("q: %u, m: %u", q, m);
+			break;
+		}
 		case Operation::Type::I:
 			printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], RegFile::regnames[instr.rd()]),
 			       COLORPRINT(regcolors[instr.rs1()], RegFile::regnames[instr.rs1()]), instr.I_imm());
@@ -131,7 +150,7 @@ void ISS_CT::print_trace() {
 	}
 	puts("");
 }
-}  // namespace rv64
+} /* namespace cheriv9::rv64 */
 
 /*
  * label generation
@@ -161,7 +180,7 @@ extern void *const OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_START;
 extern const struct op_label_entry OP_LABEL_ENTIRES_SEC_START;
 extern const struct op_label_entry OP_LABEL_ENTIRES_SEC_STOP;
 
-namespace rv64 {
+namespace cheriv9::rv64 {
 void *ISS_CT::genOpMap() {
 	bool error = false;
 	struct op_label_entry *entry = (struct op_label_entry *)&OP_LABEL_ENTIRES_SEC_START;
@@ -202,16 +221,32 @@ void *ISS_CT::genOpMap() {
 	return OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_START;
 }
 
-#define OP_SLOW_FDD()                                                       \
-	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction"); \
-	stats.inc_cnt();                                                        \
-	stats.inc_slow_fdd();                                                   \
-	void *opLabelPtr = dbbcache.fetch_decode(pc, instr);                    \
-	if (trace) {                                                            \
-		print_trace();                                                      \
-		/* always stay in slow path if trace enabled */                     \
-		force_slow_path();                                                  \
-	}                                                                       \
+#define OP_SLOW_FDD()                                                                                           \
+	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");                                     \
+	stats.inc_cnt();                                                                                            \
+	stats.inc_slow_fdd();                                                                                       \
+	void *opLabelPtr;                                                                                           \
+	uint8_t decoded_instr_length;                                                                               \
+	if (unlikely(rvfi_dii)) {                                                                                   \
+		opLabelPtr = dbbcache.fetch_rvfi_decode(pc, instr, rvfi_dii_input.rvfi_dii_insn, decoded_instr_length); \
+	} else {                                                                                                    \
+		opLabelPtr = dbbcache.fetch_decode(pc, instr);                                                          \
+	}                                                                                                           \
+	if (trace) {                                                                                                \
+		print_trace();                                                                                          \
+		/* always stay in slow path if trace enabled */                                                         \
+		force_slow_path();                                                                                      \
+	}                                                                                                           \
+	if (unlikely(rvfi_dii)) {                                                                                   \
+		rvfi_dii_output.rvfi_dii_insn = rvfi_dii_input.rvfi_dii_insn;                                           \
+		rvfi_dii_output.rvfi_dii_pc_wdata = pc;                                                                 \
+		rvfi_dii_output.rvfi_dii_order = csrs.instret.reg.val;                                                  \
+		rvfi_dii_output.rvfi_dii_pc_rdata = pc;                                                                 \
+		rvfi_dii_output.rvfi_dii_rs1_data = regs[instr.rs1()];                                                  \
+		rvfi_dii_output.rvfi_dii_rs2_data = regs[instr.rs2()];                                                  \
+		rvfi_dii_output.rvfi_dii_rs1_addr = instr.rs1();                                                        \
+		rvfi_dii_output.rvfi_dii_rs2_addr = instr.rs2();                                                        \
+	}                                                                                                           \
 	goto *opLabelPtr;
 
 #define OP_MED_FDD()     \
@@ -365,6 +400,57 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 						/* stop after single step */
 						if (debug_single_step && debug_single_step_done) {
+							if (unlikely(rvfi_dii)) {
+								// x0 must be reset here, as it must not change if written to it
+								// This is done later on in run_step, but for reporting via rvfi_dii it must be done
+								// now
+								regs.regs[regs.zero] = cNullCap;
+								// Trace manipulated registers
+								Operation::OpId op = instr.decode_normal(
+								    ARCH, *isa_config);  // TODO This can be optimizes, see print_trace
+								if (op == Operation::OpId::C_CLEAR || op == Operation::OpId::FP_CLEAR) {
+									// Trace is done inside this functions instead
+								} else if (op != Operation::OpId::C_INVOKE) {
+									// C Invoke has its own format, it does not fit in any of the classic opcode
+									// types, it is handled directly in C_INVOKE opcode switch
+									switch (Operation::getType(op)) {
+										case Operation::Type::R:
+											rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+											rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+										case Operation::Type::B:
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+										case Operation::Type::I:
+											if (op == Operation::OpId::ADDI_NOP) {
+												break;
+											}
+											rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+											rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+										case Operation::Type::S:
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+										case Operation::Type::U:
+											rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+											rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+										case Operation::Type::J:
+											rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+											rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+										default:
+											rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+											rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+											rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+											break;
+									}
+								}
+							}
 							break;
 						}
 
@@ -373,6 +459,10 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 							set_status(CoreExecStatus::HitBreakpoint);
 							break;
 						}
+						if (unlikely(rvfi_dii)) {
+							rvfi_dii_output = {};
+						}
+
 						debug_single_step_done = true;
 					}
 
@@ -476,7 +566,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(SLTI) {
-					regs[instr.rd()] = regs[instr.rs1()] < instr.I_imm();
+					regs[instr.rd()] = static_cast<int64_t>(regs[instr.rs1()]) < instr.I_imm();
 				}
 				OP_END();
 
@@ -571,13 +661,30 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(AUIPC) {
-					regs[instr.rd()] = dbbcache.get_last_pc_before_callback() + instr.U_imm();
+					if (pc->fields.flag_cap_mode) {
+						uint64_t off = instr.U_imm();
+						Capability newCap = pc;
+						bool representable = newCap.setCapAddr(dbbcache.get_last_pc_before_callback() + off);
+						newCap.clearTagIf(!representable);
+						regs[instr.rd()] = newCap;
+						OP_END();
+					}
+					// Integer Pointer mode
+					regs[instr.rd()] = dbbcache.get_last_pc_before_callback().pcc + instr.U_imm();
+					regs[instr.rd()].clearMetadata();
 				}
 				OP_END();
 
 				OP_CASE(J) {
+					// TODO: Check if this requires cheri
+
 					stats.inc_j();
-					dbbcache.jump(instr.J_imm());
+					try {
+						dbbcache.jump(instr.J_imm());
+					} catch (SimulationTrap t) {
+						raise_trap(t.reason, instr.rd(), &rvfi_dii_output);
+					}
+
 					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 						ninstr++;
 						goto OP_LABEL(op_global_fdd);
@@ -587,7 +694,11 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(JAL) {
 					stats.inc_jal();
-					regs[instr.rd()] = dbbcache.jump_and_link(instr.J_imm());
+					try {
+						regs[instr.rd()] = dbbcache.jump_and_link(instr.J_imm()).pcc;
+					} catch (SimulationTrap t) {
+						raise_trap(t.reason, instr.rd(), &rvfi_dii_output);
+					}
 					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 						ninstr++;
 						goto OP_LABEL(op_global_fdd);
@@ -597,33 +708,50 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(JR) {
 					stats.inc_jr();
-					uxlen_t pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
+					if (pc->fields.flag_cap_mode) {
+						// TODO, does work as rd = 0, but could also use an optimized version
+						execute_c_jalr(instr.I_imm());
+					} else {
+						uxlen_t new_pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
+						cheriControlCheckAddr(new_pc, pc.pcc, &rvfi_dii_output, min_instruction_bytes());
+						if (unlikely((new_pc & 0x3) && (!csrs.misa.has_C_extension()))) {
+							// NOTE: misaligned instruction address not possible on machines supporting compressed
+							// instructions
+							raise_trap(EXC_INSTR_ADDR_MISALIGNED, new_pc, &rvfi_dii_output);
+						}
+						try {
+							dbbcache.jump_dyn(new_pc);
+						} catch (SimulationTrap t) {
+							raise_trap(t.reason, instr.rd(), &rvfi_dii_output);
+						}
 
-					if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
-						// NOTE: misaligned instruction address not possible on machines supporting compressed
-						// instructions
-						raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
-					}
-
-					dbbcache.jump_dyn(pc);
-					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
-						ninstr++;
-						goto OP_LABEL(op_global_fdd);
+						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
+							ninstr++;
+							goto OP_LABEL(op_global_fdd);
+						}
 					}
 				}
 				OP_END();
 
 				OP_CASE(JALR) {
 					stats.inc_jalr();
-					uxlen_t pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
-
-					if (unlikely((pc & 0x3) && (!csrs.misa.has_C_extension()))) {
-						// NOTE: misaligned instruction address not possible on machines supporting compressed
-						// instructions
-						raise_trap(EXC_INSTR_ADDR_MISALIGNED, pc);
+					if (pc->fields.flag_cap_mode) {
+						execute_c_jalr(instr.I_imm());
+					} else {
+						uxlen_t new_pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
+						cheriControlCheckAddr(new_pc, pc.pcc, &rvfi_dii_output, min_instruction_bytes());
+						if (unlikely((new_pc & 0x3) && (!csrs.misa.has_C_extension()))) {
+							// NOTE: misaligned instruction address not possible on machines supporting compressed
+							// instructions
+							raise_trap(EXC_INSTR_ADDR_MISALIGNED, new_pc, &rvfi_dii_output);
+						}
+						try {
+							regs[instr.rd()] = dbbcache.jump_dyn_and_link(new_pc, false).pcc;
+						} catch (SimulationTrap t) {
+							raise_trap(t.reason, instr.rd(), &rvfi_dii_output);
+						}
 					}
 
-					regs[instr.rd()] = dbbcache.jump_dyn_and_link(pc);
 					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 						ninstr++;
 						goto OP_LABEL(op_global_fdd);
@@ -632,95 +760,109 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(SB) {
-					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
-					lscache.store_byte(addr, regs[instr.rs2()]);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.S_imm(), &auth_val, &vaddr);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 1);
 				}
 				OP_END();
 
 				OP_CASE(SH) {
-					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
-					trap_check_addr_alignment<2, false>(addr);
-					lscache.store_half(addr, regs[instr.rs2()]);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.S_imm(), &auth_val, &vaddr);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 2);
 				}
 				OP_END();
 
 				OP_CASE(SW) {
-					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
-					trap_check_addr_alignment<4, false>(addr);
-					lscache.store_word(addr, regs[instr.rs2()]);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.S_imm(), &auth_val, &vaddr);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 4);
 				}
 				OP_END();
 
 				OP_CASE(SD) {
-					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
-					trap_check_addr_alignment<8, false>(addr);
-					lscache.store_double(addr, regs[instr.rs2()]);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.S_imm(), &auth_val, &vaddr);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 8);
 				}
 				OP_END();
 
 				OP_CASE(LB) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					regs[instr.rd()] = lscache.load_byte(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, false, 1);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(LH) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					trap_check_addr_alignment<2, true>(addr);
-					regs[instr.rd()] = lscache.load_half(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, false, 2);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(LW) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					trap_check_addr_alignment<4, true>(addr);
-					regs[instr.rd()] = lscache.load_word(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, false, 4);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(LD) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					trap_check_addr_alignment<8, true>(addr);
-					regs[instr.rd()] = lscache.load_double(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, false, 8);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(LBU) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					regs[instr.rd()] = lscache.load_ubyte(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, true, 1);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(LHU) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					trap_check_addr_alignment<2, true>(addr);
-					regs[instr.rd()] = lscache.load_uhalf(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, true, 2);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(LWU) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
-					trap_check_addr_alignment<4, true>(addr);
-					regs[instr.rd()] = lscache.load_uword(addr);
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(auth_idx, auth_val, vaddr, true, 4);
 					reset_reg_zero();
 				}
 				OP_END();
 
 				OP_CASE(BEQ) {
-					if (regs[instr.rs1()] == regs[instr.rs2()]) {
+					if (regs[instr.rs1()].fields.address == regs[instr.rs2()].fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -733,7 +875,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BNE) {
-					if (regs[instr.rs1()] != regs[instr.rs2()]) {
+					if (regs[instr.rs1()].fields.address != regs[instr.rs2()].fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -772,7 +914,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BLTU) {
-					if ((uxlen_t)regs[instr.rs1()] < (uxlen_t)regs[instr.rs2()]) {
+					if ((uxlen_t)regs[instr.rs1()].fields.address < (uxlen_t)regs[instr.rs2()].fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -785,7 +927,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BGEU) {
-					if ((uxlen_t)regs[instr.rs1()] >= (uxlen_t)regs[instr.rs2()]) {
+					if ((uxlen_t)regs[instr.rs1()].fields.address >= (uxlen_t)regs[instr.rs2()].fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -861,13 +1003,13 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						uxlen_t last_pc = dbbcache.get_last_pc_before_callback();
 						switch (prv) {
 							case MachineMode:
-								raise_trap(EXC_ECALL_M_MODE, last_pc);
+								raise_trap(EXC_ECALL_M_MODE, last_pc, &rvfi_dii_output);
 								break;
 							case SupervisorMode:
-								raise_trap(EXC_ECALL_S_MODE, last_pc);
+								raise_trap(EXC_ECALL_S_MODE, last_pc, &rvfi_dii_output);
 								break;
 							case UserMode:
-								raise_trap(EXC_ECALL_U_MODE, last_pc);
+								raise_trap(EXC_ECALL_U_MODE, last_pc, &rvfi_dii_output);
 								break;
 							default:
 								throw std::runtime_error("unknown privilege level " + std::to_string(prv));
@@ -877,11 +1019,12 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(EBREAK) {
-					if (debug_mode) {
-						set_status(CoreExecStatus::HitBreakpoint);
+					if (debug_mode && !rvfi_dii) {
+						// set_status(CoreExecStatus::HitBreakpoint);
+						raise_trap(EXC_BREAKPOINT, dbbcache.get_last_pc_before_callback(), &rvfi_dii_output);
 					} else {
 						// TODO: also raise trap if we are in debug mode?
-						raise_trap(EXC_BREAKPOINT, dbbcache.get_last_pc_before_callback());
+						raise_trap(EXC_BREAKPOINT, dbbcache.get_last_pc_before_callback(), &rvfi_dii_output);
 					}
 				}
 				OP_END();
@@ -992,7 +1135,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						if (rd != RegFile::zero)
 							regs[rd] = csr_val;
 						if (write)
-							set_csr_value(addr, csr_val & ~zimm);
+							set_csr_value(addr, csr_val & ~((uint64_t)zimm));
 					}
 				}
 				OP_END();
@@ -1131,12 +1274,14 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				 */
 				OP_CASE(LR_W) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()];
+					uxlen_t addr;
+					Capability auth_val;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 					trap_check_addr_alignment<4, true>(addr);
-					regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(auth_idx, auth_val, addr, 4);
 					if (lr_sc_counter == 0) {
-						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover
-						                     // the RISC-V forward progress property
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
 						force_slow_path();
 					}
 					reset_reg_zero();
@@ -1145,13 +1290,15 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(SC_W) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()];
+					uxlen_t addr;
+					Capability auth_val;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 					trap_check_addr_alignment<4, false>(addr);
-					int32_t val = regs[instr.rs2()];
 					regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
-					regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val)
-					                       ? 0
-					                       : 1;  // overwrite result (in case no trap is thrown)
+					regs[instr.rd()] =
+					    mem->atomic_store_conditional_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, addr, 4)
+					        ? 0
+					        : 1;  // overwrite result (in case no trap is thrown)
 					lr_sc_counter = 0;
 					reset_reg_zero();
 				}
@@ -1207,12 +1354,14 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(LR_D) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()];
+					uxlen_t addr;
+					Capability auth_val;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 					trap_check_addr_alignment<8, true>(addr);
-					regs[instr.rd()] = mem->atomic_load_reserved_double(addr);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(auth_idx, auth_val, addr, 8);
 					if (lr_sc_counter == 0) {
-						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover
-						                     // the RISC-V forward progress property
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
 						force_slow_path();
 					}
 					reset_reg_zero();
@@ -1221,13 +1370,15 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(SC_D) {
 					stats.inc_loadstore();
-					uxlen_t addr = regs[instr.rs1()];
+					Capability auth_val;
+					uxlen_t addr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 					trap_check_addr_alignment<8, false>(addr);
-					uint64_t val = regs[instr.rs2()];
 					regs[instr.rd()] = 1;  // failure by default (in case a trap is thrown)
-					regs[instr.rd()] = mem->atomic_store_conditional_double(addr, val)
-					                       ? 0
-					                       : 1;  // overwrite result (in case no trap is thrown)
+					regs[instr.rd()] =
+					    mem->atomic_store_conditional_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, addr, 8)
+					        ? 0
+					        : 1;  // overwrite result (in case no trap is thrown)
 					lr_sc_counter = 0;
 					reset_reg_zero();
 				}
@@ -6873,30 +7024,1294 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(URET) {
 					if (!csrs.misa.has_user_mode_extension())
 						RAISE_ILLEGAL_INSTRUCTION();
+					if (!csrs.misa.has_N_extension())
+						RAISE_ILLEGAL_INSTRUCTION();
+					if (!pc->fields.access_system_regs)
+						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 					return_from_trap_handler(UserMode);
 					stats.inc_uret();
 				}
 				OP_END();
 
 				OP_CASE(SRET) {
+					if (u_mode())
+						RAISE_ILLEGAL_INSTRUCTION();  // sret is always invalid in User mode
 					if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.reg.fields.tsr))
 						RAISE_ILLEGAL_INSTRUCTION();
+					if (!pc->fields.access_system_regs)
+						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 					return_from_trap_handler(SupervisorMode);
 					stats.inc_sret();
 				}
 				OP_END();
 
 				OP_CASE(MRET) {
+					if (!m_mode())
+						RAISE_ILLEGAL_INSTRUCTION();  // mret only valid in machine mode
+					if (!pc->fields.access_system_regs)
+						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 					return_from_trap_handler(MachineMode);
 					stats.inc_mret();
 				}
 				OP_END();
+				OP_CASE(C_GET_PERM) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint32_t perms = cs1_val.getCapPerms();
+					regs[instr.rd()] = perms;
+				}
+				OP_END();
+				OP_CASE(C_GET_TYPE) {
+					Capability cs1_val = regs[instr.rs1()];
+					if (cs1_val.hasReservedOType()) {
+						// Sign extension of an otype field (18 bits wide)
+						if (cs1_val.fields.otype & (1 << (cCapOTypeWidth - 1))) {
+							regs[instr.rd()] =
+							    static_cast<int64_t>(cs1_val.fields.otype | ~((1 << cCapOTypeWidth) - 1));
+						} else {
+							regs[instr.rd()] = static_cast<int64_t>(cs1_val.fields.otype & ((1 << cCapOTypeWidth) - 1));
+						}
+					} else {
+						regs[instr.rd()] = static_cast<uint64_t>(cs1_val.fields.otype);
+					}
+				}
+				OP_END();
+				OP_CASE(C_GET_BASE) {
+					{
+						Capability cs1_val = regs[instr.rs1()];
+						regs[instr.rd()] = cs1_val.getBase();
+					}
+				}
+				OP_END();
+				OP_CASE(C_GET_LEN) {
+					Capability cs1_val = regs[instr.rs1()];
+					CapLen_t len = cs1_val.getLength();
+					if (len > cCapMaxAddr) {
+						len = cCapMaxAddr;
+					}
+					regs[instr.rd()] = len;
+				}
+				OP_END();
+				OP_CASE(C_GET_TAG) {
+					Capability cs1_val = regs[instr.rs1()];
+					regs[instr.rd()] = cs1_val.fields.tag;
+				}
+				OP_END();
+				OP_CASE(C_GET_SEALED) {
+					Capability cs1_val = regs[instr.rs1()];
+					regs[instr.rd()] = cs1_val.isSealed();
+				}
+				OP_END();
+				OP_CASE(C_GET_OFFSET) {
+					Capability cs1_val = regs[instr.rs1()];
+					regs[instr.rd()] = cs1_val.getOffset();
+				}
+				OP_END();
+				OP_CASE(C_GET_FLAGS) {
+					Capability cs1_val = regs[instr.rs1()];
+					regs[instr.rd()] = cs1_val.getFlags();
+				}
+				OP_END();
+				OP_CASE(C_GET_HIGH) {
+					Capability cs1_val = regs[instr.rs1()];
+					regs[instr.rd()] = cs1_val.toUint128() >> xlen;
+				}
+				OP_END();
+				OP_CASE(C_GET_TOP) {
+					Capability cs1_val = regs[instr.rs1()];
+					CapLen_t top = cs1_val.getTop();
+					if (top > cCapMaxAddr) {
+						top = cCapMaxAddr;
+					}
+					regs[instr.rd()] = top;
+				}
+				OP_END();
+				OP_CASE(C_SEAL) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+					uint64_t cs2_cursor = cs2_val.fields.address;
+					CapAddr_t cs2_base;
+					CapLen_t cs2_top;
+					cs2_val.getCapBounds(&cs2_base, &cs2_top);
+					bool permitted = cs2_val.fields.tag & !cs2_val.isSealed() & cs2_val.fields.permit_seal &
+					                 (cs2_cursor >= cs2_base) & (cs2_top > cs2_cursor) & (cs2_cursor <= cCapMaxOType);
+					cs1_val.clearTagIfSealed();
+					cs1_val.seal(cs2_cursor);
+					cs1_val.clearTagIf(!permitted);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_UNSEAL) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+					uint64_t cs2_cursor = cs2_val.fields.address;
+					CapAddr_t cs2_base;
+					CapLen_t cs2_top;
+					cs2_val.getCapBounds(&cs2_base, &cs2_top);
+					bool permitted = cs2_val.fields.tag & cs1_val.isSealed() & !cs2_val.isSealed() &
+					                 !cs1_val.hasReservedOType() &
+					                 (cs2_cursor == static_cast<uint64_t>(cs1_val.fields.otype)) &
+					                 cs2_val.fields.permit_unseal & (cs2_cursor >= cs2_base) & (cs2_top >= cs2_cursor);
+					bool new_global = cs1_val.fields.global & cs2_val.fields.global;
+					cs1_val.unseal();
+					cs1_val.fields.global = new_global;
+					cs1_val.clearTagIf(!permitted);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_AND_PERM) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					uint32_t perms = cs1_val.getCapPerms();
+					uint32_t mask = rs2_val & ((1 << cCapPermsWidth) - 1);
+					cs1_val.clearTagIfSealed();
+					cs1_val.setCapPerms(perms & mask);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_FLAGS) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					cs1_val.clearTagIfSealed();
+					cs1_val.setFlags(rs2_val & ((1 << cCapFlagsWidth) - 1));
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_OFFSET) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					cs1_val.clearTagIfSealed();
+					bool success = cs1_val.setCapOffset(rs2_val);
+					cs1_val.clearTagIf(!success);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_ADDR) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					cs1_val.clearTagIfSealed();
+					bool representable = cs1_val.setCapAddr(rs2_val);
+					cs1_val.clearTagIf(!representable);
+					regs[instr.rd()] = cs1_val;
+					reset_reg_zero();
+				}
+				OP_END();
+				// TODO: C_SUB was removed in latest version of the riscv-cheri spec
+				// But it is still used by TestRIG and is implemented in sail-riscv-cheri
+				// Therefore it was required to be implemented here
+				OP_CASE(C_SUB) {
+					regs[instr.rd()] = regs[instr.rs1()].fields.address - regs[instr.rs2()].fields.address;
+				}
+				OP_END();
+				OP_CASE(C_INC_OFFSET) {
+					Capability cs1_val = regs[instr.rs1()];
+					cs1_val.clearTagIfSealed();
+					bool success = cs1_val.incCapOffset(regs[instr.rs2()]);
+					cs1_val.clearTagIf(!success);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_INC_OFFSET_IMM) {
+					Capability cs1_val = regs[instr.rs1()];
+					cs1_val.clearTagIfSealed();
+					bool success = cs1_val.incCapOffset(instr.I_imm());
+					cs1_val.clearTagIf(!success);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_BOUNDS) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					uint64_t newBase = cs1_val.fields.address;
+					CapLen_t newTop = (CapLen_t)newBase + (CapLen_t)(rs2_val);
+					bool inBounds = cs1_val.inCapBounds(newBase, rs2_val);
+					cs1_val.clearTagIfSealed();
+					cs1_val.setCapBounds(newBase, newTop);
+					cs1_val.clearTagIf(!inBounds);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_BOUNDS_EXACT) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					uint64_t newBase = cs1_val;
+					CapLen_t newTop = (CapLen_t)newBase + (CapLen_t)rs2_val;
+					bool inBounds = cs1_val.inCapBounds(newBase, rs2_val);
+					cs1_val.clearTagIfSealed();
+					bool exact = cs1_val.setCapBounds(newBase, newTop);
+					cs1_val.clearTagIf(!(inBounds && exact));
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_BOUNDS_IMM) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t newBase = cs1_val;
+					uint64_t immVal = BIT_SLICE(instr.data(), 31, 20);  // instr.I_imm() but interpreted as unsigned
+					CapLen_t newTop = (CapLen_t)newBase + (CapLen_t)immVal;
+					bool inBounds = cs1_val.inCapBounds(newBase, immVal);
+					cs1_val.clearTagIfSealed();
+					cs1_val.setCapBounds(newBase, newTop);
+					cs1_val.clearTagIf(!inBounds);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_SET_HIGH) {
+					Capability cs1_val = regs[instr.rs1()];
+					CapAddr_t intVal = regs[instr.rs2()].fields.address;
+					__uint128_t cs1_int = cs1_val.toUint128();
+					uint64_t cs1_low = static_cast<uint64_t>(cs1_int);
+					__uint128_t newCapInt = ((__uint128_t)intVal << xlen) | cs1_low;
+					Capability newCap = Capability(newCapInt, false);
+					regs[instr.rd()] = newCap;
+				}
+				OP_END();
+				OP_CASE(C_CLEAR_TAG) {
+					Capability cs1_val = regs[instr.rs1()];
+					cs1_val.clearTag();
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_BUILD_CAP) {
+					Capability cs1_val;
+					if (instr.rs1() == 0) {
+						cs1_val = ddc;
+					} else {
+						cs1_val = regs[instr.rs1()];
+					}
+					Capability cs2_val = regs[instr.rs2()];
+					Capability authorityCap = cs1_val;
+					Capability requestedCap = cs2_val;
+					requestedCap.fields.tag = true;  // TODO: Should it be possible to set the tag like this?
+					bool requestedSentry = requestedCap.fields.otype == cOtypeSentryUnsigned;
+					if (!requestedSentry)
+						requestedCap.unseal();
+
+					CapAddr_t authorityBase;
+					CapLen_t authorityTop;
+					authorityCap.getCapBounds(&authorityBase, &authorityTop);
+					CapAddr_t requestedBase;
+					CapLen_t requestedTop;
+					requestedCap.getCapBounds(&requestedBase, &requestedTop);
+
+					uint32_t authorityPerms = authorityCap.getCapPerms();
+					uint32_t requestedPerms = requestedCap.getCapPerms();
+					uint8_t requestedFlags = requestedCap.getFlags();
+
+					// TODO Cleanup the mess below
+					bool subset = (requestedBase >= authorityBase) & (requestedTop <= authorityTop) &
+					              (requestedTop >= requestedBase) &
+					              ((requestedPerms & authorityPerms) == requestedPerms);
+					authorityCap.clearTagIfSealed();
+					bool exact = authorityCap.setCapBounds(requestedBase, requestedTop);
+					authorityCap.setCapOffset(requestedCap.getOffset());
+					authorityCap.setCapPerms(requestedPerms);
+					authorityCap.setFlags(requestedFlags);
+					if (requestedSentry)
+						authorityCap.seal(cOtypeSentryUnsigned);
+					bool derivable = authorityCap == requestedCap;
+					assert(!derivable ||
+					       exact);  // If requestedCap was a derivable encoding then setBounds should be exact
+					Capability cd6;
+					if (subset && derivable) {
+						cd6 = authorityCap;
+					} else {
+						cd6 = requestedCap;
+						cd6.clearTag();
+					}
+					regs[instr.rd()] = cd6;
+				}
+				OP_END();
+				OP_CASE(C_COPY_TYPE) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+					bool reserved = cs2_val.hasReservedOType();
+					uint64_t otype;
+					if (cs2_val.hasReservedOType()) {
+						// Sign extension of an otype field (18 bits wide)
+						if (cs2_val.fields.otype & (1 << (cCapOTypeWidth - 1))) {
+							otype = static_cast<int64_t>(cs2_val.fields.otype | ~((1 << cCapOTypeWidth) - 1));
+						} else {
+							otype = static_cast<int64_t>(cs2_val.fields.otype & ((1 << cCapOTypeWidth) - 1));
+						}
+					} else {
+						otype = static_cast<uint64_t>(cs2_val.fields.otype);
+					}
+					cs1_val.clearTagIfSealed();
+					bool representable = cs1_val.setCapAddr(otype);
+					cs1_val.clearTagIf(reserved || !representable);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_C_SEAL) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+					uint64_t cs2_cursor = cs2_val.fields.address;
+					CapAddr_t cs2_base;
+					CapLen_t cs2_top;
+					cs2_val.getCapBounds(&cs2_base, &cs2_top);
+					bool passthrough =
+					    !cs2_val.fields.tag || cs1_val.isSealed() || (cs2_cursor < cs2_base) ||
+					    (cs2_top <= cs2_cursor) ||
+					    (static_cast<int64_t>(cs2_val.fields.address) == static_cast<int64_t>(cOtypeUnsealed));
+					if (passthrough) {
+						regs[instr.rd()] = cs1_val;
+					} else {
+						bool permitted =
+						    !cs2_val.isSealed() && cs2_val.fields.permit_seal && (cs2_cursor <= cCapMaxOType);
+						cs1_val.seal(cs2_cursor);
+						cs1_val.clearTagIf(!permitted);
+						regs[instr.rd()] = cs1_val;
+					}
+				}
+				OP_END();
+				OP_CASE(C_SEAL_ENTRY) {
+					Capability cs1_val = regs[instr.rs1()];
+					cs1_val.clearTagIfSealed();
+					cs1_val.seal(cOtypeSentryUnsigned);
+					regs[instr.rd()] = cs1_val;
+				}
+				OP_END();
+				OP_CASE(C_TO_PTR) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = (instr.rs2() == 0) ? ddc : regs[instr.rs2()];
+
+					if (!cs1_val.fields.tag) {
+						regs[instr.rd()] = 0;
+					} else {
+						regs[instr.rd()] = cs1_val.fields.address - cs2_val.getBase();
+					}
+				}
+				OP_END();
+				OP_CASE(C_FROM_PTR) {
+					Capability cs1_val = (instr.rs1() == 0) ? ddc : regs[instr.rs1()];
+					uint64_t rs2_val = regs[instr.rs2()];
+					if (rs2_val == 0) {
+						regs[instr.rd()] = cNullCap;
+					} else {
+						cs1_val.clearTagIfSealed();
+						bool success = cs1_val.setCapOffset(rs2_val);
+						cs1_val.clearTagIf(!success);
+						regs[instr.rd()] = cs1_val;
+					}
+				}
+				OP_END();
+				OP_CASE(C_MOVE) {
+					// Capability register cd is replaced with the contents of cs1
+					regs[instr.rd()] = regs[instr.rs1()];
+				}
+				OP_END();
+				OP_CASE(C_TEST_SUBSET) {
+					Capability cs1_val = (instr.rs1() == 0) ? ddc : regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+
+					CapAddr_t cs2_base;
+					CapLen_t cs2_top;
+					cs2_val.getCapBounds(&cs2_base, &cs2_top);
+
+					CapAddr_t cs1_base;
+					CapLen_t cs1_top;
+					cs1_val.getCapBounds(&cs1_base, &cs1_top);
+					uint32_t cs2_perms = cs2_val.getCapPerms();
+					uint32_t cs1_perms = cs1_val.getCapPerms();
+
+					bool result = true;
+					if (cs1_val.fields.tag != cs2_val.fields.tag)
+						result = false;
+					else if (cs2_base < cs1_base)
+						result = false;
+					else if (cs2_top > cs1_top)
+						result = false;
+					else if ((cs2_perms & cs1_perms) != cs2_perms)
+						result = false;
+
+					// bool result = (cs1_val.fields.tag == cs2_val.fields.tag) && (cs2_base >= cs1_base) &&
+					// (cs2_top <= cs1_top) && ((cs2_perms & cs1_perms) == cs2_perms);
+					regs[instr.rd()] = result;
+				}
+				OP_END();
+				OP_CASE(C_SET_EQUAL_EXACT) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+					regs[instr.rd()] = cs1_val == cs2_val;
+				}
+				OP_END();
+				OP_CASE(JALR_CAP) {
+					execute_c_jalr(0);
+				}
+				OP_END();
+				OP_CASE(JALR_PCC) {
+					assert(0);  // TODO Implement this
+				}
+				OP_END();
+				OP_CASE(C_INVOKE) {
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cs2_val = regs[instr.rs2()];
+					uint64_t newPC = cs1_val.fields.address & ~1;
+					CapAddr_t newPCCBase = cs1_val.getBase();
+
+					if (!cs1_val.fields.tag) {
+						handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (!cs2_val.fields.tag) {
+						handle_cheri_reg_exception(CapEx_TagViolation, instr.rs2(), &rvfi_dii_output);
+					} else if (cs1_val.hasReservedOType()) {
+						handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (cs2_val.hasReservedOType()) {
+						handle_cheri_reg_exception(CapEx_SealViolation, instr.rs2(), &rvfi_dii_output);
+					} else if (cs1_val.fields.otype != cs2_val.fields.otype) {
+						handle_cheri_reg_exception(CapEx_TypeViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (!cs1_val.fields.permit_cinvoke) {
+						handle_cheri_reg_exception(CapEx_PermitCInvokeViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (!cs2_val.fields.permit_cinvoke) {
+						handle_cheri_reg_exception(CapEx_PermitCInvokeViolation, instr.rs2(), &rvfi_dii_output);
+					} else if (!cs1_val.fields.permit_execute) {
+						handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (cs2_val.fields.permit_execute) {
+						handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs2(), &rvfi_dii_output);
+					} else if ((have_pcc_relocation() && (newPCCBase & 1)) ||
+					           (newPCCBase & 2 && !csrs.misa.has_C_extension())) {
+						handle_cheri_reg_exception(CapEx_UnalignedBase, instr.rs1(), &rvfi_dii_output);
+					} else if (newPC & 1 && !csrs.misa.has_C_extension()) {
+						handle_mem_exception(newPC, E_FetchAddrAlign, &rvfi_dii_output);
+					} else if (!cs1_val.inCapBounds(newPC, min_instruction_bytes())) {
+						handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);
+					} else {
+						regs[31] = cs2_val;
+						regs[31].unseal();
+						pc = cs1_val;
+						pc->unseal();
+						pc = newPC;  // Only sets address
+						dbbcache.set_pc(pc);
+						if (unlikely(rvfi_dii)) {
+							rvfi_dii_output.rvfi_dii_rd_addr = 31;
+							rvfi_dii_output.rvfi_dii_rd_wdata = regs[31];
+							rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+						}
+					}
+				}
+				OP_END();
+				// TODO: This was removed in latest riscv-cheri spec
+				// But it is still used by TestRIG and is implemented in sail-riscv-cheri
+				// Therefore it was required to be implemented here
+				OP_CASE(C_GET_ADDR) {
+					Capability cs1_val = regs[instr.rs1()];
+					regs[instr.rd()] = cs1_val.fields.address;
+				}
+				OP_END();
+				OP_CASE(C_SPECIAL_R_W) {
+					bool specialExists = false;
+					bool ro = true;
+					PrivilegeLevel priv = MachineMode;
+					bool needASR = true;
+					switch (instr.rs2()) {
+						case 0:
+							specialExists = true;
+							ro = true;
+							priv = UserMode;
+							needASR = false;
+							break;
+						case 1:
+							specialExists = true;
+							ro = false;
+							priv = UserMode;
+							needASR = false;
+							break;
+						case 4:
+							if (csrs.misa.has_N_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = UserMode;
+								needASR = true;
+							}
+							break;
+						case 5:
+							if (csrs.misa.has_N_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = UserMode;
+								needASR = true;
+							}
+							break;
+						case 6:
+							if (csrs.misa.has_N_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = UserMode;
+								needASR = true;
+							}
+							break;
+						case 7:
+							if (csrs.misa.has_N_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = UserMode;
+								needASR = true;
+							}
+							break;
+						case 12:
+							if (csrs.misa.has_supervisor_mode_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = SupervisorMode;
+								needASR = true;
+							}
+							break;
+						case 13:
+							if (csrs.misa.has_supervisor_mode_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = SupervisorMode;
+								needASR = true;
+							}
+							break;
+						case 14:
+							if (csrs.misa.has_supervisor_mode_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = SupervisorMode;
+								needASR = true;
+							}
+							break;
+						case 15:
+							if (csrs.misa.has_supervisor_mode_extension()) {
+								specialExists = true;
+								ro = false;
+								priv = SupervisorMode;
+								needASR = true;
+							}
+							break;
+						case 28:
+							specialExists = true;
+							ro = false;
+							priv = MachineMode;
+							needASR = true;
+							break;
+						case 29:
+							specialExists = true;
+							ro = false;
+							priv = MachineMode;
+							needASR = true;
+							break;
+						case 30:
+							specialExists = true;
+							ro = false;
+							priv = MachineMode;
+							needASR = true;
+							break;
+						case 31:
+							specialExists = true;
+							ro = false;
+							priv = MachineMode;
+							needASR = true;
+							break;
+						default:
+							break;
+					}
+					if (!specialExists || (ro && instr.rs1() != 0) || (prv < priv)) {
+						RAISE_ILLEGAL_INSTRUCTION();
+					}
+					if (needASR && !pc->fields.access_system_regs) {
+						uint64_t regnum = instr.rs2() + (1 << 5);
+						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, regnum, &rvfi_dii_output);
+					}
+					Capability cs1_val = regs[instr.rs1()];
+					Capability cd;
+					switch (instr.rs2()) {
+						case 0: {
+							Capability result = pc;
+							bool success = result.setCapAddr(dbbcache.get_last_pc_before_callback());
+							assert(success);  // PCC with offset PC should always be representable
+							cd = result;
+						} break;
+						case 1:
+							cd = ddc;
+							break;
+						case 4:
+							cd = csrs.utcc;
+							break;
+						case 5:
+							cd = csrs.utdc;
+							break;
+						case 6:
+							cd = csrs.uscratchc;
+							break;
+						case 7:
+							cd = legalizeEpcc(csrs.uepcc);
+							break;
+						case 12:
+							cd = csrs.stcc;
+							break;
+						case 13:
+							cd = csrs.stdc;
+							break;
+						case 14:
+							cd = csrs.sscratchc;
+							break;
+						case 15:
+							cd = legalizeEpcc(csrs.sepcc);
+							break;
+						case 28:
+							cd = csrs.mtcc;
+							break;
+						case 29:
+							cd = csrs.mtdc;
+							break;
+						case 30:
+							cd = csrs.mscratchc;
+							break;
+						case 31:
+							cd = legalizeEpcc(csrs.mepcc);
+							break;
+						default:
+							assert(false);  // unreachable, undefined behavior...
+							break;
+					}
+					if (instr.rs1() != 0) {
+						switch (instr.rs2()) {
+							case 1:
+								ddc = cs1_val;
+								break;
+							case 4:
+								csrs.utcc = legalizeTcc(csrs.utcc, cs1_val);
+								break;
+							case 5:
+								csrs.utdc = cs1_val;
+								break;
+							case 6:
+								csrs.uscratchc = cs1_val;
+								break;
+							case 7:
+								csrs.uepcc = cs1_val;
+								break;
+							case 12:
+								csrs.stcc = legalizeTcc(csrs.stcc, cs1_val);
+								break;
+							case 13:
+								csrs.stdc = cs1_val;
+								break;
+							case 14:
+								csrs.sscratchc = cs1_val;
+								break;
+							case 15:
+								csrs.sepcc = cs1_val;
+								break;
+							case 28:
+								csrs.mtcc = legalizeTcc(csrs.mtcc, cs1_val);
+								break;
+							case 29:
+								csrs.mtdc = cs1_val;
+								break;
+							case 30:
+								csrs.mscratchc = cs1_val;
+								break;
+							case 31:
+								csrs.mepcc = cs1_val;
+								break;
+							default:
+								RAISE_ILLEGAL_INSTRUCTION();
+								break;
+						}
+					}
+					regs[instr.rd()] = cd;
+					reset_reg_zero();
+				}
+				OP_END();
+
+				OP_CASE(C_CLEAR) {
+					uint8_t q = (instr.rs1() & 0b11000) >> 3;                 // TODO: Check mask, make constant
+					uint8_t m = ((instr.rs1() & 0b00111) << 5) | instr.rd();  // TODO: Check mask, make constant
+
+					for (int i = 0; i < 8; i++) {
+						if (m & (1 << i)) {
+							if (q == 0 && i == 0) {
+								ddc = cNullCap;
+							} else {
+								regs[8 * q + i] = cNullCap;
+							}
+							if (unlikely(rvfi_dii)) {
+								rvfi_dii_output.rvfi_dii_rd_wdata = 0;
+								rvfi_dii_output.rvfi_dii_rd_addr = 8 * q + i;
+							}
+						}
+					}
+				}
+				OP_END();
+				OP_CASE(FP_CLEAR) {
+					uint8_t q = (instr.rs1() & 0b11000) >> 3;                 // TODO: Check mask, make constant
+					uint8_t m = ((instr.rs1() & 0b00111) << 5) | instr.rd();  // TODO: Check mask, make constant
+
+					if (/*haveFExt()*/ 0)  // TODO: Check if floating point extension is enabled
+					{
+						for (int i = 0; i < 8; i++) {
+							if (m & (1 << i)) {
+								// F(8 * unsigned(q) + i) = zeros();
+								regs[8 * q + i] = 0;  // TODO Find where floating point registers are
+								if (unlikely(rvfi_dii)) {
+									rvfi_dii_output.rvfi_dii_rd_wdata = 0;
+									rvfi_dii_output.rvfi_dii_rd_addr = 8 * q + i;
+								}
+							}
+						}
+					} else  // TODO Inverse check for faster execution
+					{
+						RAISE_ILLEGAL_INSTRUCTION();
+					}
+				}
+				OP_END();
+				OP_CASE(C_ROUND_REPRESENTABLE_LENGTH) {
+					uint64_t len = regs[instr.rs1()];
+					regs[instr.rd()] = getRepresentableLength(len);
+				}
+				OP_END();
+				OP_CASE(C_REPRESENTABLE_ALIGNMENT_MASK)
+
+				{
+					uint64_t len = regs[instr.rs1()];
+					regs[instr.rd()] = getRepresentableAlignmentMask(len);
+				}
+				OP_END();
+				OP_CASE(C_LOAD_TAGS) {
+					Capability cs1_val = regs[instr.rs1()];
+					uint64_t vaddr = cs1_val.fields.address;
+					// bool aq = false;
+					// bool rl = false;
+
+					if (!cs1_val.fields.tag) {
+						handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (cs1_val.isSealed()) {
+						handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (!cs1_val.fields.permit_load) {
+						handle_cheri_reg_exception(CapEx_PermitLoadViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (!cs1_val.fields.permit_load_cap) {
+						handle_cheri_reg_exception(CapEx_PermitLoadCapViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (!cs1_val.inCapBounds(vaddr, cCapsPerCacheLine * cCapSize)) {
+						handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);
+					} else if (vaddr % (cCapsPerCacheLine * cCapSize) != 0) {
+						handle_mem_exception(vaddr, E_LoadAddrAlign, &rvfi_dii_output);
+						assert(false);
+					}
+					regs[instr.rd()] = mem->load_tags(vaddr);
+				}
+
+				OP_END();
+				OP_CASE(C_CLEAR_TAGS)
+				// TODO This function does not have a specification in the CHERI specification
+				// Neither has it a SAIL implementation
+				// It is not clear what this function should do
+
+				assert(0);
+				OP_END();
+
+				OP_CASE(LB_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, false, 1);
+				}
+				OP_END();
+				OP_CASE(LH_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, false, 2);
+				}
+				OP_END();
+				OP_CASE(LW_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, false, 4);
+				}
+				OP_END();
+				OP_CASE(LD_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, false, 8);
+				}
+				OP_END();
+				OP_CASE(LC_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_cap_via_cap(cDdcIdx, ddc, vaddr);
+				}
+				OP_END();
+				OP_CASE(LBU_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, true, 1);
+				}
+				OP_END();
+				OP_CASE(LHU_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, true, 2);
+				}
+				OP_END();
+				OP_CASE(LWU_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->handle_load_data_via_cap(cDdcIdx, ddc, vaddr, true, 4);
+				}
+				OP_END();
+				OP_CASE(LB_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, false, 1);
+				OP_END();
+				OP_CASE(LH_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, false, 2);
+				OP_END();
+				OP_CASE(LW_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, false, 4);
+				OP_END();
+				OP_CASE(LD_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, false, 8);
+				OP_END();
+				OP_CASE(LC_CAP)
+				regs[instr.rd()] =
+				    mem->handle_load_cap_via_cap(instr.rs1(), regs[instr.rs1()], regs[instr.rs1()].fields.address);
+				OP_END();
+				OP_CASE(LBU_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, true, 1);
+				OP_END();
+				OP_CASE(LHU_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, true, 2);
+				OP_END();
+				OP_CASE(LWU_CAP)
+				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
+				                                                 regs[instr.rs1()].fields.address, true, 4);
+				OP_END();
+				OP_CASE(LR_B_DDC) {
+					uxlen_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(cDdcIdx, ddc, vaddr, 1);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_H_DDC) {
+					uxlen_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(cDdcIdx, ddc, vaddr, 2);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_W_DDC) {
+					uxlen_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(cDdcIdx, ddc, vaddr, 4);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_D_DDC) {
+					uxlen_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(cDdcIdx, ddc, vaddr, 8);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_C_DDC) {
+					uxlen_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					regs[instr.rd()] = mem->atomic_load_reserved_cap_via_cap(cDdcIdx, ddc, vaddr);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_B_CAP) {
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
+					                                                          regs[instr.rs1()].fields.address, 1);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_H_CAP) {
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
+					                                                          regs[instr.rs1()].fields.address, 1);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_W_CAP) {
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
+					                                                          regs[instr.rs1()].fields.address, 1);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_D_CAP) {
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
+					                                                          regs[instr.rs1()].fields.address, 1);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_C_CAP) {
+					regs[instr.rd()] = mem->atomic_load_reserved_cap_via_cap(instr.rs1(), regs[instr.rs1()],
+					                                                         regs[instr.rs1()].fields.address);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(SB_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], cDdcIdx, ddc, vaddr, 1);
+				}
+				OP_END();
+				OP_CASE(SH_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], cDdcIdx, ddc, vaddr, 2);
+				}
+				OP_END();
+				OP_CASE(SW_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], cDdcIdx, ddc, vaddr, 4);
+				}
+				OP_END();
+				OP_CASE(SD_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], cDdcIdx, ddc, vaddr, 8);
+				}
+				OP_END();
+				OP_CASE(SC_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], cDdcIdx, ddc, vaddr, cCapSize);
+				}
+				OP_END();
+				OP_CASE(SB_CAP)
+				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
+				                               regs[instr.rs1()].fields.address, 1);
+				OP_END();
+				OP_CASE(SH_CAP)
+				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
+				                               regs[instr.rs1()].fields.address, 2);
+				OP_END();
+				OP_CASE(SW_CAP)
+				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
+				                               regs[instr.rs1()].fields.address, 4);
+				OP_END();
+				OP_CASE(SD_CAP)
+				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
+				                               regs[instr.rs1()].fields.address, 8);
+				OP_END();
+				OP_CASE(SC_CAP)
+				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
+				                               regs[instr.rs1()].fields.address, cCapSize);
+				OP_END();
+				OP_CASE(SC_B_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					Capability cs2 = regs[instr.rs2()];
+					regs[instr.rs2()] = mem->atomic_store_conditional_data_via_cap(cs2, cDdcIdx, ddc, vaddr, 1) ? 0 : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_H_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					Capability cs2 = regs[instr.rs2()];
+					regs[instr.rs2()] = mem->atomic_store_conditional_data_via_cap(cs2, cDdcIdx, ddc, vaddr, 2) ? 0 : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_W_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					Capability cs2 = regs[instr.rs2()];
+					regs[instr.rs2()] = mem->atomic_store_conditional_data_via_cap(cs2, cDdcIdx, ddc, vaddr, 4) ? 0 : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_D_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					Capability cs2 = regs[instr.rs2()];
+					regs[instr.rs2()] = mem->atomic_store_conditional_data_via_cap(cs2, cDdcIdx, ddc, vaddr, 8) ? 0 : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_C_DDC) {
+					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
+					Capability cs2 = regs[instr.rs2()];
+					regs[instr.rs2()] =
+					    mem->atomic_store_conditional_data_via_cap(cs2, cDdcIdx, ddc, vaddr, cCapSize) ? 0 : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_B_CAP) {
+					Capability cs2 = regs[instr.rs2()];
+					Capability cs1 = regs[instr.rs1()];
+					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
+					regs[instr.rs2()] =
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 1) ? 0
+					                                                                                             : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_H_CAP) {
+					Capability cs2 = regs[instr.rs2()];
+					Capability cs1 = regs[instr.rs1()];
+					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
+					regs[instr.rs2()] =
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 2) ? 0
+					                                                                                             : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_W_CAP) {
+					Capability cs2 = regs[instr.rs2()];
+					Capability cs1 = regs[instr.rs1()];
+					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
+					regs[instr.rs2()] =
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 4) ? 0
+					                                                                                             : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_D_CAP) {
+					Capability cs2 = regs[instr.rs2()];
+					Capability cs1 = regs[instr.rs1()];
+					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
+					regs[instr.rs2()] =
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 8) ? 0
+					                                                                                             : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(SC_C_CAP) {
+					Capability cs2 = regs[instr.rs2()];
+					Capability cs1 = regs[instr.rs1()];
+					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
+					regs[instr.rs2()] =
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 16) ? 0
+					                                                                                              : 1;
+					lr_sc_counter = 0;
+					reset_reg_zero();
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rs2();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rs2()];
+					}
+				}
+				OP_END();
+				OP_CASE(LC) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.I_imm(), &auth_val, &vaddr);
+					regs[instr.rd()] = mem->handle_load_cap_via_cap(auth_idx, auth_val, vaddr);
+				}
+				OP_END();
+				OP_CASE(SC) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), instr.S_imm(), &auth_val, &vaddr);
+					mem->handle_store_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 16);
+				}
+				OP_END();
+				OP_CASE(LR_C) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					regs[instr.rd()] = mem->atomic_load_reserved_cap_via_cap(auth_idx, auth_val, vaddr);
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(SC_C) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					regs[instr.rd()] =
+					    mem->atomic_store_conditional_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 16)
+					        ? 0
+					        : 1;
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+					}
+					lr_sc_counter = 0;
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(AMOSWAP_C) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					if (!auth_val.fields.tag) {
+						handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &rvfi_dii_output);
+					}
+					if (auth_val.isSealed()) {
+						handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &rvfi_dii_output);
+					}
+					if (!auth_val.fields.permit_load) {
+						handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &rvfi_dii_output);
+					}
+					if (!auth_val.fields.permit_store) {
+						handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &rvfi_dii_output);
+					}
+					if (!auth_val.fields.permit_store_cap && regs[instr.rs2()].fields.tag) {
+						handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &rvfi_dii_output);
+					}
+					if (!auth_val.fields.permit_store_local_cap && regs[instr.rs2()].fields.tag &&
+					    !regs[instr.rs2()].fields.global) {
+						handle_cheri_cap_exception(CapEx_PermitStoreLocalCapViolation, auth_idx, &rvfi_dii_output);
+					}
+					if (!auth_val.inCapBounds(vaddr, cCapSize)) {
+						handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &rvfi_dii_output);
+					}
+					trap_check_addr_alignment<cCapSize, true>(vaddr);
+					Capability data;
+					try {
+						data = mem->atomic_load_cap(vaddr);
+					} catch (SimulationTrap &e) {
+						if (e.reason == EXC_LOAD_ACCESS_FAULT) {
+							e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+						}
+						throw e;
+					}
+					mem->atomic_store_cap(vaddr, regs[instr.rs2()]);
+					data.clearTagIf(/*ptw_info.ptw_lc == PTW_LC_CLEAR | */ !auth_val.fields
+					                    .permit_load_cap);  // TODO Check what ptw_info should do in VP
+					regs[instr.rd()] = data;
+				}
+				OP_END();
+				OP_CASE(LR_B) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(auth_idx, auth_val, vaddr, 1);
+					// TODO: separate counter for SB?
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(LR_H) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(auth_idx, auth_val, vaddr, 2);
+					// TODO: separate counter for SH?
+					if (lr_sc_counter == 0) {
+						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
+						// cover the RISC-V forward progress property
+						force_slow_path();
+					}
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(SC_B) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					regs[instr.rd()] =
+					    mem->atomic_store_conditional_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 1) ? 0
+					                                                                                                : 1;
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+					}
+					// TODO: separate counter for SC_B?
+					lr_sc_counter = 0;
+					reset_reg_zero();
+				}
+				OP_END();
+				OP_CASE(SC_H) {
+					Capability auth_val;
+					uint64_t vaddr;
+					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
+					regs[instr.rd()] =
+					    mem->atomic_store_conditional_data_via_cap(regs[instr.rs2()], auth_idx, auth_val, vaddr, 2) ? 0
+					                                                                                                : 1;
+					if (unlikely(rvfi_dii)) {
+						rvfi_dii_output.rvfi_dii_rd_addr = instr.rd();
+						rvfi_dii_output.rvfi_dii_rd_wdata = regs[instr.rd()];
+					}
+					// TODO: separate counter for SC_H?
+					lr_sc_counter = 0;
+					reset_reg_zero();
+				}
 			}
 			OP_SWITCH_END();
-
 		} catch (SimulationTrap &e) {
 			uxlen_t last_pc = dbbcache.get_last_pc_exception_safe();
-
+			// TODO Change back to only trace mode
 			if (trace) {
 				std::cout << "take trap " << e.reason << ", mtval=" << boost::format("%x") % e.mtval
 				          << ", pc=" << boost::format("%x") % last_pc << std::endl;
@@ -6961,8 +8376,31 @@ bool ISS_CT::is_invalid_csr_access(uxlen_t csr_addr, bool is_write) {
 	PrivilegeLevel csr_prv = (0x300 & csr_addr) >> 8;
 	bool csr_readonly = ((0xC00 & csr_addr) >> 10) == 3;
 	bool s_invalid = (csr_prv == SupervisorMode) && !csrs.misa.has_supervisor_mode_extension();
-	bool u_invalid = (csr_prv == UserMode) && !csrs.misa.has_user_mode_extension();
-	return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid;
+	bool u_invalid = (csr_prv == UserMode) && !(csrs.misa.has_user_mode_extension());
+	// N extension checks based on riscv_sys_control.sail
+	// next extension requirements for machine mode
+	bool n_invalid = false;
+	if (csr_prv == MachineMode) {
+		if (csr_addr == csr::MEDELEG_ADDR || csr_addr == csr::MIDELEG_ADDR) {
+			n_invalid |= !(csrs.misa.has_supervisor_mode_extension() || csrs.misa.has_N_extension());
+		}
+	}
+	// next extension requirements for supervisor mode
+	if (csr_prv == SupervisorMode) {
+		if (csr_addr == csr::SEDELEG_ADDR || csr_addr == csr::SIDELEG_ADDR) {
+			n_invalid |= !(csrs.misa.has_user_mode_extension() || csrs.misa.has_N_extension());
+		}
+	}
+	// next extension requirements for user mode
+	if (csr_prv == UserMode) {
+		if (csr_addr == csr::UIE_ADDR || csr_addr == csr::UTVEC_ADDR || csr_addr == csr::USCRATCH_ADDR ||
+		    csr_addr == csr::UEPC_ADDR || csr_addr == csr::UCAUSE_ADDR || csr_addr == csr::UTVAL_ADDR ||
+		    csr_addr == csr::UIP_ADDR || csr_addr == csr::USTATUS_ADDR) {
+			n_invalid |= !(csrs.misa.has_N_extension());
+		}
+	}
+
+	return (is_write && csr_readonly) || (prv < csr_prv) || s_invalid || u_invalid || n_invalid;
 }
 
 void ISS_CT::validate_csr_counter_read_access_rights(uxlen_t addr) {
@@ -6985,6 +8423,36 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 
 	using namespace csr;
 
+	// Check if pc is allowed to access the system registers for all privileged csrs
+	// Do not check for unpriviliged csrs
+	if (
+	    // Unprivileged floating point crs
+	    addr != FFLAGS_ADDR && addr != FRM_ADDR && addr != FCSR_ADDR &&
+	    // Unprivileged counter/timers
+	    addr != CYCLE_ADDR && addr != TIME_ADDR && addr != INSTRET_ADDR && addr != HPMCOUNTER3_ADDR &&
+	    addr != HPMCOUNTER4_ADDR && addr != HPMCOUNTER5_ADDR && addr != HPMCOUNTER6_ADDR && addr != HPMCOUNTER7_ADDR &&
+	    addr != HPMCOUNTER8_ADDR && addr != HPMCOUNTER9_ADDR && addr != HPMCOUNTER10_ADDR &&
+	    addr != HPMCOUNTER11_ADDR && addr != HPMCOUNTER12_ADDR && addr != HPMCOUNTER13_ADDR &&
+	    addr != HPMCOUNTER14_ADDR && addr != HPMCOUNTER15_ADDR && addr != HPMCOUNTER16_ADDR &&
+	    addr != HPMCOUNTER17_ADDR && addr != HPMCOUNTER18_ADDR && addr != HPMCOUNTER19_ADDR &&
+	    addr != HPMCOUNTER20_ADDR && addr != HPMCOUNTER21_ADDR && addr != HPMCOUNTER22_ADDR &&
+	    addr != HPMCOUNTER23_ADDR && addr != HPMCOUNTER24_ADDR && addr != HPMCOUNTER25_ADDR &&
+	    addr != HPMCOUNTER26_ADDR && addr != HPMCOUNTER27_ADDR && addr != HPMCOUNTER28_ADDR &&
+	    addr != HPMCOUNTER29_ADDR && addr != HPMCOUNTER30_ADDR && addr != HPMCOUNTER31_ADDR &&
+	    addr != HPMCOUNTER3H_ADDR && addr != HPMCOUNTER4H_ADDR && addr != HPMCOUNTER5H_ADDR &&
+	    addr != HPMCOUNTER6H_ADDR && addr != HPMCOUNTER7H_ADDR && addr != HPMCOUNTER8H_ADDR &&
+	    addr != HPMCOUNTER9H_ADDR && addr != HPMCOUNTER10H_ADDR && addr != HPMCOUNTER11H_ADDR &&
+	    addr != HPMCOUNTER12H_ADDR && addr != HPMCOUNTER13H_ADDR && addr != HPMCOUNTER14H_ADDR &&
+	    addr != HPMCOUNTER15H_ADDR && addr != HPMCOUNTER16H_ADDR && addr != HPMCOUNTER17H_ADDR &&
+	    addr != HPMCOUNTER18H_ADDR && addr != HPMCOUNTER19H_ADDR && addr != HPMCOUNTER20H_ADDR &&
+	    addr != HPMCOUNTER21H_ADDR && addr != HPMCOUNTER22H_ADDR && addr != HPMCOUNTER23H_ADDR &&
+	    addr != HPMCOUNTER24H_ADDR && addr != HPMCOUNTER25H_ADDR && addr != HPMCOUNTER26H_ADDR &&
+	    addr != HPMCOUNTER27H_ADDR && addr != HPMCOUNTER28H_ADDR && addr != HPMCOUNTER29H_ADDR &&
+	    addr != HPMCOUNTER30H_ADDR && addr != HPMCOUNTER31H_ADDR) {
+		if (!pc->fields.access_system_regs)
+			handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+	}
+
 	switch (addr) {
 		case TIME_ADDR:
 		case MTIME_ADDR: {
@@ -7005,12 +8473,14 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 		SWITCH_CASE_MATCH_ANY_HPMCOUNTER_RV64:  // not implemented
 			return 0;
 
-			// TODO: SD should be updated as SD=XS|FS and SD should be read-only -> update mask
+		// TODO: SD should be updated as SD=XS|FS and SD should be read-only -> update mask
 		case MSTATUS_ADDR:
 			return read(csrs.mstatus, MSTATUS_READ_MASK);
 		case SSTATUS_ADDR:
 			return read(csrs.mstatus, SSTATUS_READ_MASK);
 		case USTATUS_ADDR:
+			if (prv != UserMode)
+				RAISE_ILLEGAL_INSTRUCTION();
 			return read(csrs.mstatus, USTATUS_READ_MASK);
 
 		case MIP_ADDR:
@@ -7046,6 +8516,32 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 			csrs.vcsr.reg.fields.vxrm = csrs.vxrm.reg.fields.vxrm;
 			csrs.vcsr.reg.fields.vxsat = csrs.vxsat.reg.fields.vxsat;
 			return csrs.vcsr.reg.val;
+
+		// Cheri capability read checks
+		case MEPC_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			return legalizeEpcc(csrs.mepcc);
+			break;
+		case UEPC_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			return legalizeEpcc(csrs.uepcc);
+			break;
+		case SEPC_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			return legalizeEpcc(csrs.sepcc);
+			break;
+
+		case UTVEC_ADDR:
+		case USCRATCH_ADDR:
+		case STVEC_ADDR:
+		case SSCRATCH_ADDR:
+		case MTVEC_ADDR:
+		case MSCRATCH_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 	}
 
 	if (!csrs.is_valid_csr64_addr(addr))
@@ -7076,23 +8572,35 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 		} break;
 
 		case MTVEC_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			write(csrs.mtvec, MTVEC_MASK);
 			break;
 		case STVEC_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			write(csrs.stvec, MTVEC_MASK);
 			break;
 		case UTVEC_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			write(csrs.utvec, MTVEC_MASK);
 			break;
 
 		case MEPC_ADDR:
-			write(csrs.mepc, pc_alignment_mask());
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			set_xret_target(value, &csrs.mepcc);
 			break;
 		case SEPC_ADDR:
-			write(csrs.sepc, pc_alignment_mask());
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			set_xret_target(value, &csrs.sepcc);
 			break;
 		case UEPC_ADDR:
-			write(csrs.uepc, pc_alignment_mask());
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			set_xret_target(value, &csrs.uepcc);
 			break;
 
 		case MSTATUS_ADDR:
@@ -7184,6 +8692,17 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 			csrs.vxrm.reg.fields.vxrm = csrs.vcsr.reg.fields.vxrm;
 			csrs.vxsat.reg.fields.vxsat = csrs.vcsr.reg.fields.vxsat;
 			break;
+		// Cheri capability read checks
+		case USCRATCH_ADDR:
+		case SSCRATCH_ADDR:
+		case MSCRATCH_ADDR:
+			if (!pc->fields.access_system_regs)
+				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
+			if (!csrs.is_valid_csr64_addr(addr))
+				RAISE_ILLEGAL_INSTRUCTION();
+
+			csrs.default_write64(addr, value);
+			break;
 
 		default:
 			if (!csrs.is_valid_csr64_addr(addr))
@@ -7197,20 +8716,27 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 	 */
 	maybe_interrupt_pending();
 }
-
 void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
                   clint_if *clint, uxlen_t entrypoint, uxlen_t sp) {
+	init(instr_mem, use_dbbcache, data_mem, use_lscache, clint, entrypoint, sp, false);
+}
+
+void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
+                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp, bool cheri_purecap) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
 	regs[RegFile::sp] = sp;
 	pc = entrypoint;
+	pc->fields.flag_cap_mode =
+	    cheri_purecap;  // If purecap mode is set, pc must have capability mode enabled by default
 
 	/* TODO: make const? (make all label ptrs const?) */
 	void *fast_abort_and_fdd_labelPtr = genOpMap();
 
 	uint64_t hartId = get_hart_id();
-	dbbcache.init(use_dbbcache, isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_labelPtr, entrypoint);
+	dbbcache.init(use_dbbcache, isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_labelPtr, entrypoint,
+	              cheri_purecap, &rvfi_dii_output);
 	lscache.init(use_lscache, hartId, data_mem);
 	cycle_counter_raw_last = 0;
 }
@@ -7310,13 +8836,25 @@ void ISS_CT::fp_require_not_off() {
 		RAISE_ILLEGAL_INSTRUCTION();
 }
 
+void ISS_CT::prepare_xret_target(Capability epcc) {
+	Capability legalizedEpcc = legalizeEpcc(epcc);
+	pc = legalizedEpcc;
+	if (legalizedEpcc.fields.otype == cOtypeSentryUnsigned) {
+		pc->unseal();
+	}
+}
+
+void ISS_CT::set_xret_target(uxlen_t value, csr_eepc_capability *p_epcc) {
+	p_epcc->cap = updateCapWithIntegerPC(p_epcc->cap, value);
+}
+
 void ISS_CT::return_from_trap_handler(PrivilegeLevel return_mode) {
 	switch (return_mode) {
 		case MachineMode:
 			prv = csrs.mstatus.reg.fields.mpp;
 			csrs.mstatus.reg.fields.mie = csrs.mstatus.reg.fields.mpie;
 			csrs.mstatus.reg.fields.mpie = 1;
-			pc = csrs.mepc.reg.val;
+			prepare_xret_target(csrs.mepcc);
 			if (csrs.misa.has_user_mode_extension())
 				csrs.mstatus.reg.fields.mpp = UserMode;
 			else
@@ -7327,7 +8865,7 @@ void ISS_CT::return_from_trap_handler(PrivilegeLevel return_mode) {
 			prv = csrs.mstatus.reg.fields.spp;
 			csrs.mstatus.reg.fields.sie = csrs.mstatus.reg.fields.spie;
 			csrs.mstatus.reg.fields.spie = 1;
-			pc = csrs.sepc.reg.val;
+			prepare_xret_target(csrs.sepcc);
 			if (csrs.misa.has_user_mode_extension())
 				csrs.mstatus.reg.fields.spp = UserMode;
 			else
@@ -7338,7 +8876,7 @@ void ISS_CT::return_from_trap_handler(PrivilegeLevel return_mode) {
 			prv = UserMode;
 			csrs.mstatus.reg.fields.uie = csrs.mstatus.reg.fields.upie;
 			csrs.mstatus.reg.fields.upie = 1;
-			pc = csrs.uepc.reg.val;
+			prepare_xret_target(csrs.uepcc);
 			break;
 
 		default:
@@ -7347,7 +8885,7 @@ void ISS_CT::return_from_trap_handler(PrivilegeLevel return_mode) {
 
 	if (trace)
 		printf("[vp::iss] return from trap handler, time %s, pc %16lx, prv %1x\n",
-		       quantum_keeper.get_current_time().to_string().c_str(), pc, prv);
+		       quantum_keeper.get_current_time().to_string().c_str(), pc->fields.address, prv);
 
 	dbbcache.ret_trap(pc);
 	force_slow_path();
@@ -7540,8 +9078,8 @@ PendingInterrupts ISS_CT::compute_pending_interrupts() {
 void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 	if (trace) {
 		printf("[vp::iss] switch to trap handler, time %s, before pc %16lx, irq %u, t-prv %1x\n",
-		       quantum_keeper.get_current_time().to_string().c_str(), pc, csrs.mcause.reg.fields.interrupt,
-		       target_mode);
+		       quantum_keeper.get_current_time().to_string().c_str(), pc->fields.address,
+		       csrs.mcause.reg.fields.interrupt, target_mode);
 	}
 
 	// free any potential LR/SC bus lock before processing a trap/interrupt
@@ -7552,13 +9090,13 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 
 	switch (target_mode) {
 		case MachineMode:
-			csrs.mepc.reg.val = pc;
+			csrs.mepcc = pc.pcc;
 
 			csrs.mstatus.reg.fields.mpie = csrs.mstatus.reg.fields.mie;
 			csrs.mstatus.reg.fields.mie = 0;
 			csrs.mstatus.reg.fields.mpp = pp;
 
-			pc = csrs.mtvec.get_base_address();
+			pc = csrs.mtcc.get_base_address();
 
 			if (unlikely(pc == 0)) {
 				if (error_on_zero_traphandler) {
@@ -7580,13 +9118,13 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 		case SupervisorMode:
 			assert(prv == SupervisorMode || prv == UserMode);
 
-			csrs.sepc.reg.val = pc;
+			csrs.sepcc = pc.pcc;
 
 			csrs.mstatus.reg.fields.spie = csrs.mstatus.reg.fields.sie;
 			csrs.mstatus.reg.fields.sie = 0;
 			csrs.mstatus.reg.fields.spp = pp;
 
-			pc = csrs.stvec.get_base_address();
+			pc = csrs.stcc.get_base_address();
 
 			if (csrs.scause.reg.fields.interrupt && csrs.stvec.reg.fields.mode == csr_mtvec::Mode::Vectored)
 				pc += 4 * csrs.scause.reg.fields.exception_code;
@@ -7595,12 +9133,12 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 		case UserMode:
 			assert(prv == UserMode);
 
-			csrs.uepc.reg.val = pc;
+			csrs.uepcc = pc.pcc;
 
 			csrs.mstatus.reg.fields.upie = csrs.mstatus.reg.fields.uie;
 			csrs.mstatus.reg.fields.uie = 0;
 
-			pc = csrs.utvec.get_base_address();
+			pc = csrs.utcc.get_base_address();
 
 			if (csrs.ucause.reg.fields.interrupt && csrs.utvec.reg.fields.mode == csr_mtvec::Mode::Vectored)
 				pc += 4 * csrs.ucause.reg.fields.exception_code;
@@ -7609,6 +9147,12 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 		default:
 			throw std::runtime_error("unknown privilege level " + std::to_string(target_mode));
 	}
+	if (unlikely(rvfi_dii)) {
+		rvfi_dii_output.rvfi_dii_pc_wdata = pc;
+	}
+	// if (pc->fields.flag_cap_mode != 1) {
+	// 	std::cout << "[ISS] Warning: pc is not in capability mode, this is probably an error." << std::endl;
+	// }
 
 	dbbcache.enter_trap(pc);
 }
@@ -7645,4 +9189,79 @@ void ISS_CT::show() {
 	std::cout << "pc = " << std::hex << pc << std::endl;
 	std::cout << "num-instr = " << std::dec << csrs.instret.reg.val << std::endl;
 }
-}  // namespace rv64
+
+void ISS_CT::init_cheri_regs() {
+	pc = cDefaultCap;
+	ddc = cDefaultCap;
+	regs = RegFile(rvfi_dii);
+}
+
+void ISS_CT::reset() {
+	init_cheri_regs();
+	csrs.reset();
+	if (unlikely(rvfi_dii)) {
+		csrs.misa.reg.fields.extensions &= ~rv64::csr_misa_64::N;
+		csrs.misa.reg.fields.extensions &= ~rv64::csr_misa_64::V;
+	}
+	if ((csrs.misa.reg.fields.extensions & rv64::csr_misa_64::V) != rv64::csr_misa_64::V) {
+		// Clear V in mstatus
+		csrs.mstatus.reg.fields.vs = 0;
+	}
+	// TODO Reset dbb cache?
+	prv = MachineMode;
+}
+
+void ISS_CT::execute_c_jalr(int32_t immediate) {
+	Capability cs1_val = regs[instr.rs1()];
+	int64_t off = static_cast<int64_t>(immediate);
+	uint64_t newPC = cs1_val.fields.address + off;
+	newPC = (newPC & ~1);  // clear bit zero as for RISCV JALR
+	CapAddr_t newPCCBase = cs1_val.getBase();
+	if (!cs1_val.fields.tag) {
+		handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
+	} else if (cs1_val.isSealed() & ((cs1_val.fields.otype != cOtypeSentryUnsigned) | (off != 0))) {
+		handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
+	} else if (!cs1_val.fields.permit_execute) {
+		handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
+	} else if (have_pcc_relocation() &
+	           (((newPCCBase & 0b01) == 0b01) | (((newPCCBase & 0b10) == 0b10) & !csrs.misa.has_C_extension()))) {
+		handle_cheri_reg_exception(CapEx_UnalignedBase, instr.rs1(), &rvfi_dii_output);
+	} else if ((newPC & 1) & !csrs.misa.has_C_extension()) {
+		handle_mem_exception(newPC, E_FetchAddrAlign, &rvfi_dii_output);
+	} else if (!cs1_val.inCapBounds(newPC, min_instruction_bytes())) {
+		handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);
+	} else {
+		regs[instr.rd()] = dbbcache.jump_dyn_and_link(newPC, cs1_val, true).pcc;
+	}
+	// Write to rd=0 must be ignored
+	reset_reg_zero();
+}
+
+/*!
+ * For given base register and offset returns, depending on current capability
+ * mode flag, a bounding capability, effective address, and capreg_idx (for use
+ * in cap cause).
+ */
+uint64_t ISS_CT::get_cheri_mode_cap_addr(uint64_t base_reg, uint64_t offset, Capability *auth_val, uint64_t *vaddr) {
+	Capability base_cap = regs[base_reg];
+	if (pc->fields.flag_cap_mode) {
+		*auth_val = base_cap;
+		*vaddr = base_cap.fields.address + offset;
+		return base_reg;
+	}
+	*vaddr = base_cap.fields.address + offset;
+	// Integer mode
+	if (have_ddc_relocation()) {
+		*vaddr += ddc.fields.address;
+	}
+	*auth_val = ddc;
+	return cDdcIdx;
+}
+
+uint64_t ISS_CT::get_ddc_addr(uint64_t addr) {
+	if (have_ddc_relocation()) {
+		return addr + ddc.fields.address;
+	}
+	return addr;
+}
+} /* namespace cheriv9::rv64 */

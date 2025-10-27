@@ -1,26 +1,47 @@
-#ifndef RISCV_ISA_REGFILE_H
-#define RISCV_ISA_REGFILE_H
+#ifndef RISCV_CHERIV9_ISA_REGFILE_H
+#define RISCV_CHERIV9_ISA_REGFILE_H
 
-#include <cassert>
-
+#include "core/rv64_cheriv9/cheri_prelude.h"  // TODO This must be changed when RV32 is implemented
 #include "util/common.h"
+
+namespace cheriv9 {
 
 template <typename T_sxlen_t, typename T_uxlen_t>
 struct RegFile_T {
 	static constexpr unsigned NUM_REGS = 32;
 
-	T_sxlen_t regs[NUM_REGS];
+	Capability regs[NUM_REGS]{};
 
-	RegFile_T() {
-		memset(regs, 0, sizeof(regs));
+	RegFile_T(bool initToDefault = false) {
+		regs[0] = cNullCap;
+		for (size_t i = 1; i < NUM_REGS; ++i) {
+			if (initToDefault) {
+				regs[i] = cDefaultCap;
+			} else {
+				regs[i] = cNullCap;
+			}
+		}
+	}
+	RegFile_T& operator=(const RegFile_T& other) {
+		// Check for self-assignment
+		if (this != &other) {
+			memcpy(regs, other.regs, sizeof(regs));
+		}
+		return *this;
 	}
 
-	RegFile_T(const RegFile_T<T_sxlen_t, T_uxlen_t> &other) {
+	RegFile_T(const RegFile_T<T_sxlen_t, T_uxlen_t>& other) {
 		memcpy(regs, other.regs, sizeof(regs));
 	}
 
 	inline void reset_zero() {
 		regs[zero] = 0;
+	}
+
+	void write(uint64_t index, const Capability& value) {
+		assert(index <= x31);
+		assert(index != x0);
+		regs[index] = value;
 	}
 
 	inline void write(unsigned int index, T_sxlen_t value) {
@@ -35,14 +56,20 @@ struct RegFile_T {
 		return regs[index];
 	}
 
+	Capability read_cap(uint64_t index) const {
+		if (index > x31)
+			throw std::out_of_range("out-of-range register access");
+		return regs[index];
+	}
+
 	inline T_uxlen_t shamt(unsigned int index) {
 		assert(index <= x31);
 		if (sizeof(T_uxlen_t) == sizeof(uint32_t)) {
 			// RV32
-			return BIT_RANGE(regs[index], 4, 0);
+			return CHERI_BIT_RANGE(regs[index], 4, 0);
 		} else if (sizeof(T_uxlen_t) == sizeof(uint64_t)) {
 			// RV64
-			return BIT_RANGE(regs[index], 5, 0);
+			return CHERI_BIT_RANGE(regs[index], 5, 0);
 		} else {
 			assert(false && "unsupported XLEN_T in RegFile");
 			return 0;
@@ -53,25 +80,25 @@ struct RegFile_T {
 	inline T_uxlen_t shamt_w(unsigned int index) {
 		assert(index <= x31);
 		if (sizeof(T_uxlen_t) == sizeof(uint64_t)) {
-			return BIT_RANGE(regs[index], 4, 0);
+			return CHERI_BIT_RANGE(regs[index], 4, 0);
 		} else {
 			assert(false && "unsupported XLEN_T in RegFile");
 			return 0;
 		}
 	}
 
-	inline T_sxlen_t &operator[](const unsigned int idx) {
+	inline Capability& operator[](const unsigned int idx) {
 		return regs[idx];
 	}
 
-	void show() {
+	void show() const {
 		for (unsigned int i = 0; i < NUM_REGS; ++i) {
 			if (sizeof(T_uxlen_t) == sizeof(uint32_t)) {
 				// RV32
-				printf(COLORFRMT " = %8x\n", COLORPRINT(colors[i], regnames[i]), (uint32_t)regs[i]);
+				printf(COLORFRMT " = %8x\n", COLORPRINT(colors[i], regnames[i]), static_cast<uint32_t>(regs[i]));
 			} else if (sizeof(T_uxlen_t) == sizeof(uint64_t)) {
 				// RV64
-				printf(COLORFRMT " = %16lx\n", COLORPRINT(colors[i], regnames[i]), (uint64_t)regs[i]);
+				printf(COLORFRMT " = %16lx\n", COLORPRINT(colors[i], regnames[i]), static_cast<uint64_t>(regs[i]));
 			} else {
 				assert(false && "unsupported XLEN_T in RegFile");
 			}
@@ -147,7 +174,7 @@ struct RegFile_T {
 		t6 = x31,
 	};
 
-	static constexpr const char *regnames[NUM_REGS] = {
+	static constexpr const char* regnames[NUM_REGS] = {
 	    "zero (x0)", "ra   (x1)", "sp   (x2)", "gp   (x3)", "tp   (x4)", "t0   (x5)", "t1   (x6)", "t2   (x7)",
 	    "s0/fp(x8)", "s1   (x9)", "a0  (x10)", "a1  (x11)", "a2  (x12)", "a3  (x13)", "a4  (x14)", "a5  (x15)",
 	    "a6  (x16)", "a7  (x17)", "s2  (x18)", "s3  (x19)", "s4  (x20)", "s5  (x21)", "s6  (x22)", "s7  (x23)",
@@ -167,4 +194,6 @@ struct RegFile_T {
 	};
 };
 
-#endif /* RISCV_ISA_REGFILE_H */
+} /* namespace cheriv9 */
+
+#endif /* RISCV_CHERIV9_ISA_REGFILE_H */

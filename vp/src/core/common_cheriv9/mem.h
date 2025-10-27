@@ -1,9 +1,9 @@
-#ifndef RISCV_ISA_MEM_H
-#define RISCV_ISA_MEM_H
+#ifndef RISCV_CHERIV9_ISA_MEM_H
+#define RISCV_CHERIV9_ISA_MEM_H
 
-#include "bus_lock_if.h"
+#include "core/common/bus_lock_if.h"
+#include "core/common/mem_if.h"
 #include "dmi.h"
-#include "mem_if.h"
 #include "mmu.h"
 #include "util/propertymap.h"
 #include "util/tlm_ext_initiator.h"
@@ -39,6 +39,12 @@ struct InstrMemoryProxy_T : public instr_memory_if {
 	virtual uint32_t load_instr(uint64_t pc) override {
 		quantum_keeper.inc(access_delay);
 		return dmi.load<uint32_t>(pc);
+	}
+	virtual uint16_t load_instr_half(uint64_t pc) override {
+		return dmi.load<uint16_t>(pc);
+	}
+	virtual uint64_t translate_pc(uint64_t pc) override {
+		return pc;
 	}
 };
 
@@ -207,6 +213,14 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		mmu->flush_tlb();
 	}
 
+	uint16_t load_instr_half(uint64_t pc) override {
+		return _raw_load_data<uint16_t>(v2p(pc, FETCH));
+	}
+
+	uint64_t translate_pc(uint64_t pc) override {
+		return v2p(pc, FETCH);
+	}
+
 	uint32_t load_instr(uint64_t addr) override {
 		/*
 		 * We have support for RISC-V Compressed C instructions.
@@ -290,6 +304,10 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		return _load_data<int8_t>(addr);
 	}
 
+	Capability load_cap(uint64_t addr) override {
+		assert(0);  // TODO
+	}
+
 	/* unused on RV32 */
 	T_uxlen_t load_uword(uint64_t addr) override {
 		return _load_data<uint32_t>(addr);
@@ -313,6 +331,9 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 	}
 	void store_byte(uint64_t addr, uint8_t value) override {
 		_store_data(addr, value);
+	}
+	void store_cap(uint64_t addr, Capability value) override {
+		assert(0);  // TODO
 	}
 
 	T_sxlen_t atomic_load_word(uint64_t addr) override {
@@ -357,6 +378,50 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		}
 		return last_dmi_page_host_addr;
 	}
+
+	// CHERI capability loads, that must refere to default loads instead
+	// TODO CHeck if this is the way to go...
+	void handle_store_data_via_cap(Capability rs2, uint64_t auth_idx, Capability auth_val, uint64_t addr,
+	                               uint8_t width) {
+		switch (width) {
+			case 1:
+				store_byte(addr, (uint8_t)rs2.fields.address);
+				break;
+			case 2:
+				iss.template trap_check_addr_alignment<2, false>(addr);
+				store_half(addr, (uint16_t)rs2.fields.address);
+				break;
+			case 4:
+				iss.template trap_check_addr_alignment<4, false>(addr);
+				store_word(addr, (uint32_t)rs2.fields.address);
+				break;
+			case 8:
+				iss.template trap_check_addr_alignment<8, false>(addr);
+				store_double(addr, rs2.fields.address);
+				break;
+			default:
+				assert(0);
+		}
+	}
+
+	uint64_t handle_load_data_via_cap(uint64_t auth_idx, Capability auth_val, uint64_t addr, bool is_unsigned,
+	                                  uint8_t width) {
+		switch (width) {
+			case 1:
+				return is_unsigned ? load_ubyte(addr) : load_byte(addr);
+			case 2:
+				iss.template trap_check_addr_alignment<2, true>(addr);
+				return is_unsigned ? load_uhalf(addr) : load_half(addr);
+			case 4:
+				iss.template trap_check_addr_alignment<4, true>(addr);
+				return is_unsigned ? load_uword(addr) : load_word(addr);
+			case 8:
+				iss.template trap_check_addr_alignment<8, true>(addr);
+				return load_double(addr);
+			default:
+				assert(0);
+		}
+	}
 };
 
-#endif /* RISCV_ISA_MEM_H */
+#endif /* RISCV_CHERIV9_ISA_MEM_H */

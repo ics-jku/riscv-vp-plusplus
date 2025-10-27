@@ -18,23 +18,28 @@
 
 #include "core/common/bus_lock_if.h"
 #include "core/common/clint_if.h"
-#include "core/common/dbbcache.h"
 #include "core/common/debug.h"
 #include "core/common/fp.h"
-#include "core/common/instr.h"
 #include "core/common/irq_if.h"
-#include "core/common/iss_stats.h"
 #include "core/common/lscache.h"
 #include "core/common/mem_if.h"
-#include "core/common/regfile.h"
 #include "core/common/syscall_if.h"
 #include "core/common/trap.h"
 #include "core/common/v.h"
+#include "core/common_cheriv9/cheri_cap_common.h"
+#include "core/common_cheriv9/cheri_exceptions.h"
+#include "core/common_cheriv9/cheri_sys_regs.h"
+#include "core/common_cheriv9/dbbcache.h"
+#include "core/common_cheriv9/instr.h"
+#include "core/common_cheriv9/iss_stats.h"
+#include "core/common_cheriv9/regfile.h"
 #include "csr.h"
 #include "util/common.h"
 #include "util/initiator_if.h"
 
-namespace rv64 {
+using namespace cheriv9;
+
+namespace cheriv9::rv64 {
 
 static constexpr Architecture ARCH = RV64;
 static constexpr unsigned XLEN = 64;
@@ -98,4 +103,4 @@ struct DirectCoreRunner : public sc_core::sc_module {
 	}
 };
 
-}  // namespace rv64
+} /* namespace cheriv9::rv64 */

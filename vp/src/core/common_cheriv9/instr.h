@@ -1,13 +1,15 @@
-#ifndef RISCV_ISA_INSTR_H
-#define RISCV_ISA_INSTR_H
+#ifndef RISCV_CHERIV9_ISA_INSTR_H
+#define RISCV_CHERIV9_ISA_INSTR_H
 
 #include <stdint.h>
 
 #include <array>
 #include <iostream>
 
-#include "core_defs.h"
+#include "core/common/core_defs.h"
 #include "util/common.h"
+
+namespace cheriv9 {
 
 namespace Operation {
 
@@ -908,6 +910,107 @@ enum OpId {
 	VMV_NR_R_V,
 	// RV-V Extension End -- Placeholder 4
 
+	// CHERI Extension
+	C_GET_PERM,
+	C_GET_TYPE,
+	C_GET_BASE,
+	C_GET_LEN,
+	C_GET_TAG,
+	C_GET_SEALED,
+	C_GET_OFFSET,
+	C_GET_FLAGS,
+	C_GET_HIGH,
+	C_GET_TOP,
+	C_SEAL,
+	C_UNSEAL,
+	C_AND_PERM,
+	C_SET_FLAGS,
+	C_SET_OFFSET,
+	C_SET_ADDR,
+	C_SUB,  // Deprecated
+	C_INC_OFFSET,
+	C_INC_OFFSET_IMM,
+	C_SET_BOUNDS,
+	C_SET_BOUNDS_EXACT,
+	C_SET_BOUNDS_IMM,
+	C_SET_HIGH,
+	C_CLEAR_TAG,
+	C_BUILD_CAP,
+	C_COPY_TYPE,
+	C_C_SEAL,
+	C_SEAL_ENTRY,
+	C_TO_PTR,
+	C_FROM_PTR,
+	C_MOVE,
+	C_TEST_SUBSET,
+	C_SET_EQUAL_EXACT,
+	JALR_CAP,
+	JALR_PCC,
+	C_INVOKE,
+	C_GET_ADDR,  // Deprecated
+	C_SPECIAL_R_W,
+	C_CLEAR,
+	FP_CLEAR,
+	C_ROUND_REPRESENTABLE_LENGTH,
+	C_REPRESENTABLE_ALIGNMENT_MASK,
+	C_LOAD_TAGS,
+	C_CLEAR_TAGS,
+	LB_DDC,
+	LH_DDC,
+	LW_DDC,
+	LD_DDC,
+	LC_DDC,
+	LBU_DDC,
+	LHU_DDC,
+	LWU_DDC,
+	LB_CAP,
+	LH_CAP,
+	LW_CAP,
+	LD_CAP,
+	LC_CAP,
+	LBU_CAP,
+	LHU_CAP,
+	LWU_CAP,
+	LR_B_DDC,
+	LR_H_DDC,
+	LR_W_DDC,
+	LR_D_DDC,
+	LR_C_DDC,
+	LR_B_CAP,
+	LR_H_CAP,
+	LR_W_CAP,
+	LR_D_CAP,
+	LR_C_CAP,
+	SB_DDC,
+	SH_DDC,
+	SW_DDC,
+	SD_DDC,
+	SC_DDC,
+	SB_CAP,
+	SH_CAP,
+	SW_CAP,
+	SD_CAP,
+	SC_CAP,
+	SC_B_DDC,
+	SC_H_DDC,
+	SC_W_DDC,
+	SC_D_DDC,
+	SC_C_DDC,
+	SC_B_CAP,
+	SC_H_CAP,
+	SC_W_CAP,
+	SC_D_CAP,
+	SC_C_CAP,
+	LC,
+	SC,
+	LR_C,
+	SC_C,
+	AMOSWAP_C,
+	LR_B,
+	SC_B,
+	LR_H,
+	SC_H,
+
 	// privileged instructions
 	URET,
 	SRET,
@@ -931,6 +1034,7 @@ enum class Type {
 	V,
 	V_SET_I,
 	V_LS,
+	R_Q_M,
 };
 
 extern std::array<const char *, OpId::NUMBER_OF_OPERATIONS> opIdStr;
@@ -964,6 +1068,7 @@ struct Instruction {
 		F3_SH = 0b001,
 		F3_SW = 0b010,
 		F3_SD = 0b011,
+		F3_SQ = 0b100,
 
 		OP_BEQ = 0b1100011,
 		F3_BEQ = 0b000,
@@ -1036,6 +1141,7 @@ struct Instruction {
 		OP_AMO = 0b0101111,
 		F5_LR_W = 0b00010,
 		F5_SC_W = 0b00011,
+		F5_AMOSWAP = 0b00001,
 		F5_AMOSWAP_W = 0b00001,
 		F5_AMOADD_W = 0b00000,
 		F5_AMOXOR_W = 0b00100,
@@ -1048,6 +1154,9 @@ struct Instruction {
 
 		F3_AMO_W = 0b010,
 		F3_AMO_D = 0b011,
+		F3_AMO_C = 0b100,  // Implemented by CHERI
+		F3_AMO_B = 0b000,  // Implemented by CHERI
+		F3_AMO_H = 0b001,  // Implemented by CHERI
 
 		OP_ADDIW = 0b0011011,
 		F3_ADDIW = 0b000,
@@ -1212,6 +1321,111 @@ struct Instruction {
 		F2_FNMADD_S = 0b00,
 		F2_FNMADD_D = 0b01,
 
+		// CHERI Extension
+		OP_CAP_FORMAT = 0b1011011,  // 0x5B
+
+		F3_C_INSP_INSTR = 0b000,
+		F3_C_INC_OFFSET_IMM = 0b001,
+		F3_C_SET_BOUNDS_IMM = 0b010,  // 0x02
+		F3_LC = 0b010,                // CHERI Load Capability (LC) // TODO Check if 0x02, or 0x04 is correct
+
+		F7_C_SPECIAL_R_W = 0b0000001,       // 0x01
+		F7_C_SET_BOUNDS = 0b0001000,        // 0x08
+		F7_C_SET_BOUNDS_EXACT = 0b0001001,  // 0x09
+		F7_C_SEAL = 0b0001011,              // 0x0b
+		F7_C_UNSEAL = 0b0001100,            // 0x0c
+		F7_C_AND_PERM = 0b0001101,          // 0x0d
+		F7_C_SET_FLAGS = 0b0001110,         // 0x0e
+		F7_C_SET_OFFSET = 0b0001111,        // 0x0f
+		F7_C_SET_ADDR = 0b0010000,          // 0x10
+		F7_C_INC_OFFSET = 0b0010001,        // 0x11
+		F7_C_TO_PTR = 0b0010010,            // 0x12
+		F7_C_FROM_PTR = 0b0010011,          // 0x13
+		F7_C_SUB = 0b0010100,               // 0x14
+		F7_C_SET_HIGH = 0b0010110,          // 0x16
+		F7_C_TEST_SUBSET = 0b0100000,       // 0x20
+		F7_C_SET_EQUAL_EXACT = 0b0100001,   // 0x21
+		F7_C_BUILD_CAP = 0b0011101,         // 0x1d
+		F7_C_COPY_TYPE = 0b0011110,         // 0x1e
+		F7_C_C_SEAL = 0b0011111,            // 0x1f
+		F7_MEM_STORE = 0b1111100,           // 0x7c
+		F7_MEM_LOAD = 0b1111101,            // 0x7d
+
+		F7_C_INVOKE = 0b1111110,      // 0x7e
+		F7_C_INSP_INSTR = 0b1111111,  // 0x7f
+		F7_C_CLEAR_TAG = 0b1111111,   // 0x7f
+		F7_C_SEAL_ENTRY = 0b1111111,  // 0x7f
+
+		RS2_C_GET_PERM = 0b00000,
+		RS2_C_GET_TYPE = 0b00001,
+		RS2_C_GET_BASE = 0b00010,
+		RS2_C_GET_LENGTH = 0b00011,
+		RS2_C_GET_TAG = 0b00100,
+		RS2_C_GET_SEALED = 0b00101,
+		RS2_C_GET_OFFSET = 0b00110,
+		RS2_C_GET_FLAGS = 0b00111,
+		RS2_C_GET_HIGH = 0b10111,
+		RS2_C_ROUND_REPRESENTABLE_LENGTH = 0b01000,
+		RS2_C_REPRESENTABLE_ALIGNMENT_MASK = 0b01001,
+		RS2_C_GET_TOP = 0b11000,
+		RS2_C_MOVE = 0b01010,
+		RS2_C_GET_ADDR = 0b01111,
+		RS2_FP_CLEAR = 0b10000,
+
+		RS2_C_CLEAR_TAG = 0b01011,   // 0x0b
+		RS2_JALR_CAP = 0b01100,      // 0x0c
+		RS2_C_CLEAR = 0b01110,       // 0x0e
+		RS2_C_SEAL_ENTRY = 0b10001,  // 0x11
+		RS2_C_LOAD_TAGS = 0b10010,   // 0x12
+
+		RS2_LB_DDC = 0b00000,    // 0x00
+		RS2_LH_DDC = 0b00001,    // 0x01
+		RS2_LW_DDC = 0b00010,    // 0x02
+		RS2_LD_DDC = 0b00011,    // 0x03
+		RS2_LC_DDC = 0b10111,    // 0x17
+		RS2_LBU_DDC = 0b00100,   // 0x04
+		RS2_LHU_DDC = 0b00101,   // 0x05
+		RS2_LWU_DDC = 0b00110,   // 0x06
+		RS2_LB_CAP = 0b01000,    // 0x08
+		RS2_LH_CAP = 0b01001,    // 0x09
+		RS2_LW_CAP = 0b01010,    // 0x0a
+		RS2_LD_CAP = 0b01011,    // 0x0b
+		RS2_LC_CAP = 0b11111,    // 0x1f
+		RS2_LBU_CAP = 0b01100,   // 0x0c
+		RS2_LHU_CAP = 0b01101,   // 0x0d
+		RS2_LWU_CAP = 0b01110,   // 0x0e
+		RS2_LR_B_DDC = 0b10000,  // 0x10
+		RS2_LR_H_DDC = 0b10001,  // 0x11
+		RS2_LR_W_DDC = 0b10010,  // 0x12
+		RS2_LR_D_DDC = 0b10011,  // 0x13
+		RS2_LR_C_DDC = 0b10100,  // 0x14
+		RS2_LR_B_CAP = 0b11000,  // 0x18
+		RS2_LR_H_CAP = 0b11001,  // 0x19
+		RS2_LR_W_CAP = 0b11010,  // 0x1a
+		RS2_LR_D_CAP = 0b11011,  // 0x1b
+		RS2_LR_C_CAP = 0b11100,  // 0x1c
+
+		RD_SB_DDC = 0b00000,    // 0x00
+		RD_SH_DDC = 0b00001,    // 0x01
+		RD_SW_DDC = 0b00010,    // 0x02
+		RD_SD_DDC = 0b00011,    // 0x03
+		RD_SC_DDC = 0b00100,    // 0x04
+		RD_SB_CAP = 0b01000,    // 0x08
+		RD_SH_CAP = 0b01001,    // 0x09
+		RD_SW_CAP = 0b01010,    // 0x0a
+		RD_SD_CAP = 0b01011,    // 0x0b
+		RD_SC_CAP = 0b01100,    // 0x0c
+		RD_SC_B_DDC = 0b10000,  // 0x10
+		RD_SC_H_DDC = 0b10001,  // 0x11
+		RD_SC_W_DDC = 0b10010,  // 0x12
+		RD_SC_D_DDC = 0b10011,  // 0x13
+		RD_SC_C_DDC = 0b10100,  // 0x14
+		RD_SC_B_CAP = 0b11000,  // 0x18
+		RD_SC_H_CAP = 0b11001,  // 0x19
+		RD_SC_W_CAP = 0b11010,  // 0x1a
+		RD_SC_D_CAP = 0b11011,  // 0x1b
+		RD_SC_C_CAP = 0b11100,  // 0x1c
+
 		// reserved opcodes for custom instructions
 		OP_CUST1 = 0b0101011,
 		OP_CUST0 = 0b0001011,
@@ -1275,7 +1489,8 @@ struct Instruction {
 
 	Operation::OpId decode_normal(Architecture arch, const RV_ISA_Config &isa_config);
 
-	Operation::OpId decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config);
+	Operation::OpId decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config,
+	                                             bool capabilityMode);
 
 	inline uint32_t csr() {
 		// cast to unsigned to avoid sign extension when shifting
@@ -1427,4 +1642,6 @@ struct Instruction {
 	int32_t instr;
 };
 
-#endif  // RISCV_ISA_INSTR_H
+} /* namespace cheriv9 */
+
+#endif  // RISCV_CHERIV9_ISA_INSTR_H

@@ -1,15 +1,20 @@
 /*
  * Copyright (C) 2024-2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ *
+ * Duplicated for CHERI to allow cheri-specific stats
+ * TODO: generalize with common/iss_stats.*
  */
 
-#ifndef RISCV_ISA_ISS_STATS_H
-#define RISCV_ISA_ISS_STATS_H
+#ifndef RISCV_CHERIV9_ISA_ISS_STATS_H
+#define RISCV_CHERIV9_ISA_ISS_STATS_H
 
 #include <cstdint>
 #include <iostream>
 
+#include "core/common/irq_if.h"
 #include "instr.h"
-#include "irq_if.h"
+
+namespace cheriv9 {
 
 /*
  * dummy implementation
@@ -226,4 +231,6 @@ class ISSStats : public ISSStatsDummy {
 	void print();
 };
 
-#endif /* RISCV_ISA_ISS_STATS_H */
+} /* namespace cheriv9 */
+
+#endif /* RISCV_CHERIV9_ISA_ISS_STATS_H */

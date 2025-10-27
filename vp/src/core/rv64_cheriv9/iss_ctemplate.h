@@ -7,6 +7,10 @@
  */
 
 /* see NOTE RVxx.1 */
+#include "core/common_cheriv9/cheri_cap_common.h"
+#include "core/common_cheriv9/cheri_exceptions.h"
+#include "core/common_cheriv9/cheri_sys_regs.h"
+#include "rvfi-dii/rvfi_dii_trace.h"
 #ifndef ISS_CT_ENABLE_POLYMORPHISM
 #define PROP_CLASS_FINAL final
 #define PROP_METHOD_VIRTUAL
@@ -27,11 +31,12 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	// protected: must not modified directly (would break FastISS)
 	RV_ISA_Config *isa_config = nullptr;
-	uxlen_t pc = 0;
+	Capability ddc;  // Data capability
 	uint64_t cycle_counter_raw_last = 0;
 	int64_t lr_sc_counter = 0;
 	bool iss_slow_path = false;
 	bool trace = false;
+	bool rvfi_dii = false;
 	bool shall_exit = false;
 	sc_core::sc_event wfi_event;
 	CoreExecStatus status = CoreExecStatus::Runnable;
@@ -67,6 +72,10 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	ISS_CT_T_CSR_TABLE csrs;
 	VExtension<ISS_CT> v_ext;
 	PrivilegeLevel prv = MachineMode;
+
+	ProgramCounterCapability pc;  // TODO: This is a problem for rv32
+	rvfi_dii_trace_t rvfi_dii_output;
+	rvfi_dii_command_t rvfi_dii_input;
 
 	// last decoded and executed instruction
 	Instruction instr;
@@ -127,6 +136,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 
 	void init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
 	          clint_if *clint, uxlen_t entrypoint, uxlen_t sp);
+	void init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
+	          clint_if *clint, uxlen_t entrypoint, uxlen_t sp, bool cheri_purecap);
 
 	void trigger_external_interrupt(PrivilegeLevel level) override;
 	void clear_external_interrupt(PrivilegeLevel level) override;
@@ -153,6 +164,13 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	}
 	bool trace_enabled(void) override {
 		return trace;
+	}
+	void enable_rvfi_dii(bool ena) override {
+		rvfi_dii = ena;
+		force_slow_path();
+	}
+	bool rvfi_dii_enabled(void) override {
+		return rvfi_dii;
 	}
 	void print_stats(void) override {
 		stats.print();
@@ -186,6 +204,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	void fp_update_exception_flags();
 	void fp_setup_rm();
 	void fp_require_not_off();
+	void prepare_xret_target(Capability epcc);
+	void set_xret_target(uxlen_t value, csr_eepc_capability *p_eepc);
 
 	/* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */
 	PROP_METHOD_VIRTUAL uxlen_t get_csr_value(uxlen_t addr);
@@ -203,27 +223,42 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		}
 	}
 
+	inline void cheri_check_pc(ProgramCounterCapability pcc) {
+		if (!pcc.pcc.inCapBounds(pc, min_instruction_bytes())) {
+			handle_cheri_reg_exception(CapEx_LengthViolation, cPccIdx, &rvfi_dii_output);
+		}
+	}
+
 	template <unsigned Alignment, bool isLoad>
 	inline void trap_check_addr_alignment(uxlen_t addr) {
 		if (unlikely(addr % Alignment)) {
-			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr);
+			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr, &rvfi_dii_output);
+		}
+	}
+
+	template <bool isLoad>
+	inline void trap_check_addr_alignment(uxlen_t addr, unsigned alignment) {
+		if (unlikely(addr % alignment)) {
+			raise_trap(isLoad ? EXC_LOAD_ADDR_MISALIGNED : EXC_STORE_AMO_ADDR_MISALIGNED, addr, &rvfi_dii_output);
 		}
 	}
 
 	inline void execute_amo_w(Instruction &instr, std::function<int32_t(int32_t, int32_t)> operation) {
 		stats.inc_amo();
-		uxlen_t addr = regs[instr.rs1()];
+		Capability auth_val;
+		uxlen_t addr;
+		uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 		trap_check_addr_alignment<4, false>(addr);
 		int32_t data;
 		try {
-			data = mem->atomic_load_word(addr);
+			data = mem->atomic_load_word_via_cap(addr, auth_val, auth_idx);
 		} catch (SimulationTrap &e) {
 			if (e.reason == EXC_LOAD_ACCESS_FAULT)
 				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
 			throw e;
 		}
 		int32_t val = operation(data, (int32_t)regs[instr.rs2()]);
-		mem->atomic_store_word(addr, val);
+		mem->atomic_store_word_via_cap(addr, val, auth_val, auth_idx);
 		// ignore write to zero/x0
 		if (instr.rd() != RegFile::zero) {
 			regs[instr.rd()] = data;
@@ -231,18 +266,20 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	}
 
 	inline void execute_amo_d(Instruction &instr, std::function<int64_t(int64_t, int64_t)> operation) {
-		uxlen_t addr = regs[instr.rs1()];
+		Capability auth_val;
+		uxlen_t addr;
+		uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 		trap_check_addr_alignment<8, false>(addr);
 		uint64_t data;
 		try {
-			data = mem->atomic_load_double(addr);
+			data = mem->atomic_load_double_via_cap(addr, auth_val, auth_idx);
 		} catch (SimulationTrap &e) {
 			if (e.reason == EXC_LOAD_ACCESS_FAULT)
 				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
 			throw e;
 		}
 		uint64_t val = operation(data, regs[instr.rs2()]);
-		mem->atomic_store_double(addr, val);
+		mem->atomic_store_double_via_cap(addr, val, auth_val, auth_idx);
 		// ignore write to zero/x0
 		if (instr.rd() != RegFile::zero) {
 			regs[instr.rd()] = data;
@@ -297,6 +334,56 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	void run() override;
 
 	void show();
+
+	void init_cheri_regs();
+
+	void reset();
+
+	uint64_t get_cheri_mode_cap_addr(uint64_t base_reg, uint64_t offset, Capability *auth_val, uint64_t *vaddr);
+
+	uint64_t get_ddc_addr(uint64_t addr);
+
+	void check_ifetch_granule(uint64_t start_addr, uint64_t addr);
+	void memop_to_addr(Capability auth, uint64_t auth_idx, uint64_t offset, uint64_t len, bool load, bool store,
+	                   bool execute, bool cap_op, bool store_local);
+	void execute_c_jalr(int32_t immediate);
+
+	inline bool sys_enable_writable_misa() {
+		return false;  // TODO
+	}
+	inline bool sys_enable_rvc() {
+		return false;  // TODO
+	}
+	uint8_t min_instruction_bytes() {
+		if ((!sys_enable_writable_misa()) & (!csrs.misa.has_C_extension())) {
+			// Compressed Instructions are not enabled, an can never be enabled, as misa is not writeable
+			return 4;
+		}
+		return 2;
+	}
+
+	/* The xepc legalization zeroes xepc[1:0] when misa.C is hardwired to 0.
+	 * When misa.C is writable, it zeroes only xepc[0].
+	 */
+	inline uint64_t legalize_xepc(uint64_t v) {
+		if ((sys_enable_writable_misa() & sys_enable_rvc()) | csrs.misa.has_C_extension()) {
+			// Set bit 0 to 0
+			return v & ~0x1;
+		}
+		// Set bits 1:0 to 0
+		return v & ~0x3;
+	}
+
+	inline Capability legalizeEpcc(Capability v) {
+		CapAddr_t int_val = capToIntegerPC(v);
+		CapAddr_t legalized = legalize_xepc(int_val);
+
+		if (legalized == int_val) {
+			return v;
+		} else {
+			return updateCapWithIntegerPC(v, legalized);
+		}
+	}
 };
 
 /* see NOTE RVxx.1 and NOTE RVxx.2 in iss_ctemplate_handle.h */

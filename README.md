@@ -6,6 +6,10 @@ It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Jo
 A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf), can be found in the last section.
 
 ### Key features of *RISC-V VP++*
+ * Support for *Capability Hardware Enhanced RISC Instructions* (CHERI) RISC-V ISA, Version 9
+   * *Manfred Schlägl, Andreas Hinterdorfer, and Daniel Große. A RISC-V CHERI VP: Enabling system-level evaluation of the capability-based CHERI architecture. In ASP-DAC, 2026.*
+   * RV64 CHERIv9 ISS (+MMU, Tagged Memory Interface, ...) based on [Capability Hardware Enhanced RISC Instructions: CHERI Instruction-Set Architecture (Version 9)](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-987.pdf)
+     * includes interfaces for testing with [TestRIG](https://github.com/CTSRD-CHERI/TestRIG) (RVFI and DII)
  * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
    (Can be enabled with the "--en-ext-Zfh" command line option on all platforms)
  * Fast Interpreter-Based ISS

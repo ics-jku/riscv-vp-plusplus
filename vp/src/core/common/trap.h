@@ -1,5 +1,8 @@
 #pragma once
 
+// for rv64_cheriv9 rvfi_dii
+#include "../rv64_cheriv9/rvfi-dii/rvfi_dii_trace.h"  // TODO: Should not include rv64 in common!
+
 enum ExceptionCode {
 	// interrupt exception codes (mcause)
 	EXC_U_SOFTWARE_INTERRUPT = 0,
@@ -31,6 +34,11 @@ enum ExceptionCode {
 	EXC_INSTR_PAGE_FAULT = 12,
 	EXC_LOAD_PAGE_FAULT = 13,
 	EXC_STORE_AMO_PAGE_FAULT = 15,
+
+	// CHERIv9 exception codes
+	EXC_CHERI_LOAD_FAULT = 26,
+	EXC_CHERI_STORE_FAULT = 27,
+	EXC_CHERI_FAULT = 28,
 };
 
 struct SimulationTrap {
@@ -40,4 +48,15 @@ struct SimulationTrap {
 
 inline void raise_trap(ExceptionCode exc, uint64_t mtval) {
 	throw SimulationTrap({exc, mtval});
+}
+
+inline void raise_trap(ExceptionCode exc, unsigned long mtval, rvfi_dii_trace_t* trace) {
+	if (trace != nullptr) {
+		// trace->rvfi_dii_pc_wdata = mtval;
+		trace->rvfi_dii_trap = 1;
+		// trace->rvfi_dii_rs1_addr = 0;
+		// trace->rvfi_dii_rs2_addr = 0;
+		// trace->rvfi_dii_mem_addr = 0;
+	}
+	raise_trap(exc, mtval);
 }

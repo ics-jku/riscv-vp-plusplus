@@ -13,8 +13,10 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "trap.h"
+#include "core/common/trap.h"
 #include "util/common.h"
+
+namespace cheriv9 {
 
 constexpr uint32_t LUI_MASK = 0b00000000000000000000000001111111;
 constexpr uint32_t LUI_ENCODING = 0b00000000000000000000000000110111;
@@ -1672,6 +1674,219 @@ constexpr uint32_t VMV_NR_R_V_ENCODING = 0b10011100000000000011000001010111;
 constexpr uint32_t VMV_NR_R_V_MASK = 0b11111100000000000111000001111111;
 // RV-V Extension End -- Placeholder 0
 
+// CHERI Extension
+constexpr uint32_t LC_MASK = 0b00000000000000000111000001111111;
+constexpr uint32_t LC_ENCODING = 0b00000000000000000010000000001111;
+constexpr uint32_t SC_MASK = 0b00000000000000000111000001111111;
+constexpr uint32_t SC_ENCODING = 0b00000000000000000100000000100011;
+constexpr uint32_t AUIPCC_MASK = 0b00000000000000000000000001111111;
+constexpr uint32_t AUIPCC_ENCODING = 0b00000000000000000000000000010111;
+constexpr uint32_t FP_CLEAR_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t FP_CLEAR_ENCODING = 0b11111111000000000000000001011011;
+
+// CHERI Extension (auto-generated)
+constexpr uint32_t C_GET_PERM_MASK = 0b11111111111100000111000001111111;        // 0xfff0707f
+constexpr uint32_t C_GET_PERM_ENCODING = 0b11111110000000000000000001011011;    // 0xfe00005b
+constexpr uint32_t C_GET_TYPE_MASK = 0b11111111111100000111000001111111;        // 0xfff0707f
+constexpr uint32_t C_GET_TYPE_ENCODING = 0b11111110000100000000000001011011;    // 0xfe10005b
+constexpr uint32_t C_GET_BASE_MASK = 0b11111111111100000111000001111111;        // 0xfff0707f
+constexpr uint32_t C_GET_BASE_ENCODING = 0b11111110001000000000000001011011;    // 0xfe20005b
+constexpr uint32_t C_GET_LEN_MASK = 0b11111111111100000111000001111111;         // 0xfff0707f
+constexpr uint32_t C_GET_LEN_ENCODING = 0b11111110001100000000000001011011;     // 0xfe30005b
+constexpr uint32_t C_GET_TAG_MASK = 0b11111111111100000111000001111111;         // 0xfff0707f
+constexpr uint32_t C_GET_TAG_ENCODING = 0b11111110010000000000000001011011;     // 0xfe40005b
+constexpr uint32_t C_GET_SEALED_MASK = 0b11111111111100000111000001111111;      // 0xfff0707f
+constexpr uint32_t C_GET_SEALED_ENCODING = 0b11111110010100000000000001011011;  // 0xfe50005b
+constexpr uint32_t C_GET_OFFSET_MASK = 0b11111111111100000111000001111111;      // 0xfff0707f
+constexpr uint32_t C_GET_OFFSET_ENCODING = 0b11111110011000000000000001011011;  // 0xfe60005b
+constexpr uint32_t C_GET_FLAGS_MASK = 0b11111111111100000111000001111111;       // 0xfff0707f
+constexpr uint32_t C_GET_FLAGS_ENCODING = 0b11111110011100000000000001011011;   // 0xfe70005b
+constexpr uint32_t C_GET_HIGH_MASK = 0b11111111111100000111000001111111;        // 0xfff0707f
+constexpr uint32_t C_GET_HIGH_ENCODING = 0b11111111011100000000000001011011;    // 0xff70005b
+constexpr uint32_t C_GET_TOP_MASK = 0b11111111111100000111000001111111;         // 0xfff0707f
+constexpr uint32_t C_GET_TOP_ENCODING = 0b11111111100000000000000001011011;     // 0xff80005b
+constexpr uint32_t C_SEAL_MASK = 0b11111110000000000111000001111111;            // 0xfe00707f
+constexpr uint32_t C_SEAL_ENCODING = 0b00010110000000000000000001011011;        // 0x1600005b
+constexpr uint32_t C_UNSEAL_MASK = 0b11111110000000000111000001111111;          // 0xfe00707f
+constexpr uint32_t C_UNSEAL_ENCODING = 0b00011000000000000000000001011011;      // 0x1800005b
+constexpr uint32_t C_AND_PERM_MASK = 0b11111110000000000111000001111111;        // 0xfe00707f
+constexpr uint32_t C_AND_PERM_ENCODING = 0b00011010000000000000000001011011;    // 0x1a00005b
+constexpr uint32_t C_SET_FLAGS_MASK = 0b11111110000000000111000001111111;       // 0xfe00707f
+constexpr uint32_t C_SET_FLAGS_ENCODING = 0b00011100000000000000000001011011;   // 0x1c00005b
+constexpr uint32_t C_SET_OFFSET_MASK = 0b11111110000000000111000001111111;      // 0xfe00707f
+constexpr uint32_t C_SET_OFFSET_ENCODING = 0b00011110000000000000000001011011;  // 0x1e00005b
+constexpr uint32_t C_SET_ADDR_MASK = 0b11111110000000000111000001111111;        // 0xfe00707f
+constexpr uint32_t C_SET_ADDR_ENCODING = 0b00100000000000000000000001011011;    // 0x2000005b
+
+constexpr uint32_t C_SUB_MASK = 0b11111110000000000111000001111111;      // 0xfe00707f
+constexpr uint32_t C_SUB_ENCODING = 0b00101000000000000000000001011011;  // 0x2800005b
+constexpr uint32_t C_INC_OFFSET_ENCODING =
+    0b00100010000000000000000001011011;  // 0x2200005b // TODO: Check, discrepancies in spec...
+constexpr uint32_t C_INC_OFFSET_MASK = 0b11111110000000000111000001111111;  // 0xfe00707f
+// constexpr uint32_t C_INC_OFFSET_ENCODING = 0b00100010000000000000000001011011;					 // 0x1100005b
+constexpr uint32_t C_INC_OFFSET_IMM_MASK = 0b00000000000000000111000001111111;        // 0x0000707f
+constexpr uint32_t C_INC_OFFSET_IMM_ENCODING = 0b00000000000000000001000001011011;    // 0x0000105b
+constexpr uint32_t C_SET_BOUNDS_MASK = 0b11111110000000000111000001111111;            // 0xfe00707f
+constexpr uint32_t C_SET_BOUNDS_ENCODING = 0b00010000000000000000000001011011;        // 0x1000005b
+constexpr uint32_t C_SET_BOUNDS_EXACT_MASK = 0b11111110000000000111000001111111;      // 0xfe00707f
+constexpr uint32_t C_SET_BOUNDS_EXACT_ENCODING = 0b00010010000000000000000001011011;  // 0x1200005b
+constexpr uint32_t C_SET_BOUNDS_IMM_MASK = 0b00000000000000000111000001111111;        // 0x0000707f
+constexpr uint32_t C_SET_BOUNDS_IMM_ENCODING = 0b00000000000000000010000001011011;    // 0x0000205b
+constexpr uint32_t C_SET_HIGH_MASK = 0b11111110000000000111000001111111;              // 0xfe00707f
+constexpr uint32_t C_SET_HIGH_ENCODING = 0b00101100000000000000000001011011;          // 0x2c00005b
+constexpr uint32_t C_CLEAR_TAG_MASK = 0b11111111111100000111000001111111;             // 0xfff0707f
+constexpr uint32_t C_CLEAR_TAG_ENCODING = 0b11111110101100000000000001011011;         // 0xfeb0005b
+constexpr uint32_t C_BUILD_CAP_MASK = 0b11111110000000000111000001111111;             // 0xfe00707f
+constexpr uint32_t C_BUILD_CAP_ENCODING = 0b00111010000000000000000001011011;         // 0x3a00005b
+constexpr uint32_t C_COPY_TYPE_MASK = 0b11111110000000000111000001111111;             // 0xfe00707f
+constexpr uint32_t C_COPY_TYPE_ENCODING = 0b00111100000000000000000001011011;         // 0x3c00005b
+constexpr uint32_t C_C_SEAL_MASK = 0b11111110000000000111000001111111;                // 0xfe00707f
+constexpr uint32_t C_C_SEAL_ENCODING = 0b00111110000000000000000001011011;            // 0x3e00005b
+constexpr uint32_t C_SEAL_ENTRY_MASK = 0b11111111111100000111000001111111;            // 0xfff0707f
+constexpr uint32_t C_SEAL_ENTRY_ENCODING = 0b11111111000100000000000001011011;        // 0xff10005b
+constexpr uint32_t C_TO_PTR_MASK = 0b11111110000000000111000001111111;                // 0xfe00707f
+constexpr uint32_t C_TO_PTR_ENCODING = 0b00100100000000000000000001011011;            // 0x2400005b
+constexpr uint32_t C_FROM_PTR_MASK = 0b11111110000000000111000001111111;              // 0xfe00707f
+constexpr uint32_t C_FROM_PTR_ENCODING = 0b00100110000000000000000001011011;          // 0x2600005b
+constexpr uint32_t C_MOVE_MASK = 0b11111111111100000111000001111111;                  // 0xfff0707f
+constexpr uint32_t C_MOVE_ENCODING = 0b11111110101000000000000001011011;              // 0xfea0005b
+constexpr uint32_t C_TEST_SUBSET_MASK = 0b11111110000000000111000001111111;           // 0xfe00707f
+constexpr uint32_t C_TEST_SUBSET_ENCODING = 0b01000000000000000000000001011011;       // 0x4000005b
+constexpr uint32_t C_SET_EQUAL_EXACT_MASK = 0b11111110000000000111000001111111;       // 0xfe00707f
+constexpr uint32_t C_SET_EQUAL_EXACT_ENCODING = 0b01000010000000000000000001011011;   // 0x4200005b
+constexpr uint32_t JALR_CAP_MASK = 0b11111111111100000111000001111111;                // 0xfff0707f
+constexpr uint32_t JALR_CAP_ENCODING = 0b11111110110000000000000001011011;            // 0xfec0005b
+constexpr uint32_t JALR_PCC_MASK = 0b11111111111100000111000001111111;                // 0xfff0707f
+constexpr uint32_t JALR_PCC_ENCODING = 0b11111111010000000000000001011011;            // 0xff40005b
+constexpr uint32_t C_INVOKE_MASK = 0b11111110000000000111111111111111;                // 0xfe007fff
+constexpr uint32_t C_INVOKE_ENCODING = 0b11111100000000000000000011011011;            // 0xfc0000db
+constexpr uint32_t C_GET_ADDR_MASK = 0b11111111111100000111000001111111;              // 0xfff0707f
+constexpr uint32_t C_GET_ADDR_ENCODING = 0b11111110111100000000000001011011;
+
+constexpr uint32_t C_SPECIAL_R_W_MASK = 0b11111110000000000111000001111111;                       // 0xfe00707f
+constexpr uint32_t C_SPECIAL_R_W_ENCODING = 0b00000010000000000000000001011011;                   // 0x0200005b
+constexpr uint32_t C_CLEAR_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t C_CLEAR_ENCODING = 0b11111110111000000000000001011011;                         // 0xfee0005b
+constexpr uint32_t F_P_CLEAR_MASK = 0b11111111111100000111000001111111;                           // 0xfff0707f
+constexpr uint32_t F_P_CLEAR_ENCODING = 0b11111111000000000000000001011011;                       // 0xff00005b
+constexpr uint32_t C_ROUND_REPRESENTABLE_LENGTH_MASK = 0b11111111111100000111000001111111;        // 0xfff0707f
+constexpr uint32_t C_ROUND_REPRESENTABLE_LENGTH_ENCODING = 0b11111110100000000000000001011011;    // 0xfe80005b
+constexpr uint32_t C_REPRESENTABLE_ALIGNMENT_MASK_MASK = 0b11111111111100000111000001111111;      // 0xfff0707f
+constexpr uint32_t C_REPRESENTABLE_ALIGNMENT_MASK_ENCODING = 0b11111110100100000000000001011011;  // 0xfe90005b
+constexpr uint32_t C_LOAD_TAGS_MASK = 0b11111111111100000111000001111111;                         // 0xfff0707f
+constexpr uint32_t C_LOAD_TAGS_ENCODING = 0b11111111001000000000000001011011;                     // 0xff20005b
+constexpr uint32_t C_CLEAR_TAGS_MASK = 0b11111111111100000111111111111111;                        // 0xfff07fff
+constexpr uint32_t C_CLEAR_TAGS_ENCODING = 0b11111100000000000000111111011011;                    // 0xfc000fdb
+constexpr uint32_t LB_DDC_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LB_DDC_ENCODING = 0b11111010000000000000000001011011;                          // 0xfa00005b
+constexpr uint32_t LH_DDC_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LH_DDC_ENCODING = 0b11111010000100000000000001011011;                          // 0xfa10005b
+constexpr uint32_t LW_DDC_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LW_DDC_ENCODING = 0b11111010001000000000000001011011;                          // 0xfa20005b
+constexpr uint32_t LD_DDC_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LD_DDC_ENCODING = 0b11111010001100000000000001011011;                          // 0xfa30005b
+constexpr uint32_t LC_DDC_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LC_DDC_ENCODING = 0b11111011011100000000000001011011;                          // 0xfb70005b
+constexpr uint32_t LBU_DDC_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t LBU_DDC_ENCODING = 0b11111010010000000000000001011011;                         // 0xfa40005b
+constexpr uint32_t LHU_DDC_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t LHU_DDC_ENCODING = 0b11111010010100000000000001011011;                         // 0xfa50005b
+constexpr uint32_t LWU_DDC_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t LWU_DDC_ENCODING = 0b11111010011000000000000001011011;                         // 0xfa60005b
+constexpr uint32_t LB_CAP_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LB_CAP_ENCODING = 0b11111010100000000000000001011011;                          // 0xfa80005b
+constexpr uint32_t LH_CAP_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LH_CAP_ENCODING = 0b11111010100100000000000001011011;                          // 0xfa90005b
+constexpr uint32_t LW_CAP_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LW_CAP_ENCODING = 0b11111010101000000000000001011011;                          // 0xfaa0005b
+constexpr uint32_t LD_CAP_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LD_CAP_ENCODING = 0b11111010101100000000000001011011;                          // 0xfab0005b
+constexpr uint32_t LC_CAP_MASK = 0b11111111111100000111000001111111;                              // 0xfff0707f
+constexpr uint32_t LC_CAP_ENCODING = 0b11111011111100000000000001011011;                          // 0xfbf0005b
+constexpr uint32_t LBU_CAP_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t LBU_CAP_ENCODING = 0b11111010110000000000000001011011;                         // 0xfac0005b
+constexpr uint32_t LHU_CAP_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t LHU_CAP_ENCODING = 0b11111010110100000000000001011011;                         // 0xfad0005b
+constexpr uint32_t LWU_CAP_MASK = 0b11111111111100000111000001111111;                             // 0xfff0707f
+constexpr uint32_t LWU_CAP_ENCODING = 0b11111010111000000000000001011011;                         // 0xfae0005b
+constexpr uint32_t LR_B_DDC_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_B_DDC_ENCODING = 0b11111011000000000000000001011011;                        // 0xfb00005b
+constexpr uint32_t LR_H_DDC_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_H_DDC_ENCODING = 0b11111011000100000000000001011011;                        // 0xfb10005b
+constexpr uint32_t LR_W_DDC_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_W_DDC_ENCODING = 0b11111011001000000000000001011011;                        // 0xfb20005b
+constexpr uint32_t LR_D_DDC_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_D_DDC_ENCODING = 0b11111011001100000000000001011011;                        // 0xfb30005b
+constexpr uint32_t LR_C_DDC_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_C_DDC_ENCODING = 0b11111011010000000000000001011011;                        // 0xfb40005b
+constexpr uint32_t LR_B_CAP_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_B_CAP_ENCODING = 0b11111011100000000000000001011011;                        // 0xfb80005b
+constexpr uint32_t LR_H_CAP_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_H_CAP_ENCODING = 0b11111011100100000000000001011011;                        // 0xfb90005b
+constexpr uint32_t LR_W_CAP_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_W_CAP_ENCODING = 0b11111011101000000000000001011011;                        // 0xfba0005b
+constexpr uint32_t LR_D_CAP_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_D_CAP_ENCODING = 0b11111011101100000000000001011011;                        // 0xfbb0005b
+constexpr uint32_t LR_C_CAP_MASK = 0b11111111111100000111000001111111;                            // 0xfff0707f
+constexpr uint32_t LR_C_CAP_ENCODING = 0b11111011110000000000000001011011;                        // 0xfbc0005b
+constexpr uint32_t SB_DDC_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SB_DDC_ENCODING = 0b11111000000000000000000001011011;                          // 0xf800005b
+constexpr uint32_t SH_DDC_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SH_DDC_ENCODING = 0b11111000000000000000000011011011;                          // 0xf80000db
+constexpr uint32_t SW_DDC_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SW_DDC_ENCODING = 0b11111000000000000000000101011011;                          // 0xf800015b
+constexpr uint32_t SD_DDC_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SD_DDC_ENCODING = 0b11111000000000000000000111011011;                          // 0xf80001db
+constexpr uint32_t SC_DDC_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SC_DDC_ENCODING = 0b11111000000000000000001001011011;                          // 0xf800025b
+constexpr uint32_t SB_CAP_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SB_CAP_ENCODING = 0b11111000000000000000010001011011;                          // 0xf800045b
+constexpr uint32_t SH_CAP_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SH_CAP_ENCODING = 0b11111000000000000000010011011011;                          // 0xf80004db
+constexpr uint32_t SW_CAP_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SW_CAP_ENCODING = 0b11111000000000000000010101011011;                          // 0xf800055b
+constexpr uint32_t SD_CAP_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SD_CAP_ENCODING = 0b11111000000000000000010111011011;                          // 0xf80005db
+constexpr uint32_t SC_CAP_MASK = 0b11111110000000000111111111111111;                              // 0xfe007fff
+constexpr uint32_t SC_CAP_ENCODING = 0b11111000000000000000011001011011;                          // 0xf800065b
+constexpr uint32_t SC_B_DDC_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_B_DDC_ENCODING = 0b11111000000000000000100001011011;                        // 0xf800085b
+constexpr uint32_t SC_H_DDC_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_H_DDC_ENCODING = 0b11111000000000000000100011011011;                        // 0xf80008db
+constexpr uint32_t SC_W_DDC_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_W_DDC_ENCODING = 0b11111000000000000000100101011011;                        // 0xf800095b
+constexpr uint32_t SC_D_DDC_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_D_DDC_ENCODING = 0b11111000000000000000100111011011;                        // 0xf80009db
+constexpr uint32_t SC_C_DDC_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_C_DDC_ENCODING = 0b11111000000000000000101001011011;                        // 0xf8000a5b
+constexpr uint32_t SC_B_CAP_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_B_CAP_ENCODING = 0b11111000000000000000110001011011;                        // 0xf8000c5b
+constexpr uint32_t SC_H_CAP_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_H_CAP_ENCODING = 0b11111000000000000000110011011011;                        // 0xf8000cdb
+constexpr uint32_t SC_W_CAP_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_W_CAP_ENCODING = 0b11111000000000000000110101011011;                        // 0xf8000d5b
+constexpr uint32_t SC_D_CAP_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_D_CAP_ENCODING = 0b11111000000000000000110111011011;                        // 0xf8000ddb
+constexpr uint32_t SC_C_CAP_MASK = 0b11111110000000000111111111111111;                            // 0xfe007fff
+constexpr uint32_t SC_C_CAP_ENCODING = 0b11111000000000000000111001011011;                        // 0xf8000e5b
+constexpr uint32_t LR_C_MASK = 0b11111001111100000111000001111111;                                // 0xf9f0707f
+constexpr uint32_t LR_C_ENCODING = 0b00010000000000000100000000101111;                            // 0x1000202f
+constexpr uint32_t SC_C_MASK = 0b11111000000000000111000001111111;                                // 0xf800707f
+constexpr uint32_t SC_C_ENCODING = 0b00011000000000000100000000101111;                            // 0x1800202f
+constexpr uint32_t AMOSWAP_C_MASK = 0b11111000000000000111000001111111;                           // 0xf800707f
+constexpr uint32_t AMOSWAP_C_ENCODING = 0b00001000000000000100000000101111;                       // 0x0800202f
+// LR_B,
+// SC_B,
+// LR_H,
+// SC_H,
+constexpr uint32_t LR_B_ENCODING = 0b00010000000000000000000000101111;  // 0x1000002f
+constexpr uint32_t LR_B_MASK = 0b11111001111100000111000001111111;      // 0xf9f0707f
+constexpr uint32_t SC_B_ENCODING = 0b00011000000000000000000000101111;  // 0x1800002f
+constexpr uint32_t SC_B_MASK = 0b11111000000000000111000001111111;      // 0xf800707f
+constexpr uint32_t LR_H_ENCODING = 0b00010000000000000001000000101111;  // 0x1000202f
+constexpr uint32_t LR_H_MASK = 0b11111001111100000111000001111111;      // 0xf9f0707f
+constexpr uint32_t SC_H_ENCODING = 0b00011000000000000001000000101111;  // 0x1800202f
+constexpr uint32_t SC_H_MASK = 0b11111000000000000111000001111111;      // 0xf800707f
 /*
  * check isa_config (RV_ISA_Config) if given extension is supported
  * return current function with UNSUP, if not
@@ -2643,6 +2858,107 @@ std::array<const char *, Operation::OpId::NUMBER_OF_OPERATIONS> Operation::opIdS
     "VMV.NR.R.V",
     // RV-V Extension End -- Placeholder 2
 
+    // Cheri Instructions
+    "C_GET_PERM",
+    "C_GET_TYPE",
+    "C_GET_BASE",
+    "C_GET_LEN",
+    "C_GET_TAG",
+    "C_GET_SEALED",
+    "C_GET_OFFSET",
+    "C_GET_FLAGS",
+    "C_GET_HIGH",
+    "C_GET_TOP",
+    "C_SEAL",
+    "C_UNSEAL",
+    "C_AND_PERM",
+    "C_SET_FLAGS",
+    "C_SET_OFFSET",
+    "C_SET_ADDR",
+    "C_SUB",
+    "C_INC_OFFSET",
+    "C_INC_OFFSET_IMM",
+    "C_SET_BOUNDS",
+    "C_SET_BOUNDS_EXACT",
+    "C_SET_BOUNDS_IMM",
+    "C_SET_HIGH",
+    "C_CLEAR_TAG",
+    "C_BUILD_CAP",
+    "C_COPY_TYPE",
+    "C_C_SEAL",
+    "C_SEAL_ENTRY",
+    "C_TO_PTR",
+    "C_FROM_PTR",
+    "C_MOVE",
+    "C_TEST_SUBSET",
+    "C_SET_EQUAL_EXACT",
+    "JALR_CAP",
+    "JALR_PCC",
+    "C_INVOKE",
+    "C_GET_ADDR",
+    "C_SPECIAL_R_W",
+    "C_CLEAR",
+    "FP_CLEAR",
+    "C_ROUND_REPRESENTABLE_LENGTH",
+    "C_REPRESENTABLE_ALIGNMENT_MASK",
+    "C_LOAD_TAGS",
+    "C_CLEAR_TAGS",
+    "LB_DDC",
+    "LH_DDC",
+    "LW_DDC",
+    "LD_DDC",
+    "LC_DDC",
+    "LBU_DDC",
+    "LHU_DDC",
+    "LWU_DDC",
+    "LB_CAP",
+    "LH_CAP",
+    "LW_CAP",
+    "LD_CAP",
+    "LC_CAP",
+    "LBU_CAP",
+    "LHU_CAP",
+    "LWU_CAP",
+    "LR_B_DDC",
+    "LR_H_DDC",
+    "LR_W_DDC",
+    "LR_D_DDC",
+    "LR_C_DDC",
+    "LR_B_CAP",
+    "LR_H_CAP",
+    "LR_W_CAP",
+    "LR_D_CAP",
+    "LR_C_CAP",
+    "SB_DDC",
+    "SH_DDC",
+    "SW_DDC",
+    "SD_DDC",
+    "SC_DDC",
+    "SB_CAP",
+    "SH_CAP",
+    "SW_CAP",
+    "SD_CAP",
+    "SC_CAP",
+    "SC_B_DDC",
+    "SC_H_DDC",
+    "SC_W_DDC",
+    "SC_D_DDC",
+    "SC_C_DDC",
+    "SC_B_CAP",
+    "SC_H_CAP",
+    "SC_W_CAP",
+    "SC_D_CAP",
+    "SC_C_CAP",
+    "LC",
+    "SC",
+    "LR_C",
+    "SC_C",
+    "AMOSWAP_C",
+    "LR_B",
+    "SC_B",
+    "LR_H",
+    "SC_H",
+
     // privileged instructions
     "URET",
     "SRET",
@@ -2811,6 +3127,76 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case FCVT_H_L:
 		case FCVT_H_LU:
 		case VSETVL:
+		case C_GET_PERM:
+		case C_GET_TYPE:
+		case C_GET_BASE:
+		case C_GET_LEN:
+		case C_GET_TAG:
+		case C_GET_SEALED:
+		case C_GET_OFFSET:
+		case C_GET_FLAGS:
+		case C_GET_HIGH:
+		case C_GET_TOP:
+		case C_SEAL:
+		case C_UNSEAL:
+		case C_AND_PERM:
+		case C_SET_FLAGS:
+		case C_SET_OFFSET:
+		case C_SET_ADDR:
+		case C_SUB:
+		case C_INC_OFFSET:
+		case C_SET_BOUNDS:
+		case C_SET_BOUNDS_EXACT:
+		case C_SET_HIGH:
+		case C_CLEAR_TAG:
+		case C_BUILD_CAP:
+		case C_COPY_TYPE:
+		case C_C_SEAL:
+		case C_SEAL_ENTRY:
+		case C_TO_PTR:
+		case C_FROM_PTR:
+		case C_MOVE:
+		case C_TEST_SUBSET:
+		case C_SET_EQUAL_EXACT:
+		case JALR_CAP:
+		case JALR_PCC:
+		case C_INVOKE:
+		case C_GET_ADDR:
+		case C_SPECIAL_R_W:
+		case C_ROUND_REPRESENTABLE_LENGTH:
+		case C_REPRESENTABLE_ALIGNMENT_MASK:
+		case C_LOAD_TAGS:
+		case C_CLEAR_TAGS:
+		case LB_DDC:
+		case LH_DDC:
+		case LW_DDC:
+		case LC_DDC:
+		case LD_DDC:
+		case LBU_DDC:
+		case LHU_DDC:
+		case LWU_DDC:
+		case LB_CAP:
+		case LH_CAP:
+		case LW_CAP:
+		case LC_CAP:
+		case LD_CAP:
+		case LBU_CAP:
+		case LHU_CAP:
+		case LWU_CAP:
+		case LR_B_DDC:
+		case LR_H_DDC:
+		case LR_W_DDC:
+		case LR_C_DDC:
+		case LR_D_DDC:
+		case LR_B_CAP:
+		case LR_H_CAP:
+		case LR_W_CAP:
+		case LR_C_CAP:
+		case LR_D_CAP:
+		case LR_C:
+		case AMOSWAP_C:
+		case LR_B:
+		case LR_H:
 			return Type::R;
 
 		case JALR:
@@ -2864,6 +3250,9 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case CSRRCI:
 		case FLW:
 		case FLD:
+		case LC:
+		case C_INC_OFFSET_IMM:
+		case C_SET_BOUNDS_IMM:
 		case FLH:
 			return Type::I;
 
@@ -2873,6 +3262,30 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case SD:
 		case FSW:
 		case FSD:
+		case SC:
+		case SB_DDC:
+		case SH_DDC:
+		case SW_DDC:
+		case SC_DDC:
+		case SD_DDC:
+		case SB_CAP:
+		case SH_CAP:
+		case SW_CAP:
+		case SC_CAP:
+		case SD_CAP:
+		case SC_B_DDC:
+		case SC_H_DDC:
+		case SC_W_DDC:
+		case SC_D_DDC:
+		case SC_C_DDC:
+		case SC_B_CAP:
+		case SC_H_CAP:
+		case SC_W_CAP:
+		case SC_D_CAP:
+		case SC_C_CAP:
+		case SC_C:
+		case SC_B:
+		case SC_H:
 		case FSH:
 			return Type::S;
 
@@ -3536,6 +3949,9 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case VCOMPRESS_VM:
 		case VMV_NR_R_V:
 			return Type::V;
+		case C_CLEAR:
+		case FP_CLEAR:
+			return Type::R_Q_M;
 
 		case UNDEF:
 		case UNSUP:
@@ -3552,12 +3968,20 @@ unsigned C_ADDI4SPN_NZUIMM(uint32_t n) {
 	       (BIT_SINGLE_P1(n, 5) << 3);
 }
 
+unsigned C_INC_OFFSET_IMM4CSPN(uint32_t n) {
+	return (BIT_SLICE(n, 12, 11) << 4) | (BIT_SLICE(n, 10, 7) << 6) | (BIT_SINGLE_P1(n, 6) << 2) |
+	       (BIT_SINGLE_P1(n, 5) << 3);
+}
+
 unsigned C_LW_UIMM(uint32_t n) {
 	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SINGLE_P1(n, 6) << 2) | (BIT_SINGLE_P1(n, 5) << 6);
 }
 
 unsigned C_LD_UIMM(uint32_t n) {
 	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SLICE(n, 6, 5) << 6);
+}
+unsigned C_LC_UIMM(uint32_t n) {
+	return (BIT_SLICE(n, 6, 5) << 6) | (BIT_SLICE(n, 12, 11) << 4) | BIT_SINGLE_PN(n, 10, 8);
 }
 
 unsigned C_SW_UIMM(uint32_t n) {
@@ -3575,6 +3999,11 @@ int32_t C_JAL_IMM(int32_t n) {
 }
 
 int32_t C_ADDI16SP_NZIMM(int32_t n) {
+	return EXTRACT_SIGN_BIT(n, 12, 9) | BIT_SINGLE_PN(n, 6, 4) | BIT_SINGLE_PN(n, 5, 6) | (BIT_SLICE(n, 4, 3) << 7) |
+	       BIT_SINGLE_PN(n, 2, 5);
+}
+
+int32_t C_INC_OFFSET_IMM16CSP(int32_t n) {
 	return EXTRACT_SIGN_BIT(n, 12, 9) | BIT_SINGLE_PN(n, 6, 4) | BIT_SINGLE_PN(n, 5, 6) | (BIT_SLICE(n, 4, 3) << 7) |
 	       BIT_SINGLE_PN(n, 2, 5);
 }
@@ -3604,8 +4033,21 @@ uint32_t C_LDSP_UIMM(uint32_t n) {
 	return BIT_SINGLE_PN(n, 12, 5) | (BIT_SLICE(n, 6, 5) << 3) | (BIT_SLICE(n, 4, 2) << 6);
 }
 
+uint32_t C_LCSP_UIMM(uint32_t n) {
+	return (BIT_SLICE(n, 5, 2) << 6) | BIT_SINGLE_PN(n, 6, 4) | BIT_SINGLE_PN(n, 12, 5);
+};
+
 uint32_t C_SDSP_UIMM(uint32_t n) {
 	return (BIT_SLICE(n, 12, 10) << 3) | (BIT_SLICE(n, 9, 7) << 6);
+}
+
+uint32_t C_SCSP_UIMM(uint32_t n) {
+	// According to riscv-cheri-0.9.5 this is the right encoding for rv64: C.SCSP
+	return (BIT_SLICE(n, 12, 11) << 4) | (BIT_SLICE(n, 10, 7) << 6);
+}
+
+uint32_t C_SC_UIMM(uint32_t n) {
+	return (BIT_SLICE(n, 12, 11) << 4) | BIT_SINGLE_PN(n, 10, 8) | (BIT_SLICE(n, 6, 5) << 6);
 }
 
 struct InstructionFactory {
@@ -3643,6 +4085,10 @@ struct InstructionFactory {
 		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 7 | (2 << 12));
 	}
 
+	static T LC(unsigned rd, unsigned rs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 0xf | (2 << 12));
+	}
+
 	static T FLD(unsigned rd, unsigned rs1, int I_imm) {
 		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 7 | (3 << 12));
 	}
@@ -3667,8 +4113,17 @@ struct InstructionFactory {
 		         ((rs2 & 0x1f) << 20) | 39 | (3 << 12));
 	}
 
+	static T SC(unsigned rs1, unsigned rs2, int S_imm) {
+		return T((((S_imm & 0b11111) << 7) | ((S_imm & (0b1111111 << 5)) << 20)) | ((rs1 & 0x1f) << 15) |
+		         ((rs2 & 0x1f) << 20) | 0x23 | (4 << 12));
+	}
+
 	static T LUI(unsigned rd, int U_imm) {
 		return T((U_imm & (1048575 << 12)) | ((rd & 0x1f) << 7) | 55);
+	}
+
+	static T C_INC_OFFSET_IMM(unsigned rd, unsigned rs1, int I_imm) {
+		return T(((I_imm & 4095) << 20) | ((rd & 0x1f) << 7) | ((rs1 & 0x1f) << 15) | 0x5b | (1 << 12));
 	}
 
 	static T ADDI(unsigned rd, unsigned rs1, int I_imm) {
@@ -3902,7 +4357,7 @@ Compressed::C_OpId decode_compressed(Instruction &instr, Architecture arch) {
 #define C_GET_OP_OR_NOP(_instr, _op) ((_instr).rd() != 0 ? (_op) : (_op##_NOP))
 
 Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId, Architecture arch,
-                                  const RV_ISA_Config &isa_config) {
+                                  const RV_ISA_Config &isa_config, bool capabilityMode) {
 	using namespace Operation;
 	using namespace Compressed;
 
@@ -3929,6 +4384,16 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			return C_GET_OP_OR_NOP(instr, ADD);
 
 		case C_MV:
+			/*
+			 * Implement hint instruction to be coherent with sail implementation
+			 * TODO: Not necessary for correct function, since NOPs are handled in ISS anyways. However, maybe necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if (instr.c_rs2() == 0) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::ADD(instr.c_rd(), 0, instr.c_rs2());
 			return C_GET_OP_OR_NOP(instr, ADD);
 
@@ -3944,7 +4409,7 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			instr = InstructionFactory::XOR(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return C_GET_OP_OR_NOP(instr, XOR);
 
-		case C_SUB:
+		case Compressed::C_OpId::C_SUB:
 			instr = InstructionFactory::SUB(instr.c_rd_small(), instr.c_rd_small(), instr.c_rs2_small());
 			return C_GET_OP_OR_NOP(instr, SUB);
 
@@ -3965,11 +4430,24 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			return LD;
 
 		case C_FLW:
+			if (capabilityMode && arch == RV32) {
+				// TODO imm encoding probably wrong
+				instr = InstructionFactory::LC(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
+				return LC;
+			}
+
 			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FLW(instr.c_rs2_small(), instr.c_rd_small(), C_LW_UIMM(instr.data()));
 			return FLW;
 
 		case C_FLD:
+			if (capabilityMode) {
+				if (arch == RV32) {
+					// TODO
+				}
+				instr = InstructionFactory::LC(instr.c_rs2_small(), instr.c_rd_small(), C_LC_UIMM(instr.data()));
+				return LC;
+			}
 			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FLD(instr.c_rs2_small(), instr.c_rd_small(), C_LD_UIMM(instr.data()));
 			return FLD;
@@ -3983,16 +4461,35 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			return SD;
 
 		case C_FSW:
+			if (capabilityMode && arch == RV32) {
+				// TODO imm encoding probably wrong
+				instr = InstructionFactory::SC(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
+				return SC;
+			}
 			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FSW(instr.c_rd_small(), instr.c_rs2_small(), C_SW_UIMM(instr.data()));
 			return FSW;
 
 		case C_FSD:
+			if (capabilityMode) {
+				if (arch == RV32) {
+					// TODO
+				}
+				instr = InstructionFactory::SC(instr.c_rd_small(), instr.c_rs2_small(), C_SC_UIMM(instr.data()));
+				return SC;
+			}
 			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FSD(instr.c_rd_small(), instr.c_rs2_small(), C_SD_UIMM(instr.data()));
 			return FSD;
 
 		case C_ADDI4SPN: {
+			if (capabilityMode) {
+				unsigned n = C_INC_OFFSET_IMM4CSPN(instr.data());
+				if (n == 0)
+					return UNDEF;
+				instr = InstructionFactory::C_INC_OFFSET_IMM(instr.c_rs2_small(), 2, n);
+				return C_INC_OFFSET_IMM;
+			}
 			unsigned n = C_ADDI4SPN_NZUIMM(instr.data());
 			if (n == 0)
 				return UNDEF;
@@ -4001,6 +4498,17 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 		}
 
 		case C_ADDI:
+
+			/*
+			 * Implement hint instruction to be coherent with sail implementation
+			 * TODO: Not necessary for correct function, since NOPs are handled in ISS anyways. However, maybe necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if ((instr.data() & 0b1111000001111111) == 0b0000000000000001) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::ADDI(instr.c_rd(), instr.c_rd(), instr.c_imm());
 			return C_GET_OP_OR_NOP(instr, ADDI);
 
@@ -4015,6 +4523,16 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			return C_GET_OP_OR_NOP(instr, ADDIW);
 
 		case C_LI:
+			/*
+			 * Implement hint instruction to be coherent with sail implementation
+			 * TODO: Not necessary for correct function, since NOPs are handled in ISS anyways. However, maybe necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if ((instr.data() & 0b1110111110000001) == 0b0100000000000001) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::ADDI(instr.c_rd(), 0, instr.c_imm());
 			return C_GET_OP_OR_NOP(instr, ADDI);
 
@@ -4022,6 +4540,10 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			auto n = C_ADDI16SP_NZIMM(instr.data());
 			if (n == 0)
 				return UNDEF;  // reserved
+			if (capabilityMode) {
+				instr = InstructionFactory::C_INC_OFFSET_IMM(2, 2, n);
+				return C_INC_OFFSET_IMM;
+			}
 			instr = InstructionFactory::ADDI(2, 2, n);
 			return C_GET_OP_OR_NOP(instr, ADDI);
 		}
@@ -4030,6 +4552,13 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			auto n = C_LUI_NZIMM(instr.data());
 			if (n == 0)
 				return UNDEF;  // reserved
+				               // Implement hint instruction to be coherent with sail implementation
+			// TODO Not sure if this is the way to go...
+			if ((instr.data() & 0b1110111110000011) == 0b0110000000000001) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::LUI(instr.c_rd(), n);
 			return C_GET_OP_OR_NOP(instr, LUI);
 		}
@@ -4038,6 +4567,16 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			auto n = instr.c_uimm();
 			if (arch == RV32 && n > 31)
 				return UNDEF;
+			/*
+			 * Implement hint instruction to be coherent with sail implementation
+			 * TODO: Not necessary for correct function, since NOPs are handled in ISS anyways. However, maybe necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if ((instr.data() & 0b1111000001111111) == 0b0000000000000010) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::SLLI(instr.c_rd(), instr.c_rd(), n);
 			return C_GET_OP_OR_NOP(instr, SLLI);
 		}
@@ -4046,6 +4585,16 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			auto n = instr.c_uimm();
 			if (arch == RV32 && n > 31)
 				return UNDEF;
+			/*
+			 * Implement hint instruction to be coherent with sail implementation
+			 * TODO: Not necessary for correct function, since NOPs are handled in ISS anyways. However, maybe necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if ((instr.data() & 0b1111110001111111) == 0b1000000000000001) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::SRLI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return C_GET_OP_OR_NOP(instr, SRLI);
 		}
@@ -4054,6 +4603,17 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			auto n = instr.c_uimm();
 			if (arch == RV32 && n > 31)
 				return UNDEF;
+
+			/*
+			 * Implement hint instruction to be coherent with sail implementation
+			 * TODO: Not necessary for correct function, since NOPs are handled in ISS anyways. However, maybe necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if ((instr.data() & 0b1111110001111111) == 0b1000010000000001) {
+				// This marks a hint instruction
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::SRAI(instr.c_rd_small(), instr.c_rd_small(), n);
 			return C_GET_OP_OR_NOP(instr, SRAI);
 		}
@@ -4087,11 +4647,23 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			return LD;
 
 		case C_FLWSP:
+			if (capabilityMode && arch == RV32) {
+				// TODO imm encoding probably wrong
+				instr = InstructionFactory::LC(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
+				return LC;
+			}
 			REQUIRE_ISA(csr_misa::F);
 			instr = InstructionFactory::FLW(instr.c_rd(), 2, C_LWSP_UIMM(instr.data()));
 			return FLW;
 
 		case C_FLDSP:
+			if (capabilityMode) {
+				if (arch == RV32) {
+					// TODO
+				}
+				instr = InstructionFactory::LC(instr.c_rd(), 2, C_LCSP_UIMM(instr.data()));
+				return LC;
+			}
 			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FLD(instr.c_rd(), 2, C_LDSP_UIMM(instr.data()));
 			return FLD;
@@ -4110,11 +4682,26 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 			return FSW;
 
 		case C_FSDSP:
+			if (capabilityMode) {
+				if (arch == RV32) {
+					// TODO
+				}
+				instr = InstructionFactory::SC(2, instr.c_rs2(), C_SCSP_UIMM(instr.data()));
+				return SC;
+			}
 			REQUIRE_ISA(csr_misa::D);
 			instr = InstructionFactory::FSD(2, instr.c_rs2(), C_SDSP_UIMM(instr.data()));
 			return FSD;
 
 		case C_EBREAK:
+			/*
+			 * TODO: Not necessary for correct function. However, necessary
+			 * for correct test-rig tests (comparison with sail traces).
+			 */
+			if ((instr.c_rs2() != 0) && ((instr.data() & 0b1111111110000011) == 0b1001000000000010)) {
+				instr = InstructionFactory::ADD(0, 0, 0);  // Perform a NOP
+				return ADD;
+			}
 			instr = InstructionFactory::EBREAK();
 			return EBREAK;
 
@@ -4132,10 +4719,11 @@ Operation::OpId expand_compressed(Instruction &instr, Compressed::C_OpId c_opId,
 	throw std::runtime_error("some compressed instruction not handled");
 }
 
-Operation::OpId Instruction::decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config) {
+Operation::OpId Instruction::decode_and_expand_compressed(Architecture arch, const RV_ISA_Config &isa_config,
+                                                          bool capabilityMode) {
 	REQUIRE_ISA(csr_misa::C);
 	auto c_op = decode_compressed(*this, arch);
-	return expand_compressed(*this, c_op, arch, isa_config);
+	return expand_compressed(*this, c_op, arch, isa_config, capabilityMode);
 }
 
 /* match and return either the real operation _op (e.g. ADD) or, if rd == zero, the alternative operation _oprdzero
@@ -4221,6 +4809,8 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 					MATCH_AND_RETURN_INSTR(SW);
 				case F3_SD:
 					MATCH_AND_RETURN_INSTR(SD);
+				case F3_SQ:  // Used for SC (Cheri store capability)
+					MATCH_AND_RETURN_INSTR(SC);
 			}
 			break;
 		}
@@ -4395,9 +4985,23 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 		case OP_FENCE: {
 			switch (instr.funct3()) {
 				case F3_FENCE:
+					// FENCE is reserved, and treated as nop, if imm, rs ord rd are not zero
+					// This is required to be consistend with sail for TestRIG
+					// TODO Use match_and_return for this?
+					if (instr.I_imm() != 0 || instr.rs1() != 0 || instr.rd() != 0) {
+						return Operation::OpId::ADDI_NOP;
+					}
 					MATCH_AND_RETURN_INSTR(FENCE);
 				case F3_FENCE_I:
+					// FENCE is reserved, and treated as nop, if imm, rs ord rd are not zero
+					// This is required to be consistend with sail for TestRIG
+					// TODO Use match_and_return for this?
+					if (instr.I_imm() != 0 || instr.rs1() != 0 || instr.rd() != 0) {
+						return Operation::OpId::ADDI_NOP;
+					}
 					MATCH_AND_RETURN_INSTR(FENCE_I);
+				case F3_LC:
+					MATCH_AND_RETURN_INSTR(LC);
 			}
 			break;
 		}
@@ -4443,25 +5047,45 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 			switch (instr.funct5()) {
 				case F5_LR_W:
 					REQUIRE_ISA(csr_misa::A);
-					if (instr.funct3() == F3_AMO_D) {
-						MATCH_AND_RETURN_INSTR(LR_D);
-					} else {
-						MATCH_AND_RETURN_INSTR(LR_W);
+					switch (instr.funct3()) {
+						case F3_AMO_D:
+							MATCH_AND_RETURN_INSTR(LR_D);
+						case F3_AMO_W:
+							MATCH_AND_RETURN_INSTR(LR_W);
+						case F3_AMO_C:
+							MATCH_AND_RETURN_INSTR(LR_C);
+						case F3_AMO_B:  // Implemented by CHERI
+							MATCH_AND_RETURN_INSTR(LR_B);
+						case F3_AMO_H:  // Implemented by CHERI
+							MATCH_AND_RETURN_INSTR(LR_H);
 					}
+					break;
 				case F5_SC_W:
 					REQUIRE_ISA(csr_misa::A);
-					if (instr.funct3() == F3_AMO_D) {
-						MATCH_AND_RETURN_INSTR(SC_D);
-					} else {
-						MATCH_AND_RETURN_INSTR(SC_W);
+					switch (instr.funct3()) {
+						case F3_AMO_D:
+							MATCH_AND_RETURN_INSTR(SC_D);
+						case F3_AMO_W:
+							MATCH_AND_RETURN_INSTR(SC_W);
+						case F3_AMO_C:
+							MATCH_AND_RETURN_INSTR(SC_C);
+						case F3_AMO_B:  // Implemented by CHERI
+							MATCH_AND_RETURN_INSTR(SC_B);
+						case F3_AMO_H:  // Implemented by CHERI
+							MATCH_AND_RETURN_INSTR(SC_H);
 					}
-				case F5_AMOSWAP_W:
+					break;
+				case F5_AMOSWAP:
 					REQUIRE_ISA(csr_misa::A);
-					if (instr.funct3() == F3_AMO_D) {
-						MATCH_AND_RETURN_INSTR(AMOSWAP_D);
-					} else {
-						MATCH_AND_RETURN_INSTR(AMOSWAP_W);
+					switch (instr.funct3()) {
+						case F3_AMO_D:
+							MATCH_AND_RETURN_INSTR(AMOSWAP_D);
+						case F3_AMO_W:
+							MATCH_AND_RETURN_INSTR(AMOSWAP_W);
+						case F3_AMO_C:
+							MATCH_AND_RETURN_INSTR(AMOSWAP_C);
 					}
+					break;
 				case F5_AMOADD_W:
 					REQUIRE_ISA(csr_misa::A);
 					if (instr.funct3() == F3_AMO_D) {
@@ -7200,7 +7824,255 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 			}
 			break;
 			// RV-V Extension End -- Placeholder 1
+			// Cheri Extension Start
+		case OP_CAP_FORMAT:
+			switch (instr.funct3()) {
+				case F3_C_INSP_INSTR:
+					switch (instr.funct7()) {
+						case F7_C_INSP_INSTR:
+							// In CHERI RS2 is used to further specify the instruction
+							switch (instr.rs2()) {
+								case RS2_C_GET_PERM:
+									MATCH_AND_RETURN_INSTR(C_GET_PERM);
+									break;
+								case RS2_C_GET_TYPE:
+									MATCH_AND_RETURN_INSTR(C_GET_TYPE);
+									break;
+								case RS2_C_GET_BASE:
+									MATCH_AND_RETURN_INSTR(C_GET_BASE);
+									break;
+								case RS2_C_GET_LENGTH:
+									MATCH_AND_RETURN_INSTR(C_GET_LEN);
+									break;
+								case RS2_C_GET_TAG:
+									MATCH_AND_RETURN_INSTR(C_GET_TAG);
+									break;
+								case RS2_C_GET_SEALED:
+									MATCH_AND_RETURN_INSTR(C_GET_SEALED);
+									break;
+								case RS2_C_GET_OFFSET:
+									MATCH_AND_RETURN_INSTR(C_GET_OFFSET);
+									break;
+								case RS2_C_GET_FLAGS:
+									MATCH_AND_RETURN_INSTR(C_GET_FLAGS);
+									break;
+								case RS2_C_GET_HIGH:
+									MATCH_AND_RETURN_INSTR(C_GET_HIGH);
+									break;
+								case RS2_C_GET_TOP:
+									MATCH_AND_RETURN_INSTR(C_GET_TOP);
+									break;
+								case RS2_C_CLEAR_TAG:
+									MATCH_AND_RETURN_INSTR(C_CLEAR_TAG);
+									break;
+								case RS2_C_SEAL_ENTRY:
+									MATCH_AND_RETURN_INSTR(C_SEAL_ENTRY);
+									break;
+								case RS2_C_MOVE:
+									MATCH_AND_RETURN_INSTR(C_MOVE);
+									break;
+								case RS2_FP_CLEAR:
+									MATCH_AND_RETURN_INSTR(FP_CLEAR);
+									break;
+								case RS2_C_CLEAR:
+									MATCH_AND_RETURN_INSTR(C_CLEAR);
+									break;
+								case RS2_C_ROUND_REPRESENTABLE_LENGTH:
+									MATCH_AND_RETURN_INSTR(C_ROUND_REPRESENTABLE_LENGTH);
+									break;
+								case RS2_C_REPRESENTABLE_ALIGNMENT_MASK:
+									MATCH_AND_RETURN_INSTR(C_REPRESENTABLE_ALIGNMENT_MASK);
+									break;
+								case RS2_C_LOAD_TAGS:
+									MATCH_AND_RETURN_INSTR(C_LOAD_TAGS);
+									break;
+								case RS2_JALR_CAP:
+									MATCH_AND_RETURN_INSTR(JALR_CAP);
+									break;
+								case RS2_C_GET_ADDR:
+									MATCH_AND_RETURN_INSTR(C_GET_ADDR);
+									break;
+								default:
+									break;
+							}
+							break;
+						case F7_C_SUB:
+							MATCH_AND_RETURN_INSTR(C_SUB);
+							break;
+						case F7_C_SEAL:
+							MATCH_AND_RETURN_INSTR(C_SEAL);
+							break;
+						case F7_C_UNSEAL:
+							MATCH_AND_RETURN_INSTR(C_UNSEAL);
+							break;
+						case F7_C_AND_PERM:
+							MATCH_AND_RETURN_INSTR(C_AND_PERM);
+							break;
+						case F7_C_SET_FLAGS:
+							MATCH_AND_RETURN_INSTR(C_SET_FLAGS);
+							break;
+						case F7_C_SET_OFFSET:
+							MATCH_AND_RETURN_INSTR(C_SET_OFFSET);
+							break;
+						case F7_C_SET_ADDR:
+							MATCH_AND_RETURN_INSTR(C_SET_ADDR);
+							break;
+						case F7_C_INC_OFFSET:
+							MATCH_AND_RETURN_INSTR(C_INC_OFFSET);
+							break;
+						case F7_C_SET_BOUNDS:
+							MATCH_AND_RETURN_INSTR(C_SET_BOUNDS);
+							break;
+						case F7_C_SET_BOUNDS_EXACT:
+							MATCH_AND_RETURN_INSTR(C_SET_BOUNDS_EXACT);
+							break;
+						case F7_C_SET_HIGH:
+							MATCH_AND_RETURN_INSTR(C_SET_HIGH);
+							break;
+						case F7_C_BUILD_CAP:
+							MATCH_AND_RETURN_INSTR(C_BUILD_CAP);
+							break;
+						case F7_C_COPY_TYPE:
+							MATCH_AND_RETURN_INSTR(C_COPY_TYPE);
+							break;
+						case F7_C_C_SEAL:
+							MATCH_AND_RETURN_INSTR(C_C_SEAL);
+							break;
+						case F7_C_TO_PTR:
+							MATCH_AND_RETURN_INSTR(C_TO_PTR);
+							break;
+						case F7_C_FROM_PTR:
+							MATCH_AND_RETURN_INSTR(C_FROM_PTR);
+							break;
+						case F7_C_TEST_SUBSET:
+							MATCH_AND_RETURN_INSTR(C_TEST_SUBSET);
+							break;
+						case F7_C_SET_EQUAL_EXACT:
+							MATCH_AND_RETURN_INSTR(C_SET_EQUAL_EXACT);
+							break;
+						case F7_C_INVOKE:
+							MATCH_AND_RETURN_INSTR(C_INVOKE);
+							break;
+						case F7_C_SPECIAL_R_W:
+							MATCH_AND_RETURN_INSTR(C_SPECIAL_R_W);
+							break;
+						case F7_MEM_LOAD:
+							switch (instr.rs2()) {
+								case RS2_LB_DDC:
+									MATCH_AND_RETURN_INSTR(LB_DDC);
+								case RS2_LH_DDC:
+									MATCH_AND_RETURN_INSTR(LH_DDC);
+								case RS2_LW_DDC:
+									MATCH_AND_RETURN_INSTR(LW_DDC);
+								case RS2_LD_DDC:
+									MATCH_AND_RETURN_INSTR(LD_DDC);
+								case RS2_LC_DDC:
+									MATCH_AND_RETURN_INSTR(LC_DDC);
+								case RS2_LBU_DDC:
+									MATCH_AND_RETURN_INSTR(LBU_DDC);
+								case RS2_LHU_DDC:
+									MATCH_AND_RETURN_INSTR(LHU_DDC);
+								case RS2_LWU_DDC:
+									MATCH_AND_RETURN_INSTR(LWU_DDC);
+								case RS2_LB_CAP:
+									MATCH_AND_RETURN_INSTR(LB_CAP);
+								case RS2_LH_CAP:
+									MATCH_AND_RETURN_INSTR(LH_CAP);
+								case RS2_LW_CAP:
+									MATCH_AND_RETURN_INSTR(LW_CAP);
+								case RS2_LD_CAP:
+									MATCH_AND_RETURN_INSTR(LD_CAP);
+								case RS2_LC_CAP:
+									MATCH_AND_RETURN_INSTR(LC_CAP);
+								case RS2_LBU_CAP:
+									MATCH_AND_RETURN_INSTR(LBU_CAP);
+								case RS2_LHU_CAP:
+									MATCH_AND_RETURN_INSTR(LHU_CAP);
+								case RS2_LWU_CAP:
+									MATCH_AND_RETURN_INSTR(LWU_CAP);
+								case RS2_LR_B_DDC:
+									MATCH_AND_RETURN_INSTR(LR_B_DDC);
+								case RS2_LR_H_DDC:
+									MATCH_AND_RETURN_INSTR(LR_H_DDC);
+								case RS2_LR_W_DDC:
+									MATCH_AND_RETURN_INSTR(LR_W_DDC);
+								case RS2_LR_D_DDC:
+									MATCH_AND_RETURN_INSTR(LR_D_DDC);
+								case RS2_LR_C_DDC:
+									MATCH_AND_RETURN_INSTR(LR_C_DDC);
+								case RS2_LR_B_CAP:
+									MATCH_AND_RETURN_INSTR(LR_B_CAP);
+								case RS2_LR_H_CAP:
+									MATCH_AND_RETURN_INSTR(LR_H_CAP);
+								case RS2_LR_W_CAP:
+									MATCH_AND_RETURN_INSTR(LR_W_CAP);
+								case RS2_LR_D_CAP:
+									MATCH_AND_RETURN_INSTR(LR_D_CAP);
+								case RS2_LR_C_CAP:
+									MATCH_AND_RETURN_INSTR(LR_C_CAP);
+							}
+							break;
+						case F7_MEM_STORE:
+							switch (instr.rd()) {
+								case RD_SB_DDC:
+									MATCH_AND_RETURN_INSTR(SB_DDC);
+								case RD_SH_DDC:
+									MATCH_AND_RETURN_INSTR(SH_DDC);
+								case RD_SW_DDC:
+									MATCH_AND_RETURN_INSTR(SW_DDC);
+								case RD_SD_DDC:
+									MATCH_AND_RETURN_INSTR(SD_DDC);
+								case RD_SC_DDC:
+									MATCH_AND_RETURN_INSTR(SC_DDC);
+								case RD_SB_CAP:
+									MATCH_AND_RETURN_INSTR(SB_CAP);
+								case RD_SH_CAP:
+									MATCH_AND_RETURN_INSTR(SH_CAP);
+								case RD_SW_CAP:
+									MATCH_AND_RETURN_INSTR(SW_CAP);
+								case RD_SD_CAP:
+									MATCH_AND_RETURN_INSTR(SD_CAP);
+								case RD_SC_CAP:
+									MATCH_AND_RETURN_INSTR(SC_CAP);
+								case RD_SC_B_DDC:
+									MATCH_AND_RETURN_INSTR(SC_B_DDC);
+								case RD_SC_H_DDC:
+									MATCH_AND_RETURN_INSTR(SC_H_DDC);
+								case RD_SC_W_DDC:
+									MATCH_AND_RETURN_INSTR(SC_W_DDC);
+								case RD_SC_D_DDC:
+									MATCH_AND_RETURN_INSTR(SC_D_DDC);
+								case RD_SC_C_DDC:
+									MATCH_AND_RETURN_INSTR(SC_C_DDC);
+								case RD_SC_B_CAP:
+									MATCH_AND_RETURN_INSTR(SC_B_CAP);
+								case RD_SC_H_CAP:
+									MATCH_AND_RETURN_INSTR(SC_H_CAP);
+								case RD_SC_W_CAP:
+									MATCH_AND_RETURN_INSTR(SC_W_CAP);
+								case RD_SC_D_CAP:
+									MATCH_AND_RETURN_INSTR(SC_D_CAP);
+								case RD_SC_C_CAP:
+									MATCH_AND_RETURN_INSTR(SC_C_CAP);
+							}
+
+							break;
+						default:
+							break;
+					}
+					break;
+				case F3_C_INC_OFFSET_IMM:
+					MATCH_AND_RETURN_INSTR(C_INC_OFFSET_IMM);
+					break;
+				case F3_C_SET_BOUNDS_IMM:
+					MATCH_AND_RETURN_INSTR(C_SET_BOUNDS_IMM);
+					break;
+				default:
+					break;
+			}
 	}
 
 	return Operation::OpId::UNDEF;
 }
+
+} /* namespace cheriv9 */

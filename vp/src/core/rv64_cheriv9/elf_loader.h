@@ -1,8 +1,12 @@
 #pragma once
 
+/*
+ * TODO: cleanup duplication with rv64/elf_loader.h
+ */
+
 #include "core/common/elf_loader.h"
 
-namespace rv64 {
+namespace cheriv9::rv64 {
 
 // see: "ELF-64 Object File Format" document for ELF64 type definitions
 
@@ -79,4 +83,4 @@ struct Elf64Types {
 
 typedef GenericElfLoader<Elf64Types> ELFLoader;
 
-}  // namespace rv64
+} /* namespace cheriv9::rv64 */

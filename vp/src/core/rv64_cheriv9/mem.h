@@ -1,15 +1,16 @@
-#ifndef RISCV_ISA64_MEM_H
-#define RISCV_ISA64_MEM_H
+#ifndef RISCV_CHERIV9_ISA64_MEM_H
+#define RISCV_CHERIV9_ISA64_MEM_H
 
 #include <stdint.h>
 
-#include "core/common/mem.h"
+#include "cheri_mem.h"
+#include "core/common_cheriv9/mem.h"
 #include "iss.h"
 #include "mmu.h"
 
-namespace rv64 {
+namespace cheriv9::rv64 {
 using CombinedMemoryInterface = CombinedMemoryInterface_T<ISS, sxlen_t, uxlen_t>;
 using InstrMemoryProxy = InstrMemoryProxy_T<ISS>;
-}  // namespace rv64
+} /* namespace cheriv9::rv64 */
 
-#endif /* RISCV_ISA64_MEM_IF_H */
+#endif /* RISCV_CHERIV9_ISA64_MEM_IF_H */

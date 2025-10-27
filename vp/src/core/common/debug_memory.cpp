@@ -25,6 +25,8 @@
 #include <sstream>
 #include <string>
 
+#include "util/tlm_ext_tag.h"
+
 unsigned DebugMemoryInterface::_do_dbg_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                                                    unsigned num_bytes) {
 	tlm::tlm_generic_payload trans;
@@ -33,6 +35,10 @@ unsigned DebugMemoryInterface::_do_dbg_transaction(tlm::tlm_command cmd, uint64_
 	trans.set_data_ptr(data);
 	trans.set_data_length(num_bytes);
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+
+	/* always use the tag extension and unset tag (see cheriv9) */
+	tlm_ext_tag ext(false);
+	trans.set_extension(&ext);
 
 	unsigned nbytes = isock->transport_dbg(trans);
 	if (trans.is_response_error())

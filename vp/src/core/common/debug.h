@@ -34,6 +34,13 @@ struct debug_target_if {
 	virtual bool trace_enabled(void) {
 		return false;
 	};
+
+	/* see cheriv9 (leave unimplemented if not supported) */
+	virtual void enable_rvfi_dii(bool ena) {};
+	virtual bool rvfi_dii_enabled(void) {
+		return false;
+	};
+
 	virtual void print_stats(void) {};
 };
 

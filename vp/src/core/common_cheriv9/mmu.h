@@ -5,10 +5,11 @@
 
 #include <systemc>
 
-#include "irq_if.h"
-#include "mmu_mem_if.h"
+#include "core/common/irq_if.h"
+#include "core/common/mmu_mem_if.h"
 #include "util/propertymap.h"
 
+namespace cheriv9 {
 constexpr unsigned PTE_PPN_SHIFT = 10;
 constexpr unsigned PGSHIFT = 12;
 constexpr unsigned PGSIZE = 1 << PGSHIFT;
@@ -23,6 +24,20 @@ constexpr unsigned PTE_G = 1 << 5;
 constexpr unsigned PTE_A = 1 << 6;
 constexpr unsigned PTE_D = 1 << 7;
 constexpr unsigned PTE_RSW = 0b11 << 8;
+// CHERI Extension
+constexpr uint64_t CHERI_PERM_MASK = 0x7FFFFFFFFFFFFFF;  // Upmost 5 bit are reserverd for CHERI
+constexpr uint64_t PTE_CW = 1ULL << 63;
+constexpr uint64_t PTE_CR = 1ULL << 62;
+constexpr uint64_t PTE_CD = 1ULL << 61;
+constexpr uint64_t PTE_CRM = 1ULL << 60;
+constexpr uint64_t PTE_CRG = 1ULL << 59;
+
+enum cheri_load_perms {
+	CAP_LOAD_STRIP_TAGS = 0b000,
+	CAP_LOAD_FAULTS = 0b010,
+	CAP_LOAD_UNALTERED = 0b100,
+	// All others are reserved for future use
+};
 
 struct pte_t {
 	uint64_t value;
@@ -50,6 +65,30 @@ struct pte_t {
 	}
 	bool D() {
 		return value & PTE_D;
+	}
+
+	bool CW() {
+		return value & PTE_CW;
+	}
+
+	bool CR() {
+		return value & PTE_CR;
+	}
+
+	bool CD() {
+		return value & PTE_CD;
+	}
+
+	bool CRM() {
+		return value & PTE_CRM;
+	}
+
+	bool CRG() {
+		return value & PTE_CRG;
+	}
+
+	cheri_load_perms CHERI_LOAD_PERMS() {
+		return static_cast<cheri_load_perms>(CR() << 2 | CRM() << 1 | CRG());
 	}
 
 	operator uint64_t() {
@@ -106,6 +145,13 @@ struct MMU_T {
 	}
 
 	uint64_t translate_virtual_to_physical_addr(uint64_t vaddr, MemoryAccessType type) {
+		bool trap_if_cap = false;
+		bool strip_tag = false;
+		return translate_virtual_to_physical_addr(vaddr, type, false, &trap_if_cap, &strip_tag);
+	}
+
+	uint64_t translate_virtual_to_physical_addr(uint64_t vaddr, MemoryAccessType type, bool tag, bool *trap_if_cap,
+	                                            bool *strip_tag) {
 		if (core.csrs.satp.reg.fields.mode == SATP_MODE_BARE)
 			return vaddr;
 
@@ -131,7 +177,7 @@ struct MMU_T {
 		if (x.vpn == vpn)
 			return x.ppn | (vaddr & PGMASK);
 
-		uint64_t paddr = walk(vaddr, type, mode);
+		uint64_t paddr = walk(vaddr, type, mode, tag, trap_if_cap, strip_tag);
 
 		// optimization only, to void page walk
 		x.ppn = (paddr & ~((uint64_t)PGMASK));
@@ -169,7 +215,8 @@ struct MMU_T {
 		return ok;
 	}
 
-	uint64_t walk(uint64_t vaddr, MemoryAccessType type, PrivilegeLevel mode) {
+	uint64_t walk(uint64_t vaddr, MemoryAccessType type, PrivilegeLevel mode, bool tag, bool *trap_if_cap,
+	              bool *strip_tag) {
 		bool s_mode = mode == SupervisorMode;
 		bool sum = core.csrs.mstatus.reg.fields.sum;
 		bool mxr = core.csrs.mstatus.reg.fields.mxr;
@@ -197,7 +244,7 @@ struct MMU_T {
 			else
 				pte.value = mem->mmu_load_pte64(pte_paddr);
 
-			uint64_t ppn = pte >> PTE_PPN_SHIFT;
+			uint64_t ppn = (pte & CHERI_PERM_MASK) >> PTE_PPN_SHIFT;
 
 			if (!pte.V() || (!pte.R() && pte.W())) {
 				// std::cout << "[mmu] !pte.V() || (!pte.R() && pte.W())" << std::endl;
@@ -230,7 +277,52 @@ struct MMU_T {
 				if (!s_mode)
 					break;
 			}
-
+			// CHERI Extension
+			if (tag && type == STORE) {
+				if (!pte.CW()) {
+					handle_cheri_exception(EXC_CHERI_STORE_FAULT, vaddr, &core.rvfi_dii_output);
+				}
+				if (!pte.CD()) {
+					if (page_fault_on_AD) {
+						handle_cheri_exception(EXC_CHERI_STORE_FAULT, vaddr, &core.rvfi_dii_output);
+					} else {
+						// TODO: PMP checks for pte_paddr with (STORE, PRV_S)
+						// NOTE: the store has to be atomic with the above load of the PTE, i.e. lock the bus if
+						// required NOTE: only need to update A / D flags, hence it is enough to store 32 bit (8 bit
+						// might be enough too)
+						mem->mmu_store_pte32(pte_paddr, pte | PTE_CD | PTE_D);
+					}
+				}
+			}
+			if (type == LOAD) {
+				switch (pte.CHERI_LOAD_PERMS()) {
+					case cheri_load_perms::CAP_LOAD_STRIP_TAGS:
+						// Tag of the loaded capability must be stripped
+						// This can not be done here, as the loaded capability is not known at this point
+						// Instead the flag strip_tag is set to true, which must be checked by the caller
+						*strip_tag = true;
+						break;
+					case cheri_load_perms::CAP_LOAD_UNALTERED:
+						// Nothing to do, just load data afterwards
+						*strip_tag = false;
+						*trap_if_cap = false;
+						break;
+					case cheri_load_perms::CAP_LOAD_FAULTS:
+						// Trap is dependent on tag bit
+						// As tag is not known at this point, instead the flag trap_if_cap is set to true
+						// This must be checked by the caller
+						*trap_if_cap = true;
+						break;
+					default:
+						// Trap is dependent on tag bit
+						// As tag is not known at this point, instead the flag trap_if_cap is set to true
+						// This must be checked by the caller
+						//*trap_if_cap = true;
+						// TODO: This occured in userland init
+						// Although according to spec, this should raise a trap...
+						break;
+				}
+			}
 			// NOTE: all PPN (except the highest one) have the same bitwidth as the VPNs, hence ptshift can be used
 			if ((ppn & ((uint64_t(1) << ptshift) - 1)) != 0)
 				break;  // misaligned superpage
@@ -254,21 +346,23 @@ struct MMU_T {
 			uint64_t vpn = vaddr >> PGSHIFT;
 			uint64_t pgoff = vaddr & (PGSIZE - 1);
 			uint64_t paddr = (((ppn & ~mask) | (vpn & mask)) << PGSHIFT) | pgoff;
+
 			return paddr;
 		}
 
 		switch (type) {
 			case FETCH:
-				raise_trap(EXC_INSTR_PAGE_FAULT, vaddr);
+				raise_trap(EXC_INSTR_PAGE_FAULT, vaddr, &core.rvfi_dii_output);
 				break;
 			case LOAD:
-				raise_trap(EXC_LOAD_PAGE_FAULT, vaddr);
+				raise_trap(EXC_LOAD_PAGE_FAULT, vaddr, &core.rvfi_dii_output);
 				break;
 			case STORE:
-				raise_trap(EXC_STORE_AMO_PAGE_FAULT, vaddr);
+				raise_trap(EXC_STORE_AMO_PAGE_FAULT, vaddr, &core.rvfi_dii_output);
 				break;
 		}
 
 		throw std::runtime_error("[mmu] unknown access type " + std::to_string(type));
 	}
 };
+} /* namespace cheriv9 */

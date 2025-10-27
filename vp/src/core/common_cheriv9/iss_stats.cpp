@@ -3,6 +3,8 @@
 #include <cstring>
 #include <iostream>
 
+namespace cheriv9 {
+
 /*
  * enable/disabled opId stat output (disabled by default)
  * (counting is always enabled in ISSStats)
@@ -102,3 +104,5 @@ void ISSStats::print() {
 
 	std::cout << std::endl;
 }
+
+} /* namespace cheriv9 */
