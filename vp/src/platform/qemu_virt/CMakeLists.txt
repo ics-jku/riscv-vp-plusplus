@@ -31,11 +31,18 @@ target_compile_definitions(qemu_virt64-mc-vp PUBLIC
 	NUM_CORES=4)
 target_link_libraries(qemu_virt64-mc-vp rv64 ${LIBS})
 
+add_executable(qemu_virt64-cheriv9-sc-vp ${SOURCES})
+target_compile_definitions(qemu_virt64-cheriv9-sc-vp PUBLIC
+	TARGET_RV64_CHERIV9
+	NUM_CORES=1)
+target_link_libraries(qemu_virt64-cheriv9-sc-vp rv64_cheriv9 ${LIBS})
+
 INSTALL(TARGETS
 	qemu_virt32-mc-vp
 	qemu_virt32-sc-vp
 	qemu_virt64-mc-vp
 	qemu_virt64-sc-vp
+	qemu_virt64-cheriv9-sc-vp
 	RUNTIME DESTINATION bin)
 
 # Install the script from the "dt" subdirectory

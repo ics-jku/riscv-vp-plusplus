@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV64 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
 #define TARGET_RV64
 #endif
 
@@ -38,11 +38,16 @@
 #include "core/rv32/iss.h"
 #include "core/rv32/mem.h"
 #include "core/rv32/mmu.h"
-#elif defined(TARGET_RV64) || defined(TARGET_RV64_CHERIV9)
+#elif defined(TARGET_RV64)
 #include "core/rv64/elf_loader.h"
 #include "core/rv64/iss.h"
 #include "core/rv64/mem.h"
 #include "core/rv64/mmu.h"
+#elif defined(TARGET_RV64_CHERIV9)
+#include "core/rv64_cheriv9/elf_loader.h"
+#include "core/rv64_cheriv9/iss.h"
+#include "core/rv64_cheriv9/mem.h"
+#include "core/rv64_cheriv9/mmu.h"
 #endif
 
 #include "platform/common/channel_console.h"
@@ -52,6 +57,7 @@
 #include "platform/common/options.h"
 #include "platform/common/sifive_plic.h"
 #include "platform/common/sifive_test.h"
+#include "platform/common/tagged_memory.h"
 #include "util/options.h"
 #include "util/propertymap.h"
 
@@ -64,6 +70,11 @@ using namespace rv32;
 
 #elif defined(TARGET_RV64)
 using namespace rv64;
+/* address to load raw (not elf) images provided via --kernel-file */
+#define KERNEL_LOAD_ADDR 0x80200000
+
+#elif defined(TARGET_RV64_CHERIV9)
+using namespace cheriv9::rv64;
 /* address to load raw (not elf) images provided via --kernel-file */
 #define KERNEL_LOAD_ADDR 0x80200000
 
@@ -134,13 +145,21 @@ class Core {
    public:
 	ISS iss;
 	MMU mmu;
+#ifdef TARGET_RV64_CHERIV9
+	CombinedTaggedMemoryInterface memif;
+#else
 	CombinedMemoryInterface memif;
+#endif
 	InstrMemoryProxy imemif;
 
-	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi)
+	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi, uint64_t mem_start_addr, uint64_t mem_end_addr)
 	    : iss(isa_config, id),
 	      mmu(iss),
+#ifdef TARGET_RV64_CHERIV9
+	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu, mem_start_addr, mem_end_addr),
+#else
 	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu),
+#endif
 	      imemif(dmi, iss) {
 		return;
 	}
@@ -201,6 +220,11 @@ int sc_main(int argc, char **argv) {
 		return -1;
 	}
 	RV_ISA_Config isa_config(false, opt.en_ext_Zfh);
+#ifdef TARGET_RV64_CHERIV9
+	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#endif
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
@@ -218,7 +242,11 @@ int sc_main(int argc, char **argv) {
 	DUMMY_TLM_TARGET flash0("flash0", opt.flash0_start_addr, opt.dummy_tlm_target_debug);
 	DUMMY_TLM_TARGET flash1("flash1", opt.flash1_start_addr, opt.dummy_tlm_target_debug);
 	DUMMY_TLM_TARGET platform_bus("platform_bus", opt.platform_bus_start_addr, opt.dummy_tlm_target_debug);
+#ifdef TARGET_RV64_CHERIV9
+	TaggedMemory mem("SimpleMemory", opt.mem_size);
+#else
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
+#endif
 	DUMMY_TLM_TARGET rtc("rtc", opt.rtc_start_addr, opt.dummy_tlm_target_debug);
 
 	Channel_Console channel_console;
@@ -230,12 +258,16 @@ int sc_main(int argc, char **argv) {
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+#ifdef TARGET_RV64_CHERIV9
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
+#else
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
+#endif
 
 	Core *cores[NUM_CORES];
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	for (unsigned i = 0; i < NUM_CORES; i++) {
-		cores[i] = new Core(&isa_config, i, dmi);
+		cores[i] = new Core(&isa_config, i, dmi, opt.mem_start_addr, opt.mem_end_addr);
 
 		cores[i]->memif.bus_lock = bus_lock;
 		cores[i]->mmu.mem = &cores[i]->memif;

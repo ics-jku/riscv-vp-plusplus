@@ -1,6 +1,6 @@
-# QEMU-Virt style platform VPs (RV32/RV64; single/multi(4) core)
+# QEMU-Virt style platform VPs (RV32/RV64; single/multi(4) core, and CHERIv9 RV64 single core)
 
-Implements components necessary to boot for example a FreeBSD system:
+Implements components necessary to boot for example a FreeBSD or CheriBSD system:
  * Core(s), MMU, Bus, CLINT, PLIC, Memory, Bus, ns16550a UART (console), Sifive_test (system halt)
 
 All other qemu-virt peripherals (fw-cfg, flash, rtc, pci and virtio_mmio) are integrated simply as DUMMY_TLM_TARGET devices

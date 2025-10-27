@@ -10,6 +10,10 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
    * *Manfred Schlägl, Andreas Hinterdorfer, and Daniel Große. A RISC-V CHERI VP: Enabling system-level evaluation of the capability-based CHERI architecture. In ASP-DAC, 2026.*
    * RV64 CHERIv9 ISS (+MMU, Tagged Memory Interface, ...) based on [Capability Hardware Enhanced RISC Instructions: CHERI Instruction-Set Architecture (Version 9)](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-987.pdf)
      * includes interfaces for testing with [TestRIG](https://github.com/CTSRD-CHERI/TestRIG) (RVFI and DII)
+   * RV64 CHERIv9 Platforms:
+     * *qemu_virt64-cheriv9-sc-vp*:
+       * Similar to other (non-cheri) qemu_virt-style VP platforms, but with support for CHERIv9 RV64
+       * Capable of running CheriBSD (purecap) from [cheribuild](https://github.com/CTSRD-CHERI/cheribuild) (tested with git-hash dbafb3f67e)
  * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
    (Can be enabled with the "--en-ext-Zfh" command line option on all platforms)
  * Fast Interpreter-Based ISS
