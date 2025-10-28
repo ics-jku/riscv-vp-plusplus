@@ -15,4 +15,4 @@
 	url = https://github.com/accellera-official/systemc.git
 [submodule "env/gd32/vp-breadboard/LuaBridge3"]
 	path = env/gd32/vp-breadboard/LuaBridge3
-	url = https://github.com/kunitoki/LuaBridge3
+	url = https://github.com/ics-jku/VPPP_Archive_LuaBridge3_3.0-beta3.git
