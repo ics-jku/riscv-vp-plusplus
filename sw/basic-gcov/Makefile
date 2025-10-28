@@ -1,5 +1,5 @@
 OBJECTS  = main.o
-CFLAGS   = --coverage -march=rv32ima -mabi=ilp32
+CFLAGS   = --coverage -march=rv32ima_zicsr -mabi=ilp32
 LDFLAGS  = --coverage
 VP_FLAGS = --error-on-zero-traphandler=true
 

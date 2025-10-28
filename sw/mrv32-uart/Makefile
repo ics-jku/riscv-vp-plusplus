@@ -1,4 +1,4 @@
-rvArch?=rv32i
+rvArch?=rv32i_zicsr
 
 OBJECTS  = bootstrap.o main.o uart.o util.o
 CFLAGS   = -march=$(rvArch) -mabi=ilp32 -mno-strict-align

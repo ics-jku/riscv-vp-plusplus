@@ -7,15 +7,6 @@ override LD = $(RISCV_PREFIX)gcc
 ASFLAGS ?= $(CFLAGS)
 SIM_TARGET ?= sim-default
 
-# ISA Version 2.2 is the last version where zicsr is still
-# supported as part of the base ISA. Use that for now until
-# _zicsr is widely supported by existing cross-compilers.
-SUPPORTS_MISA ?= $(shell echo "typedef int dont_be_pedantic;" | $(RISCV_PREFIX)gcc -march=rv32imac -mabi=ilp32 -misa-spec=2.2 -E - > /dev/null 2>&1 && echo 1 || echo 0)
-ifeq (1,$(SUPPORTS_MISA))
-  CFLAGS += -misa-spec=2.2
-  CXXFLAGS += -misa-spec=2.2
-endif
-
 VP ?= riscv-vp
 VP_FLAGS ?= --intercept-syscalls --error-on-zero-traphandler=true
 

@@ -1,5 +1,5 @@
 OBJECTS  = main.o uart.o bootstrap.o
-CFLAGS   = -march=rv32i -mabi=ilp32
+CFLAGS   = -march=rv32i_zicsr -mabi=ilp32
 LDFLAGS  = -nostartfiles -Wl,--no-relax -T link.ld
 
 VP       = microrv32-vp

@@ -1,5 +1,5 @@
 OBJECTS  = main.o bootstrap.o
-CFLAGS   = -march=rv32ima -mabi=ilp32
+CFLAGS   = -march=rv32ima_zicsr -mabi=ilp32
 LDFLAGS  = -nostartfiles -Wl,--no-relax
 
 VP       = tiny32-mc
