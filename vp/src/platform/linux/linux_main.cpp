@@ -1,3 +1,8 @@
+/* if not defined externally fall back to TARGET_RV64 */
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#define TARGET_RV64
+#endif
+
 #include <termios.h>
 #include <unistd.h>
 
@@ -58,11 +63,6 @@
 #include "util/options.h"
 #include "util/propertymap.h"
 #include "util/vncserver.h"
-
-/* if not defined externally fall back to TARGET_RV64 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
-#define TARGET_RV64
-#endif
 
 /* if not defined externally fall back to four worker cores */
 #if !defined(NUM_CORES)
