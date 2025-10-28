@@ -27,7 +27,7 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
      * To enable the caches independent of command line switches define ```DBBCACHE_ENABLED``` + ```DBBCACHE_FORCED_ENABLED``` and ```LSCACHE_ENABLED``` + ```LSCACHE_FORCED_ENABLED``` in see ```vp/src/core/common/dbbcache.h``` and ```vp/src/core/common/lscache.h```, respectively
      * Some ISS optimisations based on DBBCache are active when the cache is disabled. However, significant performance improvements are only achieved when both caches are enabled!
  * Support for RV32E and RV64E
-   (Can be enabled with the "--use-E-base-isa" command line option on riscv-vp, microrv32-vp and all tiny* vp platforms)
+   (Can be enabled with the "--use-E-base-isa" command line option on riscv32-vp, riscv64-vp, microrv32-vp and all tiny* vp platforms)
  * Support for the *GD32VF103VBT6* microcontroller (*Nuclei N205*) including UI
    * More detailed information can be found [here](doc/GD32/README.md)
  * Support for *RISC-V "V" Vector Extension* (RVV) version 1.0
@@ -124,10 +124,10 @@ In *sw*:
 ```bash
 cd simple-sensor    # can be replaced with different example
 make                # (requires RISC-V GNU toolchain in PATH)
-make sim            # (requires *riscv-vp*, i.e. *vp/build/bin/riscv-vp*, executable in PATH)
+make sim            # (requires *riscv32-vp*, i.e. *vp/build/bin/riscv32-vp*, executable in PATH)
 ```
 
-Please note, if *make* is called without the *install* argument in step 2, then the *riscv-vp* executable is available in *vp/build/src/platform/basic/riscv-vp*.
+Please note, if *make* is called without the *install* argument in step 2, then the *riscv32-vp* executable is available in *vp/build/src/platform/basic/riscv32-vp*.
 
 
 

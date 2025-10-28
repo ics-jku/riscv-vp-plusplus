@@ -1,6 +1,6 @@
 In the first terminal run our VP in debug mode (wraps the core iss in a debug stub):
 
-	riscv-vp --debug-mode --intercept-syscalls main
+	riscv32-vp --debug-mode --intercept-syscalls main
 
 
 In the other terminal run:

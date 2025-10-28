@@ -7,7 +7,7 @@ override LD = $(RISCV_PREFIX)gcc
 ASFLAGS ?= $(CFLAGS)
 SIM_TARGET ?= sim-default
 
-VP ?= riscv-vp
+VP ?= riscv32-vp
 VP_FLAGS ?= --intercept-syscalls --error-on-zero-traphandler=true
 
 EXECUTABLE ?= main

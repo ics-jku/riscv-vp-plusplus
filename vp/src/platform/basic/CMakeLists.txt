@@ -7,9 +7,23 @@ ${HEADERS})
 
 target_link_libraries(platform-basic systemc)
 
-add_executable(riscv-vp
-        main.cpp)
+set(SOURCES
+	main.cpp)
 
-target_link_libraries(riscv-vp rv32 platform-basic platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
+add_executable(riscv32-vp ${SOURCES})
+target_compile_definitions(riscv32-vp PUBLIC TARGET_RV32)
+target_link_libraries(riscv32-vp rv32 platform-basic platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
 
-INSTALL(TARGETS riscv-vp RUNTIME DESTINATION bin)
+add_executable(riscv64-vp ${SOURCES})
+target_compile_definitions(riscv64-vp PUBLIC TARGET_RV64)
+target_link_libraries(riscv64-vp rv64 platform-basic platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
+
+add_executable(riscv-vp ALIAS riscv32-vp)
+
+INSTALL(TARGETS
+	riscv32-vp
+	riscv64-vp
+	RUNTIME DESTINATION bin)
+
+# riscv-vp = riscv32-vp (for compatibility; TODO: remove in future)
+install(PROGRAMS $<TARGET_FILE:riscv32-vp> DESTINATION bin RENAME riscv-vp)

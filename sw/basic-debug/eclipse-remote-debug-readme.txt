@@ -19,5 +19,5 @@ Run -> Debug Configurations ...
         - Connection: Port Number 5005            [Sub-tab Connection]
 
     Click "Debug" Button (lower right corner) to start debugging
-        -> Launch the VP in debug mode first: riscv-vp --debug-mode main
+        -> Launch the VP in debug mode first: riscv32-vp --debug-mode main
         -> Perhaps it is necessary to refresh the Eclipse project view in case the executable (typically main) cannot be found (the "Debug" button is greyed out in this case)

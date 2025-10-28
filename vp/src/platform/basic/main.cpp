@@ -1,3 +1,8 @@
+/* if not defined externally fall back to TARGET_RV32 */
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#define TARGET_RV32
+#endif
+
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <cstdlib>
@@ -10,10 +15,27 @@
 #include "core/common/debug_memory.h"
 #include "core/common/gdb-mc/gdb_runner.h"
 #include "core/common/gdb-mc/gdb_server.h"
+
+/*
+ * It should be possible to remove the ifdefs here and include all files
+ * without any conflicts, and indeed: If we remove the ifdefs we get no
+ * compilation errors. However, when we start the resulting VP (especially
+ * with CHERI) we get a lot of errors like:
+ * [ISS] Error: Multiple implementations for operation 955 (AMOSWAP_C)
+ * -> TODO: find/fix cause and remove ifdefs (not critical)
+ */
+#if defined(TARGET_RV32)
 #include "core/rv32/elf_loader.h"
 #include "core/rv32/iss.h"
 #include "core/rv32/mem.h"
 #include "core/rv32/syscall.h"
+#elif defined(TARGET_RV64)
+#include "core/rv64/elf_loader.h"
+#include "core/rv64/iss.h"
+#include "core/rv64/mem.h"
+#include "core/rv64/syscall.h"
+#endif
+
 #include "display.hpp"
 #include "dma.h"
 #include "ethernet.h"
@@ -31,7 +53,12 @@
 #include "util/options.h"
 #include "util/propertymap.h"
 
+#if defined(TARGET_RV32)
 using namespace rv32;
+#elif defined(TARGET_RV64)
+using namespace rv64;
+#endif
+
 namespace po = boost::program_options;
 
 class BasicOptions : public Options {
