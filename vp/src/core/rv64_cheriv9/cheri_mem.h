@@ -17,6 +17,9 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	uint64_t lr_addr = 0;
 
 	tlm_utils::simple_initiator_socket<CombinedTaggedMemoryInterface> isock;
+	tlm::tlm_generic_payload trans;
+	tlm_ext_tag* trans_ext_tag;
+
 	tlm_utils::tlm_quantumkeeper& quantum_keeper;
 
 	// optionally add DMI ranges for optimization
@@ -37,7 +40,13 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	      quantum_keeper(iss.quantum_keeper),
 	      mem_start_addr(mem_start_addr),
 	      mem_end_addr(mem_end_addr),
-	      mmu(mmu) {}
+	      mmu(mmu) {
+		/*
+		 * Note: tlm_generic_payload frees all extension objects in destructor, therefore dynamic allocation is needed
+		 */
+		trans_ext_tag = new tlm_ext_tag(false);
+		trans.set_extension(trans_ext_tag);
+	}
 
 	// default v2p for non-tagged data
 	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {
@@ -89,14 +98,12 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 					throw std::runtime_error("TLM command must be read or write");
 			}
 		}
-		tlm::tlm_generic_payload trans;
 		trans.set_command(cmd);
 		trans.set_address(addr);
 		trans.set_data_ptr(data);
 		trans.set_data_length(num_bytes);
 		trans.set_response_status(tlm::TLM_OK_RESPONSE);
-		auto* ext = new tlm_ext_tag(*p_tag);
-		trans.set_extension(ext);
+		trans_ext_tag->tag = *p_tag;
 
 		sc_core::sc_time local_delay = quantum_keeper.get_local_time();
 
@@ -116,8 +123,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			else
 				throw std::runtime_error("TLM command must be read or write");
 		}
-		trans.get_extension(ext);
-		*p_tag = ext->tag;
+		*p_tag = trans_ext_tag->tag;
 	}
 
 	template <bool isLoad>
