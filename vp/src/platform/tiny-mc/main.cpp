@@ -117,8 +117,9 @@ int sc_main(int argc, char **argv) {
 	}
 	SimpleBus<3, 3> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	SyscallHandler sys("SyscallHandler");
-	CLINT<2> clint("CLINT");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+
+	CLINT<2> clint("CLINT");
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	core0_mem_if.bus_lock = bus_lock;
@@ -126,18 +127,12 @@ int sc_main(int argc, char **argv) {
 	mmu0.mem = &core0_mem_if;
 	mmu1.mem = &core1_mem_if;
 
-	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr, mem);
-	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, clint);
-	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
-	bus.mapping_complete();
-
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 
-	// TODO: MANFRED STACK!!!
 	core0.init(&core0_mem_if, opt.use_dbbcache, &core0_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	           opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
+	           rv64_align_address(opt.mem_end_addr));
 	core1.init(&core1_mem_if, opt.use_dbbcache, &core1_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	           opt.mem_end_addr - 32767);
+	           rv64_align_address(opt.mem_end_addr - (32 * 1024)));  // start stack 32KiB below stack for core0
 
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core0);
@@ -149,6 +144,12 @@ int sc_main(int argc, char **argv) {
 	}
 	core0.error_on_zero_traphandler = opt.error_on_zero_traphandler;
 	core1.error_on_zero_traphandler = opt.error_on_zero_traphandler;
+
+	// setup port mapping
+	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr, mem);
+	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, clint);
+	bus.ports[2] = new PortMapping(opt.sys_start_addr, opt.sys_end_addr, sys);
+	bus.mapping_complete();
 
 	// connect TLM sockets
 	core0_mem_if.isock.bind(bus.tsocks[0]);

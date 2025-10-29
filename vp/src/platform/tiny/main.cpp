@@ -103,8 +103,8 @@ int sc_main(int argc, char **argv) {
 
 	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
 	ISS core(&isa_config, 0);
-
 	MMU mmu(core);
+
 	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
@@ -137,6 +137,7 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	          rv64_align_address(opt.mem_end_addr));
+
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core);
 
