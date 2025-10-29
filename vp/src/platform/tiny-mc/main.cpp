@@ -1,3 +1,8 @@
+/* if not defined externally fall back to TARGET_RV32 */
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#define TARGET_RV32
+#endif
+
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <cstdlib>
@@ -8,20 +13,44 @@
 #include "core/common/clint.h"
 #include "core/common/gdb-mc/gdb_runner.h"
 #include "core/common/gdb-mc/gdb_server.h"
+
+/*
+ * It should be possible to remove the ifdefs here and include all files
+ * without any conflicts, and indeed: If we remove the ifdefs we get no
+ * compilation errors. However, when we start the resulting VP (especially
+ * with CHERI) we get a lot of errors like:
+ * [ISS] Error: Multiple implementations for operation 955 (AMOSWAP_C)
+ * -> TODO: find/fix cause and remove ifdefs (not critical)
+ */
+#if defined(TARGET_RV32)
 #include "core/rv32/elf_loader.h"
 #include "core/rv32/iss.h"
 #include "core/rv32/mem.h"
+#include "core/rv32/mmu.h"
 #include "core/rv32/syscall.h"
+#elif defined(TARGET_RV64)
+#include "core/rv64/elf_loader.h"
+#include "core/rv64/iss.h"
+#include "core/rv64/mem.h"
+#include "core/rv64/mmu.h"
+#include "core/rv64/syscall.h"
+#endif
+
 #include "platform/common/memory.h"
 #include "platform/common/options.h"
 #include "util/propertymap.h"
 
+#if defined(TARGET_RV32)
 using namespace rv32;
+#elif defined(TARGET_RV64)
+using namespace rv64;
+#endif
+
 namespace po = boost::program_options;
 
 struct TinyOptions : public Options {
    public:
-	typedef uint32_t addr_t;
+	typedef uint64_t addr_t;
 
 	addr_t mem_size = 1024 * 1024 * 32;  // 32 MB ram, to place it before the CLINT and run the base examples (assume
 	                                     // memory start at zero) without modifications
@@ -39,8 +68,8 @@ struct TinyOptions : public Options {
 		// clang-format off
 		add_options()
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
-			("memory-start", po::value<unsigned int>(&mem_start_addr), "set memory start address")
-			("memory-size", po::value<unsigned int>(&mem_size), "set memory size")
+			("memory-start", po::value<uint64_t>(&mem_start_addr), "set memory start address")
+			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
 			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA");
 		// clang-format on
 	}
@@ -74,9 +103,11 @@ int sc_main(int argc, char **argv) {
 	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
 	ISS core0(&isa_config, 0);
 	ISS core1(&isa_config, 1);
+	MMU mmu0(core0);
+	MMU mmu1(core1);
 
-	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0);
-	CombinedMemoryInterface core1_mem_if("MemoryInterface1", core1);
+	CombinedMemoryInterface core0_mem_if("MemoryInterface0", core0, &mmu0);
+	CombinedMemoryInterface core1_mem_if("MemoryInterface1", core1, &mmu1);
 
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 	ELFLoader loader(opt.input_program.c_str());
@@ -92,6 +123,8 @@ int sc_main(int argc, char **argv) {
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	core0_mem_if.bus_lock = bus_lock;
 	core1_mem_if.bus_lock = bus_lock;
+	mmu0.mem = &core0_mem_if;
+	mmu1.mem = &core1_mem_if;
 
 	bus.ports[0] = new PortMapping(opt.mem_start_addr, opt.mem_end_addr, mem);
 	bus.ports[1] = new PortMapping(opt.clint_start_addr, opt.clint_end_addr, clint);
@@ -100,6 +133,7 @@ int sc_main(int argc, char **argv) {
 
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 
+	// TODO: MANFRED STACK!!!
 	core0.init(&core0_mem_if, opt.use_dbbcache, &core0_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	           opt.mem_end_addr - 3);  // -3 to not overlap with the next region and stay 32 bit aligned
 	core1.init(&core1_mem_if, opt.use_dbbcache, &core1_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),

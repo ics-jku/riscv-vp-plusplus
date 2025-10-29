@@ -1,10 +1,17 @@
 file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
-add_executable(tiny32-mc
-        main.cpp
-        ${HEADERS})
+set(SOURCES
+	main.cpp)
 
-target_link_libraries(tiny32-mc rv32 platform-common gdb-mc
-	${Boost_LIBRARIES} systemc pthread)
+add_executable(tiny32-mc-vp ${SOURCES})
+target_compile_definitions(tiny32-mc-vp PUBLIC TARGET_RV32)
+target_link_libraries(tiny32-mc-vp rv32 platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
 
-INSTALL(TARGETS tiny32-mc RUNTIME DESTINATION bin)
+add_executable(tiny64-mc-vp ${SOURCES})
+target_compile_definitions(tiny64-mc-vp PUBLIC TARGET_RV64)
+target_link_libraries(tiny64-mc-vp rv64 platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
+
+INSTALL(TARGETS
+	tiny32-mc-vp
+	tiny64-mc-vp
+	RUNTIME DESTINATION bin)
