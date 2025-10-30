@@ -11,7 +11,12 @@ add_executable(tiny64-vp ${SOURCES})
 target_compile_definitions(tiny64-vp PUBLIC TARGET_RV64)
 target_link_libraries(tiny64-vp rv64 platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
 
+add_executable(tiny64-cheriv9-vp ${SOURCES})
+target_compile_definitions(tiny64-cheriv9-vp PUBLIC TARGET_RV64_CHERIV9)
+target_link_libraries(tiny64-cheriv9-vp rv64_cheriv9 platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
+
 INSTALL(TARGETS
 	tiny32-vp
 	tiny64-vp
+	tiny64-cheriv9-vp
 	RUNTIME DESTINATION bin)

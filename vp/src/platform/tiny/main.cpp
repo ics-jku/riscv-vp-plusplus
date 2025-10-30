@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV32 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
 #define TARGET_RV32
 #endif
 
@@ -35,16 +35,25 @@
 #include "core/rv64/mem.h"
 #include "core/rv64/mmu.h"
 #include "core/rv64/syscall.h"
+#elif defined(TARGET_RV64_CHERIV9)
+#include "core/rv64_cheriv9/elf_loader.h"
+#include "core/rv64_cheriv9/iss.h"
+#include "core/rv64_cheriv9/mem.h"
+#include "core/rv64_cheriv9/mmu.h"
+#include "core/rv64_cheriv9/syscall.h"
 #endif
 
 #include "platform/common/memory.h"
 #include "platform/common/options.h"
+#include "platform/common/tagged_memory.h"
 #include "util/propertymap.h"
 
 #if defined(TARGET_RV32)
 using namespace rv32;
 #elif defined(TARGET_RV64)
 using namespace rv64;
+#elif defined(TARGET_RV64_CHERIV9)
+using namespace cheriv9::rv64;
 #endif
 
 namespace po = boost::program_options;
@@ -64,6 +73,7 @@ struct TinyOptions : public Options {
 
 	bool quiet = false;
 	bool use_E_base_isa = false;
+	bool cheri_purecap = false;
 
 	TinyOptions(void) {
 		// clang-format off
@@ -71,7 +81,11 @@ struct TinyOptions : public Options {
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
 			("memory-start", po::value<uint64_t>(&mem_start_addr), "set memory start address")
 			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
-			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA");
+			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
+#ifdef TARGET_RV64_CHERIV9
+			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
+#endif
+			;
 		// clang-format on
 	}
 
@@ -102,11 +116,23 @@ int sc_main(int argc, char **argv) {
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
+#ifdef TARGET_RV64_CHERIV9
+	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#endif
+
 	ISS core(&isa_config, 0);
 	MMU mmu(core);
 
+#ifdef TARGET_RV64_CHERIV9
+	CombinedTaggedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu, opt.mem_start_addr, opt.mem_end_addr);
+	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
+#else
 	CombinedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu);
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
+#endif
+
 	ELFLoader loader(opt.input_program.c_str());
 	NetTrace *debug_bus = nullptr;
 	if (opt.use_debug_bus) {
@@ -119,7 +145,11 @@ int sc_main(int argc, char **argv) {
 	std::vector<clint_interrupt_target *> clint_targets{&core};
 	RealCLINT clint("CLINT", clint_targets);
 
+#ifdef TARGET_RV64_CHERIV9
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
+#else
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
+#endif
 	InstrMemoryProxy instr_mem(dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -135,8 +165,13 @@ int sc_main(int argc, char **argv) {
 	}
 
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
+#ifdef TARGET_RV64_CHERIV9
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
+	          opt.mem_end_addr, opt.cheri_purecap);
+#else
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
 	          opt.mem_end_addr);
+#endif
 
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core);

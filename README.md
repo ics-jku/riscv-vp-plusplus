@@ -14,6 +14,9 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
      * *qemu_virt64-cheriv9-sc-vp* and *linux64-cheriv9-sc-vp*
        * Similar to other (non-cheri) qemu_virt-style and linux(fu540-style) VP platforms, but with support for CHERIv9 RV64
        * Capable of running CheriBSD (purecap) from [cheribuild](https://github.com/CTSRD-CHERI/cheribuild) (tested with git-hash dbafb3f67e)
+     * *tiny64-cheriv9-vp*
+       * Similar to other (non-cher) tiny platforms, but with support for CHERIv9 RV64
+       * Capable of running bare-metal Cheri (purecap) software with/without virtual memory management
  * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
    (Can be enabled with the "--en-ext-Zfh" command line option on all platforms)
  * Fast Interpreter-Based ISS
