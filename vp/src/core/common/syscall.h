@@ -7,7 +7,7 @@
 
 #include <systemc>
 
-#include "regfile.h"
+#include "regfile_base.h"
 #include "syscall_if.h"
 
 namespace Syscall {
@@ -97,16 +97,16 @@ struct SyscallHandlerBase : public sc_core::sc_module, syscall_emulator_if {
 
 	virtual void execute_syscall(iss_syscall_if *core) override {
 		auto syscall = core->read_register(core->get_syscall_register_index());
-		auto a3 = core->read_register(RegFile_T<int32_t, uint32_t>::a3);
-		auto a2 = core->read_register(RegFile_T<int32_t, uint32_t>::a2);
-		auto a1 = core->read_register(RegFile_T<int32_t, uint32_t>::a1);
-		auto a0 = core->read_register(RegFile_T<int32_t, uint32_t>::a0);
+		auto a3 = core->read_register(RegFileBase::a3);
+		auto a2 = core->read_register(RegFileBase::a2);
+		auto a1 = core->read_register(RegFileBase::a1);
+		auto a0 = core->read_register(RegFileBase::a0);
 
 		// printf("a7=%u, a0=%u, a1=%u, a2=%u, a3=%u\n", a7, a0, a1, a2, a3);
 
 		auto ans = execute_syscall(syscall, a0, a1, a2, a3);
 
-		core->write_register(RegFile_T<int32_t, uint32_t>::a0, ans);
+		core->write_register(RegFileBase::a0, ans);
 
 		if (shall_exit)
 			core->sys_exit();
