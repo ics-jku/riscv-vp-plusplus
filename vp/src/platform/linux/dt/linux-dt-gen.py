@@ -46,7 +46,9 @@ RISC-V VP++ Device Tree Generator for Linux VPs
 argp = argparse.ArgumentParser()
 argp.add_argument("-t", "--target",
                   help = "vp variant",
-                  choices = ["linux32-sc-vp", "linux32-vp", "linux-sc-vp", "linux-vp"],
+                  choices = ["linux32-sc-vp", "linux32-mc-vp", "linux64-sc-vp", "linux64-mc-vp",
+                             # NOTE: "linux32-vp", "linux-sc-vp", "linux-vp" are aliases (see below) - will be removed in the future
+                             "linux32-vp", "linux-sc-vp", "linux-vp"],
                   required = True)
 argp.add_argument("-m", "--memory-start",
                   help = "memory start address (default: 0x80000000)",
@@ -81,21 +83,33 @@ cfg.MEM_START = int(args.memory_start, 0)
 cfg.RISCV_ISA_EXTENSIONS_CPU0 = ["i", "m", "a", "c", "zicntr", "zicsr", "zifencei"]
 cfg.RISCV_ISA_EXTENSIONS = ["i", "m", "a", "f", "d", "c", "v", "zicntr", "zicsr", "zifencei"]
 
+# handle compatibility aliases
+cfg.TARGET_VP = args.target
+if cfg.TARGET_VP == "linux32-vp":
+    print("Warning: \"linux32-vp\" is an alias for \"linux32-mc-vp\" and will be removed the future! -> Use \"linux32-mc-vp\" instead.")
+    cfg.TARGET_VP = "linux32-mc-vp"
+elif cfg.TARGET_VP == "linux-sc-vp":
+    print("Warning: \"linux-sc-vp\" is an alias for \"linux64-sc-vp\" and will be removed the future! -> Use \"linux64-sc-vp\" instead.")
+    cfg.TARGET_VP = "linux64-sc-vp"
+elif cfg.TARGET_VP == "linux-vp":
+    print("Warning: \"linux-vp\" is an alias for \"linux64-mc-vp\" and will be removed the future! -> Use \"linux64-mc-vp\" instead.")
+    cfg.TARGET_VP = "linux64-mc-vp"
 
-if args.target == "linux32-sc-vp":
+# handle target
+if cfg.TARGET_VP == "linux32-sc-vp":
     cfg.RISCV_ISA_BASE = "rv32i"
     cfg.NUM_CORES = 1
-elif args.target == "linux32-vp":
+elif cfg.TARGET_VP == "linux32-mc-vp":
     cfg.RISCV_ISA_BASE = "rv32i"
     cfg.NUM_CORES = 4
-elif args.target == "linux-sc-vp":
+elif cfg.TARGET_VP == "linux64-sc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.NUM_CORES = 1
-elif args.target == "linux-vp":
+elif cfg.TARGET_VP == "linux64-mc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.NUM_CORES = 4
 else:
-    print("Internal error: Invalid target: \"" + str(args.target) + "\"!")
+    print("Internal error: Invalid target: \"" + str(cfg.TARGET_VP) + "\"!")
     sys.exit(1)
 
 
