@@ -3,6 +3,11 @@
 #define TARGET_RV64
 #endif
 
+/* if not defined externally fall back to one worker core */
+#if !defined(NUM_CORES)
+#define NUM_CORES 1
+#endif
+
 #include <termios.h>
 #include <unistd.h>
 
