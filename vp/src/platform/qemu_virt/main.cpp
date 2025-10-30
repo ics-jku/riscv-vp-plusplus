@@ -243,7 +243,7 @@ int sc_main(int argc, char **argv) {
 	DUMMY_TLM_TARGET flash1("flash1", opt.flash1_start_addr, opt.dummy_tlm_target_debug);
 	DUMMY_TLM_TARGET platform_bus("platform_bus", opt.platform_bus_start_addr, opt.dummy_tlm_target_debug);
 #ifdef TARGET_RV64_CHERIV9
-	TaggedMemory mem("SimpleMemory", opt.mem_size);
+	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
 #else
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
 #endif
