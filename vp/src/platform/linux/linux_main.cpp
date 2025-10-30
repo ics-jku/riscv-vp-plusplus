@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV64 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
 #define TARGET_RV64
 #endif
 
@@ -45,6 +45,12 @@
 #include "core/rv64/mem.h"
 #include "core/rv64/mmu.h"
 #include "core/rv64/syscall.h"
+#elif defined(TARGET_RV64_CHERIV9)
+#include "core/rv64_cheriv9/elf_loader.h"
+#include "core/rv64_cheriv9/iss.h"
+#include "core/rv64_cheriv9/mem.h"
+#include "core/rv64_cheriv9/mmu.h"
+#include "core/rv64_cheriv9/syscall.h"
 #endif
 
 #include "platform/common/channel_console.h"
@@ -61,6 +67,7 @@
 #include "platform/common/sifive_spi.h"
 #include "platform/common/sifive_test.h"
 #include "platform/common/spi_sd_card.h"
+#include "platform/common/tagged_memory.h"
 #include "platform/common/vncsimplefb.h"
 #include "platform/common/vncsimpleinputkbd.h"
 #include "platform/common/vncsimpleinputptr.h"
@@ -87,6 +94,13 @@ using namespace rv32;
 
 #elif defined(TARGET_RV64)
 using namespace rv64;
+#define MEM_SIZE_MB 2048  // MB ram
+#define MRAM_SIZE_MB 512  // MB mem mapped file (rootfs)
+/* address to load raw (not elf) images provided via --kernel-file */
+#define KERNEL_LOAD_ADDR 0x80200000
+
+#elif defined(TARGET_RV64_CHERIV9)
+using namespace cheriv9::rv64;
 #define MEM_SIZE_MB 2048  // MB ram
 #define MRAM_SIZE_MB 512  // MB mem mapped file (rootfs)
 /* address to load raw (not elf) images provided via --kernel-file */
@@ -188,13 +202,21 @@ class Core {
    public:
 	ISS iss;
 	MMU mmu;
+#ifdef TARGET_RV64_CHERIV9
+	CombinedTaggedMemoryInterface memif;
+#else
 	CombinedMemoryInterface memif;
+#endif
 	InstrMemoryProxy imemif;
 
-	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi)
+	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi, uint64_t mem_start_addr, uint64_t mem_end_addr)
 	    : iss(isa_config, id),
 	      mmu(iss),
+#ifdef TARGET_RV64_CHERIV9
+	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu, mem_start_addr, mem_end_addr),
+#else
 	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu),
+#endif
 	      imemif(dmi, iss) {
 		return;
 	}
@@ -255,6 +277,11 @@ int sc_main(int argc, char **argv) {
 		return -1;
 	}
 	RV_ISA_Config isa_config(false, opt.en_ext_Zfh);
+#ifdef TARGET_RV64_CHERIV9
+	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#endif
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
@@ -262,7 +289,11 @@ int sc_main(int argc, char **argv) {
 
 	VNCServer vncServer("RISC-V VP++ VNCServer", opt.vnc_port);
 
+#ifdef TARGET_RV64_CHERIV9
+	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
+#else
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
+#endif
 	SimpleMemory dtb_rom("DTB_ROM", opt.dtb_rom_size);
 	ELFLoader loader(opt.input_program.c_str());
 	NetTrace *debug_bus = nullptr;
@@ -292,7 +323,6 @@ int sc_main(int argc, char **argv) {
 	VNCSimpleInputPtr vncsimpleinputptr("VNCSimpleInputPtr", vncServer, 10);
 	VNCSimpleInputKbd vncsimpleinputkbd("VNCSimpleInputKbd", vncServer, 11);
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
 	MemoryMappedFile mramRoot("MRAM_Root", opt.mram_root_image, opt.mram_root_size);
 	MemoryMappedFile mramData("MRAM_Data", opt.mram_data_image, opt.mram_data_size);
 
@@ -304,10 +334,16 @@ int sc_main(int argc, char **argv) {
 	DS1307 *rtc_ds1307 = new DS1307();
 	i2c.register_device(0x68, rtc_ds1307);
 
+#ifdef TARGET_RV64_CHERIV9
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
+#else
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
+#endif
+
 	Core *cores[NUM_CORES];
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	for (unsigned i = 0; i < NUM_CORES; i++) {
-		cores[i] = new Core(&isa_config, i, dmi);
+		cores[i] = new Core(&isa_config, i, dmi, opt.mem_start_addr, opt.mem_end_addr);
 
 		cores[i]->memif.bus_lock = bus_lock;
 		cores[i]->mmu.mem = &cores[i]->memif;

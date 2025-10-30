@@ -35,11 +35,19 @@ target_compile_definitions(linux64-mc-vp PUBLIC
 	NUM_CORES=5)
 target_link_libraries(linux64-mc-vp rv64 ${LIBS})
 
+# Linux for RV64 CHERIv9 with single worker core
+add_executable(linux64-cheriv9-sc-vp ${SOURCES})
+target_compile_definitions(linux64-cheriv9-sc-vp PUBLIC
+	TARGET_RV64_CHERIV9
+	NUM_CORES=2)
+target_link_libraries(linux64-cheriv9-sc-vp rv64_cheriv9 ${LIBS})
+
 INSTALL(TARGETS
 	linux32-mc-vp
 	linux32-sc-vp
 	linux64-mc-vp
 	linux64-sc-vp
+	linux64-cheriv9-sc-vp
 	RUNTIME DESTINATION bin)
 
 # Install the script from the "dt" subdirectory
