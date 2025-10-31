@@ -8718,16 +8718,22 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 	maybe_interrupt_pending();
 }
 void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
-                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp) {
-	init(instr_mem, use_dbbcache, data_mem, use_lscache, clint, entrypoint, sp, false);
+                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp_base) {
+	init(instr_mem, use_dbbcache, data_mem, use_lscache, clint, entrypoint, sp_base, false);
 }
 
 void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
-                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp, bool cheri_purecap) {
+                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp_base, bool cheri_purecap) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
-	regs[RegFile::sp] = sp;
+
+	if (cheri_purecap) {
+		regs[RegFile::sp] = rv64_cheriv9_align_address(sp_base);
+	} else {
+		regs[RegFile::sp] = rv64_align_address(sp_base);
+	}
+
 	pc = entrypoint;
 	pc->fields.flag_cap_mode =
 	    cheri_purecap;  // If purecap mode is set, pc must have capability mode enabled by default

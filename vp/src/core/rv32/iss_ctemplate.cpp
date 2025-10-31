@@ -6977,11 +6977,11 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 }
 
 void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if *data_mem, bool use_lscache,
-                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp) {
+                  clint_if *clint, uxlen_t entrypoint, uxlen_t sp_base) {
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
-	regs[RegFile::sp] = sp;
+	regs[RegFile::sp] = align_address(sp_base);
 	pc = entrypoint;
 
 	/* TODO: make const? (make all label ptrs const?) */

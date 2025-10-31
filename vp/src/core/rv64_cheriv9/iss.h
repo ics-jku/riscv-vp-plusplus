@@ -52,6 +52,19 @@ static constexpr sxlen_t REG_MIN = REG64_MIN;
 using RegFile = RegFile_T<sxlen_t, uxlen_t>;
 using data_memory_if = data_memory_if_T<sxlen_t, uxlen_t>;
 
+inline uxlen_t rv64_cheriv9_align_address(uxlen_t addr) {
+	return addr - addr % 16;
+}
+
+inline uxlen_t rv64_align_address(uxlen_t addr) {
+	return addr - addr % 8;
+}
+
+inline uxlen_t align_address(uxlen_t addr) {
+	/* most conservative choice (valid for rv64 and rv64_cheri) */
+	return rv64_cheriv9_align_address(addr);
+}
+
 // NOTE: on this branch, currently the *simple-timing* model is still directly
 // integrated in the ISS. Merge the *timedb* branch to use the timing_if.
 

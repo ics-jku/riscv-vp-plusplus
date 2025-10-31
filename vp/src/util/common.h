@@ -37,14 +37,6 @@ inline void ensure(bool cond, const std::string &reason) {
 		throw std::runtime_error(reason);
 }
 
-inline uint64_t rv64_align_address(uint64_t addr) {
-	return addr - addr % 8;
-}
-
-inline uint32_t rv32_align_address(uint32_t addr) {
-	return addr - addr % 4;
-}
-
 /* Allow to provide a custom function name for a SystemC thread to avoid duplicate name warning in case the same
  * SystemC module is instantiated multiple times.
  * Compatible with SystemC 3.0.1 (see systemc-3.0.1/src/sysc/kernel/sc_module.h line 477ff)

@@ -130,9 +130,9 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 
 	core0.init(&core0_mem_if, opt.use_dbbcache, &core0_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	           rv64_align_address(opt.mem_end_addr));
+	           opt.mem_end_addr);
 	core1.init(&core1_mem_if, opt.use_dbbcache, &core1_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	           rv64_align_address(opt.mem_end_addr - (32 * 1024)));  // start stack 32KiB below stack for core0
+	           opt.mem_end_addr - (32 * 1024));  // start stack 32KiB below stack for core0
 
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core0);

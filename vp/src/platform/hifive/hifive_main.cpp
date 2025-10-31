@@ -253,7 +253,7 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(flash, flash.get_size(), opt.flash_start_addr, false);
 	loader.load_executable_image(dram, dram.get_size(), opt.dram_start_addr, false);
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	          rv32_align_address(opt.dram_end_addr));
+	          opt.dram_end_addr);
 	sys.init(dram.data, opt.dram_start_addr, loader.get_heap_addr(dram.get_size(), opt.dram_start_addr, false));
 	sys.register_core(&core);
 
