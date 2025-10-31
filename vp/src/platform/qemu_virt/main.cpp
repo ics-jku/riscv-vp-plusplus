@@ -120,6 +120,7 @@ struct LinuxOptions : public Options {
 	std::string dtb_file;
 	std::string kernel_file;
 	bool dummy_tlm_target_debug = false;
+	bool cheri_purecap = false;
 
 	LinuxOptions(void) {
 		// clang-format off
@@ -130,6 +131,9 @@ struct LinuxOptions : public Options {
 			("dtb-file", po::value<std::string>(&dtb_file)->required(), "dtb file for boot loading")
 			("kernel-file", po::value<std::string>(&kernel_file), "optional kernel file to load (supports ELF or RAW files)")
 			("dummy-tlm-target-debug", po::bool_switch(&dummy_tlm_target_debug), "print debug messages on dummy-tlm-target peripheral accesses")
+#ifdef TARGET_RV64_CHERIV9
+			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
+#endif
 			;
 		// clang-format on
 	}
@@ -165,11 +169,16 @@ class Core {
 	}
 
 	void init(bool use_data_dmi, bool use_instr_dmi, bool use_dbbcache, bool use_lscache, clint_if *clint,
-	          uint64_t entry, uint64_t sp_base) {
+	          uint64_t entry, uint64_t sp_base, bool cheri_purecap = false) {
 		if (use_data_dmi)
 			memif.dmi_ranges.emplace_back(imemif.dmi);
 
+#ifdef TARGET_RV64_CHERIV9
+		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base,
+		         cheri_purecap);
+#else
 		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base);
+#endif
 	}
 
    private:
@@ -283,7 +292,7 @@ int sc_main(int argc, char **argv) {
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, opt.use_dbbcache, opt.use_lscache, &clint, entry_point,
-		               opt.mem_end_addr);
+		               opt.mem_end_addr, opt.cheri_purecap);
 		cores[i]->iss.error_on_zero_traphandler = opt.error_on_zero_traphandler;
 	}
 

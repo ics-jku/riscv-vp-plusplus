@@ -169,6 +169,8 @@ struct LinuxOptions : public Options {
 
 	unsigned int vnc_port = 5900;
 
+	bool cheri_purecap = false;
+
 	LinuxOptions(void) {
 		// clang-format off
 		add_options()
@@ -183,7 +185,11 @@ struct LinuxOptions : public Options {
 			("mram-data-image", po::value<std::string>(&mram_data_image)->default_value(""),"MRAM data image file for persistency")
 			("mram-data-image-size", po::value<uint64_t>(&mram_data_size), "MRAM data image size")
 			("sd-card-image", po::value<std::string>(&sd_card_image)->default_value(""), "SD-Card image file (size must be multiple of 512 bytes)")
-			("vnc-port", po::value<unsigned int>(&vnc_port), "select port number to connect with VNC");
+			("vnc-port", po::value<unsigned int>(&vnc_port), "select port number to connect with VNC")
+#ifdef TARGET_RV64_CHERIV9
+			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
+#endif
+			;
 		// clang-format on
 	}
 
@@ -222,11 +228,16 @@ class Core {
 	}
 
 	void init(bool use_data_dmi, bool use_instr_dmi, bool use_dbbcache, bool use_lscache, clint_if *clint,
-	          uint64_t entry, uint64_t sp_base) {
+	          uint64_t entry, uint64_t sp_base, bool cheri_purecap = false) {
 		if (use_data_dmi)
 			memif.dmi_ranges.emplace_back(imemif.dmi);
 
+#ifdef TARGET_RV64_CHERIV9
+		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base,
+		         cheri_purecap);
+#else
 		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base);
+#endif
 	}
 
    private:
@@ -360,7 +371,7 @@ int sc_main(int argc, char **argv) {
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, opt.use_dbbcache, opt.use_lscache, &clint, entry_point,
-		               opt.mem_end_addr);
+		               opt.mem_end_addr, opt.cheri_purecap);
 
 		sys.register_core(&cores[i]->iss);
 		if (opt.intercept_syscalls)
