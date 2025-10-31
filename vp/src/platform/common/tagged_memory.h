@@ -106,11 +106,9 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 		tlm_ext_tag *ext;
 		trans.get_extension(ext);
 		if (ext == nullptr) {
-			// TODO Error handling
-			assert(0);
-		}
-		if (!ext) {
-			// TODO Error handling
+			std::cerr << "TaggedMemory(" << name()
+			          << "): ERROR: Missing Tag extension (tlm_ext_tag) in transaction -> check initiators!"
+			          << std::endl;
 			assert(0);
 		}
 
