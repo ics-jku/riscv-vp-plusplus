@@ -92,8 +92,9 @@ void ISS_CT::print_trace() {
 	 */
 	Operation::OpId opId = instr.decode_normal(ARCH, *isa_config);
 
-	printf("core %2lu: prv %1x: pc %16lx (%8x): %s ", csrs.mhartid.reg.val, prv,
-	       dbbcache.get_last_pc_before_callback()->fields.address, mem_word, Operation::opIdStr.at(opId));
+	ProgramCounterCapability last_pc = dbbcache.get_last_pc_before_callback();
+	printf("core %2lu: prv %1x: pcap: %d pc %16lx (%8x): %s ", csrs.mhartid.reg.val, prv, last_pc->fields.flag_cap_mode,
+	       last_pc->fields.address, mem_word, Operation::opIdStr.at(opId));
 	switch (Operation::getType(opId)) {
 		case Operation::Type::R:
 			if (opId == Operation::OpId::C_SPECIAL_R_W) {
