@@ -1,10 +1,13 @@
-#pragma once
+#ifndef RISCV_CHERIV9_ISA64_CHERI_MEM_H
+#define RISCV_CHERIV9_ISA64_CHERI_MEM_H
 
 #include "core/common_cheriv9/cheri_cap_common.h"
 #include "core/common_cheriv9/cheri_exceptions.h"
 #include "core/common_cheriv9/dmi.h"
 #include "iss.h"
 #include "mmu.h"
+#include "util/propertymap.h"
+#include "util/tlm_ext_initiator.h"
 #include "util/tlm_ext_tag.h"
 
 namespace cheriv9::rv64 {
@@ -12,40 +15,58 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
                                        public instr_memory_if,
                                        public data_memory_if,
                                        public mmu_memory_if {
-	ISS& iss;
+	/* config properties */
+	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
+	unsigned int prop_dmi_access_clock_cycles = 4;
+
+	ISS &iss;
 	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;
 
 	tlm_utils::simple_initiator_socket<CombinedTaggedMemoryInterface> isock;
-	tlm::tlm_generic_payload trans;
-	tlm_ext_tag* trans_ext_tag;
-
-	tlm_utils::tlm_quantumkeeper& quantum_keeper;
+	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 
 	// optionally add DMI ranges for optimization
-	sc_core::sc_time clock_cycle = sc_core::sc_time(10, sc_core::SC_NS);
-	sc_core::sc_time dmi_access_delay = clock_cycle * 4;
+	sc_core::sc_time dmi_access_delay;
 	std::vector<MemoryDMI> dmi_ranges;
+
 	uint64_t mem_start_addr;
 	uint64_t mem_end_addr;
 
-	MMU* mmu;
+	tlm::tlm_generic_payload trans;
+	tlm_ext_initiator *trans_ext_initiator;
+	tlm_ext_tag *trans_ext_tag;
+
+	MMU *mmu;
 
 	bool last_access_was_dmi = false;
-	void* last_dmi_page_host_addr = nullptr;
+	void *last_dmi_page_host_addr = nullptr;
 
-	CombinedTaggedMemoryInterface(const sc_core::sc_module_name&, ISS& owner, MMU* mmu = nullptr,
-	                              uint64_t mem_start_addr = 0, uint64_t mem_end_addr = 0)
+	CombinedTaggedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU *mmu = nullptr, uint64_t mem_start_addr = 0,
+	                              uint64_t mem_end_addr = 0)
 	    : iss(owner),
 	      quantum_keeper(iss.quantum_keeper),
 	      mem_start_addr(mem_start_addr),
 	      mem_end_addr(mem_end_addr),
 	      mmu(mmu) {
 		/*
+		 * get config properties from global property tree (or use default)
+		 * Note: Instance has no name -> use the owners name is used as instance identifier
+		 */
+		VPPP_PROPERTY_GET("CombinedTaggedMemoryInterface." + owner.name(), "clock_cycle_period", sc_core::sc_time,
+		                  prop_clock_cycle_period);
+		VPPP_PROPERTY_GET("CombinedTaggedMemoryInterface." + owner.name(), "dmi_access_clock_cycles", uint64_t,
+		                  prop_dmi_access_clock_cycles);
+
+		dmi_access_delay = prop_clock_cycle_period * prop_dmi_access_clock_cycles;
+
+		/*
 		 * Note: tlm_generic_payload frees all extension objects in destructor, therefore dynamic allocation is needed
 		 */
 		trans_ext_tag = new tlm_ext_tag(false);
+		trans_ext_initiator = new tlm_ext_initiator(&owner);
 		trans.set_extension(trans_ext_tag);
+		trans.set_extension(trans_ext_initiator);
 	}
 
 	// default v2p for non-tagged data
@@ -63,22 +84,22 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	// v2p for loading tagged data
-	uint64_t v2p(uint64_t vaddr, MemoryAccessType type, bool* trap_if_cap, bool* strip_tag) {
+	uint64_t v2p(uint64_t vaddr, MemoryAccessType type, bool *trap_if_cap, bool *strip_tag) {
 		return v2p(vaddr, type, false, trap_if_cap, strip_tag);
 	}
 
-	uint64_t v2p(uint64_t vaddr, MemoryAccessType type, bool tag, bool* trap_if_cap, bool* strip_tag) {
+	uint64_t v2p(uint64_t vaddr, MemoryAccessType type, bool tag, bool *trap_if_cap, bool *strip_tag) {
 		if (mmu == nullptr)
 			return vaddr;
 		return mmu->translate_virtual_to_physical_addr(vaddr, type, tag, trap_if_cap, strip_tag);
 	}
 
-	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t* data, unsigned num_bytes) {
+	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
 		bool tag = false;
 		return _do_transaction(cmd, addr, data, &tag, num_bytes);
 	}
 
-	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t* data, bool* p_tag, unsigned num_bytes) {
+	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, bool *p_tag, unsigned num_bytes) {
 		if (unlikely(iss.rvfi_dii_enabled())) {
 			// Additional address validity check required, because riscv-sail-cheri does handle mapping to CLINT
 			// differently This means that at this point it must be checked, if the given address is within memory
@@ -105,20 +126,26 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		trans_ext_tag->tag = *p_tag;
 
+		/* ensure, that quantum_keeper value of ISS is up-to-date */
+		iss.commit_cycles();
+
+		/* update quantum values by transaction delay */
+
 		sc_core::sc_time local_delay = quantum_keeper.get_local_time();
 
 		isock->b_transport(trans, local_delay);
 
-		assert(local_delay >= quantum_keeper.get_local_time());
 		quantum_keeper.set(local_delay);
 
 		if (trans.is_response_error()) {
-			if (unlikely((iss.trace_enabled())))
+			if (iss.trace_enabled())
 				std::cout << "WARNING: core memory transaction failed for address 0x" << std::hex << addr << std::dec
 				          << " -> raise trap" << std::endl;
 			if (cmd == tlm::TLM_READ_COMMAND)
+				// TODO: ACCESS EXC_LOAD_ACCESS_FAULT vs. EXC_LOAD_PAGE_FAULT in commmon/mem.h
 				raise_trap(EXC_LOAD_ACCESS_FAULT, addr, &iss.rvfi_dii_output);
 			else if (cmd == tlm::TLM_WRITE_COMMAND)
+				// TODO: EXC_STORE_AMO_ACCESS_FAULT vs. EXC_STORE_AMO_PAGE_FAULT in commmon/mem.h
 				raise_trap(EXC_STORE_AMO_ACCESS_FAULT, addr, &iss.rvfi_dii_output);
 			else
 				throw std::runtime_error("TLM command must be read or write");
@@ -154,12 +181,12 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			handle_cheri_cap_exception(CapEx_PermitStoreLocalCapViolation, auth_idx, &iss.rvfi_dii_output);
 	}
 
-	bool _raw_load_tagged_data(uint64_t addr, __uint128_t* p_data) {
+	bool _raw_load_tagged_data(uint64_t addr, __uint128_t *p_data) {
 		// NOTE: a DMI load will not context switch (SystemC) and not modify the memory, hence should be able to
 		// postpone the lock after the dmi access
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 		bool ans;
-		for (auto& e : dmi_ranges) {
+		for (auto &e : dmi_ranges) {
 			if (e.contains(addr)) {
 				quantum_keeper.inc(dmi_access_delay);
 				ans = e.load(addr, p_data);
@@ -171,7 +198,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 				return ans;
 			}
 		}
-		_do_transaction(tlm::TLM_READ_COMMAND, addr, reinterpret_cast<uint8_t*>(p_data), &ans, sizeof(__uint128_t));
+		_do_transaction(tlm::TLM_READ_COMMAND, addr, reinterpret_cast<uint8_t *>(p_data), &ans, sizeof(__uint128_t));
 		/*
 		 * A transaction may lead to a context switch. The other context may issue transaction handled via dmi.
 		 * i.e.: When we come back to this context, it is possible that we end up with last_access_was_dmi set to true!
@@ -189,7 +216,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 
 		T ans;
 
-		for (auto& e : dmi_ranges) {
+		for (auto &e : dmi_ranges) {
 			if (e.contains(addr)) {
 				quantum_keeper.inc(dmi_access_delay);
 				ans = e.load<T>(addr);
@@ -202,7 +229,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			}
 		}
 
-		_do_transaction(tlm::TLM_READ_COMMAND, addr, reinterpret_cast<uint8_t*>(&ans), sizeof(T));
+		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
 
 		/*
 		 * A transaction may lead to a context switch. The other context may issue transaction handled via dmi.
@@ -218,7 +245,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	inline void _raw_store_data(uint64_t addr, T value) {
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 
-		for (auto& e : dmi_ranges) {
+		for (auto &e : dmi_ranges) {
 			if (e.contains(addr)) {
 				quantum_keeper.inc(dmi_access_delay);
 				e.store(addr, value);
@@ -232,7 +259,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			}
 		}
 
-		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, reinterpret_cast<uint8_t*>(&value), sizeof(T));
+		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
 		atomic_unlock();
 
 		/* see comment in _raw_load_data */
@@ -242,7 +269,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	inline void _raw_store_tagged_data(uint64_t addr, __uint128_t data, bool tag) {
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 
-		for (auto& e : dmi_ranges) {
+		for (auto &e : dmi_ranges) {
 			if (e.contains(addr)) {
 				quantum_keeper.inc(dmi_access_delay);
 				e.store(addr, data, tag);
@@ -256,7 +283,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			}
 		}
 
-		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, reinterpret_cast<uint8_t*>(&data), &tag, sizeof(__uint128_t));
+		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, reinterpret_cast<uint8_t *>(&data), &tag, sizeof(__uint128_t));
 		atomic_unlock();
 		/* see comment in _raw_load_data */
 		last_access_was_dmi = false;
@@ -343,7 +370,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		return _load_data<T>(addr);
 	}
 
-	bool _atomic_load_tagged_data(uint64_t addr, __uint128_t* p_data) {
+	bool _atomic_load_tagged_data(uint64_t addr, __uint128_t *p_data) {
 		bus_lock->lock(iss.get_hart_id());
 		bool strip_tag = false;
 		bool trap = false;
@@ -391,7 +418,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		return _load_data<T>(addr);
 	}
 
-	bool _atomic_load_reserved_tagged_data(uint64_t addr, bool* trap, bool* strip_tag, __uint128_t* p_data) {
+	bool _atomic_load_reserved_tagged_data(uint64_t addr, bool *trap, bool *strip_tag, __uint128_t *p_data) {
 		bus_lock->lock(iss.get_hart_id());
 		lr_addr = addr;
 		return _raw_load_tagged_data(v2p(addr, LOAD, trap, strip_tag), p_data);
@@ -840,7 +867,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		return bus_lock->is_locked();
 	}
 
-	void* get_last_dmi_page_host_addr() override {
+	void *get_last_dmi_page_host_addr() override {
 		if (!last_access_was_dmi) {
 			return nullptr;
 		}
@@ -848,3 +875,5 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 };
 } /* namespace cheriv9::rv64 */
+
+#endif /* RISCV_CHERIV9_ISA64_CHERI_MEM_H */
