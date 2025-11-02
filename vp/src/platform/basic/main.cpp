@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV32 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
 #define TARGET_RV32
 #endif
 
@@ -34,6 +34,11 @@
 #include "core/rv64/iss.h"
 #include "core/rv64/mem.h"
 #include "core/rv64/syscall.h"
+#elif defined(TARGET_RV64_CHERIV9)
+#include "core/rv64_cheriv9/elf_loader.h"
+#include "core/rv64_cheriv9/iss.h"
+#include "core/rv64_cheriv9/mem.h"
+#include "core/rv64_cheriv9/syscall.h"
 #endif
 
 #include "display.hpp"
@@ -47,6 +52,7 @@
 #include "platform/common/memory.h"
 #include "platform/common/memory_mapped_file.h"
 #include "platform/common/options.h"
+#include "platform/common/tagged_memory.h"
 #include "platform/common/terminal.h"
 #include "sensor.h"
 #include "sensor2.h"
@@ -57,6 +63,8 @@
 using namespace rv32;
 #elif defined(TARGET_RV64)
 using namespace rv64;
+#elif defined(TARGET_RV64_CHERIV9)
+using namespace cheriv9::rv64;
 #endif
 
 namespace po = boost::program_options;
@@ -101,6 +109,7 @@ class BasicOptions : public Options {
 	addr_t display_end_addr = display_start_addr + Display::addressRange;
 
 	bool quiet = false;
+	bool cheri_purecap = false;
 
 	OptionValue<uint64_t> entry_point;
 
@@ -115,7 +124,11 @@ class BasicOptions : public Options {
 			("mram-image-size", po::value<unsigned int>(&mram_size), "MRAM image size")
 			("flash-device", po::value<std::string>(&flash_device)->default_value(""),"blockdevice for flash emulation")
 			("network-device", po::value<std::string>(&network_device)->default_value(""),"name of the tap network adapter, e.g. /dev/tap6")
-			("signature", po::value<std::string>(&test_signature)->default_value(""),"output filename for the test execution signature");
+			("signature", po::value<std::string>(&test_signature)->default_value(""),"output filename for the test execution signature")
+#ifdef TARGET_RV64_CHERIV9
+			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
+#endif
+			;
 		// clang-format on
 	};
 
@@ -159,14 +172,26 @@ int sc_main(int argc, char **argv) {
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
+#ifdef TARGET_RV64_CHERIV9
+	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#endif
+
 	ISS core(&isa_config, 0);
 
+#ifdef TARGET_RV64_CHERIV9
+	CombinedTaggedMemoryInterface iss_mem_if("MemoryInterface0", core, nullptr, opt.mem_start_addr, opt.mem_end_addr);
+	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
+#else
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
+	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
+#endif
+
 	SimpleTerminal term("SimpleTerminal");
 	Channel_Console channel_console;
 	FU540_UART uart("Generic_UART0", &channel_console, 6);
 	ELFLoader loader(opt.input_program.c_str());
-	CombinedMemoryInterface iss_mem_if("MemoryInterface", core);
 	SyscallHandler sys("SyscallHandler");
 	FE310_PLIC<1, 64, 96, 32> plic("PLIC");
 	CLINT<1> clint("CLINT");
@@ -183,7 +208,11 @@ int sc_main(int argc, char **argv) {
 	// enable interactive debug via console
 	channel_console.debug_targets_add(&core);
 
+#ifdef TARGET_RV64_CHERIV9
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
+#else
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
+#endif
 	InstrMemoryProxy instr_mem(dmi, core);
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
@@ -214,12 +243,14 @@ int sc_main(int argc, char **argv) {
 		opt.printValues(std::cerr);
 		return -1;
 	}
-	/*
-	 * The rv32 calling convention defaults to 32 bit, but as this Config is
-	 * mainly used together with the syscall handler, this helps for certain floats.
-	 * https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
-	 */
+
+#ifdef TARGET_RV64_CHERIV9
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, entry_point, opt.mem_end_addr,
+	          opt.cheri_purecap);
+#else
 	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, entry_point, opt.mem_end_addr);
+#endif
+
 	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
 	sys.register_core(&core);
 

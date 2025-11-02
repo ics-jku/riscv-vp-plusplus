@@ -18,11 +18,16 @@ add_executable(riscv64-vp ${SOURCES})
 target_compile_definitions(riscv64-vp PUBLIC TARGET_RV64)
 target_link_libraries(riscv64-vp rv64 platform-basic platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
 
+add_executable(riscv64-cheriv9-vp ${SOURCES})
+target_compile_definitions(riscv64-cheriv9-vp PUBLIC TARGET_RV64_CHERIV9)
+target_link_libraries(riscv64-cheriv9-vp rv64_cheriv9 platform-basic platform-common gdb-mc ${Boost_LIBRARIES} systemc pthread)
+
 add_executable(riscv-vp ALIAS riscv32-vp)
 
 INSTALL(TARGETS
 	riscv32-vp
 	riscv64-vp
+	riscv64-cheriv9-vp
 	RUNTIME DESTINATION bin)
 
 # riscv-vp = riscv32-vp (for compatibility; TODO: remove in future)
