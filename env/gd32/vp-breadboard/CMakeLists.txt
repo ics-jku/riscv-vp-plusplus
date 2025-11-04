@@ -1,8 +1,8 @@
+cmake_minimum_required(VERSION 3.18)
+
 project(vp-breadboard) # Your project name
 
 set(CMAKE_CXX_STANDARD 17)
-
-cmake_minimum_required(VERSION 3.1.0)
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
