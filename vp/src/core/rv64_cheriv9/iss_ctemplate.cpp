@@ -7133,8 +7133,8 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					CapAddr_t cs2_base;
 					CapLen_t cs2_top;
 					cs2_val.getCapBounds(&cs2_base, &cs2_top);
-					bool permitted = cs2_val.fields.tag & !cs2_val.isSealed() & cs2_val.fields.permit_seal &
-					                 (cs2_cursor >= cs2_base) & (cs2_top > cs2_cursor) & (cs2_cursor <= cCapMaxOType);
+					bool permitted = cs2_val.fields.tag && !cs2_val.isSealed() && cs2_val.fields.permit_seal &&
+					                 (cs2_cursor >= cs2_base) && (cs2_top > cs2_cursor) && (cs2_cursor <= cCapMaxOType);
 					cs1_val.clearTagIfSealed();
 					cs1_val.seal(cs2_cursor);
 					cs1_val.clearTagIf(!permitted);
@@ -7148,10 +7148,10 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					CapAddr_t cs2_base;
 					CapLen_t cs2_top;
 					cs2_val.getCapBounds(&cs2_base, &cs2_top);
-					bool permitted = cs2_val.fields.tag & cs1_val.isSealed() & !cs2_val.isSealed() &
-					                 !cs1_val.hasReservedOType() &
-					                 (cs2_cursor == static_cast<uint64_t>(cs1_val.fields.otype)) &
-					                 cs2_val.fields.permit_unseal & (cs2_cursor >= cs2_base) & (cs2_top >= cs2_cursor);
+					bool permitted =
+					    cs2_val.fields.tag && cs1_val.isSealed() && !cs2_val.isSealed() &&
+					    !cs1_val.hasReservedOType() && (cs2_cursor == static_cast<uint64_t>(cs1_val.fields.otype)) &&
+					    cs2_val.fields.permit_unseal && (cs2_cursor >= cs2_base) && (cs2_top >= cs2_cursor);
 					bool new_global = cs1_val.fields.global & cs2_val.fields.global;
 					cs1_val.unseal();
 					cs1_val.fields.global = new_global;
@@ -7298,9 +7298,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					uint8_t requestedFlags = requestedCap.getFlags();
 
 					// TODO Cleanup the mess below
-					bool subset = (requestedBase >= authorityBase) & (requestedTop <= authorityTop) &
-					              (requestedTop >= requestedBase) &
-					              ((requestedPerms & authorityPerms) == requestedPerms);
+					bool subset = (requestedBase >= authorityBase) && (requestedTop <= authorityTop) &&
+					              (requestedTop >= requestedBase) &&
+					              ((requestedPerms && authorityPerms) == requestedPerms);
 					authorityCap.clearTagIfSealed();
 					bool exact = authorityCap.setCapBounds(requestedBase, requestedTop);
 					authorityCap.setCapOffset(requestedCap.getOffset());
@@ -9230,10 +9230,10 @@ void ISS_CT::execute_c_jalr(int32_t immediate) {
 		handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
 	} else if (!cs1_val.fields.permit_execute) {
 		handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
-	} else if (have_pcc_relocation() &
-	           (((newPCCBase & 0b01) == 0b01) | (((newPCCBase & 0b10) == 0b10) & !csrs.misa.has_C_extension()))) {
+	} else if (have_pcc_relocation() &&
+	           (((newPCCBase & 0b01) == 0b01) || (((newPCCBase & 0b10) == 0b10) && !csrs.misa.has_C_extension()))) {
 		handle_cheri_reg_exception(CapEx_UnalignedBase, instr.rs1(), &rvfi_dii_output);
-	} else if ((newPC & 1) & !csrs.misa.has_C_extension()) {
+	} else if ((newPC & 1) && !csrs.misa.has_C_extension()) {
 		handle_mem_exception(newPC, E_FetchAddrAlign, &rvfi_dii_output);
 	} else if (!cs1_val.inCapBounds(newPC, min_instruction_bytes())) {
 		handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);

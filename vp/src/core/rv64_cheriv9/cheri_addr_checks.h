@@ -20,7 +20,7 @@ inline void cheriFetchCheckPc(ProgramCounterCapability start_pc, ProgramCounterC
 		// If PCC relocation is enabled, require that PCC.base be as aligned as PC
 		// This is also enforced when setting PCC in most places
 		if (have_pcc_relocation() &&
-		    (((pc.pcc.getBase() & 0b1) != 0) | (((pc.pcc.getBase() & 0b10) != 0) && !has_compressed))) {
+		    (((pc.pcc.getBase() & 0b1) != 0) || (((pc.pcc.getBase() & 0b10) != 0) && !has_compressed))) {
 			handle_cheri_pcc_exception(CapEx_UnalignedBase, trace);
 		}
 		if (!start_pc.pcc.inCapBounds(pc->fields.address, 2)) {

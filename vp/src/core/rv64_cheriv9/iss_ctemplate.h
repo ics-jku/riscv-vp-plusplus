@@ -355,7 +355,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return false;  // TODO
 	}
 	uint8_t min_instruction_bytes() {
-		if ((!sys_enable_writable_misa()) & (!csrs.misa.has_C_extension())) {
+		if ((!sys_enable_writable_misa()) && (!csrs.misa.has_C_extension())) {
 			// Compressed Instructions are not enabled, an can never be enabled, as misa is not writeable
 			return 4;
 		}
@@ -366,7 +366,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	 * When misa.C is writable, it zeroes only xepc[0].
 	 */
 	inline uint64_t legalize_xepc(uint64_t v) {
-		if ((sys_enable_writable_misa() & sys_enable_rvc()) | csrs.misa.has_C_extension()) {
+		if ((sys_enable_writable_misa() && sys_enable_rvc()) || csrs.misa.has_C_extension()) {
 			// Set bit 0 to 0
 			return v & ~0x1;
 		}
