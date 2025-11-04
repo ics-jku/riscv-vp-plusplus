@@ -172,7 +172,7 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 			sc_core::wait(delay);
 	}
 
-	void halt() {
+	void halt() override {
 		std::cerr << "[VP] cannot halt initiator " << this->name() << std::endl;
 	}
 
