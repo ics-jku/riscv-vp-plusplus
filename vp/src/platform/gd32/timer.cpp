@@ -74,6 +74,14 @@ TIMER::TIMER(sc_core::sc_module_name)
       mtimecmp_hart2(regs_mtimecmp_hart2),
       mtimecmp_hart3(regs_mtimecmp_hart3),
       mtime_clint(regs_mtime_clint) {
+	if (sc_core::sc_get_time_resolution() != sc_core::sc_time(1.0, sc_core::SC_PS)) {
+		SC_REPORT_WARNING("riscv-vp-plusplus",
+		                  (std::string("TIMER requires a SystemC time resolution of " +
+		                               sc_core::sc_time(1.0, sc_core::SC_PS).to_string() + " actual resolution is ") +
+		                   sc_core::sc_get_time_resolution().to_string())
+		                      .c_str());
+	}
+
 	for (auto reg : register_ranges) reg->alignment = 4;
 	tsock.register_b_transport(this, &TIMER::transport);
 
