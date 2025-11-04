@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/rv64/iss.h"
+#include "core/rv64_cheriv9/iss.h"
 #include "rvfi_dii.h"
 
 namespace cheriv9::rv64 {
