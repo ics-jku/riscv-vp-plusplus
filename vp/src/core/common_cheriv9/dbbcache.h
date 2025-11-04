@@ -106,17 +106,17 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 			// bits were fetched First handle CHERI checks on pc
 #ifdef HANDLE_CHERI_EXCEPTIONS
 			cheriFetchCheckPc(pc, pc, this->rvfi_dii_output, this->has_compressed);
-			uint16_t instr_low = this->instr_mem->load_instr_half(pc->fields.address);
+			uint16_t instr_low = this->instr_mem->load_instr_half(pc->cap.fields.address);
 			instr = Instruction(instr_low);
 			if (instr.is_compressed()) {
 				return instr_low;  // Compressed instruction, return immediately
 			}
 			// If not compressed, fetch the second half of the instruction
 			cheriFetchCheckPc(pc, pc + 2, this->rvfi_dii_output, this->has_compressed);
-			uint16_t instr_high = this->instr_mem->load_instr_half(pc->fields.address + 2);
+			uint16_t instr_high = this->instr_mem->load_instr_half(pc->cap.fields.address + 2);
 			uint32_t mem_word = (instr_high << 16) | instr_low;
 #else
-			uint32_t mem_word = this->instr_mem->load_instr(pc->fields.address);
+			uint32_t mem_word = this->instr_mem->load_instr(pc->cap.fields.address);
 #endif
 			instr = Instruction(mem_word);
 			return mem_word;
@@ -143,36 +143,37 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 		// Perform v2p address translation, but do not actually fetch the instruction
 		// This is to ensure that all checks on PC are performed as in Sail
 		this->instr_mem->translate_pc(
-		    pc->fields.address);  // Attempt to read from memory, because load checks must still be performed
+		    pc->cap.fields.address);  // Attempt to read from memory, because load checks must still be performed
 		instr = instr_val;
 		decoded_instr_len = 2;
 		uint32_t mem_word = instr.data();
 		if (!instr.is_compressed()) {
 			cheriFetchCheckPc(pc, pc + 2, this->rvfi_dii_output, this->has_compressed);
 			this->instr_mem->translate_pc(
-			    pc->fields.address + 2);  // Attempt to read from memory, because load checks must still be performed
+			    pc->cap.fields.address +
+			    2);  // Attempt to read from memory, because load checks must still be performed
 			decoded_instr_len = 4;
 		}
-		pc += decode(instr, opId, pc->fields.flag_cap_mode);
+		pc += decode(instr, opId, pc->cap.fields.flag_cap_mode);
 		return mem_word;
 	}
 
 	__always_inline uint32_t fetch_decode(ProgramCounterCapability &pc, Instruction &instr, Operation::OpId &opId) {
 		uint32_t mem_word = fetch(pc, instr);
-		pc += decode(instr, opId, pc->fields.flag_cap_mode);
+		pc += decode(instr, opId, pc->cap.fields.flag_cap_mode);
 		return mem_word;
 	}
 
 	__always_inline void branch_taken_sjump(int32_t pc_offset, bool c_extension) {
-		uint64_t newPc = this->last_pc->fields.address + pc_offset;
+		uint64_t newPc = this->last_pc->cap.fields.address + pc_offset;
 		if (!pc.pcc.inCapBounds(newPc, this->min_instruction_bytes)) {
 			handle_cheri_cap_exception(CapEx_LengthViolation, 0, this->rvfi_dii_output);
 		}
-		if (pc->fields.flag_cap_mode & (newPc & 1) & !c_extension) {
+		if (pc->cap.fields.flag_cap_mode & (newPc & 1) & !c_extension) {
 			assert(0);  // TODO
 			            // handle_mem_exception(newPC, E_Fetch_Addr_Align()); // TODO
 		}
-		this->pc = this->last_pc->fields.address + pc_offset;
+		this->pc = this->last_pc->cap.fields.address + pc_offset;
 	}
 
    public:
@@ -187,7 +188,7 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 		                                                         fast_abort_labelPtr, entrypoint, cheri_purecap,
 		                                                         rvfi_dii_output);
 		this->pc = entrypoint;
-		this->pc->fields.flag_cap_mode = cheri_purecap;
+		this->pc->cap.fields.flag_cap_mode = cheri_purecap;
 #ifdef HANDLE_CHERI_EXCEPTIONS
 		std::cout << "WARNING: CHERI exception handling is enabled!" << std::endl;
 #endif
@@ -206,14 +207,14 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 	__always_inline ProgramCounterCapability jump_and_link(int32_t pc_offset) {
 		ProgramCounterCapability link = pc;
 		branch_taken_sjump(pc_offset, (this->isa_config->get_misa_extensions() & csr_misa::C) == csr_misa::C);
-		if (pc->fields.flag_cap_mode) {
-			link.pcc.setCapAddr(link->fields.address);
+		if (pc->cap.fields.flag_cap_mode) {
+			link.pcc.setCapAddr(link->cap.fields.address);
 			link.pcc.seal(cOtypeSentryUnsigned);
 			return link;
 		}
 		// Integer pointer mode
 		link->clearMetadata();
-		link->fields.tag = false;
+		link->cap.fields.tag = false;
 		return link;
 	}
 
@@ -242,7 +243,7 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 		}
 		this->pc = pc;
 		link->clearMetadata();
-		link->fields.tag = false;
+		link->cap.fields.tag = false;
 		return link;
 	}
 

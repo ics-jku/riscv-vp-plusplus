@@ -368,7 +368,7 @@ struct csr_capability {
 
 	// Cast to csr64
 	operator csr_64 &() {
-		return *reinterpret_cast<csr_64 *>(&cap.fields.address);
+		return *reinterpret_cast<csr_64 *>(&cap.cap.fields.address);
 	}
 	operator Capability() {
 		return cap;
@@ -387,7 +387,7 @@ struct csr_mtvec_capability {
 	csr_mtvec_capability(Capability cap) : cap(cap) {}
 	// Cast to csr_mtvec
 	operator csr_mtvec &() {
-		return *reinterpret_cast<csr_mtvec *>(&cap.fields.address);
+		return *reinterpret_cast<csr_mtvec *>(&cap.cap.fields.address);
 	}
 
 	operator Capability() {
@@ -395,8 +395,8 @@ struct csr_mtvec_capability {
 	}
 	Capability get_base_address() {
 		Capability legalized = cap;
-		legalized.fields.address =
-		    static_cast<int64_t>(reinterpret_cast<csr_mtvec *>(&cap.fields.address)->get_base_address());
+		legalized.cap.fields.address =
+		    static_cast<int64_t>(reinterpret_cast<csr_mtvec *>(&cap.cap.fields.address)->get_base_address());
 		return legalized;
 	}
 };
@@ -408,7 +408,7 @@ struct csr_eepc_capability {
 	}
 	csr_eepc_capability(Capability cap) : cap(cap) {}
 	operator csr_mepc &() {
-		return *reinterpret_cast<csr_mepc *>(&cap.fields.address);
+		return *reinterpret_cast<csr_mepc *>(&cap.cap.fields.address);
 	}
 	operator Capability() {
 		return cap;

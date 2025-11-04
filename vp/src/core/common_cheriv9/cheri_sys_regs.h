@@ -1,14 +1,12 @@
 #pragma once
 #include "cheri_cap_common.h"
 
-struct Mtvec {
-	union {
-		uint64_t bits;
-		struct {
-			uint8_t mode : 2;
-			uint64_t base : 62;
-		} fields;
-	};
+union Mtvec {
+	uint64_t bits;
+	struct fields {
+		uint8_t mode : 2;
+		uint64_t base : 62;
+	} fields;
 };
 
 inline Mtvec MkMtvec(uint64_t t) {

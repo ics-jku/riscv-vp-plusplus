@@ -385,19 +385,19 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 	                               uint8_t width) {
 		switch (width) {
 			case 1:
-				store_byte(addr, (uint8_t)rs2.fields.address);
+				store_byte(addr, (uint8_t)rs2.cap.fields.address);
 				break;
 			case 2:
 				iss.template trap_check_addr_alignment<2, false>(addr);
-				store_half(addr, (uint16_t)rs2.fields.address);
+				store_half(addr, (uint16_t)rs2.cap.fields.address);
 				break;
 			case 4:
 				iss.template trap_check_addr_alignment<4, false>(addr);
-				store_word(addr, (uint32_t)rs2.fields.address);
+				store_word(addr, (uint32_t)rs2.cap.fields.address);
 				break;
 			case 8:
 				iss.template trap_check_addr_alignment<8, false>(addr);
-				store_double(addr, rs2.fields.address);
+				store_double(addr, rs2.cap.fields.address);
 				break;
 			default:
 				assert(0);

@@ -155,16 +155,16 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 
 	template <bool isLoad>
 	inline void _do_cheri_checks(uint64_t auth_idx, Capability auth_val, uint64_t addr, uint8_t width) const {
-		if (!auth_val.fields.tag)
+		if (!auth_val.cap.fields.tag)
 			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
 
 		if (auth_val.isSealed())
 			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
 
-		if (isLoad && !auth_val.fields.permit_load)
+		if (isLoad && !auth_val.cap.fields.permit_load)
 			handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &iss.rvfi_dii_output);
 
-		if (!isLoad && !auth_val.fields.permit_store)
+		if (!isLoad && !auth_val.cap.fields.permit_store)
 			handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &iss.rvfi_dii_output);
 		if (!auth_val.inCapBounds(addr, width))
 			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
@@ -175,9 +175,9 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	inline void _do_cheri_checks(uint64_t auth_idx, Capability auth_val, uint64_t addr, uint8_t width,
 	                             Capability cs2) const {
 		_do_cheri_checks<isLoad>(auth_idx, auth_val, addr, width);
-		if (!isLoad && !auth_val.fields.permit_store_cap && cs2.fields.tag)
+		if (!isLoad && !auth_val.cap.fields.permit_store_cap && cs2.cap.fields.tag)
 			handle_cheri_cap_exception(CapEx_PermitStoreCapViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!isLoad && !auth_val.fields.permit_store_local_cap && cs2.fields.tag && !cs2.fields.global)
+		if (!isLoad && !auth_val.cap.fields.permit_store_local_cap && cs2.cap.fields.tag && !cs2.cap.fields.global)
 			handle_cheri_cap_exception(CapEx_PermitStoreLocalCapViolation, auth_idx, &iss.rvfi_dii_output);
 	}
 
@@ -495,11 +495,11 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	void atomic_store_cap(uint64_t addr, Capability value) override {
-		_atomic_store_tagged_data(addr, value.toUint128(), value.fields.tag);
+		_atomic_store_tagged_data(addr, value.toUint128(), value.cap.fields.tag);
 	}
 
 	void store_cap(uint64_t addr, Capability value) override {
-		_raw_store_tagged_data(addr, value.toUint128(), value.fields.tag);
+		_raw_store_tagged_data(addr, value.toUint128(), value.cap.fields.tag);
 	}
 
 	void store_double(uint64_t addr, uint64_t value) override {
@@ -523,11 +523,11 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	int64_t atomic_load_word_via_cap(uint64_t addr, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.fields.tag)
+		if (!auth_val.cap.fields.tag)
 			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
 		if (auth_val.isSealed())
 			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.fields.permit_load)
+		if (!auth_val.cap.fields.permit_load)
 			handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &iss.rvfi_dii_output);
 		if (!auth_val.inCapBounds(addr, 4))
 			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
@@ -540,11 +540,11 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	void atomic_store_word_via_cap(uint64_t addr, uint32_t value, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.fields.tag)
+		if (!auth_val.cap.fields.tag)
 			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
 		if (auth_val.isSealed())
 			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.fields.permit_store)
+		if (!auth_val.cap.fields.permit_store)
 			handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &iss.rvfi_dii_output);
 		if (!auth_val.inCapBounds(addr, 4))
 			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
@@ -565,11 +565,11 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	int64_t atomic_load_double_via_cap(uint64_t addr, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.fields.tag)
+		if (!auth_val.cap.fields.tag)
 			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
 		if (auth_val.isSealed())
 			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.fields.permit_load)
+		if (!auth_val.cap.fields.permit_load)
 			handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &iss.rvfi_dii_output);
 		if (!auth_val.inCapBounds(addr, 8))
 			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
@@ -582,11 +582,11 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	void atomic_store_double_via_cap(uint64_t addr, uint64_t value, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.fields.tag)
+		if (!auth_val.cap.fields.tag)
 			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
 		if (auth_val.isSealed())
 			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.fields.permit_store)
+		if (!auth_val.cap.fields.permit_store)
 			handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &iss.rvfi_dii_output);
 		if (!auth_val.inCapBounds(addr, 8))
 			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
@@ -629,7 +629,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		} else {
 			_do_cheri_checks<false>(auth_idx, auth_val, addr, width);
 		}
-		uint64_t paddr = (width == 16) ? v2p(addr, STORE, rs2.fields.tag) : v2p(addr, STORE);
+		uint64_t paddr = (width == 16) ? v2p(addr, STORE, rs2.cap.fields.tag) : v2p(addr, STORE);
 
 		if (unlikely(iss.rvfi_dii_enabled())) {
 			iss.rvfi_dii_output.rvfi_dii_mem_addr = paddr;
@@ -664,7 +664,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			}
 			case 16: {
 				__uint128_t data = rs2.toUint128();
-				_raw_store_tagged_data(paddr, data, rs2.fields.tag);
+				_raw_store_tagged_data(paddr, data, rs2.cap.fields.tag);
 				// cap_mem[paddr] = rs2; // Only for debugging purposes // TODO Remove before pushing to main
 				break;
 			}
@@ -705,7 +705,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			}
 			case 16: {
 				__uint128_t data = rs2.toUint128();
-				success = _atomic_store_conditional_tagged_data(addr, data, rs2.fields.tag);
+				success = _atomic_store_conditional_tagged_data(addr, data, rs2.cap.fields.tag);
 				break;
 			}
 			default:
@@ -739,7 +739,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 
 		if (unlikely(iss.rvfi_dii_enabled())) {
 			iss.rvfi_dii_output.rvfi_dii_mem_addr = addr;
-			iss.rvfi_dii_output.rvfi_dii_mem_rdata = cap.fields.address;
+			iss.rvfi_dii_output.rvfi_dii_mem_rdata = cap.cap.fields.address;
 			iss.rvfi_dii_output.rvfi_dii_mem_rmask = (1ULL << (8)) - 1;  // 8 is max value for uint8_t
 		}
 		// std::cout << "Loading cap from addr: " <<  std::dec << addr << "(" << std::hex << addr << ")" << std::dec <<
@@ -836,7 +836,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		Capability cap = Capability(cap_data, tag);
 		if (unlikely(iss.rvfi_dii_enabled())) {
 			iss.rvfi_dii_output.rvfi_dii_mem_addr = addr;
-			iss.rvfi_dii_output.rvfi_dii_mem_rdata = cap.fields.address;
+			iss.rvfi_dii_output.rvfi_dii_mem_rdata = cap.cap.fields.address;
 			iss.rvfi_dii_output.rvfi_dii_mem_rmask = (1ULL << (8)) - 1;  // 8 is max value for uint8_t
 		}
 
@@ -851,7 +851,7 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		uint64_t paddr = v2p(addr, LOAD);
 		for (uint64_t i = 0; i < cCapsPerCacheLine; i++) {
 			Capability cap = load_cap(paddr + i * cCapSize);
-			tags |= cap.fields.tag << i;
+			tags |= cap.cap.fields.tag << i;
 		}
 		return tags;
 	}

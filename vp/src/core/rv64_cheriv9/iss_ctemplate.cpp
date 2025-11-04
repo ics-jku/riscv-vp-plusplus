@@ -93,8 +93,8 @@ void ISS_CT::print_trace() {
 	Operation::OpId opId = instr.decode_normal(ARCH, *isa_config);
 
 	ProgramCounterCapability last_pc = dbbcache.get_last_pc_before_callback();
-	printf("core %2lu: prv %1x: pcap: %d pc %16lx (%8x): %s ", csrs.mhartid.reg.val, prv, last_pc->fields.flag_cap_mode,
-	       last_pc->fields.address, mem_word, Operation::opIdStr.at(opId));
+	printf("core %2lu: prv %1x: pcap: %d pc %16lx (%8x): %s ", csrs.mhartid.reg.val, prv,
+	       last_pc->cap.fields.flag_cap_mode, last_pc->cap.fields.address, mem_word, Operation::opIdStr.at(opId));
 	switch (Operation::getType(opId)) {
 		case Operation::Type::R:
 			if (opId == Operation::OpId::C_SPECIAL_R_W) {
@@ -662,7 +662,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(AUIPC) {
-					if (pc->fields.flag_cap_mode) {
+					if (pc->cap.fields.flag_cap_mode) {
 						uint64_t off = instr.U_imm();
 						Capability newCap = pc;
 						bool representable = newCap.setCapAddr(dbbcache.get_last_pc_before_callback() + off);
@@ -709,7 +709,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(JR) {
 					stats.inc_jr();
-					if (pc->fields.flag_cap_mode) {
+					if (pc->cap.fields.flag_cap_mode) {
 						// TODO, does work as rd = 0, but could also use an optimized version
 						execute_c_jalr(instr.I_imm());
 					} else {
@@ -736,7 +736,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(JALR) {
 					stats.inc_jalr();
-					if (pc->fields.flag_cap_mode) {
+					if (pc->cap.fields.flag_cap_mode) {
 						execute_c_jalr(instr.I_imm());
 					} else {
 						uxlen_t new_pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
@@ -863,7 +863,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BEQ) {
-					if (regs[instr.rs1()].fields.address == regs[instr.rs2()].fields.address) {
+					if (regs[instr.rs1()].cap.fields.address == regs[instr.rs2()].cap.fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -876,7 +876,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BNE) {
-					if (regs[instr.rs1()].fields.address != regs[instr.rs2()].fields.address) {
+					if (regs[instr.rs1()].cap.fields.address != regs[instr.rs2()].cap.fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -915,7 +915,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BLTU) {
-					if ((uxlen_t)regs[instr.rs1()].fields.address < (uxlen_t)regs[instr.rs2()].fields.address) {
+					if ((uxlen_t)regs[instr.rs1()].cap.fields.address < (uxlen_t)regs[instr.rs2()].cap.fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -928,7 +928,8 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 
 				OP_CASE(BGEU) {
-					if ((uxlen_t)regs[instr.rs1()].fields.address >= (uxlen_t)regs[instr.rs2()].fields.address) {
+					if ((uxlen_t)regs[instr.rs1()].cap.fields.address >=
+					    (uxlen_t)regs[instr.rs2()].cap.fields.address) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
@@ -7027,7 +7028,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						RAISE_ILLEGAL_INSTRUCTION();
 					if (!csrs.misa.has_N_extension())
 						RAISE_ILLEGAL_INSTRUCTION();
-					if (!pc->fields.access_system_regs)
+					if (!pc->cap.fields.access_system_regs)
 						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 					return_from_trap_handler(UserMode);
 					stats.inc_uret();
@@ -7039,7 +7040,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						RAISE_ILLEGAL_INSTRUCTION();  // sret is always invalid in User mode
 					if (!csrs.misa.has_supervisor_mode_extension() || (s_mode() && csrs.mstatus.reg.fields.tsr))
 						RAISE_ILLEGAL_INSTRUCTION();
-					if (!pc->fields.access_system_regs)
+					if (!pc->cap.fields.access_system_regs)
 						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 					return_from_trap_handler(SupervisorMode);
 					stats.inc_sret();
@@ -7049,7 +7050,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(MRET) {
 					if (!m_mode())
 						RAISE_ILLEGAL_INSTRUCTION();  // mret only valid in machine mode
-					if (!pc->fields.access_system_regs)
+					if (!pc->cap.fields.access_system_regs)
 						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 					return_from_trap_handler(MachineMode);
 					stats.inc_mret();
@@ -7065,14 +7066,15 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1_val = regs[instr.rs1()];
 					if (cs1_val.hasReservedOType()) {
 						// Sign extension of an otype field (18 bits wide)
-						if (cs1_val.fields.otype & (1 << (cCapOTypeWidth - 1))) {
+						if (cs1_val.cap.fields.otype & (1 << (cCapOTypeWidth - 1))) {
 							regs[instr.rd()] =
-							    static_cast<int64_t>(cs1_val.fields.otype | ~((1 << cCapOTypeWidth) - 1));
+							    static_cast<int64_t>(cs1_val.cap.fields.otype | ~((1 << cCapOTypeWidth) - 1));
 						} else {
-							regs[instr.rd()] = static_cast<int64_t>(cs1_val.fields.otype & ((1 << cCapOTypeWidth) - 1));
+							regs[instr.rd()] =
+							    static_cast<int64_t>(cs1_val.cap.fields.otype & ((1 << cCapOTypeWidth) - 1));
 						}
 					} else {
-						regs[instr.rd()] = static_cast<uint64_t>(cs1_val.fields.otype);
+						regs[instr.rd()] = static_cast<uint64_t>(cs1_val.cap.fields.otype);
 					}
 				}
 				OP_END();
@@ -7094,7 +7096,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(C_GET_TAG) {
 					Capability cs1_val = regs[instr.rs1()];
-					regs[instr.rd()] = cs1_val.fields.tag;
+					regs[instr.rd()] = cs1_val.cap.fields.tag;
 				}
 				OP_END();
 				OP_CASE(C_GET_SEALED) {
@@ -7129,11 +7131,11 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(C_SEAL) {
 					Capability cs1_val = regs[instr.rs1()];
 					Capability cs2_val = regs[instr.rs2()];
-					uint64_t cs2_cursor = cs2_val.fields.address;
+					uint64_t cs2_cursor = cs2_val.cap.fields.address;
 					CapAddr_t cs2_base;
 					CapLen_t cs2_top;
 					cs2_val.getCapBounds(&cs2_base, &cs2_top);
-					bool permitted = cs2_val.fields.tag && !cs2_val.isSealed() && cs2_val.fields.permit_seal &&
+					bool permitted = cs2_val.cap.fields.tag && !cs2_val.isSealed() && cs2_val.cap.fields.permit_seal &&
 					                 (cs2_cursor >= cs2_base) && (cs2_top > cs2_cursor) && (cs2_cursor <= cCapMaxOType);
 					cs1_val.clearTagIfSealed();
 					cs1_val.seal(cs2_cursor);
@@ -7144,17 +7146,18 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(C_UNSEAL) {
 					Capability cs1_val = regs[instr.rs1()];
 					Capability cs2_val = regs[instr.rs2()];
-					uint64_t cs2_cursor = cs2_val.fields.address;
+					uint64_t cs2_cursor = cs2_val.cap.fields.address;
 					CapAddr_t cs2_base;
 					CapLen_t cs2_top;
 					cs2_val.getCapBounds(&cs2_base, &cs2_top);
-					bool permitted =
-					    cs2_val.fields.tag && cs1_val.isSealed() && !cs2_val.isSealed() &&
-					    !cs1_val.hasReservedOType() && (cs2_cursor == static_cast<uint64_t>(cs1_val.fields.otype)) &&
-					    cs2_val.fields.permit_unseal && (cs2_cursor >= cs2_base) && (cs2_top >= cs2_cursor);
-					bool new_global = cs1_val.fields.global & cs2_val.fields.global;
+					bool permitted = cs2_val.cap.fields.tag && cs1_val.isSealed() && !cs2_val.isSealed() &&
+					                 !cs1_val.hasReservedOType() &&
+					                 (cs2_cursor == static_cast<uint64_t>(cs1_val.cap.fields.otype)) &&
+					                 cs2_val.cap.fields.permit_unseal && (cs2_cursor >= cs2_base) &&
+					                 (cs2_top >= cs2_cursor);
+					bool new_global = cs1_val.cap.fields.global & cs2_val.cap.fields.global;
 					cs1_val.unseal();
-					cs1_val.fields.global = new_global;
+					cs1_val.cap.fields.global = new_global;
 					cs1_val.clearTagIf(!permitted);
 					regs[instr.rd()] = cs1_val;
 				}
@@ -7200,7 +7203,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				// But it is still used by TestRIG and is implemented in sail-riscv-cheri
 				// Therefore it was required to be implemented here
 				OP_CASE(C_SUB) {
-					regs[instr.rd()] = regs[instr.rs1()].fields.address - regs[instr.rs2()].fields.address;
+					regs[instr.rd()] = regs[instr.rs1()].cap.fields.address - regs[instr.rs2()].cap.fields.address;
 				}
 				OP_END();
 				OP_CASE(C_INC_OFFSET) {
@@ -7222,7 +7225,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(C_SET_BOUNDS) {
 					Capability cs1_val = regs[instr.rs1()];
 					uint64_t rs2_val = regs[instr.rs2()];
-					uint64_t newBase = cs1_val.fields.address;
+					uint64_t newBase = cs1_val.cap.fields.address;
 					CapLen_t newTop = (CapLen_t)newBase + (CapLen_t)(rs2_val);
 					bool inBounds = cs1_val.inCapBounds(newBase, rs2_val);
 					cs1_val.clearTagIfSealed();
@@ -7257,7 +7260,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(C_SET_HIGH) {
 					Capability cs1_val = regs[instr.rs1()];
-					CapAddr_t intVal = regs[instr.rs2()].fields.address;
+					CapAddr_t intVal = regs[instr.rs2()].cap.fields.address;
 					__uint128_t cs1_int = cs1_val.toUint128();
 					uint64_t cs1_low = static_cast<uint64_t>(cs1_int);
 					__uint128_t newCapInt = ((__uint128_t)intVal << xlen) | cs1_low;
@@ -7281,8 +7284,8 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs2_val = regs[instr.rs2()];
 					Capability authorityCap = cs1_val;
 					Capability requestedCap = cs2_val;
-					requestedCap.fields.tag = true;  // TODO: Should it be possible to set the tag like this?
-					bool requestedSentry = requestedCap.fields.otype == cOtypeSentryUnsigned;
+					requestedCap.cap.fields.tag = true;  // TODO: Should it be possible to set the tag like this?
+					bool requestedSentry = requestedCap.cap.fields.otype == cOtypeSentryUnsigned;
 					if (!requestedSentry)
 						requestedCap.unseal();
 
@@ -7328,13 +7331,13 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					uint64_t otype;
 					if (cs2_val.hasReservedOType()) {
 						// Sign extension of an otype field (18 bits wide)
-						if (cs2_val.fields.otype & (1 << (cCapOTypeWidth - 1))) {
-							otype = static_cast<int64_t>(cs2_val.fields.otype | ~((1 << cCapOTypeWidth) - 1));
+						if (cs2_val.cap.fields.otype & (1 << (cCapOTypeWidth - 1))) {
+							otype = static_cast<int64_t>(cs2_val.cap.fields.otype | ~((1 << cCapOTypeWidth) - 1));
 						} else {
-							otype = static_cast<int64_t>(cs2_val.fields.otype & ((1 << cCapOTypeWidth) - 1));
+							otype = static_cast<int64_t>(cs2_val.cap.fields.otype & ((1 << cCapOTypeWidth) - 1));
 						}
 					} else {
-						otype = static_cast<uint64_t>(cs2_val.fields.otype);
+						otype = static_cast<uint64_t>(cs2_val.cap.fields.otype);
 					}
 					cs1_val.clearTagIfSealed();
 					bool representable = cs1_val.setCapAddr(otype);
@@ -7345,19 +7348,19 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(C_C_SEAL) {
 					Capability cs1_val = regs[instr.rs1()];
 					Capability cs2_val = regs[instr.rs2()];
-					uint64_t cs2_cursor = cs2_val.fields.address;
+					uint64_t cs2_cursor = cs2_val.cap.fields.address;
 					CapAddr_t cs2_base;
 					CapLen_t cs2_top;
 					cs2_val.getCapBounds(&cs2_base, &cs2_top);
 					bool passthrough =
-					    !cs2_val.fields.tag || cs1_val.isSealed() || (cs2_cursor < cs2_base) ||
+					    !cs2_val.cap.fields.tag || cs1_val.isSealed() || (cs2_cursor < cs2_base) ||
 					    (cs2_top <= cs2_cursor) ||
-					    (static_cast<int64_t>(cs2_val.fields.address) == static_cast<int64_t>(cOtypeUnsealed));
+					    (static_cast<int64_t>(cs2_val.cap.fields.address) == static_cast<int64_t>(cOtypeUnsealed));
 					if (passthrough) {
 						regs[instr.rd()] = cs1_val;
 					} else {
 						bool permitted =
-						    !cs2_val.isSealed() && cs2_val.fields.permit_seal && (cs2_cursor <= cCapMaxOType);
+						    !cs2_val.isSealed() && cs2_val.cap.fields.permit_seal && (cs2_cursor <= cCapMaxOType);
 						cs1_val.seal(cs2_cursor);
 						cs1_val.clearTagIf(!permitted);
 						regs[instr.rd()] = cs1_val;
@@ -7375,10 +7378,10 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1_val = regs[instr.rs1()];
 					Capability cs2_val = (instr.rs2() == 0) ? ddc : regs[instr.rs2()];
 
-					if (!cs1_val.fields.tag) {
+					if (!cs1_val.cap.fields.tag) {
 						regs[instr.rd()] = 0;
 					} else {
-						regs[instr.rd()] = cs1_val.fields.address - cs2_val.getBase();
+						regs[instr.rd()] = cs1_val.cap.fields.address - cs2_val.getBase();
 					}
 				}
 				OP_END();
@@ -7415,7 +7418,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					uint32_t cs1_perms = cs1_val.getCapPerms();
 
 					bool result = true;
-					if (cs1_val.fields.tag != cs2_val.fields.tag)
+					if (cs1_val.cap.fields.tag != cs2_val.cap.fields.tag)
 						result = false;
 					else if (cs2_base < cs1_base)
 						result = false;
@@ -7424,7 +7427,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					else if ((cs2_perms & cs1_perms) != cs2_perms)
 						result = false;
 
-					// bool result = (cs1_val.fields.tag == cs2_val.fields.tag) && (cs2_base >= cs1_base) &&
+					// bool result = (cs1_val.cap.fields.tag == cs2_val.cap.fields.tag) && (cs2_base >= cs1_base) &&
 					// (cs2_top <= cs1_top) && ((cs2_perms & cs1_perms) == cs2_perms);
 					regs[instr.rd()] = result;
 				}
@@ -7446,26 +7449,26 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(C_INVOKE) {
 					Capability cs1_val = regs[instr.rs1()];
 					Capability cs2_val = regs[instr.rs2()];
-					uint64_t newPC = cs1_val.fields.address & ~1;
+					uint64_t newPC = cs1_val.cap.fields.address & ~1;
 					CapAddr_t newPCCBase = cs1_val.getBase();
 
-					if (!cs1_val.fields.tag) {
+					if (!cs1_val.cap.fields.tag) {
 						handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
-					} else if (!cs2_val.fields.tag) {
+					} else if (!cs2_val.cap.fields.tag) {
 						handle_cheri_reg_exception(CapEx_TagViolation, instr.rs2(), &rvfi_dii_output);
 					} else if (cs1_val.hasReservedOType()) {
 						handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
 					} else if (cs2_val.hasReservedOType()) {
 						handle_cheri_reg_exception(CapEx_SealViolation, instr.rs2(), &rvfi_dii_output);
-					} else if (cs1_val.fields.otype != cs2_val.fields.otype) {
+					} else if (cs1_val.cap.fields.otype != cs2_val.cap.fields.otype) {
 						handle_cheri_reg_exception(CapEx_TypeViolation, instr.rs1(), &rvfi_dii_output);
-					} else if (!cs1_val.fields.permit_cinvoke) {
+					} else if (!cs1_val.cap.fields.permit_cinvoke) {
 						handle_cheri_reg_exception(CapEx_PermitCInvokeViolation, instr.rs1(), &rvfi_dii_output);
-					} else if (!cs2_val.fields.permit_cinvoke) {
+					} else if (!cs2_val.cap.fields.permit_cinvoke) {
 						handle_cheri_reg_exception(CapEx_PermitCInvokeViolation, instr.rs2(), &rvfi_dii_output);
-					} else if (!cs1_val.fields.permit_execute) {
+					} else if (!cs1_val.cap.fields.permit_execute) {
 						handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
-					} else if (cs2_val.fields.permit_execute) {
+					} else if (cs2_val.cap.fields.permit_execute) {
 						handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs2(), &rvfi_dii_output);
 					} else if ((have_pcc_relocation() && (newPCCBase & 1)) ||
 					           (newPCCBase & 2 && !csrs.misa.has_C_extension())) {
@@ -7494,7 +7497,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				// Therefore it was required to be implemented here
 				OP_CASE(C_GET_ADDR) {
 					Capability cs1_val = regs[instr.rs1()];
-					regs[instr.rd()] = cs1_val.fields.address;
+					regs[instr.rd()] = cs1_val.cap.fields.address;
 				}
 				OP_END();
 				OP_CASE(C_SPECIAL_R_W) {
@@ -7609,7 +7612,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					if (!specialExists || (ro && instr.rs1() != 0) || (prv < priv)) {
 						RAISE_ILLEGAL_INSTRUCTION();
 					}
-					if (needASR && !pc->fields.access_system_regs) {
+					if (needASR && !pc->cap.fields.access_system_regs) {
 						uint64_t regnum = instr.rs2() + (1 << 5);
 						handle_cheri_cap_exception(CapEx_AccessSystemRegsViolation, regnum, &rvfi_dii_output);
 					}
@@ -7771,17 +7774,17 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(C_LOAD_TAGS) {
 					Capability cs1_val = regs[instr.rs1()];
-					uint64_t vaddr = cs1_val.fields.address;
+					uint64_t vaddr = cs1_val.cap.fields.address;
 					// bool aq = false;
 					// bool rl = false;
 
-					if (!cs1_val.fields.tag) {
+					if (!cs1_val.cap.fields.tag) {
 						handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
 					} else if (cs1_val.isSealed()) {
 						handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
-					} else if (!cs1_val.fields.permit_load) {
+					} else if (!cs1_val.cap.fields.permit_load) {
 						handle_cheri_reg_exception(CapEx_PermitLoadViolation, instr.rs1(), &rvfi_dii_output);
-					} else if (!cs1_val.fields.permit_load_cap) {
+					} else if (!cs1_val.cap.fields.permit_load_cap) {
 						handle_cheri_reg_exception(CapEx_PermitLoadCapViolation, instr.rs1(), &rvfi_dii_output);
 					} else if (!cs1_val.inCapBounds(vaddr, cCapsPerCacheLine * cCapSize)) {
 						handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);
@@ -7843,35 +7846,35 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(LB_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, false, 1);
+				                                                 regs[instr.rs1()].cap.fields.address, false, 1);
 				OP_END();
 				OP_CASE(LH_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, false, 2);
+				                                                 regs[instr.rs1()].cap.fields.address, false, 2);
 				OP_END();
 				OP_CASE(LW_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, false, 4);
+				                                                 regs[instr.rs1()].cap.fields.address, false, 4);
 				OP_END();
 				OP_CASE(LD_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, false, 8);
+				                                                 regs[instr.rs1()].cap.fields.address, false, 8);
 				OP_END();
 				OP_CASE(LC_CAP)
 				regs[instr.rd()] =
-				    mem->handle_load_cap_via_cap(instr.rs1(), regs[instr.rs1()], regs[instr.rs1()].fields.address);
+				    mem->handle_load_cap_via_cap(instr.rs1(), regs[instr.rs1()], regs[instr.rs1()].cap.fields.address);
 				OP_END();
 				OP_CASE(LBU_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, true, 1);
+				                                                 regs[instr.rs1()].cap.fields.address, true, 1);
 				OP_END();
 				OP_CASE(LHU_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, true, 2);
+				                                                 regs[instr.rs1()].cap.fields.address, true, 2);
 				OP_END();
 				OP_CASE(LWU_CAP)
 				regs[instr.rd()] = mem->handle_load_data_via_cap(instr.rs1(), regs[instr.rs1()],
-				                                                 regs[instr.rs1()].fields.address, true, 4);
+				                                                 regs[instr.rs1()].cap.fields.address, true, 4);
 				OP_END();
 				OP_CASE(LR_B_DDC) {
 					uxlen_t vaddr = get_ddc_addr(regs[instr.rs1()]);
@@ -7930,7 +7933,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(LR_B_CAP) {
 					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
-					                                                          regs[instr.rs1()].fields.address, 1);
+					                                                          regs[instr.rs1()].cap.fields.address, 1);
 					if (lr_sc_counter == 0) {
 						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
 						// cover the RISC-V forward progress property
@@ -7941,7 +7944,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(LR_H_CAP) {
 					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
-					                                                          regs[instr.rs1()].fields.address, 1);
+					                                                          regs[instr.rs1()].cap.fields.address, 1);
 					if (lr_sc_counter == 0) {
 						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
 						// cover the RISC-V forward progress property
@@ -7952,7 +7955,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(LR_W_CAP) {
 					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
-					                                                          regs[instr.rs1()].fields.address, 1);
+					                                                          regs[instr.rs1()].cap.fields.address, 1);
 					if (lr_sc_counter == 0) {
 						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
 						// cover the RISC-V forward progress property
@@ -7963,7 +7966,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(LR_D_CAP) {
 					regs[instr.rd()] = mem->atomic_load_reserved_data_via_cap(instr.rs1(), regs[instr.rs1()],
-					                                                          regs[instr.rs1()].fields.address, 1);
+					                                                          regs[instr.rs1()].cap.fields.address, 1);
 					if (lr_sc_counter == 0) {
 						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
 						// cover the RISC-V forward progress property
@@ -7974,7 +7977,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(LR_C_CAP) {
 					regs[instr.rd()] = mem->atomic_load_reserved_cap_via_cap(instr.rs1(), regs[instr.rs1()],
-					                                                         regs[instr.rs1()].fields.address);
+					                                                         regs[instr.rs1()].cap.fields.address);
 					if (lr_sc_counter == 0) {
 						lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to
 						// cover the RISC-V forward progress property
@@ -8010,23 +8013,23 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_END();
 				OP_CASE(SB_CAP)
 				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
-				                               regs[instr.rs1()].fields.address, 1);
+				                               regs[instr.rs1()].cap.fields.address, 1);
 				OP_END();
 				OP_CASE(SH_CAP)
 				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
-				                               regs[instr.rs1()].fields.address, 2);
+				                               regs[instr.rs1()].cap.fields.address, 2);
 				OP_END();
 				OP_CASE(SW_CAP)
 				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
-				                               regs[instr.rs1()].fields.address, 4);
+				                               regs[instr.rs1()].cap.fields.address, 4);
 				OP_END();
 				OP_CASE(SD_CAP)
 				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
-				                               regs[instr.rs1()].fields.address, 8);
+				                               regs[instr.rs1()].cap.fields.address, 8);
 				OP_END();
 				OP_CASE(SC_CAP)
 				mem->handle_store_data_via_cap(regs[instr.rs2()], instr.rs1(), regs[instr.rs1()],
-				                               regs[instr.rs1()].fields.address, cCapSize);
+				                               regs[instr.rs1()].cap.fields.address, cCapSize);
 				OP_END();
 				OP_CASE(SC_B_DDC) {
 					uint64_t vaddr = get_ddc_addr(regs[instr.rs1()]);
@@ -8094,8 +8097,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1 = regs[instr.rs1()];
 					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
 					regs[instr.rs2()] =
-					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 1) ? 0
-					                                                                                             : 1;
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.cap.fields.address, 1)
+					        ? 0
+					        : 1;
 					lr_sc_counter = 0;
 					reset_reg_zero();
 					if (unlikely(rvfi_dii)) {
@@ -8109,8 +8113,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1 = regs[instr.rs1()];
 					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
 					regs[instr.rs2()] =
-					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 2) ? 0
-					                                                                                             : 1;
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.cap.fields.address, 2)
+					        ? 0
+					        : 1;
 					lr_sc_counter = 0;
 					reset_reg_zero();
 					if (unlikely(rvfi_dii)) {
@@ -8124,8 +8129,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1 = regs[instr.rs1()];
 					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
 					regs[instr.rs2()] =
-					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 4) ? 0
-					                                                                                             : 1;
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.cap.fields.address, 4)
+					        ? 0
+					        : 1;
 					lr_sc_counter = 0;
 					reset_reg_zero();
 					if (unlikely(rvfi_dii)) {
@@ -8139,8 +8145,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1 = regs[instr.rs1()];
 					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
 					regs[instr.rs2()] =
-					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 8) ? 0
-					                                                                                             : 1;
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.cap.fields.address, 8)
+					        ? 0
+					        : 1;
 					lr_sc_counter = 0;
 					reset_reg_zero();
 					if (unlikely(rvfi_dii)) {
@@ -8154,8 +8161,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability cs1 = regs[instr.rs1()];
 					// regs[instr.rs2()] = 1;  // failure by default (in case a trap is thrown)
 					regs[instr.rs2()] =
-					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.fields.address, 16) ? 0
-					                                                                                              : 1;
+					    mem->atomic_store_conditional_data_via_cap(cs2, instr.rs1(), cs1, cs1.cap.fields.address, 16)
+					        ? 0
+					        : 1;
 					lr_sc_counter = 0;
 					reset_reg_zero();
 					if (unlikely(rvfi_dii)) {
@@ -8211,23 +8219,23 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					Capability auth_val;
 					uint64_t vaddr;
 					uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &vaddr);
-					if (!auth_val.fields.tag) {
+					if (!auth_val.cap.fields.tag) {
 						handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &rvfi_dii_output);
 					}
 					if (auth_val.isSealed()) {
 						handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &rvfi_dii_output);
 					}
-					if (!auth_val.fields.permit_load) {
+					if (!auth_val.cap.fields.permit_load) {
 						handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &rvfi_dii_output);
 					}
-					if (!auth_val.fields.permit_store) {
+					if (!auth_val.cap.fields.permit_store) {
 						handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &rvfi_dii_output);
 					}
-					if (!auth_val.fields.permit_store_cap && regs[instr.rs2()].fields.tag) {
+					if (!auth_val.cap.fields.permit_store_cap && regs[instr.rs2()].cap.fields.tag) {
 						handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &rvfi_dii_output);
 					}
-					if (!auth_val.fields.permit_store_local_cap && regs[instr.rs2()].fields.tag &&
-					    !regs[instr.rs2()].fields.global) {
+					if (!auth_val.cap.fields.permit_store_local_cap && regs[instr.rs2()].cap.fields.tag &&
+					    !regs[instr.rs2()].cap.fields.global) {
 						handle_cheri_cap_exception(CapEx_PermitStoreLocalCapViolation, auth_idx, &rvfi_dii_output);
 					}
 					if (!auth_val.inCapBounds(vaddr, cCapSize)) {
@@ -8244,7 +8252,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						throw e;
 					}
 					mem->atomic_store_cap(vaddr, regs[instr.rs2()]);
-					data.clearTagIf(/*ptw_info.ptw_lc == PTW_LC_CLEAR | */ !auth_val.fields
+					data.clearTagIf(/*ptw_info.ptw_lc == PTW_LC_CLEAR | */ !auth_val.cap.fields
 					                    .permit_load_cap);  // TODO Check what ptw_info should do in VP
 					regs[instr.rd()] = data;
 				}
@@ -8450,7 +8458,7 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 	    addr != HPMCOUNTER24H_ADDR && addr != HPMCOUNTER25H_ADDR && addr != HPMCOUNTER26H_ADDR &&
 	    addr != HPMCOUNTER27H_ADDR && addr != HPMCOUNTER28H_ADDR && addr != HPMCOUNTER29H_ADDR &&
 	    addr != HPMCOUNTER30H_ADDR && addr != HPMCOUNTER31H_ADDR) {
-		if (!pc->fields.access_system_regs)
+		if (!pc->cap.fields.access_system_regs)
 			handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 	}
 
@@ -8520,17 +8528,17 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 
 		// Cheri capability read checks
 		case MEPC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			return legalizeEpcc(csrs.mepcc);
 			break;
 		case UEPC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			return legalizeEpcc(csrs.uepcc);
 			break;
 		case SEPC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			return legalizeEpcc(csrs.sepcc);
 			break;
@@ -8541,7 +8549,7 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 		case SSCRATCH_ADDR:
 		case MTVEC_ADDR:
 		case MSCRATCH_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 	}
 
@@ -8573,33 +8581,33 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 		} break;
 
 		case MTVEC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			write(csrs.mtvec, MTVEC_MASK);
 			break;
 		case STVEC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			write(csrs.stvec, MTVEC_MASK);
 			break;
 		case UTVEC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			write(csrs.utvec, MTVEC_MASK);
 			break;
 
 		case MEPC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			set_xret_target(value, &csrs.mepcc);
 			break;
 		case SEPC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			set_xret_target(value, &csrs.sepcc);
 			break;
 		case UEPC_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			set_xret_target(value, &csrs.uepcc);
 			break;
@@ -8697,7 +8705,7 @@ void ISS_CT::set_csr_value(uxlen_t addr, uxlen_t value) {
 		case USCRATCH_ADDR:
 		case SSCRATCH_ADDR:
 		case MSCRATCH_ADDR:
-			if (!pc->fields.access_system_regs)
+			if (!pc->cap.fields.access_system_regs)
 				handle_cheri_reg_exception(CapEx_AccessSystemRegsViolation, cPccIdx, &rvfi_dii_output);
 			if (!csrs.is_valid_csr64_addr(addr))
 				RAISE_ILLEGAL_INSTRUCTION();
@@ -8735,7 +8743,7 @@ void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if 
 	}
 
 	pc = entrypoint;
-	pc->fields.flag_cap_mode =
+	pc->cap.fields.flag_cap_mode =
 	    cheri_purecap;  // If purecap mode is set, pc must have capability mode enabled by default
 
 	/* TODO: make const? (make all label ptrs const?) */
@@ -8846,7 +8854,7 @@ void ISS_CT::fp_require_not_off() {
 void ISS_CT::prepare_xret_target(Capability epcc) {
 	Capability legalizedEpcc = legalizeEpcc(epcc);
 	pc = legalizedEpcc;
-	if (legalizedEpcc.fields.otype == cOtypeSentryUnsigned) {
+	if (legalizedEpcc.cap.fields.otype == cOtypeSentryUnsigned) {
 		pc->unseal();
 	}
 }
@@ -8892,7 +8900,7 @@ void ISS_CT::return_from_trap_handler(PrivilegeLevel return_mode) {
 
 	if (trace)
 		printf("[vp::iss] return from trap handler, time %s, pc %16lx, prv %1x\n",
-		       quantum_keeper.get_current_time().to_string().c_str(), pc->fields.address, prv);
+		       quantum_keeper.get_current_time().to_string().c_str(), pc->cap.fields.address, prv);
 
 	dbbcache.ret_trap(pc);
 	force_slow_path();
@@ -9085,7 +9093,7 @@ PendingInterrupts ISS_CT::compute_pending_interrupts() {
 void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 	if (trace) {
 		printf("[vp::iss] switch to trap handler, time %s, before pc %16lx, irq %u, t-prv %1x\n",
-		       quantum_keeper.get_current_time().to_string().c_str(), pc->fields.address,
+		       quantum_keeper.get_current_time().to_string().c_str(), pc->cap.fields.address,
 		       csrs.mcause.reg.fields.interrupt, target_mode);
 	}
 
@@ -9157,7 +9165,7 @@ void ISS_CT::switch_to_trap_handler(PrivilegeLevel target_mode) {
 	if (unlikely(rvfi_dii)) {
 		rvfi_dii_output.rvfi_dii_pc_wdata = pc;
 	}
-	// if (pc->fields.flag_cap_mode != 1) {
+	// if (pc->cap.fields.flag_cap_mode != 1) {
 	// 	std::cout << "[ISS] Warning: pc is not in capability mode, this is probably an error." << std::endl;
 	// }
 
@@ -9221,14 +9229,14 @@ void ISS_CT::reset() {
 void ISS_CT::execute_c_jalr(int32_t immediate) {
 	Capability cs1_val = regs[instr.rs1()];
 	int64_t off = static_cast<int64_t>(immediate);
-	uint64_t newPC = cs1_val.fields.address + off;
+	uint64_t newPC = cs1_val.cap.fields.address + off;
 	newPC = (newPC & ~1);  // clear bit zero as for RISCV JALR
 	CapAddr_t newPCCBase = cs1_val.getBase();
-	if (!cs1_val.fields.tag) {
+	if (!cs1_val.cap.fields.tag) {
 		handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
-	} else if (cs1_val.isSealed() & ((cs1_val.fields.otype != cOtypeSentryUnsigned) | (off != 0))) {
+	} else if (cs1_val.isSealed() & ((cs1_val.cap.fields.otype != cOtypeSentryUnsigned) | (off != 0))) {
 		handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
-	} else if (!cs1_val.fields.permit_execute) {
+	} else if (!cs1_val.cap.fields.permit_execute) {
 		handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
 	} else if (have_pcc_relocation() &&
 	           (((newPCCBase & 0b01) == 0b01) || (((newPCCBase & 0b10) == 0b10) && !csrs.misa.has_C_extension()))) {
@@ -9251,15 +9259,15 @@ void ISS_CT::execute_c_jalr(int32_t immediate) {
  */
 uint64_t ISS_CT::get_cheri_mode_cap_addr(uint64_t base_reg, uint64_t offset, Capability *auth_val, uint64_t *vaddr) {
 	Capability base_cap = regs[base_reg];
-	if (pc->fields.flag_cap_mode) {
+	if (pc->cap.fields.flag_cap_mode) {
 		*auth_val = base_cap;
-		*vaddr = base_cap.fields.address + offset;
+		*vaddr = base_cap.cap.fields.address + offset;
 		return base_reg;
 	}
-	*vaddr = base_cap.fields.address + offset;
+	*vaddr = base_cap.cap.fields.address + offset;
 	// Integer mode
 	if (have_ddc_relocation()) {
-		*vaddr += ddc.fields.address;
+		*vaddr += ddc.cap.fields.address;
 	}
 	*auth_val = ddc;
 	return cDdcIdx;
@@ -9267,7 +9275,7 @@ uint64_t ISS_CT::get_cheri_mode_cap_addr(uint64_t base_reg, uint64_t offset, Cap
 
 uint64_t ISS_CT::get_ddc_addr(uint64_t addr) {
 	if (have_ddc_relocation()) {
-		return addr + ddc.fields.address;
+		return addr + ddc.cap.fields.address;
 	}
 	return addr;
 }

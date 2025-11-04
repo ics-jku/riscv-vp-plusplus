@@ -6,8 +6,8 @@
 #include "core/rv64_cheriv9/cheri_prelude.h"  // TODO This must be changed when RV32 is implemented
 
 struct Capability {
-	union {
-		struct {
+	union cap {
+		struct fields {
 			uint8_t uperms : cCapUPermsWidth;      // User-defined permissions
 			bool permit_set_CID : 1;               // Permission to set compartment ID
 			bool access_system_regs : 1;           // Permission to access system registers
@@ -34,7 +34,7 @@ struct Capability {
 		} fields;
 
 		uint8_t raw[17];
-	};
+	} cap;
 
 	// Default constructor
 	Capability() noexcept = default;
@@ -45,154 +45,159 @@ struct Capability {
 	                     bool permit_load_cap, bool permit_store, bool permit_load, bool permit_execute, bool global,
 	                     uint8_t reserved, bool flag_cap_mode, bool internal_E, uint8_t E, uint16_t B, uint16_t T,
 	                     uint32_t otype, int64_t addr)
-	    : fields{uperms,
-	             permit_set_CID,
-	             access_system_regs,
-	             permit_unseal,
-	             permit_cinvoke,
-	             permit_seal,
-	             permit_store_local_cap,
-	             permit_store_cap,
-	             permit_load_cap,
-	             permit_store,
-	             permit_load,
-	             permit_execute,
-	             global,
-	             reserved,
-	             flag_cap_mode,
-	             internal_E,
-	             E,
-	             B,
-	             T,
-	             otype,
-	             addr,
-	             tag} {}
+	    : cap{{uperms,
+	           permit_set_CID,
+	           access_system_regs,
+	           permit_unseal,
+	           permit_cinvoke,
+	           permit_seal,
+	           permit_store_local_cap,
+	           permit_store_cap,
+	           permit_load_cap,
+	           permit_store,
+	           permit_load,
+	           permit_execute,
+	           global,
+	           reserved,
+	           flag_cap_mode,
+	           internal_E,
+	           E,
+	           B,
+	           T,
+	           otype,
+	           addr,
+	           tag}} {}
 
-	Capability(int64_t addr, uint64_t meta, bool t = false) : fields{} {
-		fields.tag = t;
-		fields.address = addr;
+	Capability(int64_t addr, uint64_t meta, bool t = false) : cap{{}} {
+		cap.fields.tag = t;
+		cap.fields.address = addr;
 		unpackMetadata(meta);
 	}
 
-	Capability(__uint128_t data, bool tag)
-	    : fields(EncCapability::toCapability(tag, uint128ToEncCapability(data ^ cNullCap128)).fields) {}
+	Capability(__uint128_t data, bool tag) {
+		cap.fields = EncCapability::toCapability(tag, uint128ToEncCapability(data ^ cNullCap128)).cap.fields;
+	}
 
 	// Helper method to unpack metadata from a single uint64_t value
 	void unpackMetadata(uint64_t meta) {
-		fields.uperms = meta & ((1ULL << cCapUPermsWidth) - 1);
+		cap.fields.uperms = meta & ((1ULL << cCapUPermsWidth) - 1);
 		meta >>= cCapUPermsWidth;
 
-		fields.permit_set_CID = meta & 1;
+		cap.fields.permit_set_CID = meta & 1;
 		meta >>= 1;
-		fields.access_system_regs = meta & 1;
+		cap.fields.access_system_regs = meta & 1;
 		meta >>= 1;
-		fields.permit_unseal = meta & 1;
+		cap.fields.permit_unseal = meta & 1;
 		meta >>= 1;
-		fields.permit_cinvoke = meta & 1;
+		cap.fields.permit_cinvoke = meta & 1;
 		meta >>= 1;
-		fields.permit_seal = meta & 1;
+		cap.fields.permit_seal = meta & 1;
 		meta >>= 1;
-		fields.permit_store_local_cap = meta & 1;
+		cap.fields.permit_store_local_cap = meta & 1;
 		meta >>= 1;
-		fields.permit_store_cap = meta & 1;
+		cap.fields.permit_store_cap = meta & 1;
 		meta >>= 1;
-		fields.permit_load_cap = meta & 1;
+		cap.fields.permit_load_cap = meta & 1;
 		meta >>= 1;
-		fields.permit_store = meta & 1;
+		cap.fields.permit_store = meta & 1;
 		meta >>= 1;
-		fields.permit_load = meta & 1;
+		cap.fields.permit_load = meta & 1;
 		meta >>= 1;
-		fields.permit_execute = meta & 1;
+		cap.fields.permit_execute = meta & 1;
 		meta >>= 1;
-		fields.global = meta & 1;
+		cap.fields.global = meta & 1;
 		meta >>= 1;
-		fields.reserved = meta & ((1ULL << cCapReservedWidth) - 1);
+		cap.fields.reserved = meta & ((1ULL << cCapReservedWidth) - 1);
 		meta >>= cCapReservedWidth;
 
-		fields.flag_cap_mode = meta & 1;
+		cap.fields.flag_cap_mode = meta & 1;
 		meta >>= 1;
-		fields.internal_E = meta & 1;
+		cap.fields.internal_E = meta & 1;
 		meta >>= 1;
-		fields.E = meta & ((1ULL << cCapEWidth) - 1);
+		cap.fields.E = meta & ((1ULL << cCapEWidth) - 1);
 		meta >>= cCapEWidth;
 
-		fields.B = meta & ((1ULL << cCapMantissaWidth) - 1);
+		cap.fields.B = meta & ((1ULL << cCapMantissaWidth) - 1);
 		meta >>= cCapMantissaWidth;
 
-		fields.T = meta & ((1ULL << cCapMantissaWidth) - 1);
+		cap.fields.T = meta & ((1ULL << cCapMantissaWidth) - 1);
 		meta >>= cCapMantissaWidth;
 
-		fields.otype = meta & ((1ULL << cCapOTypeWidth) - 1);
+		cap.fields.otype = meta & ((1ULL << cCapOTypeWidth) - 1);
 	}
 
 	operator int64_t() const {
-		return fields.address;
+		return cap.fields.address;
 	}
 
 	// Set the address field of the Capability
 	// This must clear the tag bit and metadata of the capability
 	Capability& operator=(int64_t val) {
-		fields.tag = false;
+		cap.fields.tag = false;
 		clearMetadata();
-		fields.address = val;
+		cap.fields.address = val;
 		return *this;
 	}
 
 	// Overload == operator to compare two Capabilities
 	inline bool operator==(const Capability& other) const {
-		return fields.address == other.fields.address && fields.otype == other.fields.otype &&
-		       fields.T == other.fields.T && fields.B == other.fields.B && fields.E == other.fields.E &&
-		       fields.internal_E == other.fields.internal_E && fields.flag_cap_mode == other.fields.flag_cap_mode &&
-		       fields.reserved == other.fields.reserved && fields.global == other.fields.global &&
-		       fields.permit_execute == other.fields.permit_execute && fields.permit_load == other.fields.permit_load &&
-		       fields.permit_store == other.fields.permit_store &&
-		       fields.permit_load_cap == other.fields.permit_load_cap &&
-		       fields.permit_store_cap == other.fields.permit_store_cap &&
-		       fields.permit_store_local_cap == other.fields.permit_store_local_cap &&
-		       fields.permit_seal == other.fields.permit_seal && fields.permit_cinvoke == other.fields.permit_cinvoke &&
-		       fields.permit_unseal == other.fields.permit_unseal &&
-		       fields.access_system_regs == other.fields.access_system_regs &&
-		       fields.permit_set_CID == other.fields.permit_set_CID && fields.uperms == other.fields.uperms &&
-		       fields.tag == other.fields.tag;
+		return cap.fields.address == other.cap.fields.address && cap.fields.otype == other.cap.fields.otype &&
+		       cap.fields.T == other.cap.fields.T && cap.fields.B == other.cap.fields.B &&
+		       cap.fields.E == other.cap.fields.E && cap.fields.internal_E == other.cap.fields.internal_E &&
+		       cap.fields.flag_cap_mode == other.cap.fields.flag_cap_mode &&
+		       cap.fields.reserved == other.cap.fields.reserved && cap.fields.global == other.cap.fields.global &&
+		       cap.fields.permit_execute == other.cap.fields.permit_execute &&
+		       cap.fields.permit_load == other.cap.fields.permit_load &&
+		       cap.fields.permit_store == other.cap.fields.permit_store &&
+		       cap.fields.permit_load_cap == other.cap.fields.permit_load_cap &&
+		       cap.fields.permit_store_cap == other.cap.fields.permit_store_cap &&
+		       cap.fields.permit_store_local_cap == other.cap.fields.permit_store_local_cap &&
+		       cap.fields.permit_seal == other.cap.fields.permit_seal &&
+		       cap.fields.permit_cinvoke == other.cap.fields.permit_cinvoke &&
+		       cap.fields.permit_unseal == other.cap.fields.permit_unseal &&
+		       cap.fields.access_system_regs == other.cap.fields.access_system_regs &&
+		       cap.fields.permit_set_CID == other.cap.fields.permit_set_CID &&
+		       cap.fields.uperms == other.cap.fields.uperms && cap.fields.tag == other.cap.fields.tag;
 	}
 
 	void clearMetadata() {
-		fields.uperms = 0;
-		fields.permit_set_CID = false;
-		fields.access_system_regs = false;
-		fields.permit_unseal = false;
-		fields.permit_cinvoke = false;
-		fields.permit_seal = false;
-		fields.permit_store_local_cap = false;
-		fields.permit_store_cap = false;
-		fields.permit_load_cap = false;
-		fields.permit_store = false;
-		fields.permit_load = false;
-		fields.permit_execute = false;
-		fields.global = false;
-		fields.reserved = false;
-		fields.flag_cap_mode = false;
-		fields.internal_E = true;
-		fields.E = cCapResetE;
-		fields.B = 0;
-		fields.T = cCapResetT;
-		fields.otype = cOtypeUnsealedUnsigned;
+		cap.fields.uperms = 0;
+		cap.fields.permit_set_CID = false;
+		cap.fields.access_system_regs = false;
+		cap.fields.permit_unseal = false;
+		cap.fields.permit_cinvoke = false;
+		cap.fields.permit_seal = false;
+		cap.fields.permit_store_local_cap = false;
+		cap.fields.permit_store_cap = false;
+		cap.fields.permit_load_cap = false;
+		cap.fields.permit_store = false;
+		cap.fields.permit_load = false;
+		cap.fields.permit_execute = false;
+		cap.fields.global = false;
+		cap.fields.reserved = false;
+		cap.fields.flag_cap_mode = false;
+		cap.fields.internal_E = true;
+		cap.fields.E = cCapResetE;
+		cap.fields.B = 0;
+		cap.fields.T = cCapResetT;
+		cap.fields.otype = cOtypeUnsealedUnsigned;
 	}
 
 	uint16_t getCapHardPerms() const {
-		return (fields.permit_set_CID << 11) | (fields.access_system_regs << 10) | (fields.permit_unseal << 9) |
-		       (fields.permit_cinvoke << 8) | (fields.permit_seal << 7) | (fields.permit_store_local_cap << 6) |
-		       (fields.permit_store_cap << 5) | (fields.permit_load_cap << 4) | (fields.permit_store << 3) |
-		       (fields.permit_load << 2) | (fields.permit_execute << 1) | fields.global;
+		return (cap.fields.permit_set_CID << 11) | (cap.fields.access_system_regs << 10) |
+		       (cap.fields.permit_unseal << 9) | (cap.fields.permit_cinvoke << 8) | (cap.fields.permit_seal << 7) |
+		       (cap.fields.permit_store_local_cap << 6) | (cap.fields.permit_store_cap << 5) |
+		       (cap.fields.permit_load_cap << 4) | (cap.fields.permit_store << 3) | (cap.fields.permit_load << 2) |
+		       (cap.fields.permit_execute << 1) | cap.fields.global;
 	}
 
 	void getCapBounds(CapBase_t* base, CapTop_t* top) const {
-		uint8_t E = std::min(cCapMaxE, fields.E);
-		CapAddr_t a = fields.address;
-		uint8_t a3 = (a >> (E + 11)) & 0b111;   // a[E+13 : E+11]
-		uint8_t B3 = (fields.B >> 11) & 0b111;  // B[13:11]
-		uint8_t T3 = (fields.T >> 11) & 0b111;  // T[13:11]
-		uint8_t R3 = (B3 - 1) & 0b111;          // Intended wrap-around
+		uint8_t E = std::min(cCapMaxE, cap.fields.E);
+		CapAddr_t a = cap.fields.address;
+		uint8_t a3 = (a >> (E + 11)) & 0b111;       // a[E+13 : E+11]
+		uint8_t B3 = (cap.fields.B >> 11) & 0b111;  // B[13:11]
+		uint8_t T3 = (cap.fields.T >> 11) & 0b111;  // T[13:11]
+		uint8_t R3 = (B3 - 1) & 0b111;              // Intended wrap-around
 
 		uint8_t aHi = a3 < R3;
 		uint8_t bHi = B3 < R3;
@@ -208,8 +213,8 @@ struct Capability {
 		if (cCapMantissaWidth + E <= 63) {
 			*base = (a_top + correctionBase) << (cCapMantissaWidth + E);
 		}
-		*base |= static_cast<CapBase_t>(fields.B) << E;
-		*top = static_cast<CapTop_t>(fields.T) << E;
+		*base |= static_cast<CapBase_t>(cap.fields.B) << E;
+		*top = static_cast<CapTop_t>(cap.fields.T) << E;
 		*top += static_cast<CapTop_t>(a_top + correctionTop) << (cCapMantissaWidth + E);
 		*top &= cCapLenMax;
 
@@ -272,55 +277,55 @@ struct Capability {
 			T = T_ie << 3;
 		}
 		uint8_t newE = e + incE;
-		fields.address = static_cast<int64_t>(base);
-		fields.E = newE;
-		fields.B = B;
-		fields.T = T;
-		fields.internal_E = ie;
+		cap.fields.address = static_cast<int64_t>(base);
+		cap.fields.E = newE;
+		cap.fields.B = B;
+		cap.fields.T = T;
+		cap.fields.internal_E = ie;
 		bool exact = !(lostSignificantBase | lostSignificantTop);
 		return exact;
 	}
 
 	uint32_t getCapPerms() const {
 		uint32_t perms = 0;
-		perms |= fields.uperms << cCapUPermsShift;
+		perms |= cap.fields.uperms << cCapUPermsShift;
 		perms |= getCapHardPerms();
 		return perms;
 	}
 
 	void setCapPerms(uint32_t perms) {
-		fields.uperms = CHERI_BIT_RANGE((perms >> cCapUPermsShift), cCapUPermsWidth - 1, 0);
+		cap.fields.uperms = CHERI_BIT_RANGE((perms >> cCapUPermsShift), cCapUPermsWidth - 1, 0);
 		// 14..12 reserved -- ignore
-		fields.permit_set_CID = (perms >> 11) & 1;
-		fields.access_system_regs = (perms >> 10) & 1;
-		fields.permit_unseal = (perms >> 9) & 1;
-		fields.permit_cinvoke = (perms >> 8) & 1;
-		fields.permit_seal = (perms >> 7) & 1;
-		fields.permit_store_local_cap = (perms >> 6) & 1;
-		fields.permit_store_cap = (perms >> 5) & 1;
-		fields.permit_load_cap = (perms >> 4) & 1;
-		fields.permit_store = (perms >> 3) & 1;
-		fields.permit_load = (perms >> 2) & 1;
-		fields.permit_execute = (perms >> 1) & 1;
-		fields.global = perms & 1;
+		cap.fields.permit_set_CID = (perms >> 11) & 1;
+		cap.fields.access_system_regs = (perms >> 10) & 1;
+		cap.fields.permit_unseal = (perms >> 9) & 1;
+		cap.fields.permit_cinvoke = (perms >> 8) & 1;
+		cap.fields.permit_seal = (perms >> 7) & 1;
+		cap.fields.permit_store_local_cap = (perms >> 6) & 1;
+		cap.fields.permit_store_cap = (perms >> 5) & 1;
+		cap.fields.permit_load_cap = (perms >> 4) & 1;
+		cap.fields.permit_store = (perms >> 3) & 1;
+		cap.fields.permit_load = (perms >> 2) & 1;
+		cap.fields.permit_execute = (perms >> 1) & 1;
+		cap.fields.global = perms & 1;
 	}
 
 	// /*!
 	//  * Gets the architecture specific capability flags of capability.
 	//  */
 	uint8_t getFlags() const {
-		return fields.flag_cap_mode;
+		return cap.fields.flag_cap_mode;
 	}
 
 	// /*!
 	//  * THIS`(flags)` sets the architecture specific capability flags to `flags`
 	//  */
 	void setFlags(uint8_t flags) {
-		fields.flag_cap_mode = flags & 0b1;
+		cap.fields.flag_cap_mode = flags & 0b1;
 	}
 
 	bool isSealed() const {
-		return fields.otype != cOtypeUnsealedUnsigned;
+		return cap.fields.otype != cOtypeUnsealedUnsigned;
 	}
 
 	// /*!
@@ -329,15 +334,15 @@ struct Capability {
 	//  * otypes.
 	//  */
 	bool hasReservedOType() const {
-		return fields.otype > cCapMaxOType;
+		return cap.fields.otype > cCapMaxOType;
 	}
 
 	void seal(uint32_t otype) {
-		fields.otype = otype;
+		cap.fields.otype = otype;
 	}
 
 	void unseal() {
-		fields.otype = cOtypeUnsealedUnsigned;
+		cap.fields.otype = cOtypeUnsealedUnsigned;
 	}
 
 	CapAddr_t getBase() const {
@@ -356,7 +361,7 @@ struct Capability {
 
 	CapAddr_t getOffset() const {
 		CapAddr_t base = getBase();
-		return fields.address - base;
+		return cap.fields.address - base;
 	}
 
 	CapLen_t getLength() const {
@@ -378,7 +383,7 @@ struct Capability {
 	}
 
 	void clearTagIf(bool cond) {
-		fields.tag &= !cond;
+		cap.fields.tag &= !cond;
 	}
 
 	void clearTagIfSealed() {
@@ -386,14 +391,14 @@ struct Capability {
 	}
 
 	void clearTag() {
-		fields.tag = false;
+		cap.fields.tag = false;
 	}
 
 	bool setCapOffset(uint64_t offset) {
 		CapAddr_t base = getBase();
 		bool representable =
-		    fastRepCheck(base + offset - fields.address);  // Must be done before actually incrementing address
-		fields.address = static_cast<int64_t>(base + offset);
+		    fastRepCheck(base + offset - cap.fields.address);  // Must be done before actually incrementing address
+		cap.fields.address = static_cast<int64_t>(base + offset);
 		return representable;
 	}
 
@@ -404,20 +409,20 @@ struct Capability {
 
 	bool incCapOffset(uint64_t delta) {
 		bool representable = fastRepCheck(delta);  // Must be done before actually incrementing address
-		fields.address = static_cast<int64_t>(fields.address + delta);
+		cap.fields.address = static_cast<int64_t>(cap.fields.address + delta);
 		return representable;
 	}
 
 	bool fastRepCheck(uint64_t i) const {
-		uint8_t E = fields.E;
+		uint8_t E = cap.fields.E;
 		if (E >= cCapMaxE - 2) {
 			// in this case representable region is whole address space
 			return true;
 		}
 		int64_t i_top = static_cast<int64_t>(i) >> (E + cCapMantissaWidth);  // arithmetic shift right
 		uint64_t i_mid = CHERI_BIT_RANGE((i >> E), cCapMantissaWidth - 1, 0);
-		uint64_t a_mid = CHERI_BIT_RANGE((fields.address >> E), cCapMantissaWidth - 1, 0);
-		uint8_t B3 = cheri_truncateLsb(fields.B, 3, cCapMantissaWidth);
+		uint64_t a_mid = CHERI_BIT_RANGE((cap.fields.address >> E), cCapMantissaWidth - 1, 0);
+		uint8_t B3 = cheri_truncateLsb(cap.fields.B, 3, cCapMantissaWidth);
 		uint8_t R3 = (B3 - 0b001) & 0b111;
 		uint64_t R = R3 << (cCapMantissaWidth - 3);
 		uint64_t diff = (R - a_mid) & ((1ULL << cCapMantissaWidth) - 1);  // truncate to cCapMantissaWidth bits (14)
@@ -435,7 +440,7 @@ struct Capability {
 		CapAddr_t base1;
 		CapLen_t top1;
 		getCapBounds(&base1, &top1);
-		fields.address = addr;
+		cap.fields.address = addr;
 		CapAddr_t base2;
 		CapLen_t top2;
 		getCapBounds(&base2, &top2);
@@ -448,27 +453,27 @@ struct Capability {
 	}
 
 	EncCapability toEncCap() const {
-		uint16_t t_hi = CHERI_BIT_SLICE(fields.T, cCapMantissaWidth - 3, cInternalETakeBits);
-		uint16_t b_hi = CHERI_BIT_SLICE(fields.B, cCapMantissaWidth - 1, cInternalETakeBits);
+		uint16_t t_hi = CHERI_BIT_SLICE(cap.fields.T, cCapMantissaWidth - 3, cInternalETakeBits);
+		uint16_t b_hi = CHERI_BIT_SLICE(cap.fields.B, cCapMantissaWidth - 1, cInternalETakeBits);
 		uint8_t t_lo, b_lo;
 
-		if (fields.internal_E) {
-			t_lo = CHERI_BIT_SLICE(fields.E, cInternalETakeBits * 2 - 1, cInternalETakeBits);
-			b_lo = CHERI_BIT_SLICE(fields.E, cInternalETakeBits - 1, 0);
+		if (cap.fields.internal_E) {
+			t_lo = CHERI_BIT_SLICE(cap.fields.E, cInternalETakeBits * 2 - 1, cInternalETakeBits);
+			b_lo = CHERI_BIT_SLICE(cap.fields.E, cInternalETakeBits - 1, 0);
 		} else {
-			t_lo = CHERI_BIT_SLICE(fields.T, cInternalETakeBits - 1, 0);
-			b_lo = CHERI_BIT_SLICE(fields.B, cInternalETakeBits - 1, 0);
+			t_lo = CHERI_BIT_SLICE(cap.fields.T, cInternalETakeBits - 1, 0);
+			b_lo = CHERI_BIT_SLICE(cap.fields.B, cInternalETakeBits - 1, 0);
 		}
 
 		return EncCapability{
-		    static_cast<uint16_t>((static_cast<uint16_t>(fields.uperms) << cCapHPermsWidth | getCapHardPerms())),
-		    fields.otype,
-		    fields.reserved,
-		    fields.flag_cap_mode,
-		    fields.internal_E,
+		    static_cast<uint16_t>((static_cast<uint16_t>(cap.fields.uperms) << cCapHPermsWidth | getCapHardPerms())),
+		    cap.fields.otype,
+		    cap.fields.reserved,
+		    cap.fields.flag_cap_mode,
+		    cap.fields.internal_E,
 		    static_cast<uint16_t>((t_hi << cInternalETakeBits) | t_lo),
 		    static_cast<uint16_t>((b_hi << cInternalETakeBits) | b_lo),
-		    fields.address};
+		    cap.fields.address};
 	}
 
 	__uint128_t toUint128() const {
@@ -494,13 +499,13 @@ struct ProgramCounterCapability {
 
 	// Return uint64_t value of the program counter
 	operator uint64_t() const {
-		return static_cast<uint64_t>(pcc.fields.address);
+		return static_cast<uint64_t>(pcc.cap.fields.address);
 	}
 
 	// Overload = operator to set the program counter
 	ProgramCounterCapability& operator=(uint64_t val) {
 		// TODO Check if metadata and tag should be cleared!
-		pcc.fields.address = static_cast<int64_t>(val);
+		pcc.cap.fields.address = static_cast<int64_t>(val);
 		return *this;
 	}
 
@@ -536,22 +541,22 @@ struct ProgramCounterCapability {
 	// overload + operator
 	ProgramCounterCapability operator+(uint64_t val) const {
 		ProgramCounterCapability new_pcc = *this;
-		new_pcc->fields.address = static_cast<int64_t>(val + new_pcc->fields.address);
+		new_pcc->cap.fields.address = static_cast<int64_t>(val + new_pcc->cap.fields.address);
 		return new_pcc;
 	}
 
 	// overload + operator for int32_t
 	ProgramCounterCapability operator+(int32_t val) const {
 		ProgramCounterCapability new_pcc = *this;
-		new_pcc->fields.address += val;
+		new_pcc->cap.fields.address += val;
 		return new_pcc;
 	}
 
 	// overload +=
 	ProgramCounterCapability& operator+=(uint64_t val) {
-		auto pc_val = static_cast<uint64_t>(pcc.fields.address);
+		auto pc_val = static_cast<uint64_t>(pcc.cap.fields.address);
 		pc_val += val;
-		pcc.fields.address = static_cast<int64_t>(pc_val);
+		pcc.cap.fields.address = static_cast<int64_t>(pc_val);
 		return *this;
 	}
 };

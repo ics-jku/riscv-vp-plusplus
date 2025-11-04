@@ -10,14 +10,14 @@ std::string uint128_to_string(__uint128_t data) {
 
 std::string capToString(Capability cap) {
 	std::string len_str = uint128_to_string(cap.getLength());
-	std::string otype64 = cap.hasReservedOType() ? std::bitset<cCapOTypeWidth>(cap.fields.otype).to_string()
-	                                             : std::bitset<cCapOTypeWidth>(cap.fields.otype).to_string();
+	std::string otype64 = cap.hasReservedOType() ? std::bitset<cCapOTypeWidth>(cap.cap.fields.otype).to_string()
+	                                             : std::bitset<cCapOTypeWidth>(cap.cap.fields.otype).to_string();
 	std::string perms = std::bitset<cCapPermsWidth>(cap.getCapPerms()).to_string();
-	std::string result = "Capability:\n    t:       0b" + std::to_string(cap.fields.tag) + "\n    sealed:  0b" +
+	std::string result = "Capability:\n    t:       0b" + std::to_string(cap.cap.fields.tag) + "\n    sealed:  0b" +
 	                     std::to_string(cap.isSealed()) + "\n    perms:   0b" + perms + "\n    type:    0b" + otype64 +
-	                     "\n    flag_cap_mode: " + std::to_string(cap.fields.flag_cap_mode) + "\n    address: 0b" +
-	                     std::bitset<cCapAddrWidth>(cap.fields.address).to_string() + "(" +
-	                     std::to_string(cap.fields.address) + ")" + "\n    base:    0b" +
+	                     "\n    flag_cap_mode: " + std::to_string(cap.cap.fields.flag_cap_mode) + "\n    address: 0b" +
+	                     std::bitset<cCapAddrWidth>(cap.cap.fields.address).to_string() + "(" +
+	                     std::to_string(cap.cap.fields.address) + ")" + "\n    base:    0b" +
 	                     std::bitset<cCapAddrWidth>(cap.getBase()).to_string() + "(" + std::to_string(cap.getBase()) +
 	                     ")" + "\n    length:  0b" + len_str;
 
@@ -26,11 +26,11 @@ std::string capToString(Capability cap) {
 
 std::string capToShortString(Capability cap) {
 	std::string len_str = uint128_to_string(cap.getLength());
-	std::string otype64 = cap.hasReservedOType() ? std::bitset<cCapOTypeWidth>(cap.fields.otype).to_string()
-	                                             : std::bitset<cCapOTypeWidth>(cap.fields.otype).to_string();
+	std::string otype64 = cap.hasReservedOType() ? std::bitset<cCapOTypeWidth>(cap.cap.fields.otype).to_string()
+	                                             : std::bitset<cCapOTypeWidth>(cap.cap.fields.otype).to_string();
 	std::string perms = std::bitset<cEncCapPermsWidth>(cap.getCapPerms()).to_string();
-	std::string result = std::to_string(cap.fields.tag) + " " + std::to_string(cap.isSealed()) + " " + perms + " " +
+	std::string result = std::to_string(cap.cap.fields.tag) + " " + std::to_string(cap.isSealed()) + " " + perms + " " +
 	                     otype64 + " " + std::to_string(cap.getBase()) + " " + len_str + " " +
-	                     std::to_string(cap.fields.address);
+	                     std::to_string(cap.cap.fields.address);
 	return result;
 }

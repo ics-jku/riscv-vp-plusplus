@@ -8,13 +8,13 @@ inline void cheriFetchCheckPc(ProgramCounterCapability start_pc, ProgramCounterC
                               bool has_compressed) {
 	if (start_pc == pc) {
 		// Do full checks
-		if (!pc->fields.tag) {
+		if (!pc->cap.fields.tag) {
 			handle_cheri_pcc_exception(CapEx_TagViolation, trace);
 		}
 		if (pc->isSealed()) {
 			handle_cheri_pcc_exception(CapEx_SealViolation, trace);
 		}
-		if (!pc->fields.permit_execute) {
+		if (!pc->cap.fields.permit_execute) {
 			handle_cheri_pcc_exception(CapEx_PermitExecuteViolation, trace);
 		}
 		// If PCC relocation is enabled, require that PCC.base be as aligned as PC
@@ -23,14 +23,14 @@ inline void cheriFetchCheckPc(ProgramCounterCapability start_pc, ProgramCounterC
 		    (((pc.pcc.getBase() & 0b1) != 0) || (((pc.pcc.getBase() & 0b10) != 0) && !has_compressed))) {
 			handle_cheri_pcc_exception(CapEx_UnalignedBase, trace);
 		}
-		if (!start_pc.pcc.inCapBounds(pc->fields.address, 2)) {
+		if (!start_pc.pcc.inCapBounds(pc->cap.fields.address, 2)) {
 			handle_cheri_pcc_exception(CapEx_LengthViolation, trace);
 		}
 		return;
 	}
 	// Perform only the bounds checks (remaining checks were already done for the LSB of the instruction, where start_pc
 	// == pc)
-	if (!start_pc.pcc.inCapBounds(pc->fields.address, 2)) {
+	if (!start_pc.pcc.inCapBounds(pc->cap.fields.address, 2)) {
 		handle_cheri_pcc_exception(CapEx_LengthViolation, trace);
 	}
 }
