@@ -214,7 +214,7 @@ void rvfi_dii_t::read_trace(rvfi_dii_command_t *input) {
 }
 
 void rvfi_dii_t::write_trace(rvfi_dii_trace_t *output) {
-	sleep(0.001);
+	usleep(1000);
 	// signal(SIGPIPE, SIG_IGN);
 	// ssize_t bytes = write(client_fd, output, sizeof(rvfi_dii_trace_t));
 	ssize_t bytes = send(client_fd, output, sizeof(rvfi_dii_trace_t), MSG_NOSIGNAL);
