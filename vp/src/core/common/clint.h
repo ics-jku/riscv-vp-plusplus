@@ -36,8 +36,8 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 
 	static_assert(NumberOfCores < 4096, "out of bound");  // stay within the allocated address range
 
-	static constexpr uint64_t scaler = 1000000;  // scale from PS resolution (default in SystemC) to US
-	                                             // resolution (apparently required by FreeRTOS)
+	uint64_t scaler = 1000000;  // scale from SystemC time resolution (default in SystemC) to US
+	                            // resolution (apparently required by FreeRTOS)
 
 	/* config properties */
 	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
@@ -65,6 +65,14 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 	SC_HAS_PROCESS(CLINT);
 
 	CLINT(sc_core::sc_module_name) {
+		if (sc_core::sc_get_time_resolution() > sc_core::sc_time(1.0, sc_core::SC_US)) {
+			SC_REPORT_ERROR("riscv-vp-plusplus",
+			                (std::string("CLINT requires a time resolution of at least 1 us, actual resolution is ") +
+			                 sc_core::sc_get_time_resolution().to_string())
+			                    .c_str());
+		}
+		scaler = sc_core::sc_time(1.0, sc_core::SC_US).value();  // Adapt scaler to support user set time resolutions
+
 		/* get config properties from global property tree (or use default) */
 		VPPP_PROPERTY_GET("CLINT." + name(), "clock_cycle_period", sc_core::sc_time, prop_clock_cycle_period);
 		VPPP_PROPERTY_GET("CLINT." + name(), "access_clock_cycles", uint64_t, prop_access_clock_cycles);
