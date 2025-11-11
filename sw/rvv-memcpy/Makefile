@@ -5,6 +5,7 @@ CFLAGS   = -march=rv32imafdv_zicsr -mabi=ilp32
 VP       = riscv32-vp
 
 # RV64
+#RISCV_PREFIX = riscv64-unknown-elf-
 #CFLAGS   = -march=rv64imafdv_zicsr -mabi=lp64
 #VP       = riscv64-vp
 
