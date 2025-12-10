@@ -605,7 +605,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	std::unordered_map<uint64_t, Block *> blockmap;
 	Block *curBlock;
 	Block dummyBlock = Block(0, *this);
-	int32_t curEntryIdx = 0;
+	int32_t curEntryIdx = -1;
 
 	bool slow_path = false;
 	Block fastDisableBlock = Block(0, *this);
@@ -902,7 +902,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		/* use dummyBlock (and its first entry) as valid predecessor */
 		curBlock = &dummyBlock;
-		curEntryIdx = 0;
+		curEntryIdx = -1;
 
 		/* use disable block entries to indicate disabled fast path */
 		slow_path = false;
