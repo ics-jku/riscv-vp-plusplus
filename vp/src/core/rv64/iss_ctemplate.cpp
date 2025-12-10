@@ -7639,6 +7639,7 @@ void ISS_CT::run() {
 
 void ISS_CT::show() {
 	boost::io::ios_flags_saver ifs(std::cout);
+	print_stats();
 	std::cout << "=[ core : " << csrs.mhartid.reg.val << " ]===========================" << std::endl;
 	std::cout << "simulation time: " << sc_core::sc_time_stamp() << std::endl;
 	regs.show();
