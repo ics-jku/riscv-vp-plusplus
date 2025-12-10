@@ -75,6 +75,8 @@ class LSCache_IF_T {
 		this->data_mem = data_mem;
 	}
 
+	void print_stats() {}
+
 	__always_inline bool is_enabled() {
 #ifdef LSCACHE_FORCED_ENABLED
 		return true;
@@ -288,6 +290,10 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 	void init(bool enabled, uint64_t hartId, dmemif_t *data_mem) {
 		flush();
 		super::init(enabled, hartId, data_mem);
+	}
+
+	void print_stats() {
+		stats.print();
 	}
 
 	__always_inline void fence_vma() {

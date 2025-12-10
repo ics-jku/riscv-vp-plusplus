@@ -173,6 +173,8 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return rvfi_dii;
 	}
 	void print_stats(void) override {
+		dbbcache.print_stats();
+		lscache.print_stats();
 		stats.print();
 	}
 

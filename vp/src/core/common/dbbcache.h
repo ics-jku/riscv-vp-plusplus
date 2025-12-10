@@ -158,6 +158,8 @@ class DBBCacheBase_T {
 		this->mem_word = 0;
 	}
 
+	void print_stats() {}
+
 	__always_inline bool is_enabled() {
 #ifdef DBBCACHE_FORCED_ENABLED
 		return true;
@@ -914,6 +916,10 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		} else {
 			switch_block_dummy(entrypoint);
 		}
+	}
+
+	void print_stats() {
+		stats.print();
 	}
 
 	__always_inline void branch_not_taken(T_uxlen_t pc) {
