@@ -7203,7 +7203,7 @@ void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if 
 	this->instr_mem = instr_mem;
 	this->mem = data_mem;
 	this->clint = clint;
-	regs[RegFile::sp] = align_address(sp_base);
+	regs[RegFile::sp] = rv_align_stack_pointer_address(sp_base);
 	pc = entrypoint;
 
 	/* TODO: make const? (make all label ptrs const?) */

@@ -12,6 +12,19 @@ enum class CoreExecStatus {
 	Terminated,
 };
 
+/*
+ * According to the RISC-V ABI specification, the
+ * stack pointer must be aligned 16-bytes (128-bit)
+ * aligned for RV32 and RV64.
+ * (RV32E requires only a 4-byte (32-bit) alignment,
+ * but it does not hurt to use 16-alignment here
+ * also)
+ */
+template <typename T_uxlen_t>
+inline T_uxlen_t rv_align_stack_pointer_address(T_uxlen_t addr) {
+	return addr - addr % 16;
+}
+
 constexpr unsigned SATP_MODE_BARE = 0;
 constexpr unsigned SATP_MODE_SV32 = 1;
 constexpr unsigned SATP_MODE_SV39 = 8;

@@ -8737,9 +8737,10 @@ void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if 
 	this->clint = clint;
 
 	if (cheri_purecap) {
+		/* TODO: alignemnt to 8-byte should be sufficient (less than on RV32/RV64 without CHERI -> check */
 		regs[RegFile::sp] = rv64_cheriv9_align_address(sp_base);
 	} else {
-		regs[RegFile::sp] = rv64_align_address(sp_base);
+		regs[RegFile::sp] = rv_align_stack_pointer_address(sp_base);
 	}
 
 	pc = entrypoint;
