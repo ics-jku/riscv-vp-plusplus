@@ -62,6 +62,15 @@ void GDBServer::set_run_event(debug_target_if *hart, sc_core::sc_event *event) {
 	std::get<1>(events.at(hart)) = event;
 }
 
+void GDBServer::set_single_run(debug_target_if *hart, bool single) {
+	single_run[hart] = single;
+}
+
+bool GDBServer::is_single_run(debug_target_if *hart) {
+	auto it = single_run.find(hart);
+	return it != single_run.end() && it->second;
+}
+
 void GDBServer::create_sock(uint16_t port) {
 	struct sockaddr_in addr;
 	int reuse;
@@ -92,7 +101,7 @@ err:
 	throw std::system_error(errno, std::generic_category());
 }
 
-std::vector<debug_target_if *> GDBServer::get_threads(int id) {
+std::vector<debug_target_if *> GDBServer::get_harts(int id) {
 	if (id == GDB_THREAD_ANY)
 		id = 1; /* pick the first thread */
 
@@ -134,34 +143,29 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 		thread = GDB_THREAD_ANY;
 	}
 
-	threads = get_threads(thread);
+	threads = get_harts(thread);
 	for (debug_target_if *thread : threads) fn(thread);
 }
 
-std::vector<debug_target_if *> GDBServer::run_threads(std::vector<debug_target_if *> hartsrun, bool single) {
-	if (hartsrun.empty()) {
-		return hartsrun;
-	}
-	this->single_run = single;
-
-	/* invoke all selected harts */
+void GDBServer::run_all_harts(std::vector<debug_target_if *> harts_to_run) {
+	if (harts_to_run.empty()) return;
+	// Start all harts
 	sc_core::sc_event_or_list allharts;
-	for (debug_target_if *hart : hartsrun) {
-		sc_core::sc_event *stop_event, *run_event;
-		std::tie(stop_event, run_event) = this->events.at(hart);
-
+	for (debug_target_if *hart : harts_to_run) {
+		sc_core::sc_event *run_event = std::get<1>(events.at(hart));
 		run_event->notify();
-		allharts |= *stop_event;
+		allharts |= *std::get<0>(events.at(hart));
 	}
 
-	/* wait until the first hart finishes execution */
-	sc_core::wait(allharts);
+	// Wait for any hart to stop or interrupt
+	sc_core::sc_event_or_list all_events = allharts | interruptEvent;
+	sc_core::wait(all_events);
 
-	/* ensure that all running harts are stopped */
-	std::vector<CoreExecStatus> orig_status;
-	for (debug_target_if *hart : hartsrun) {
+	// Ensure all running harts are stopped
+	std::vector<std::pair<debug_target_if *, CoreExecStatus>> orig_status;
+	for (debug_target_if *hart : harts_to_run) {
 		CoreExecStatus status = hart->get_status();
-		orig_status.push_back(status);
+		orig_status.emplace_back(hart, status);
 
 		if (status != CoreExecStatus::Runnable)
 			continue;
@@ -171,11 +175,10 @@ std::vector<debug_target_if *> GDBServer::run_threads(std::vector<debug_target_i
 		sc_core::wait(stopev);
 	}
 
-	/* restore original hart status */
-	assert(orig_status.size() == hartsrun.size());
-	for (size_t i = 0; i < hartsrun.size(); i++) hartsrun[i]->set_status(orig_status[i]);
-
-	return hartsrun;
+	// Restore original status
+	for (auto &[hart, status] : orig_status) {
+		hart->set_status(status);
+	}
 }
 
 void GDBServer::writeall(int fd, char *data, size_t len) {
@@ -241,18 +244,21 @@ void GDBServer::dispatch(int conn) {
 		throw std::system_error(errno, std::generic_category());
 
 	for (;;) {
-		mtx.lock();
 		if (!(pkt = gdb_parse_pkt(stream))) {
-			mtx.unlock();
 			break;
 		}
+		if (pkt->kind == GDB_KIND_INTERRUPT) {
+			// Priority. Needs to be handled even if the systemC thread is blocked
+			gdb_free_packet(pkt);
+			interruptEvent.notify();
+		} else {
+			mtx.lock();
+			pktq.push(std::make_tuple(conn, pkt));
+			mtx.unlock();
 
-		pktq.push(std::make_tuple(conn, pkt));
-		asyncEvent.notify();
-
-		/* further processing is performed in the SystemC run()
-		 * thread which interacts with the ISS objects and
-		 * unlocks the mutex after finishing all operations. */
+			asyncEvent.notify();
+			//cv.notify_one();
+		}
 	}
 
 	fclose(stream);
@@ -282,43 +288,49 @@ void GDBServer::run(void) {
 	packet_handler handler;
 
 	for (;;) {
-		sc_core::wait(asyncEvent);
+		std::unique_lock<std::mutex> lock(mtx);
+		if (!pktq.empty()) {
+			auto ctx = pktq.front();
+			pktq.pop();
+			lock.unlock();
 
-		auto ctx = pktq.front();
-		std::tie(conn, pkt) = ctx;
+			std::tie(conn, pkt) = ctx;
 
-		switch (pkt->kind) {
-			case GDB_KIND_NACK:
-				retransmit(conn);
-				/* fall through */
-			case GDB_KIND_ACK:
+			switch (pkt->kind) {
+				case GDB_KIND_NACK:
+					retransmit(conn);
+					/* fall through */
+				case GDB_KIND_ACK:
+					goto next1;
+				default:
+					break;
+			}
+
+			if (!(cmd = gdb_parse_cmd(pkt))) {
+				send_packet(conn, NULL, GDB_KIND_NACK);
 				goto next1;
-			default:
-				break;
+			}
+
+			send_packet(conn, NULL, GDB_KIND_ACK);
+			try {
+				handler = handlers.at(cmd->name);
+			} catch (const std::out_of_range &) {
+				// For any command not supported by the stub, an
+				// empty response (‘$#00’) should be returned.
+				send_packet(conn, "");
+				goto next2;
+			}
+
+			(this->*handler)(conn, cmd);
+
+		next2:
+			gdb_free_cmd(cmd);
+		next1:
+			gdb_free_packet(pkt);
+		} else {
+			lock.unlock();
+			sc_core::wait(asyncEvent);
+			//cv.wait(lock);
 		}
-
-		if (!(cmd = gdb_parse_cmd(pkt))) {
-			send_packet(conn, NULL, GDB_KIND_NACK);
-			goto next1;
-		}
-
-		send_packet(conn, NULL, GDB_KIND_ACK);
-		try {
-			handler = handlers.at(cmd->name);
-		} catch (const std::out_of_range &) {
-			// For any command not supported by the stub, an
-			// empty response (‘$#00’) should be returned.
-			send_packet(conn, "");
-			goto next2;
-		}
-
-		(this->*handler)(conn, cmd);
-
-	next2:
-		gdb_free_cmd(cmd);
-	next1:
-		gdb_free_packet(pkt);
-		pktq.pop();
-		mtx.unlock();
 	}
 }

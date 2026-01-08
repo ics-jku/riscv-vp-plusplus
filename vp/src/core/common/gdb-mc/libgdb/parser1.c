@@ -62,6 +62,18 @@ static mpc_val_t *gdbf_acknowledge(mpc_val_t *xs) {
 	return pkt;
 }
 
+static mpc_val_t *gdbf_interrupt(mpc_val_t *xs) {
+	gdb_packet_t *pkt;
+
+	pkt = xmalloc(sizeof(*pkt));
+	pkt->data = NULL;
+	memset(pkt->csum, 0, GDB_CSUM_LEN);
+	pkt->kind = GDB_KIND_INTERRUPT;
+
+	free(xs);
+	return pkt;
+}
+
 static mpc_parser_t *gdb_csum(void) {
 	mpc_parser_t *csum;
 
@@ -87,8 +99,12 @@ static mpc_parser_t *gdb_acknowledge(void) {
 	return mpc_apply(mpc_oneof("+-"), gdbf_acknowledge);
 }
 
+static mpc_parser_t *gdb_interrupt(void) {
+	return mpc_apply(mpc_char(0x03), gdbf_interrupt);
+}
+
 static mpc_parser_t *gdb_parse_stage1(void) {
-	return mpc_or(3, gdb_acknowledge(), gdb_packet(), gdb_notification());
+	return mpc_or(4, gdb_acknowledge(), gdb_packet(), gdb_notification(), gdb_interrupt());
 }
 
 gdb_packet_t *gdb_parse_pkt(FILE *stream) {

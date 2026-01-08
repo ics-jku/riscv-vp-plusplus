@@ -16,6 +16,7 @@ typedef enum {
 	GDB_KIND_PACKET,
 	GDB_KIND_NACK,
 	GDB_KIND_ACK,
+ 	GDB_KIND_INTERRUPT,
 } gdb_kind_t;
 
 typedef struct {
@@ -26,6 +27,7 @@ typedef struct {
 
 void gdb_free_packet(gdb_packet_t *);
 gdb_packet_t *gdb_parse_pkt(FILE *);
+gdb_packet_t *gdb_copy_packet(const gdb_packet_t *src);
 
 #ifdef __cplusplus
 }
