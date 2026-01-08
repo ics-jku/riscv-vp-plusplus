@@ -172,7 +172,7 @@ int sc_main(int argc, char **argv) {
 	threads.push_back(&core1);
 
 	if (opt.use_debug_runner) {
-		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port, opt.debug_cont_sim_on_wait);
 		new GDBServerRunner("GDBRunner0", server, &core0);
 		new GDBServerRunner("GDBRunner1", server, &core1);
 	} else {

@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <sys/syscall.h>
 
+#include <condition_variable>
 #include <functional>
 #include <map>
 #include <mutex>
@@ -45,16 +46,13 @@ SC_MODULE(GDBServer) {
 	SC_HAS_PROCESS(GDBServer);
 
 	GDBServer(sc_core::sc_module_name, std::vector<debug_target_if *>, DebugMemoryInterface *, uint16_t,
-	          std::vector<mmu_memory_if *> mmus = {});
-
-	/* Used by GDBRunner to determine whether run() or run_step()
-	 * should be used when receiving a run event for a debug_target_if.
-	 *
-	 * TODO: Pass this on a per-event basis instead. */
-	bool single_run = false;
+	          bool cont_sim_on_wait = false, std::vector<mmu_memory_if *> mmus = {});
 
 	sc_core::sc_event *get_stop_event(debug_target_if *);
 	void set_run_event(debug_target_if *, sc_core::sc_event *);
+	void set_single_run(debug_target_if *, bool);
+
+	bool is_single_run(debug_target_if *);
 
    private:
 	typedef std::function<void(debug_target_if *)> thread_func;
@@ -63,6 +61,8 @@ SC_MODULE(GDBServer) {
 
 	DebugMemoryInterface *memory;
 	AsyncEvent asyncEvent;
+	std::condition_variable cv;
+	AsyncEvent interruptEvent;
 	Architecture arch;
 	std::vector<debug_target_if *> harts;
 	std::thread thr;
@@ -70,6 +70,7 @@ SC_MODULE(GDBServer) {
 	std::queue<ctx> pktq;
 	std::mutex mtx;
 	int sockfd;
+	bool cont_sim_on_wait;
 
 	/* operation → thread id */
 	std::map<char, int> thread_ops;
@@ -80,11 +81,14 @@ SC_MODULE(GDBServer) {
 	/* hart → mmu */
 	std::map<debug_target_if *, mmu_memory_if *> mmu;
 
+	/* hart → single_run flag */
+	std::map<debug_target_if *, bool> single_run;
+
 	void create_sock(uint16_t);
-	std::vector<debug_target_if *> get_threads(int);
+	std::vector<debug_target_if *> get_harts(int);
 	uint64_t translate_addr(debug_target_if *, uint64_t, MemoryAccessType type);
 	void exec_thread(thread_func, char = 'g');
-	std::vector<debug_target_if *> run_threads(std::vector<debug_target_if *>, bool = false);
+	void run_all_harts(std::vector<debug_target_if *>);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);

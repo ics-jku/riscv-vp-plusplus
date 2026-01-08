@@ -16,7 +16,7 @@ GDBServerRunner::GDBServerRunner(sc_core::sc_module_name name, GDBServer *server
 void GDBServerRunner::run(void) {
 	for (;;) {
 		sc_core::wait(run_event);
-		if (server->single_run) {
+		if (server->is_single_run(hart)) {
 			hart->run_step();
 			if (hart->get_status() == CoreExecStatus::Runnable)
 				hart->set_status(CoreExecStatus::HitBreakpoint);

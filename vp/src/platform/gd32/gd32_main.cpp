@@ -217,7 +217,7 @@ int sc_main(int argc, char **argv) {
 
 	core.enable_trace(opt.trace_mode);  // switch for printing instructions
 	if (opt.use_debug_runner) {
-		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port);
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port, opt.debug_cont_sim_on_wait);
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
 		new DirectCoreRunner(core);

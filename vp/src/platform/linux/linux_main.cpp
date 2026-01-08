@@ -480,7 +480,7 @@ int sc_main(int argc, char **argv) {
 			mmus.push_back(&cores[i]->memif);
 		}
 
-		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port, mmus);
+		auto server = new GDBServer("GDBServer", dharts, &dbg_if, opt.debug_port, opt.debug_cont_sim_on_wait, mmus);
 		for (size_t i = 0; i < dharts.size(); i++)
 			new GDBServerRunner(("GDBRunner" + std::to_string(i)).c_str(), server, dharts[i]);
 	} else {

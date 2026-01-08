@@ -18,6 +18,7 @@ class Options : public boost::program_options::options_description {
 	bool error_on_zero_traphandler = false;
 	bool use_debug_runner = false;
 	unsigned int debug_port = 5005;
+	bool debug_cont_sim_on_wait = false;
 	bool trace_mode = false;
 	unsigned int tlm_global_quantum = 10;
 	bool use_dbbcache = false;

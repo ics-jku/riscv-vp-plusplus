@@ -208,7 +208,7 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 
 	thr = &cmd->v.tval;
 	try {
-		get_threads(thr->tid);
+		get_harts(thr->tid);
 	} catch (const std::out_of_range &) {
 		send_packet(conn, "E01");
 		return;
@@ -221,7 +221,7 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
 	int stopped_thread = -1;
 	const char *stop_reason = NULL;
-	std::map<debug_target_if *, bool> matched;
+	std::vector<debug_target_if *> all_harts;
 
 	/* This handler attempts to implement the all-stop mode.
 	 * See: https://sourceware.org/gdb/onlinedocs/gdb/All_002dStop-Mode.html */
@@ -234,54 +234,51 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 		else if (vcont->action != 'c')
 			throw std::invalid_argument("Unimplemented vCont action"); /* TODO */
 
-		std::vector<debug_target_if *> selected_harts;
+		std::vector<debug_target_if *> current_harts;
 		try {
-			auto run = get_threads(vcont->thread.tid);
-			for (auto i = run.begin(); i != run.end();) {
+			current_harts = get_harts(vcont->thread.tid);
+			for (auto i = current_harts.begin(); i != current_harts.end();) {
 				debug_target_if *hart = *i;
-				if (matched.count(hart))
-					i = run.erase(i); /* already matched */
+				if (std::find(all_harts.begin(), all_harts.end(), hart) != all_harts.end())
+					i = current_harts.erase(i); /* already matched */
 				else
 					i++;
 			}
-
-			selected_harts = run_threads(run, single);
 		} catch (const std::out_of_range &) {
 			send_packet(conn, "E01");
 			return;
 		}
 
-		for (debug_target_if *hart : selected_harts) {
-			switch (hart->get_status()) {
-				case CoreExecStatus::HitBreakpoint:
-					stop_reason = "05";
-					stopped_thread = hart->get_hart_id() + 1;
-
-					/* mark runnable again */
-					hart->set_status(CoreExecStatus::Runnable);
-
-					break;
-				case CoreExecStatus::Terminated:
-					stop_reason = "03";
-					stopped_thread = hart->get_hart_id() + 1;
-					break;
-				case CoreExecStatus::Runnable:
-					continue;
-			}
-		}
-
-		/* The vCont specification mandates that only the leftmost action with
-		 * a matching thread-id is applied. Unfortunately, the specification
-		 * is a bit unclear in regards to handling two actions with no thread
-		 * id (i.e. GDB_THREAD_ALL). */
-		if (vcont->thread.tid > 0) {
-			auto threads = get_threads(vcont->thread.tid);
-			assert(threads.size() == 1);
-			matched[threads.front()] = true;
+		for (debug_target_if *hart : current_harts) {
+			set_single_run(hart, single);
+			all_harts.push_back(hart);
 		}
 	}
 
-	assert(stop_reason && stopped_thread >= 1);
+	run_all_harts(all_harts);
+
+	for (debug_target_if *hart : all_harts) {
+		switch (hart->get_status()) {
+			case CoreExecStatus::HitBreakpoint:
+				stop_reason = "05";
+				stopped_thread = hart->get_hart_id() + 1;
+
+				/* mark runnable again */
+				hart->set_status(CoreExecStatus::Runnable);
+
+				break;
+			case CoreExecStatus::Terminated:
+				stop_reason = "03";
+				stopped_thread = hart->get_hart_id() + 1;
+				break;
+			case CoreExecStatus::Runnable:
+				continue;
+		}
+	}
+
+	if (!stop_reason) {
+		stop_reason = "02";
+	}
 
 	/* This sets the current thread for various follow-up
 	 * operations, most importantly readRegister. Without this
@@ -290,9 +287,14 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	 * than the currently selected hits a breakpoint.
 	 *
 	 * XXX: No idea if the stub is really required to do this. */
-	thread_ops['g'] = stopped_thread;
+	if (stopped_thread >= 1) {
+		thread_ops['g'] = stopped_thread;
+	}
 
-	const std::string msg = std::string("T") + stop_reason + "thread:" + std::to_string(stopped_thread) + ";";
+	std::string msg = "T" + std::string(stop_reason);
+	if (stopped_thread >= 1) {
+		msg += "thread:" + std::to_string(stopped_thread) + ";";
+	}
 	send_packet(conn, msg.c_str());
 }
 

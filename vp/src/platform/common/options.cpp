@@ -19,6 +19,7 @@ Options::Options(void) {
 		("error-on-zero-traphandler", po::value<bool>(&error_on_zero_traphandler), "Assume that taking an unset (zero) trap handler in machine mode is an error condition (which it usually is)")
 		("debug-mode", po::bool_switch(&use_debug_runner), "start execution in debugger (using gdb rsp interface)")
 		("debug-port", po::value<unsigned int>(&debug_port), "select port number to connect with GDB")
+		("debug-cont-sim-on-wait", po::bool_switch(&debug_cont_sim_on_wait), "continue the SysC simulation while waiting for GDB commands (e.g. breakpoint) (Default: stop SysC simulation while waiting for GDB commands)")
 		("trace-mode", po::bool_switch(&trace_mode), "enable instruction tracing")
 		("tlm-global-quantum", po::value<unsigned int>(&tlm_global_quantum), "set global tlm quantum (in NS)")
 		("use-dbbcache", po::bool_switch(&use_dbbcache), "use the Dynamic Basic Block Cache (DBBCache) to speed up execution")
