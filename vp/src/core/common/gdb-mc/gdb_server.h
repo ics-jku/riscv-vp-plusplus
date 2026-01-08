@@ -46,7 +46,7 @@ SC_MODULE(GDBServer) {
 	SC_HAS_PROCESS(GDBServer);
 
 	GDBServer(sc_core::sc_module_name, std::vector<debug_target_if *>, DebugMemoryInterface *, uint16_t,
-	          std::vector<mmu_memory_if *> mmus = {});
+	          std::vector<mmu_memory_if *> mmus = {}, bool halt_on_wait = false);
 
 	sc_core::sc_event *get_stop_event(debug_target_if *);
 	void set_run_event(debug_target_if *, sc_core::sc_event *);
@@ -70,6 +70,7 @@ SC_MODULE(GDBServer) {
 	std::queue<ctx> pktq;
 	std::mutex mtx;
 	int sockfd;
+	bool halt_on_wait;
 
 	/* operation → thread id */
 	std::map<char, int> thread_ops;

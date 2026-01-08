@@ -21,7 +21,8 @@
 extern std::map<std::string, GDBServer::packet_handler> handlers;
 
 GDBServer::GDBServer(sc_core::sc_module_name name, std::vector<debug_target_if *> targets, DebugMemoryInterface *mm,
-                     uint16_t port, std::vector<mmu_memory_if *> mmus) {
+                     uint16_t port, std::vector<mmu_memory_if *> mmus, bool halt_on_wait)
+    : halt_on_wait(halt_on_wait) {
 	(void)name;
 
 	if (targets.size() <= 0)
@@ -256,8 +257,11 @@ void GDBServer::dispatch(int conn) {
 			pktq.push(std::make_tuple(conn, pkt));
 			mtx.unlock();
 
-			asyncEvent.notify();
-			//cv.notify_one();
+			if (halt_on_wait) {
+				cv.notify_one();
+			} else {
+				asyncEvent.notify();
+			}
 		}
 	}
 
@@ -328,9 +332,14 @@ void GDBServer::run(void) {
 		next1:
 			gdb_free_packet(pkt);
 		} else {
-			lock.unlock();
-			sc_core::wait(asyncEvent);
-			//cv.wait(lock);
+			if (halt_on_wait) {
+				cv.wait(lock);
+				// Delta cycle needed to resync with SystemC scheduler after OS-level wait
+				sc_core::wait(sc_core::SC_ZERO_TIME);
+			} else {
+				lock.unlock();
+				sc_core::wait(asyncEvent);
+			}
 		}
 	}
 }
