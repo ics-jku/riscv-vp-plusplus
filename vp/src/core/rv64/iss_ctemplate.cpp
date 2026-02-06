@@ -122,6 +122,9 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 
 		/* use legacy model (see above) -- DEPRECATED! */
 		if (use_legacy_cycle_model) {
+			/* TODO: This model is incomplete for RV64 (e.g. LD/SD missing), however we don't fix this yet
+			 * because we want to keep compatibility with older VP version and the legacy model is depricated anyways.
+			 */
 			switch (opId) {
 				case Operation::OpId::LB:
 				case Operation::OpId::LBU:
