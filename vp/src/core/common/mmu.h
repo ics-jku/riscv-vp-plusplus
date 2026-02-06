@@ -7,7 +7,7 @@
 
 #include "irq_if.h"
 #include "mmu_mem_if.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 constexpr unsigned PTE_PPN_SHIFT = 10;
 constexpr unsigned PGSHIFT = 12;

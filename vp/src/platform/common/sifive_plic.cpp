@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 inline uint32_t GET_IDX(uint32_t &irq) {
 	return irq / 32;

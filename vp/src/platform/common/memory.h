@@ -8,7 +8,7 @@
 
 #include "core/common/load_if.h"
 #include "platform/common/bus.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 struct SimpleMemory : public sc_core::sc_module, public load_if {
 	/* config properties */

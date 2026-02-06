@@ -5,7 +5,7 @@
 #include "core/common/mem_if.h"
 #include "dmi.h"
 #include "mmu.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 #include "util/tlm_ext_initiator.h"
 
 /*

@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 #include "util/initiator_if.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 #include "util/tlm_ext_initiator.h"
 
 struct SimpleDMA : public sc_core::sc_module, public initiator_if {

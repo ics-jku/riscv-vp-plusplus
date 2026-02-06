@@ -28,9 +28,9 @@ class Options : public boost::program_options::options_description {
 	unsigned int debug_bus_port = 5006;
 	bool break_on_transaction = false;
 
-	std::string property_map_file;
-	bool property_map_export = false;
-	bool property_map_is_loaded = false;
+	std::string property_tree_file;
+	bool property_tree_export = false;
+	bool property_tree_is_loaded = false;
 
 	virtual void printValues(std::ostream& os = std::cout) const;
 

@@ -9,7 +9,7 @@
 #include "clint_if.h"
 #include "irq_if.h"
 #include "util/memory_map.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 using namespace std::chrono_literals;
 

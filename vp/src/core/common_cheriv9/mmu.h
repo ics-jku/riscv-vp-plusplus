@@ -7,7 +7,7 @@
 
 #include "core/common/irq_if.h"
 #include "core/common/mmu_mem_if.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 namespace cheriv9 {
 constexpr unsigned PTE_PPN_SHIFT = 10;

@@ -12,7 +12,7 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 typedef Framebuffer::Point Point;
 typedef Framebuffer::PointF PointF;

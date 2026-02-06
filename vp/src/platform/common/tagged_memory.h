@@ -7,7 +7,7 @@
 
 #include "core/common/load_if.h"
 #include "platform/common/bus.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 #include "util/tlm_ext_tag.h"
 
 struct TaggedMemory : public sc_core::sc_module, public load_if {

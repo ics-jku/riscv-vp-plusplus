@@ -13,7 +13,7 @@
 // for safe down-cast
 #include <boost/lexical_cast.hpp>
 
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 namespace rv32 {
 

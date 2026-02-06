@@ -28,7 +28,7 @@
 #include "platform/common/options.h"
 #include "platform/common/sifive_spi.h"
 #include "prci.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 // Interrupt numbers	(see platform.h)
 #define INT_RESERVED 0
@@ -112,16 +112,16 @@ class HifiveOptions : public Options {
 };
 
 int sc_main(int argc, char **argv) {
-	// PropertyMap::global()->set_debug(true);
+	// PropertyTree::global()->set_debug(true);
 
 	HifiveOptions opt;
 	opt.parse(argc, argv);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
-	if (!opt.property_map_is_loaded) {
+	if (!opt.property_tree_is_loaded) {
 		/*
-		 * property map was not loaded by Options -> use default model properties
+		 * property tree was not loaded by Options -> use default model properties
 		 * and values
 		 */
 

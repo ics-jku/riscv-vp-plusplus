@@ -5,7 +5,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 namespace po = boost::program_options;
 
@@ -30,8 +30,8 @@ Options::Options(void) {
 		("debug-bus-port", po::value<unsigned int>(&debug_bus_port),"select port number for tlm transaction data")
 		("break-on-transaction", po::bool_switch(&break_on_transaction),"break on every transaction when in --debug-mode")
 
-		("property-map", po::value<std::string>(&property_map_file)->default_value(""),"ProppertyMap json file to load or save (see property-map-export)")
-		("property-map-export", po::bool_switch(&property_map_export), "save a ProppertyMap (--property-map) of the model properties and default values (elaboration phase) and exit")
+		("property-tree", po::value<std::string>(&property_tree_file)->default_value(""),"ProppertyTree json file to load or save (see property-tree-export)")
+		("property-tree-export", po::bool_switch(&property_tree_export), "save a ProppertyTree (--property-tree) of the model properties and default values (elaboration phase) and exit")
 
 		("input-file", po::value<std::string>(&input_program)->required(), "input file to use for execution");
 	// clang-format on
@@ -76,21 +76,22 @@ void Options::parse(int argc, char **argv) {
 			error_on_zero_traphandler = true;
 		}
 
-		/* check & handle property map parameters */
-		if (property_map_file.empty() && property_map_export) {
-			std::cerr << "[Options] Error: switch 'propety_map_export' set, but 'property_map' not given" << std::endl;
+		/* check & handle property tree parameters */
+		if (property_tree_file.empty() && property_tree_export) {
+			std::cerr << "[Options] Error: switch 'propety_tree_export' set, but 'property_tree' not given"
+			          << std::endl;
 			exit(1);
 		}
-		if (property_map_export) {
+		if (property_tree_export) {
 			/* export enabled -> add non-existing properties and default values on get */
-			PropertyMap::global()->set_update_on_get(true);
+			PropertyTree::global()->set_update_on_get(true);
 		}
-		if (!property_map_file.empty() && !property_map_export) {
-			/* property map given and export disabled -> load */
-			PropertyMap::global()->load_json(property_map_file);
+		if (!property_tree_file.empty() && !property_tree_export) {
+			/* property tree given and export disabled -> load */
+			PropertyTree::global()->load_json(property_tree_file);
 			/* indicate top-level to not override values */
-			property_map_is_loaded = true;
-			std::cout << "PropertyMap loaded from \"" << property_map_file << "\"" << std::endl;
+			property_tree_is_loaded = true;
+			std::cout << "PropertyTree loaded from \"" << property_tree_file << "\"" << std::endl;
 		}
 
 	} catch (po::error &e) {
@@ -114,11 +115,11 @@ void Options::printValues(std::ostream &os) const {
 }
 
 void Options::handle_property_export_and_exit() {
-	if (!property_map_export) {
+	if (!property_tree_export) {
 		return;
 	}
-	/* property map export enabled -> save and stop */
-	PropertyMap::global()->save_json(property_map_file);
-	std::cout << "PropertyMap exported to \"" << property_map_file << "\" -> exit" << std::endl;
+	/* property tree export enabled -> save and stop */
+	PropertyTree::global()->save_json(property_tree_file);
+	std::cout << "PropertyTree exported to \"" << property_tree_file << "\" -> exit" << std::endl;
 	exit(0);
 }

@@ -57,7 +57,7 @@
 #include "sensor.h"
 #include "sensor2.h"
 #include "util/options.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 #if defined(TARGET_RV32)
 using namespace rv32;
@@ -152,16 +152,16 @@ class BasicOptions : public Options {
 };
 
 int sc_main(int argc, char **argv) {
-	// PropertyMap::global()->set_debug(true);
+	// PropertyTree::global()->set_debug(true);
 
 	BasicOptions opt;
 	opt.parse(argc, argv);
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
 
-	if (!opt.property_map_is_loaded) {
+	if (!opt.property_tree_is_loaded) {
 		/*
-		 * property map was not loaded by Options -> use default model properties
+		 * property tree was not loaded by Options -> use default model properties
 		 * and values
 		 */
 

@@ -8,7 +8,7 @@
 #include "clint_if.h"
 #include "irq_if.h"
 #include "util/memory_map.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 template <unsigned NumberOfCores>
 struct CLINT : public clint_if, public sc_core::sc_module {

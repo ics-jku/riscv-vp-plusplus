@@ -6,7 +6,7 @@
 #include <systemc>
 
 #include "core/common/irq_if.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 #include "util/tlm_map.h"
 
 struct MaskROM : public sc_core::sc_module {

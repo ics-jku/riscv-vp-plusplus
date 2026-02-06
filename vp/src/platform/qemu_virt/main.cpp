@@ -59,7 +59,7 @@
 #include "platform/common/sifive_test.h"
 #include "platform/common/tagged_memory.h"
 #include "util/options.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 #define MEM_SIZE_MB 2048  // MB ram
 
@@ -209,14 +209,14 @@ void handle_kernel_file(const LinuxOptions opt, load_if &mem) {
 }
 
 int sc_main(int argc, char **argv) {
-	// PropertyMap::global()->set_debug(true);
+	// PropertyTree::global()->set_debug(true);
 
 	LinuxOptions opt;
 	opt.parse(argc, argv);
 
-	if (!opt.property_map_is_loaded) {
+	if (!opt.property_tree_is_loaded) {
 		/*
-		 * property map was not loaded by Options -> use default model properties
+		 * property tree was not loaded by Options -> use default model properties
 		 * and values
 		 */
 

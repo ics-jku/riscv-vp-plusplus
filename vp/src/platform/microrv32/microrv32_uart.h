@@ -8,7 +8,7 @@
 #include <queue>
 #include <systemc>
 
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 struct MicroRV32UART : public sc_core::sc_module {
 	/* config properties */

@@ -6,7 +6,7 @@
 
 #include "core/common/irq_if.h"
 #include "util/memory_map.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 #include "util/tlm_map.h"
 
 static constexpr bool trace_mode = false;

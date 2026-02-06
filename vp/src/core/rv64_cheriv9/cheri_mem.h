@@ -6,7 +6,7 @@
 #include "core/common_cheriv9/dmi.h"
 #include "iss.h"
 #include "mmu.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 #include "util/tlm_ext_initiator.h"
 #include "util/tlm_ext_tag.h"
 

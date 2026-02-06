@@ -9,7 +9,7 @@
 #include <systemc>
 
 #include "platform/common/bus.h"
-#include "util/propertymap.h"
+#include "util/propertytree.h"
 
 using namespace std;
 using namespace sc_core;

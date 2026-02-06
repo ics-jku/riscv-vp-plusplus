@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2025-26 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  *
- * Property Map
+ * Property Tree
  * A data structure which allows to set and retrieve hierarchical, model-wide
  * configuration properties (e.g. clock cycle periods).
  * Properties can be added and retrieved using hierarchical descriptors ("model.class.instance") and names.
@@ -57,8 +57,8 @@
  *
  * For more examples see VP++ module and top-level implementations
  */
-#ifndef RISCV_UTIL_PROPERTYMAP_H
-#define RISCV_UTIL_PROPERTYMAP_H
+#ifndef RISCV_UTIL_PROPERTYTREE_H
+#define RISCV_UTIL_PROPERTYTREE_H
 
 #include <cstdint>
 #include <fstream>
@@ -72,9 +72,9 @@
 
 #include "util/common.h"
 
-class PropertyMap {
-	/* static global map (automatically initialized) */
-	static PropertyMap globalPropertyMap;
+class PropertyTree {
+	/* static global property tree (automatically initialized) */
+	static PropertyTree globalPropertyTree;
 
 	std::map<std::string, std::string> pmap;
 	bool debug = false;
@@ -88,7 +88,7 @@ class PropertyMap {
 		std::string str = "";
 
 		if (debug) {
-			std::cout << "PropertyMap::get_raw: start: " << desc << "." << name << std::endl;
+			std::cout << "PropertyTree::get_raw: start: " << desc << "." << name << std::endl;
 		}
 
 		/* search */
@@ -98,11 +98,11 @@ class PropertyMap {
 			if (it != pmap.end()) {
 				str = it->second;
 				if (debug) {
-					std::cout << "PropertyMap::get_raw: match: " << cd << "." << name << " => " << str << std::endl;
+					std::cout << "PropertyTree::get_raw: match: " << cd << "." << name << " => " << str << std::endl;
 				}
 				if (update_on_get && !contains(desc, name)) {
 					if (debug) {
-						std::cout << "PropertyMap::get_raw: update_on_get with full desc and match" << std::endl;
+						std::cout << "PropertyTree::get_raw: update_on_get with full desc and match" << std::endl;
 					}
 					set_raw(desc, name, str);
 				}
@@ -123,27 +123,27 @@ class PropertyMap {
 			/* if not found and default value given -> return default */
 			if (def) {
 				if (debug) {
-					std::cout << "PropertyMap::get_raw: no-match, use default: " << desc << "." << name << " => "
+					std::cout << "PropertyTree::get_raw: no-match, use default: " << desc << "." << name << " => "
 					          << def_val << std::endl;
 				}
 				if (update_on_get && !contains(desc, name)) {
 					if (debug) {
-						std::cout << "PropertyMap::get_raw: update_on_get with full desc and default" << std::endl;
+						std::cout << "PropertyTree::get_raw: update_on_get with full desc and default" << std::endl;
 					}
 					set<std::decay_t<decltype(def_val)>>(desc, name, def_val);
 				}
 				return def_val;
 			}
-			throw std::runtime_error("PropertyMap::get_raw: Missing property \"" + desc + "." + name + "\"");
+			throw std::runtime_error("PropertyTree::get_raw: Missing property \"" + desc + "." + name + "\"");
 		}
 
 		/* handle conversion */
 		try {
 			return fconv(str);
 		} catch (const std::invalid_argument& e) {
-			throw std::runtime_error("PropertyMap::get_raw: Invalid value \"" + str + "\": not a valid number");
+			throw std::runtime_error("PropertyTree::get_raw: Invalid value \"" + str + "\": not a valid number");
 		} catch (const std::out_of_range& e) {
-			throw std::runtime_error("PropertyMap::get_raw: Invalid value \"" + str +
+			throw std::runtime_error("PropertyTree::get_raw: Invalid value \"" + str +
 			                         "\": number out of range for uint64_t");
 		}
 	}
@@ -163,11 +163,11 @@ class PropertyMap {
    public:
 	static void init(const std::string& filename = "");
 	static void deinit();
-	static PropertyMap* global() {
-		return &globalPropertyMap;
+	static PropertyTree* global() {
+		return &globalPropertyTree;
 	}
 
-	PropertyMap(const std::string& filename = "");
+	PropertyTree(const std::string& filename = "");
 
 	bool is_debug() const {
 		return debug;
@@ -178,7 +178,7 @@ class PropertyMap {
 	}
 
 	/*
-	 * add properties if missing on get -> useful to create a property map
+	 * add properties if missing on get -> useful to create a property tree
 	 * from actual gets (properties and default values) of a model
 	 * (e.g. for validation)
 	 */
@@ -192,10 +192,10 @@ class PropertyMap {
 
 	void clear();
 
-	// Save the map to a JSON file
+	// Save the tree to a JSON file
 	void save_json(const std::string& filename) const;
 
-	// Load the map from a JSON file
+	// Load the tree from a JSON file
 	void load_json(const std::string& filename);
 
 	void dump(void) const;
@@ -224,7 +224,7 @@ class PropertyMap {
 			stream << val.value();
 
 		} else {
-			throw std::runtime_error(std::string("PropertyMap::set: Not implemented for type ") + typeid(VAL).name());
+			throw std::runtime_error(std::string("PropertyTree::set: Not implemented for type ") + typeid(VAL).name());
 		}
 
 		set_raw(desc, name, stream.str());
@@ -244,7 +244,7 @@ class PropertyMap {
 				} else if (!str.compare("true")) {
 					return true;
 				} else {
-					throw std::runtime_error("PropertyMap::get: Invalid value \"" + str +
+					throw std::runtime_error("PropertyTree::get: Invalid value \"" + str +
 					                         "\": not \"true\" or \"false\"");
 				}
 			};
@@ -261,7 +261,7 @@ class PropertyMap {
 			};
 
 		} else {
-			throw std::runtime_error(std::string("PropertyMap::get: Not implemented for type ") + typeid(RET).name());
+			throw std::runtime_error(std::string("PropertyTree::get: Not implemented for type ") + typeid(RET).name());
 		}
 
 		return get_raw<RET>(fconv, args...);
@@ -278,10 +278,10 @@ class PropertyMap {
 
 #define VPPP_PROPERTY_GET(_desc, _property_name, _type, _property) \
 	(_property) =                                                  \
-	    PropertyMap::global()->get<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_property))
+	    PropertyTree::global()->get<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_property))
 
 #define VPPP_PROPERTY_SET(_desc, _property_name, _type, _val) \
-	PropertyMap::global()->set<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_val))
+	PropertyTree::global()->set<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_val))
 };
 
-#endif /* RISCV_UTIL_PROPERTYMAP_H */
+#endif /* RISCV_UTIL_PROPERTYTREE_H */
