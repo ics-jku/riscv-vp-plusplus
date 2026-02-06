@@ -8,6 +8,8 @@
 
 #include "iss.h"
 
+// std::replace
+#include <algorithm>
 // to save *cout* format setting, see *ISS_CT::show*
 #include <boost/format.hpp>
 #include <boost/io/ios_state.hpp>
@@ -52,31 +54,111 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 	 * If you want to add a dynamic cycle model, you have add this in the
 	 * operation implementations below (OPCASE)
 	 */
-	for (int i = 0; i < Operation::OpId::NUMBER_OF_OPERATIONS; ++i) {
-		opMap[i].opId = (Operation::OpId)i;
-		opMap[i].instr_time = prop_clock_cycle_period.value(); /* ps */
-		opMap[i].labelPtr = nullptr;
+
+	/* Enable the use of the legacy, hard-coded instruction clock cycle model
+	 * If use_legacy_instr_clock_cycle_model is not set (default = 1) or set to >0 explicitly, then the
+	 * instr_clock_cycle values of the legacy, hard-coded model are used as default values for instructions
+	 * not explicitly in the PropertyTree.
+	 */
+	uint64_t use_legacy_cycle_model = 1;
+	VPPP_PROPERTY_GET("ISS." + name(), "use_legacy_instr_clock_cycle_model", uint64_t, use_legacy_cycle_model);
+
+	/* Default instruction clock cycles
+	 * If the legacy model is disabled (use_legacy_cycle_model = 0), this value is used as the default for
+	 * instructions where instr_clock_cycles is not explicitly specified in the property tree.
+	 */
+	uint64_t default_instr_clock_cycles = 1;
+	VPPP_PROPERTY_GET("ISS." + name(), "default_instr_clock_cycles", uint64_t, default_instr_clock_cycles);
+
+	/*
+	 * Example 1 (override values of legacy model):
+	 * ```
+	 *     "vppp.ISS.Core-0.LW_instr_clock_cycles": "0x6",
+	 *     "vppp.ISS.Core-0.XOR_instr_clock_cycles": "0x1",
+	 * ```
+	 *  * "use_legacy_instr_clock_cycle_model" is not explicitly set -> defaults
+	 *    to 1 (enabled) -> use legacy model values as default
+	 *  * LW explicitly set to 6 cycles
+	 *  * XOR explicitly set to 1 cycle
+	 *  * cycles for all other instructions set according to legacy model (e.g. LB to 4 cycles)
+	 *
+	 * Example 2 (override values of legacy model):
+	 * ```
+	 *     "vppp.ISS.Core-0.use_legacy_instr_clock_cycle_model": "0x1",
+	 *     "vppp.ISS.Core-0.LW_instr_clock_cycles": "0x6",
+	 *     "vppp.ISS.Core-0.XOR_instr_clock_cycles": "0x1",
+	 *     "vppp.ISS.Core-0.default_instr_clock_cycles": "0x1",
+	 * ```
+	 *  * "use_legacy_instr_clock_cycle_model" is explicitly set to 1 -> use
+	 *    legacy model values as default -> use legacy model values as default
+	 *  * LW explicitly set to 6 cycles (same behavior as in Example 1)
+	 *  * XOR explicitly set to 1 cycle (same behavior as in Example 1)
+	 *  * cycles for all other instructions set by legacy model (e.g. LB to 4
+	 *    cycles) (same behavior as in Example 1)
+	 *  * "default_instr_clock_cycles" is ignored
+	 *
+	 * Example 3 (describe full custom model)
+	 * ```
+	 *     "vppp.ISS.Core-0.use_legacy_instr_clock_cycle_model": "0x0",
+	 *     "vppp.ISS.Core-0.LW_instr_clock_cycles": "0x6",
+	 *     "vppp.ISS.Core-0.XOR_instr_clock_cycles": "0x1",
+	 *     "vppp.ISS.Core-0.default_instr_clock_cycles": "0x1",
+	 * ```
+	 *  * "use_legacy_instr_clock_cycle_model" is explicitly set to 0 -> legacy model
+	 *    is ignored
+	 *  * LW explicitly set to 6 cycles
+	 *  * XOR explicitly set to 1 cycle
+	 *  * cycles for all other instructions set to value of
+	 *    "default_instr_clock_cycles", i.e. to 1
+	 */
+
+	/* initialize opMap including timing model */
+	for (unsigned int opId = 0; opId < Operation::OpId::NUMBER_OF_OPERATIONS; ++opId) {
+		uint64_t instr_clock_cycles = default_instr_clock_cycles;
+
+		/* set instruction id and reset the jump label */
+		opMap[opId].opId = (Operation::OpId)opId;
+		opMap[opId].labelPtr = nullptr;
+
+		/* use legacy model (see above) -- DEPRECATED! */
+		if (use_legacy_cycle_model) {
+			switch (opId) {
+				case Operation::OpId::LB:
+				case Operation::OpId::LBU:
+				case Operation::OpId::LH:
+				case Operation::OpId::LHU:
+				case Operation::OpId::LW:
+				case Operation::OpId::SB:
+				case Operation::OpId::SH:
+				case Operation::OpId::SW:
+					instr_clock_cycles = 4;
+					break;
+
+				case Operation::OpId::MUL:
+				case Operation::OpId::MULH:
+				case Operation::OpId::MULHU:
+				case Operation::OpId::MULHSU:
+				case Operation::OpId::DIV:
+				case Operation::OpId::DIVU:
+				case Operation::OpId::REM:
+				case Operation::OpId::REMU:
+					instr_clock_cycles = 8;
+					break;
+
+				default:
+					instr_clock_cycles = 1;
+			}
+		}
+
+		/* try to load cycle model from the global property map (or use default) */
+		std::string desc = std::string(Operation::opIdStr[opId]);
+		std::replace(desc.begin(), desc.end(), '.', '_');
+		std::replace(desc.begin(), desc.end(), ' ', '_');
+		VPPP_PROPERTY_GET("ISS." + name(), desc + "_instr_clock_cycles", uint64_t, instr_clock_cycles);
+
+		/* set instruction time */
+		opMap[opId].instr_time = instr_clock_cycles * prop_clock_cycle_period.value(); /* ps */
 	}
-
-	uint64_t memory_access_cycles = 4 * prop_clock_cycle_period.value();
-	uint64_t mul_div_cycles = 8 * prop_clock_cycle_period.value();
-
-	opMap[Operation::OpId::LB].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::LBU].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::LH].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::LHU].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::LW].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::SB].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::SH].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::SW].instr_time = memory_access_cycles;
-	opMap[Operation::OpId::MUL].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::MULH].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::MULHU].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::MULHSU].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::DIV].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::DIVU].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::REM].instr_time = mul_div_cycles;
-	opMap[Operation::OpId::REMU].instr_time = mul_div_cycles;
 }
 
 void ISS_CT::print_trace() {
