@@ -72,6 +72,22 @@
 
 #include "util/common.h"
 
+/******************************************************************************
+ * BEGIN: CONFIG
+ ******************************************************************************/
+
+/*
+ * enable/disable the property tree
+ * if disabled, the dummy implementation is used -> faster elaboration/startup,
+ * but no PropertyTree
+ */
+#define PROPERTYTREE_ENABLED
+// #undef PROPERTYTREE_ENABLED
+
+/******************************************************************************
+ * END: CONFIG
+ ******************************************************************************/
+
 class PropertyTree {
 	/* static global property tree (automatically initialized) */
 	static PropertyTree globalPropertyTree;
@@ -151,13 +167,22 @@ class PropertyTree {
 	/* variant without default value */
 	template <typename RET>
 	RET get_raw(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name) {
+#ifndef PROPERTYTREE_ENABLED
+		throw std::runtime_error("PropertyTree::get_raw: propertyTree is disabled -> get for \"" + desc + "." + name +
+		                         "\" without default value not possible");
+#else
 		return get_raw(fconv, desc, name, false, RET());
+#endif
 	}
 
 	/* variant with default value */
 	template <typename RET>
 	RET get_raw(std::function<RET(std::string)> fconv, const std::string& desc, const std::string& name, RET def_val) {
+#ifndef PROPERTYTREE_ENABLED
+		return def_val;
+#else
 		return get_raw(fconv, desc, name, true, def_val);
+#endif
 	}
 
    public:
@@ -204,6 +229,9 @@ class PropertyTree {
 
 	template <typename VAL>
 	void set(const std::string& desc, const std::string& name, VAL val) {
+#ifndef PROPERTYTREE_ENABLED
+		return;
+#else
 		std::stringstream stream;
 
 		if constexpr (std::is_same_v<VAL, std::string>) {
@@ -226,6 +254,7 @@ class PropertyTree {
 		}
 
 		set_raw(desc, name, stream.str());
+#endif /* PROPERTYTREE_ENABLED */
 	}
 
 	template <typename RET, typename... Args>
@@ -273,13 +302,25 @@ class PropertyTree {
 	(std::string("vppp") + ((std::string(std::string("") + _desc).empty()) \
 	                            ? ""                                       \
 	                            : (std::string(".") + std::string(std::string("") + _desc))))
+
 /* api */
 
+#ifndef PROPERTYTREE_ENABLED
+
+/* dummy */
+#define VPPP_PROPERTY_GET(_desc, _property_name, _type, _property)
+#define VPPP_PROPERTY_SET(_desc, _property_name, _type, _val)
+
+#else /* PROPERTYTREE_ENABLED */
+
+/* real */
 #define VPPP_PROPERTY_GET(_desc, _property_name, _type, _property) \
 	(_property) =                                                  \
 	    PropertyTree::global()->get<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_property))
 
 #define VPPP_PROPERTY_SET(_desc, _property_name, _type, _val) \
 	PropertyTree::global()->set<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_val))
+
+#endif /* PROPERTYTREE_ENABLED */
 
 #endif /* RISCV_UTIL_PROPERTYTREE_H */

@@ -15,22 +15,33 @@ void PropertyTree::clear() {
 }
 
 void PropertyTree::save_json(const std::string& filename) const {
+#ifndef PROPERTYTREE_ENABLED
+	std::cout << "PropertyTree::load_json: PropertyTree is disabled -> \"" + filename + "\" is NOT saved" << std::endl;
+	return;
+#else
 	nlohmann::json jsonObj(pmap);  // Convert the map to a JSON object
 	std::ofstream outFile(filename);
 	if (!outFile) {
 		throw std::runtime_error("PropertyTree::save_json: Error open \"" + filename + "\"");
 	}
 	outFile << jsonObj.dump(4);  // Pretty-print JSON with 4 spaces indentation
+#endif /* PROPERTYTREE_ENABLED */
 }
 
 void PropertyTree::load_json(const std::string& filename) {
+#ifndef PROPERTYTREE_ENABLED
+	std::cout << "PropertyTree::load_json: PropertyTree is disabled -> \"" + filename + "\" is NOT loaded" << std::endl;
+	pmap.clear();
+	return;
+#else
 	std::ifstream inFile(filename);
 	if (!inFile) {
 		throw std::runtime_error("PropertyTree::load_json: Error open \"" + filename + "\"");
 	}
 	nlohmann::json jsonObj;
-	inFile >> jsonObj;                                         // Parse the JSON file
-	pmap = jsonObj.get<std::map<std::string, std::string>>();  // Convert JSON back to a map
+	inFile >> jsonObj;                                          // Parse the JSON file
+	pmap = jsonObj.get<std::map<std::string, std::string> >();  // Convert JSON back to a map
+#endif /* PROPERTYTREE_ENABLED */
 }
 
 void PropertyTree::dump(void) const {
