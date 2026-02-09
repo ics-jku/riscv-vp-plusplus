@@ -161,8 +161,6 @@ class PropertyTree {
 	}
 
    public:
-	static void init(const std::string& filename = "");
-	static void deinit();
 	static PropertyTree* global() {
 		return &globalPropertyTree;
 	}
@@ -266,15 +264,16 @@ class PropertyTree {
 
 		return get_raw<RET>(fconv, args...);
 	}
+};
 
-	/* vp++ related -> could be factored out in a subclass / include file */
+/* vp++ related -> could be factored out in a subclass / include file */
 
-	/* helper */
+/* helper */
 #define VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc)                            \
 	(std::string("vppp") + ((std::string(std::string("") + _desc).empty()) \
 	                            ? ""                                       \
 	                            : (std::string(".") + std::string(std::string("") + _desc))))
-	/* api */
+/* api */
 
 #define VPPP_PROPERTY_GET(_desc, _property_name, _type, _property) \
 	(_property) =                                                  \
@@ -282,6 +281,5 @@ class PropertyTree {
 
 #define VPPP_PROPERTY_SET(_desc, _property_name, _type, _val) \
 	PropertyTree::global()->set<_type>(VPPP_PROPERTY__GEN_FULL_DESC_STR(_desc), (_property_name), (_val))
-};
 
 #endif /* RISCV_UTIL_PROPERTYTREE_H */
