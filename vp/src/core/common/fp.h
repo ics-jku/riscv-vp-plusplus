@@ -151,9 +151,19 @@ struct FpRegs {
 		regs[idx] = x;
 	}
 
+	uint64_t u64(unsigned idx) {
+		// access raw data, e.g. to store to memory
+		return (uint64_t)regs[idx].v;
+	}
+
 	uint32_t u32(unsigned idx) {
 		// access raw data, e.g. to store to memory
 		return regs[idx].v;
+	}
+
+	uint16_t u16(unsigned idx) {
+		// access raw data, e.g. to store to memory
+		return (uint16_t)regs[idx].v;
 	}
 
 	float16_t f16_boxed(float64_t element) {

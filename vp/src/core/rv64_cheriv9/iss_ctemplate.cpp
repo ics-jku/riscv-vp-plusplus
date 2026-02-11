@@ -1534,7 +1534,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					fp_prepare_instr();
 					uint64_t addr = regs[instr.rs1()] + instr.S_imm();
 					trap_check_addr_alignment<2, false>(addr);
-					lscache.store_half(addr, fp_regs.f16(RS2).v);
+					lscache.store_half(addr, fp_regs.u16(RS2));
 					fp_set_dirty();
 				}
 				OP_END();
@@ -2139,7 +2139,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					stats.inc_loadstore();
 					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 					trap_check_addr_alignment<8, false>(addr);
-					lscache.store_double(addr, fp_regs.f64(RS2).v);
+					lscache.store_double(addr, fp_regs.u64(RS2));
 					fp_set_dirty();
 				}
 				OP_END();
