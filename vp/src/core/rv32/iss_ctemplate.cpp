@@ -1214,7 +1214,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FLH) {
 					fp_prepare_instr();
-					uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 					trap_check_addr_alignment<2, true>(addr);
 					fp_regs.write(RD, float16_t{(uint16_t)lscache.load_uhalf(addr)});
 					fp_set_dirty();
@@ -1223,7 +1223,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FSH) {
 					fp_prepare_instr();
-					uint64_t addr = regs[instr.rs1()] + instr.S_imm();
+					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 					trap_check_addr_alignment<2, false>(addr);
 					lscache.store_half(addr, fp_regs.u16(RS2));
 					fp_set_dirty();
@@ -1750,7 +1750,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(FLD) {
 					fp_prepare_instr();
 					stats.inc_loadstore();
-					uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 					trap_check_addr_alignment<8, true>(addr);
 					fp_regs.write(RD, float64_t{(uint64_t)lscache.load_double(addr)});
 					fp_set_dirty();
@@ -1760,7 +1760,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE(FSD) {
 					fp_prepare_instr();
 					stats.inc_loadstore();
-					uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 					trap_check_addr_alignment<8, false>(addr);
 					lscache.store_double(addr, fp_regs.u64(RS2));
 					fp_set_dirty();

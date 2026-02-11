@@ -1370,7 +1370,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FLH) {
 					fp_prepare_instr();
-					uint64_t addr = regs[instr.rs1()] + instr.I_imm();
+					uxlen_t addr = regs[instr.rs1()] + instr.I_imm();
 					trap_check_addr_alignment<2, true>(addr);
 					fp_regs.write(RD, float16_t{(uint16_t)lscache.load_uhalf(addr)});
 					fp_set_dirty();
@@ -1379,7 +1379,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 				OP_CASE(FSH) {
 					fp_prepare_instr();
-					uint64_t addr = regs[instr.rs1()] + instr.S_imm();
+					uxlen_t addr = regs[instr.rs1()] + instr.S_imm();
 					trap_check_addr_alignment<2, false>(addr);
 					lscache.store_half(addr, fp_regs.u16(RS2));
 					fp_set_dirty();
