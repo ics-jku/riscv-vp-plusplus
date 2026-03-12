@@ -1,0 +1,6 @@
+set logging off
+break read-memory.S:8
+continue
+set logging on
+p *((int *)$sp)
+quit

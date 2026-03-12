@@ -1,0 +1,6 @@
+
+Breakpoint 1, twice () at ../gdb/remove-breakpoint/remove-breakpoint.S:10
+10		jal twice # breakpoint is set here, hit once and removed
+
+Breakpoint 2, twice_exit () at ../gdb/remove-breakpoint/remove-breakpoint.S:12
+12		jal exit  # breakpoint is set here

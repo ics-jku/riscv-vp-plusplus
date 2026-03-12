@@ -1,0 +1,3 @@
+
+Breakpoint 1, _start () at ../gdb/hit-breakpoint/hit-breakpoint.S:5
+5		jal exit # breakpoint is set here

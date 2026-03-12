@@ -66,7 +66,7 @@ codestyle:
 			-path "./vp/src/platform/hifive/vbb-protocol/*" -or	\
 			-path "./vp/src/platform/hwitl/virtual-bus/*" -or	\
 			-path "./vp/src/vendor/*" -or				\
-			-path "./vp/tests/*" -or				\
+			-path "./vp/tests/libgdb/ptest/*" -or			\
 			-path "./*/build/*"					\
 		\)								\
 		-print								\

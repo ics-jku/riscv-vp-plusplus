@@ -1,9 +1,6 @@
 [submodule "vp/src/core/common/gdb-mc/parser/mpc"]
 	path = vp/src/core/common/gdb-mc/libgdb/mpc
 	url = https://github.com/orangeduck/mpc
-[submodule "tests/integration"]
-	path = vp/tests
-	url = https://github.com/agra-uni-bremen/vp-integration-tests.git
 [submodule "vp/src/platform/hwitl/virtual-bus"]
 	path = vp/src/platform/hwitl/virtual-bus
 	url = https://github.com/agra-uni-bremen/virtual-bus
@@ -16,3 +13,6 @@
 [submodule "env/gd32/vp-breadboard/LuaBridge3"]
 	path = env/gd32/vp-breadboard/LuaBridge3
 	url = https://github.com/ics-jku/VPPP_Archive_LuaBridge3_3.0-beta3.git
+[submodule "vp/tests/libgdb/ptest"]
+	path = vp/tests/libgdb/ptest
+	url = https://github.com/orangeduck/ptest.git

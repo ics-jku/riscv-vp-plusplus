@@ -1,0 +1,5 @@
+[Switching to Thread 2]
+
+Thread 2 hit Breakpoint 1, core1 () at ../gdb/mc-wfi-thread/mc-wfi-thread.S:21
+21		jal exit            # breakpoint is set here
+$1 = 42

@@ -1,0 +1,11 @@
+[Switching to Thread 2]
+
+Thread 2 hit Breakpoint 1, exit () at ../gdb/mc-dead-thread/mc-dead-thread.S:13
+13		ecall               # breakpoint is set here
+[Thread 2 exited]
+
+Thread 2 received signal SIGQUIT, Quit.
+  Id   Target Id         Frame 
+  1    Thread 1          core0 () at ../gdb/mc-dead-thread/mc-dead-thread.S:16
+
+The current thread <Thread ID 2> has terminated.  See `help thread'.

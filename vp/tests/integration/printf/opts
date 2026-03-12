@@ -1,0 +1,1 @@
+--quiet --error-on-zero-traphandler=true --intercept-syscalls

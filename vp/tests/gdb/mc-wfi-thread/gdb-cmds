@@ -1,0 +1,6 @@
+set logging off
+break mc-wfi-thread.S:21
+set logging on
+continue
+p $a0
+quit
