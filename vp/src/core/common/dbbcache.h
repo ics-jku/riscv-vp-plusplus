@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2026 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  *
  * Dynamic Basic Block Cache
  * Generates an alternative representation of the executed code, the Dynamic Basic Block Graph (DBBG), to efficiently
@@ -796,7 +796,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		}
 	}
 
-	__always_inline void find_create_block(T_uxlen_t pc) {
+	__always_inline void find_create_switch_block(T_uxlen_t pc) {
 		stats.inc_map_search();
 		Block *block = nullptr;
 		auto it = blockmap.find(pc);
@@ -845,7 +845,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		if (likely(this->is_enabled())) {
 			Block *lastBlock = curBlock;
 			int lastEntryIdx = curEntryIdx;
-			find_create_block(pc);
+			find_create_switch_block(pc);
 			if (lastBlock != &dummyBlock) {
 				lastBlock->entries[lastEntryIdx].setLinkBlock(curBlock);
 			}
@@ -854,7 +854,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		}
 	}
 
-	__always_inline void coherence_update(T_uxlen_t pc) {
+	__always_inline void coherence_update() {
 		stats.inc_coherence_updates();
 
 		// TODO: handle counters before overflow!
@@ -912,7 +912,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		fast_path_raw_disable();
 
 		if (this->is_enabled()) {
-			find_create_block(entrypoint);
+			find_create_switch_block(entrypoint);
 		} else {
 			switch_block_dummy(entrypoint);
 		}
@@ -964,7 +964,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 
 		if (likely(this->is_enabled())) {
 			Block *lastBlock = curBlock;
-			find_create_block(pc);
+			find_create_switch_block(pc);
 			lastBlock->jumpDynLinkCache.add(pc, curBlock);
 		} else {
 			switch_block_dummy(pc);
@@ -991,12 +991,12 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		return curBlock->start_addr;
 	}
 
-	__always_inline void fence_i(T_uxlen_t pc) {
-		coherence_update(pc);
+	__always_inline void fence_i([[maybe_unused]] T_uxlen_t pc) {
+		coherence_update();
 	}
 
-	__always_inline void fence_vma(T_uxlen_t pc) {
-		coherence_update(pc);
+	__always_inline void fence_vma([[maybe_unused]] T_uxlen_t pc) {
+		coherence_update();
 	}
 
 	__always_inline void enter_trap(T_uxlen_t pc) {
@@ -1011,7 +1011,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		}
 
 		if (likely(this->is_enabled())) {
-			find_create_block(pc);
+			find_create_switch_block(pc);
 			trapLinkCache.add(pc, curBlock);
 		} else {
 			switch_block_dummy(pc);
