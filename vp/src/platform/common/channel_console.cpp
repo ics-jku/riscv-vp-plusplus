@@ -8,12 +8,20 @@
 #define CTRL(c) ((c) & 0x1f)
 
 #define KEY_ESC CTRL('a')        /* Ctrl-a (character to enter command mode) */
+#define KEY_NONE 0               /* no key pressed */
 #define KEY_HELP 'h'             /* h (print help) */
 #define KEY_TRACE 't'            /* t (toggle trace mode) */
 #define KEY_STATS 's'            /* s (print statistics) */
 #define KEY_QUIT 'q'             /* q (character to quit (sc_stop) in command mode) */
 #define KEY_EXIT 'x'             /* x (character to exit (exit) in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
+
+Channel_Console::Channel_Console(sc_core::sc_module_name, std::set<debug_target_if *> debug_targets)
+    : debug_targets(debug_targets) {
+	cmd_requested = KEY_NONE;
+	SC_METHOD(handle_cmd);
+	sensitive << cmd_asyncEvent;
+}
 
 Channel_Console::~Channel_Console() {
 	stop();
@@ -77,7 +85,20 @@ void Channel_Console::handle_input(int fd) {
 			}
 			break;
 		case STATE_COMMAND:
-			handle_cmd(buf);
+			switch (buf) {
+				case KEY_ESC:
+					/* double escape */
+					rxpush(buf);
+					break;
+				case KEY_EXIT:
+				case KEY_CEXIT:
+					/* force stop commant (stop immediatly) */
+					exit(EXIT_SUCCESS);
+					break;
+				default:
+					/* command */
+					trigger_handle_cmd(buf);
+			}
 			break;
 	}
 
@@ -89,11 +110,23 @@ void Channel_Console::handle_input(int fd) {
 	}
 }
 
-void Channel_Console::handle_cmd(uint8_t cmd) {
+void Channel_Console::trigger_handle_cmd(uint8_t cmd) {
+	/*
+	 * "handle_input" runs in a different system thread than the Systemc simulation, i.e. we can not directly call
+	 * methods for command handling without synchronization. Instead of explicitly adding synchronization between the
+	 * "handle_input" thread and systemc thread we move the command handling to the SystemC thread.
+	 */
+	cmd_requested = cmd;
+	cmd_asyncEvent.notify();
+}
+
+void Channel_Console::handle_cmd() {
+	/* get and reset */
+	uint8_t cmd = cmd_requested;
+	cmd_requested = KEY_NONE;
+
+	/* do command */
 	switch (cmd) {
-		case KEY_ESC: /* double escape */
-			rxpush(cmd);
-			break;
 		case KEY_HELP:
 			std::cout << "CONSOLE: HELP:\n"
 			          << "    ^a-^a  send ^A (ctrl-a)\n"
@@ -112,10 +145,6 @@ void Channel_Console::handle_cmd(uint8_t cmd) {
 			break;
 		case KEY_QUIT:
 			sc_core::sc_stop();
-			break;
-		case KEY_EXIT:
-		case KEY_CEXIT:
-			exit(EXIT_SUCCESS);
 			break;
 		default:
 			return; /* unknown command → ignore */

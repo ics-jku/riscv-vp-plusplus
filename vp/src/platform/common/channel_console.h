@@ -3,14 +3,16 @@
 
 #include <stdint.h>
 
+#include <atomic>
 #include <set>
+#include <systemc>
 
 #include "channel_fd_if.h"
 #include "core/common/debug.h"
 
-class Channel_Console final : public Channel_FD_IF {
+class Channel_Console final : public sc_core::sc_module, public Channel_FD_IF {
    public:
-	Channel_Console(std::set<debug_target_if *> debug_targets = {}) : debug_targets(debug_targets) {};
+	Channel_Console(sc_core::sc_module_name = "console", std::set<debug_target_if *> debug_targets = {});
 	virtual ~Channel_Console();
 
 	void debug_targets_set(std::set<debug_target_if *> debug_targets) {
@@ -44,7 +46,11 @@ class Channel_Console final : public Channel_FD_IF {
 	 * character is interpreted by ::handle_cmd.
 	 */
 	uart_state state = STATE_NORMAL;
-	void handle_cmd(uint8_t);
+
+	std::atomic<std::uint8_t> cmd_requested;
+	AsyncEvent cmd_asyncEvent;
+	void trigger_handle_cmd(uint8_t);
+	void handle_cmd();
 
 	int open_fd() override;
 	void close_fd(int fd) override;
