@@ -158,15 +158,21 @@ class DBBCacheBase_T {
 		this->mem_word = 0;
 	}
 
-	void print_stats() {}
-
-	__always_inline bool is_enabled() {
+	void enable(bool ena) {
+#ifdef LSCACHE_FORCED_ENABLED
+		ena = true;
+#endif
+		this->enabled = ena;
+	}
+	__always_inline bool is_enabled() const {
 #ifdef DBBCACHE_FORCED_ENABLED
 		return true;
 #else
 		return enabled;
 #endif
 	}
+
+	void print_stats() {}
 };
 
 /******************************************************************************
@@ -594,6 +600,7 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 	};
 
    protected:
+	using super = DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if>;
 #ifdef DBBCACHE_STATS_ENABLED
 	using dbbcachestats_t = DBBCacheStats_T<DBBCache_T, JUMPDYNLINKCACHE_SIZE>;
 #else
@@ -916,6 +923,36 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 		} else {
 			switch_block_dummy(entrypoint);
 		}
+	}
+
+	void enable(bool ena) {
+		if (ena == this->is_enabled()) {
+			/* nothing to do */
+			return;
+		}
+		stats.inc_disenable_cnt();
+
+		/* update cache enabled state */
+		super::enable(ena);
+
+		if (this->is_enabled()) {
+			/* Cache is enabled and will be used on next control flow change -> done */
+			return;
+		}
+
+		/*
+		 * Disable the cache
+		 * The current block is completed with caching enabled. The cache is disabled on the next control flow change by
+		 * switching to the dummyBlock. NOTE: The cached content is kept. It can be used again later, when the cache is
+		 * re-enabled.
+		 */
+
+		/* ensure, that we switch to dummyBlock on next control flow change */
+		curBlock->invalidate_links();
+		/* ensure, that we not switch from the dummyBlock to a real block on a dyn call */
+		dummyBlock.invalidate_links();
+		/* ensure, that we not switch to real block on a trap */
+		trapLinkCache.reset();
 	}
 
 	void print_stats() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2026 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  *
  * Load/Store Cache
  * Allows direct translation of in-simulation virtual addresses to (dmi-capable) host system memory addresses, to speed
@@ -75,15 +75,21 @@ class LSCache_IF_T {
 		this->data_mem = data_mem;
 	}
 
-	void print_stats() {}
-
-	__always_inline bool is_enabled() {
+	void enable(bool ena) {
+#ifdef LSCACHE_FORCED_ENABLED
+		ena = true;
+#endif
+		this->enabled = ena;
+	}
+	__always_inline bool is_enabled() const {
 #ifdef LSCACHE_FORCED_ENABLED
 		return true;
 #else
 		return enabled;
 #endif
 	}
+
+	void print_stats() {}
 
 	__always_inline void fence() {
 		// not using out of order execution/caches so can be ignored
@@ -290,6 +296,23 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 	void init(bool enabled, uint64_t hartId, dmemif_t *data_mem) {
 		flush();
 		super::init(enabled, hartId, data_mem);
+	}
+
+	void enable(bool ena) {
+		if (ena == this->is_enabled()) {
+			/* nothing to do */
+			return;
+		}
+		stats.inc_disenable_cnt();
+
+		super::enable(ena);
+		if (this->is_enabled()) {
+			/* enable -> nothing more to do */
+			return;
+		}
+
+		/* disable -> flush */
+		flush();
 	}
 
 	void print_stats() {

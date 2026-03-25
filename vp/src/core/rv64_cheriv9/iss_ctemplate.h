@@ -172,6 +172,21 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	bool rvfi_dii_enabled(void) override {
 		return rvfi_dii;
 	}
+
+	void enable_dbbcache(bool ena) override {
+		dbbcache.enable(ena);
+	}
+	bool dbbcache_enabled(void) override {
+		return dbbcache.is_enabled();
+	}
+
+	void enable_lscache(bool ena) override {
+		lscache.enable(ena);
+	}
+	bool lscache_enabled(void) override {
+		return lscache.is_enabled();
+	}
+
 	void print_stats(void) override {
 		dbbcache.print_stats();
 		lscache.print_stats();

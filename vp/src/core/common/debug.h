@@ -30,16 +30,24 @@ struct debug_target_if {
 	virtual void run_step(void) = 0;
 
 	/* other debug stuff (not needed for gdb) */
-	virtual void enable_trace(bool ena) {};
+	virtual void enable_trace(bool ena) {}
 	virtual bool trace_enabled(void) {
 		return false;
-	};
+	}
+	virtual void enable_dbbcache(bool ena) {}
+	virtual bool dbbcache_enabled(void) {
+		return false;
+	}
+	virtual void enable_lscache(bool ena) {}
+	virtual bool lscache_enabled(void) {
+		return false;
+	}
 
 	/* see cheriv9 (leave unimplemented if not supported) */
-	virtual void enable_rvfi_dii(bool ena) {};
+	virtual void enable_rvfi_dii(bool ena) {}
 	virtual bool rvfi_dii_enabled(void) {
 		return false;
-	};
+	}
 
 	virtual void print_stats(void) {};
 };

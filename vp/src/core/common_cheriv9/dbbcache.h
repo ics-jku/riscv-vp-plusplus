@@ -80,11 +80,14 @@ class DBBCacheBase_T {
 		this->rvfi_dii_output = rvfi_dii_output;
 	}
 
-	void print_stats() {}
-
+	void enable(bool ena) {
+		this->enabled = ena;
+	}
 	__always_inline bool is_enabled() {
 		return enabled;
 	}
+
+	void print_stats() {}
 };
 
 /******************************************************************************

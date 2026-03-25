@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2026 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  * see dbbcache.h
  */
 
@@ -33,6 +33,7 @@ class DBBCacheStatsDummy_T {
 	DBBCacheStatsDummy_T(T_DBBCache &dbbcache) : dbbcache(dbbcache) {}
 	/* dec methods are used for aborts */
 	void reset() {}
+	void inc_disenable_cnt() {}
 	void inc_cnt() {}
 	void dec_cnt() {}
 	void inc_cache_ignored_instr() {}
@@ -80,6 +81,8 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 	using selem_t = uint64_t;
 	/* use struct to simplifiy reset */
 	struct {
+		selem_t disenables;
+
 		selem_t cnt;
 		selem_t cache_ignored_instr;
 
@@ -137,6 +140,9 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 		memset(&s, 0, sizeof(s));
 	}
 
+	void inc_disenable_cnt() {
+		s.disenables++;
+	}
 	void inc_cnt() {
 		s.cnt++;
 		/*
@@ -272,6 +278,8 @@ class DBBCacheStats_T : public DBBCacheStatsDummy_T<T_DBBCache, T_JUMPDYNLINKCAC
 		std::cout << "============================================================================================="
 		             "==============================\n";
 		std::cout << "DBBCache Stats (hartId: " << this->dbbcache.hartId << "):\n" << std::dec;
+		std::cout << " state:                     " << (this->dbbcache.is_enabled() ? "enabled" : "disabled") << "\n";
+		std::cout << " disable/enable switches:   " << s.disenables << "\n";
 		std::cout << " instr:                     " << s.cnt << "\n";
 		std::cout << " cache_ignored_instr:       " << DBBCACHE_STAT_RATE(s.cache_ignored_instr, s.cnt);
 		std::cout << " fetches:                   " << DBBCACHE_STAT_RATE(s.fetches, s.cnt);

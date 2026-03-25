@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Manfred Schlaegl <manfred.schlaegl@gmx.at>
+ * Copyright (C) 2024-2026 Manfred Schlaegl <manfred.schlaegl@gmx.at>
  * see lscache.h
  */
 
@@ -30,6 +30,7 @@ class LSCacheStatsDummy_T {
 
 	LSCacheStatsDummy_T(T_LSCache &lscache) : lscache(lscache) {}
 	void reset() {}
+	void inc_disenable_cnt() {}
 	void inc_cnt() {}
 	void inc_flushs() {}
 	void inc_loads() {}
@@ -51,6 +52,7 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 	using selem_t = uint64_t;
 	/* use struct to simplifiy reset */
 	struct {
+		selem_t disenables;
 		selem_t cnt;
 		selem_t flushs;
 		selem_t loads;
@@ -71,6 +73,9 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 		memset(&s, 0, sizeof(s));
 	}
 
+	void inc_disenable_cnt() {
+		s.disenables++;
+	}
 	void inc_cnt() {
 		s.cnt++;
 		/*
@@ -117,6 +122,8 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 		std::cout << "============================================================================================="
 		             "==============================\n";
 		std::cout << "LSCache Stats (hartId: " << this->lscache.hartId << "):\n" << std::dec;
+		std::cout << " state:                     " << (this->lscache.is_enabled() ? "enabled" : "disabled") << "\n";
+		std::cout << " disable/enable switches:   " << s.disenables << "\n";
 		std::cout << " flushs:                    " << s.flushs << "\n";
 		std::cout << " loadstores:                " << s.cnt << "\n";
 		std::cout << " loads:                     " << LSCACHE_STAT_RATE(s.loads, s.cnt);
