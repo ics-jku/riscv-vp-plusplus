@@ -12,6 +12,8 @@
 #define KEY_HELP 'h'             /* h (print help) */
 #define KEY_TRACE 't'            /* t (toggle trace mode) */
 #define KEY_STATS 's'            /* s (print statistics) */
+#define KEY_DBBCACHE 'd'         /* d (toggle dbbcache) */
+#define KEY_LSCACHE 'l'          /* l (toggle lscache) */
 #define KEY_QUIT 'q'             /* q (character to quit (sc_stop) in command mode) */
 #define KEY_EXIT 'x'             /* x (character to exit (exit) in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
@@ -30,14 +32,54 @@ Channel_Console::~Channel_Console() {
 void Channel_Console::debug_targets_toggle_trace_mode(void) {
 	trace_mode = !trace_mode;
 	if (trace_mode) {
-		std::cout << "CONSOLE: enable trace mode" << std::endl;
+		std::cout << "CONSOLE: trace mode enabled" << std::endl;
 	}
 	for (debug_target_if *debug_target : debug_targets) {
 		debug_target->enable_trace(trace_mode);
 	}
 	if (!trace_mode) {
-		std::cout << "CONSOLE: disable trace mode" << std::endl;
+		std::cout << "CONSOLE: trace mode disabled" << std::endl;
 	}
+}
+
+bool Channel_Console::debug_targets_dbbcache_is_enabled(void) {
+	if (debug_targets.size() == 0) {
+		/* no debug targets -> false */
+		return false;
+	}
+
+	/* determine the state by looking at the first debug target */
+	return (*debug_targets.begin())->dbbcache_enabled();
+}
+
+void Channel_Console::debug_targets_toggle_dbbcache(void) {
+	bool state = debug_targets_dbbcache_is_enabled();
+
+	/* switch all debug targets */
+	for (debug_target_if *debug_target : debug_targets) {
+		debug_target->enable_dbbcache(!state);
+	}
+	std::cout << "CONSOLE: dbbcache: " << (debug_targets_dbbcache_is_enabled() ? "enabled" : "disabled") << std::endl;
+}
+
+bool Channel_Console::debug_targets_lscache_is_enabled(void) {
+	if (debug_targets.size() == 0) {
+		/* no debug targets -> false */
+		return false;
+	}
+
+	/* determine the state by looking at the first debug target */
+	return (*debug_targets.begin())->lscache_enabled();
+}
+
+void Channel_Console::debug_targets_toggle_lscache(void) {
+	bool state = debug_targets_lscache_is_enabled();
+
+	/* switch all debug targets */
+	for (debug_target_if *debug_target : debug_targets) {
+		debug_target->enable_lscache(!state);
+	}
+	std::cout << "CONSOLE: lscache:  " << (debug_targets_lscache_is_enabled() ? "enabled" : "disabled") << std::endl;
 }
 
 void Channel_Console::debug_targets_print_stats(void) {
@@ -46,6 +88,8 @@ void Channel_Console::debug_targets_print_stats(void) {
 	for (debug_target_if *debug_target : debug_targets) {
 		debug_target->print_stats();
 	}
+	std::cout << "CONSOLE: dbbcache: " << (debug_targets_dbbcache_is_enabled() ? "enabled" : "disabled") << std::endl;
+	std::cout << "CONSOLE: lscache:  " << (debug_targets_lscache_is_enabled() ? "enabled" : "disabled") << std::endl;
 	std::cout << "++++++++++++++++++++" << std::endl;
 }
 
@@ -132,8 +176,9 @@ void Channel_Console::handle_cmd() {
 			          << "    ^a-^a  send ^A (ctrl-a)\n"
 			          << "    ^a-h   print this help\n"
 			          << "    ^a-s   print stats of debug targets\n"
-			          << "           (empty by default - check compile flags)\n"
 			          << "    ^a-t   toggle trace mode of debug targets\n"
+			          << "    ^a-d   toggle dbbcache of debug targets\n"
+			          << "    ^a-l   toggle lscache of debug targets (requires support for data-DMI)\n"
 			          << "    ^a-q   quit - stop simulation with sc_stop\n"
 			          << "    ^a-x   exit - hard stop of simulation with exit" << std::endl;
 			break;
@@ -142,6 +187,12 @@ void Channel_Console::handle_cmd() {
 			break;
 		case KEY_STATS:
 			debug_targets_print_stats();
+			break;
+		case KEY_DBBCACHE:
+			debug_targets_toggle_dbbcache();
+			break;
+		case KEY_LSCACHE:
+			debug_targets_toggle_lscache();
 			break;
 		case KEY_QUIT:
 			sc_core::sc_stop();

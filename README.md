@@ -25,7 +25,7 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
    * LSCache: Direct translation of in-simulation virtual addresses to (dmi-capable) host system memory addresses to speed up ISS memory accesses
    * ISS optimizations based on DBBCache (and DBBCacheDummy): Computed goto, Threaded code, Fast/Medium/Slow-Path, Lazy/Approximate tlm quantum checks, Executed cycles and PC calculated on demand, On demand performance counters, ...
    * PLEASE NOTE: LSCache and DBBCache are included at compile time, but disabled at runtime by default!
-     * Use the new command line switches "--use-dbbcache" and "--use-lscache" to enable the caches at runtime ("--use-lscache" will automatically enable DMI)
+     * Use the new command line switches "--use-dbbcache" and "--use-lscache" to enable the caches at runtime ("--use-lscache" will automatically enable DMI). Alternatively the caches can be enabled/disabled at runtime (e.g. via the console interface).
      * To completely disable the caches (replacing them with dummy implementations) at compile time un-define ```DBBCACHE_ENABLED``` and ```LSCACHE_ENABLED``` in ```vp/src/core/common/dbbcache.h``` and ```vp/src/core/common/lscache.h```, respectively
      * To enable the caches independent of command line switches define ```DBBCACHE_ENABLED``` + ```DBBCACHE_FORCED_ENABLED``` and ```LSCACHE_ENABLED``` + ```LSCACHE_FORCED_ENABLED``` in see ```vp/src/core/common/dbbcache.h``` and ```vp/src/core/common/lscache.h```, respectively
      * Some ISS optimisations based on DBBCache are active when the cache is disabled. However, significant performance improvements are only achieved when both caches are enabled!

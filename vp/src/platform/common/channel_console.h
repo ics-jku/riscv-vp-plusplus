@@ -37,6 +37,10 @@ class Channel_Console final : public sc_core::sc_module, public Channel_FD_IF {
 	std::set<debug_target_if *> debug_targets;
 
 	void debug_targets_toggle_trace_mode(void);
+	bool debug_targets_dbbcache_is_enabled(void);
+	void debug_targets_toggle_dbbcache(void);
+	bool debug_targets_lscache_is_enabled(void);
+	void debug_targets_toggle_lscache(void);
 	void debug_targets_print_stats(void);
 
 	/**
