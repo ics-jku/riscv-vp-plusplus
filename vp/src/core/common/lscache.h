@@ -89,6 +89,16 @@ class LSCache_IF_T {
 #endif
 	}
 
+	unsigned int get_nentries_max() const {
+		return 0;
+	}
+	unsigned int get_nentries_valid_load() const {
+		return 0;
+	}
+	unsigned int get_nentries_valid_loadstore() const {
+		return 0;
+	}
+
 	void print_stats() {}
 
 	__always_inline void fence() {
@@ -203,6 +213,16 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 		memset(cache, 0, LSCACHE_SETS * sizeof(Entry));
 	}
 
+	unsigned int get_nentries_valid_masked(uint32_t valid_bits) const {
+		unsigned int n = 0;
+		for (unsigned int idx = 0; idx < LSCACHE_SETS; idx++) {
+			if ((cache[idx].tag_valid & valid_bits) == valid_bits) {
+				n++;
+			}
+		}
+		return n;
+	}
+
 	inline void update(uint64_t virt_addr, void *host_page_addr, uint32_t valid_bits) {
 		int idx = LSCACHE_IDX(virt_addr);
 		uint64_t tag_valid = LSCACHE_TAG(virt_addr) | valid_bits;
@@ -313,6 +333,16 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 
 		/* disable -> flush */
 		flush();
+	}
+
+	unsigned int get_nentries_max() const {
+		return LSCACHE_SETS;
+	}
+	unsigned int get_nentries_valid_load() const {
+		return get_nentries_valid_masked(LSCACHE_LOAD_VALID_BITS);
+	}
+	unsigned int get_nentries_valid_loadstore() const {
+		return get_nentries_valid_masked(LSCACHE_STORE_VALID_BITS);
 	}
 
 	void print_stats() {

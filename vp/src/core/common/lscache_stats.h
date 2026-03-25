@@ -63,6 +63,9 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 		selem_t hit;
 		selem_t hit_load;
 		selem_t hit_store;
+		selem_t nentries_max;
+		selem_t nentries_valid_load;
+		selem_t nentries_valid_loadstore;
 	} s;
 
 	LSCacheStats_T(T_LSCache &lscache) : LSCacheStatsDummy_T<T_LSCache>(lscache) {
@@ -119,6 +122,10 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
    public:
 #define LSCACHE_STAT_RATE(_val, _cnt) (_val) << "\t\t(" << (double)(_val) / (_cnt) << ")\n"
 	void print() {
+		s.nentries_max = this->lscache.get_nentries_max();
+		s.nentries_valid_load = this->lscache.get_nentries_valid_load();
+		s.nentries_valid_loadstore = this->lscache.get_nentries_valid_loadstore();
+
 		std::cout << "============================================================================================="
 		             "==============================\n";
 		std::cout << "LSCache Stats (hartId: " << this->lscache.hartId << "):\n" << std::dec;
@@ -134,6 +141,9 @@ class LSCacheStats_T : public LSCacheStatsDummy_T<T_LSCache> {
 		std::cout << " hit_load:                  " << LSCACHE_STAT_RATE(s.hit_load, s.loads);
 		std::cout << " hit_store:                 " << LSCACHE_STAT_RATE(s.hit_store, s.stores);
 		std::cout << " hit:                       " << LSCACHE_STAT_RATE(s.hit, s.cnt);
+		std::cout << " cache entries:             " << s.nentries_max << "\n";
+		std::cout << "  valid load:               " << LSCACHE_STAT_RATE(s.nentries_valid_load, s.nentries_max);
+		std::cout << "  valid load/store:         " << LSCACHE_STAT_RATE(s.nentries_valid_loadstore, s.nentries_max);
 
 #ifdef LSCACHE_STATS_OUTPUT_CSV_ENABLED
 		/* raw output (csv for machine interpreters) */
