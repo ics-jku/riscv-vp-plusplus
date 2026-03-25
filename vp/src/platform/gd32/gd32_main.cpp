@@ -151,7 +151,7 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi)
-		iss_mem_if.dmi_ranges.emplace_back(sram_dmi);
+		iss_mem_if.dmi_add(sram_dmi);
 
 	{
 		unsigned int it = 0;

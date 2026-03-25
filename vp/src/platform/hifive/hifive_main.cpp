@@ -232,7 +232,7 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi)
-		iss_mem_if.dmi_ranges.emplace_back(dram_dmi);
+		iss_mem_if.dmi_add(dram_dmi);
 
 	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr, flash);
 	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr, dram);

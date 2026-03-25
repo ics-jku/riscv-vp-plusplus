@@ -43,32 +43,34 @@ struct InstrMemoryProxy_T : public instr_memory_if {
 };
 
 template <typename T_RVX_ISS, typename T_sxlen_t, typename T_uxlen_t>
-struct CombinedMemoryInterface_T : public sc_core::sc_module,
-                                   public instr_memory_if,
-                                   public data_memory_if_T<T_sxlen_t, T_uxlen_t>,
-                                   public mmu_memory_if {
+class CombinedMemoryInterface_T : public sc_core::sc_module,
+                                  public instr_memory_if,
+                                  public data_memory_if_T<T_sxlen_t, T_uxlen_t>,
+                                  public mmu_memory_if {
 	/* config properties */
 	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
 	unsigned int prop_dmi_access_clock_cycles = 4;
 
 	T_RVX_ISS &iss;
-	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;
 
-	tlm_utils::simple_initiator_socket<CombinedMemoryInterface_T> isock;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 
 	// optionally add DMI ranges for optimization
 	sc_core::sc_time dmi_access_delay;
-	std::vector<MemoryDMI> dmi_ranges;
+	bool _dmi_enabled;
+	std::vector<MemoryDMI> dmi_ranges, dmi_ranges_disabled;
+	bool last_access_was_dmi = false;
+	void *last_dmi_page_host_addr = nullptr;
 
 	tlm::tlm_generic_payload trans;
 	tlm_ext_initiator *ext;
 
 	MMU_T<T_RVX_ISS> *mmu;
 
-	bool last_access_was_dmi = false;
-	void *last_dmi_page_host_addr = nullptr;
+   public:
+	std::shared_ptr<bus_lock_if> bus_lock;
+	tlm_utils::simple_initiator_socket<CombinedMemoryInterface_T> isock;
 
 	CombinedMemoryInterface_T(sc_core::sc_module_name, T_RVX_ISS &owner, MMU_T<T_RVX_ISS> *mmu = nullptr)
 	    : iss(owner), quantum_keeper(iss.quantum_keeper), mmu(mmu) {
@@ -81,11 +83,30 @@ struct CombinedMemoryInterface_T : public sc_core::sc_module,
 		VPPP_PROPERTY_GET("CombinedMemoryInterface." + owner.name(), "dmi_access_clock_cycles", uint64_t,
 		                  prop_dmi_access_clock_cycles);
 
+		_dmi_enabled = true;
 		dmi_access_delay = prop_clock_cycle_period * prop_dmi_access_clock_cycles;
 
 		ext = new tlm_ext_initiator(&owner);  // tlm_generic_payload frees all extension objects in destructor,
 		                                      // therefore dynamic allocation is needed
 		trans.set_extension<tlm_ext_initiator>(ext);
+	}
+
+	void dmi_add(MemoryDMI dmi) {
+		if (_dmi_enabled) {
+			dmi_ranges.emplace_back(dmi);
+		} else {
+			dmi_ranges_disabled.emplace_back(dmi);
+		}
+	}
+	void dmi_enable(bool ena) override {
+		if (ena != _dmi_enabled) {
+			/* just swap -> no additional check of _dmi_enabled for transcations necessary */
+			std::swap(dmi_ranges, dmi_ranges_disabled);
+		}
+		_dmi_enabled = ena;
+	}
+	bool dmi_enabled() const override {
+		return _dmi_enabled;
 	}
 
 	uint64_t v2p(uint64_t vaddr, MemoryAccessType type) override {

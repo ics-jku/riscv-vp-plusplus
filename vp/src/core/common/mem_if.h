@@ -29,6 +29,11 @@ struct instr_memory_if {
  */
 template <typename T_sxlen_t, typename T_uxlen_t>
 struct data_memory_if_T {
+	virtual void dmi_enable(bool ena) {}
+	virtual bool dmi_enabled() const {
+		return false;
+	}
+
 	/* also used on RV32 for floating point D extension! */
 	virtual int64_t load_double(uint64_t addr) = 0;
 

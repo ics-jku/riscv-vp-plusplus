@@ -11,24 +11,25 @@
 #include "util/tlm_ext_tag.h"
 
 namespace cheriv9::rv64 {
-struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
-                                       public instr_memory_if,
-                                       public data_memory_if,
-                                       public mmu_memory_if {
+class CombinedTaggedMemoryInterface : public sc_core::sc_module,
+                                      public instr_memory_if,
+                                      public data_memory_if,
+                                      public mmu_memory_if {
 	/* config properties */
 	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
 	unsigned int prop_dmi_access_clock_cycles = 4;
 
 	ISS &iss;
-	std::shared_ptr<bus_lock_if> bus_lock;
 	uint64_t lr_addr = 0;
 
-	tlm_utils::simple_initiator_socket<CombinedTaggedMemoryInterface> isock;
 	tlm_utils::tlm_quantumkeeper &quantum_keeper;
 
 	// optionally add DMI ranges for optimization
 	sc_core::sc_time dmi_access_delay;
-	std::vector<MemoryDMI> dmi_ranges;
+	bool _dmi_enabled;
+	std::vector<MemoryDMI> dmi_ranges, dmi_ranges_disabled;
+	bool last_access_was_dmi = false;
+	void *last_dmi_page_host_addr = nullptr;
 
 	uint64_t mem_start_addr;
 	uint64_t mem_end_addr;
@@ -39,8 +40,9 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 
 	MMU *mmu;
 
-	bool last_access_was_dmi = false;
-	void *last_dmi_page_host_addr = nullptr;
+   public:
+	std::shared_ptr<bus_lock_if> bus_lock;
+	tlm_utils::simple_initiator_socket<CombinedTaggedMemoryInterface> isock;
 
 	CombinedTaggedMemoryInterface(sc_core::sc_module_name, ISS &owner, MMU *mmu = nullptr, uint64_t mem_start_addr = 0,
 	                              uint64_t mem_end_addr = 0)
@@ -67,6 +69,24 @@ struct CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		trans_ext_initiator = new tlm_ext_initiator(&owner);
 		trans.set_extension(trans_ext_tag);
 		trans.set_extension(trans_ext_initiator);
+	}
+
+	void dmi_add(MemoryDMI dmi) {
+		if (_dmi_enabled) {
+			dmi_ranges.emplace_back(dmi);
+		} else {
+			dmi_ranges_disabled.emplace_back(dmi);
+		}
+	}
+	void dmi_enable(bool ena) override {
+		if (ena != _dmi_enabled) {
+			/* just swap -> no additional check of _dmi_enabled for transcations necessary */
+			std::swap(dmi_ranges, dmi_ranges_disabled);
+		}
+		_dmi_enabled = ena;
+	}
+	bool dmi_enabled() const override {
+		return _dmi_enabled;
 	}
 
 	// default v2p for non-tagged data

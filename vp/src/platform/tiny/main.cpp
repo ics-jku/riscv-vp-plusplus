@@ -161,7 +161,7 @@ int sc_main(int argc, char **argv) {
 	if (opt.use_instr_dmi)
 		instr_mem_if = &instr_mem;
 	if (opt.use_data_dmi) {
-		core_mem_if.dmi_ranges.emplace_back(dmi);
+		core_mem_if.dmi_add(dmi);
 	}
 
 	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);

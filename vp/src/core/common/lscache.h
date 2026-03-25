@@ -75,6 +75,8 @@ class LSCache_IF_T {
 		this->data_mem = data_mem;
 	}
 
+	inline void flush() {}
+
 	void enable(bool ena) {
 #ifdef LSCACHE_FORCED_ENABLED
 		ena = true;
@@ -209,10 +211,6 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 	};
 	struct Entry cache[LSCACHE_SETS];
 
-	inline void flush() {
-		memset(cache, 0, LSCACHE_SETS * sizeof(Entry));
-	}
-
 	unsigned int get_nentries_valid_masked(uint32_t valid_bits) const {
 		unsigned int n = 0;
 		for (unsigned int idx = 0; idx < LSCACHE_SETS; idx++) {
@@ -316,6 +314,10 @@ class LSCache_T : public LSCache_IF_T<T_sxlen_t, T_uxlen_t> {
 	void init(bool enabled, uint64_t hartId, dmemif_t *data_mem) {
 		flush();
 		super::init(enabled, hartId, data_mem);
+	}
+
+	inline void flush() {
+		memset(cache, 0, LSCACHE_SETS * sizeof(Entry));
 	}
 
 	void enable(bool ena) {

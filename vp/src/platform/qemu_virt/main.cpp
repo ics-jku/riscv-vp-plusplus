@@ -171,7 +171,7 @@ class Core {
 	void init(bool use_data_dmi, bool use_instr_dmi, bool use_dbbcache, bool use_lscache, clint_if *clint,
 	          uint64_t entry, uint64_t sp_base, bool cheri_purecap = false) {
 		if (use_data_dmi)
-			memif.dmi_ranges.emplace_back(imemif.dmi);
+			memif.dmi_add(imemif.dmi);
 
 #ifdef TARGET_RV64_CHERIV9
 		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base,

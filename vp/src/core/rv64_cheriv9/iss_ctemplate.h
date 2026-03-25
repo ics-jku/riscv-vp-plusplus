@@ -173,6 +173,16 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return rvfi_dii;
 	}
 
+	void enable_datadmi(bool ena) override {
+		mem->dmi_enable(ena);
+		if (!mem->dmi_enabled()) {
+			/* disabled -> flush to prevent dmi accesses via lscache */
+			lscache.flush();
+		}
+	}
+	bool datadmi_enabled(void) override {
+		return mem->dmi_enabled();
+	}
 	void enable_dbbcache(bool ena) override {
 		dbbcache.enable(ena);
 	}

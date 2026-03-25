@@ -34,6 +34,10 @@ struct debug_target_if {
 	virtual bool trace_enabled(void) {
 		return false;
 	}
+	virtual void enable_datadmi(bool ena) {}
+	virtual bool datadmi_enabled(void) {
+		return false;
+	}
 	virtual void enable_dbbcache(bool ena) {}
 	virtual bool dbbcache_enabled(void) {
 		return false;
