@@ -12,6 +12,7 @@
 #define KEY_HELP 'h'             /* h (print help) */
 #define KEY_TRACE 't'            /* t (toggle trace mode) */
 #define KEY_STATS 's'            /* s (print statistics) */
+#define KEY_DATADMI 'D'          /* D (toggle data DMI) */
 #define KEY_DBBCACHE 'd'         /* d (toggle dbbcache) */
 #define KEY_LSCACHE 'l'          /* l (toggle lscache) */
 #define KEY_QUIT 'q'             /* q (character to quit (sc_stop) in command mode) */
@@ -40,6 +41,26 @@ void Channel_Console::debug_targets_toggle_trace_mode(void) {
 	if (!trace_mode) {
 		std::cout << "CONSOLE: trace mode disabled" << std::endl;
 	}
+}
+
+bool Channel_Console::debug_targets_datadmi_is_enabled(void) {
+	if (debug_targets.size() == 0) {
+		/* no debug targets -> false */
+		return false;
+	}
+
+	/* determine the state by looking at the first debug target */
+	return (*debug_targets.begin())->datadmi_enabled();
+}
+
+void Channel_Console::debug_targets_toggle_datadmi(void) {
+	bool state = debug_targets_datadmi_is_enabled();
+
+	/* switch all debug targets */
+	for (debug_target_if *debug_target : debug_targets) {
+		debug_target->enable_datadmi(!state);
+	}
+	std::cout << "CONSOLE: datadmi:  " << (debug_targets_datadmi_is_enabled() ? "enabled" : "disabled") << std::endl;
 }
 
 bool Channel_Console::debug_targets_dbbcache_is_enabled(void) {
@@ -88,6 +109,7 @@ void Channel_Console::debug_targets_print_stats(void) {
 	for (debug_target_if *debug_target : debug_targets) {
 		debug_target->print_stats();
 	}
+	std::cout << "CONSOLE: datadmi:  " << (debug_targets_datadmi_is_enabled() ? "enabled" : "disabled") << std::endl;
 	std::cout << "CONSOLE: dbbcache: " << (debug_targets_dbbcache_is_enabled() ? "enabled" : "disabled") << std::endl;
 	std::cout << "CONSOLE: lscache:  " << (debug_targets_lscache_is_enabled() ? "enabled" : "disabled") << std::endl;
 	std::cout << "++++++++++++++++++++" << std::endl;
@@ -177,6 +199,8 @@ void Channel_Console::handle_cmd() {
 			          << "    ^a-h   print this help\n"
 			          << "    ^a-s   print stats of debug targets\n"
 			          << "    ^a-t   toggle trace mode of debug targets\n"
+			          << "    ^a-D   toggle data DMI of debug targets\n"
+			          << "           (requires enable at start-up: --use-data-dmi or --use-dmi)\n"
 			          << "    ^a-d   toggle dbbcache of debug targets\n"
 			          << "    ^a-l   toggle lscache of debug targets (requires support for data-DMI)\n"
 			          << "    ^a-q   quit - stop simulation with sc_stop\n"
@@ -187,6 +211,9 @@ void Channel_Console::handle_cmd() {
 			break;
 		case KEY_STATS:
 			debug_targets_print_stats();
+			break;
+		case KEY_DATADMI:
+			debug_targets_toggle_datadmi();
 			break;
 		case KEY_DBBCACHE:
 			debug_targets_toggle_dbbcache();
