@@ -3,10 +3,10 @@
 #include <stdint.h>
 
 class MemoryDMI {
-	uint8_t *mem;
-	uint64_t start;
-	uint64_t size;
-	uint64_t end;
+	uint8_t *const mem;
+	const uint64_t start;
+	const uint64_t size;
+	const uint64_t end;
 
 	MemoryDMI(uint8_t *mem, uint64_t start, uint64_t size) : mem(mem), start(start), size(size), end(start + size) {}
 
@@ -21,12 +21,12 @@ class MemoryDMI {
 		return MemoryDMI(mem, start, size);
 	}
 
-	uint8_t *get_raw_mem_ptr() {
+	const uint8_t *get_raw_mem_ptr() const {
 		return mem;
 	}
 
 	template <typename T>
-	T *get_mem_ptr_to_global_addr(uint64_t addr) {
+	T *get_mem_ptr_to_global_addr(uint64_t addr) const {
 		assert(contains(addr));
 		assert((addr + sizeof(T)) <= end);
 		// assert ((addr % sizeof(T)) == 0 && "unaligned access");   //NOTE: due to compressed instructions, fetching
@@ -35,7 +35,7 @@ class MemoryDMI {
 	}
 
 	template <typename T>
-	T load(uint64_t addr) {
+	T load(uint64_t addr) const {
 		static_assert(std::is_integral<T>::value, "integer type required");
 		T ans;
 		T *src = get_mem_ptr_to_global_addr<T>(addr);
@@ -50,26 +50,26 @@ class MemoryDMI {
 	}
 
 	template <typename T>
-	void store(uint64_t addr, T value) {
+	void store(uint64_t addr, T value) const {
 		static_assert(std::is_integral<T>::value, "integer type required");
 		T *dst = get_mem_ptr_to_global_addr<T>(addr);
 		/* memcpy -> see note in load */
 		memcpy(dst, &value, sizeof(value));
 	}
 
-	uint64_t get_start() {
+	uint64_t get_start() const {
 		return start;
 	}
 
-	uint64_t get_end() {
+	uint64_t get_end() const {
 		return start + size;
 	}
 
-	uint64_t get_size() {
+	uint64_t get_size() const {
 		return size;
 	}
 
-	bool contains(uint64_t addr) {
+	bool contains(uint64_t addr) const {
 		return addr >= start && addr < end;
 	}
 };
