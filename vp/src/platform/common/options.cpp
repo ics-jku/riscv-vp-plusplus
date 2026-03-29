@@ -23,7 +23,7 @@ Options::Options(void) {
 		("trace-mode", po::bool_switch(&trace_mode), "enable instruction tracing")
 		("tlm-global-quantum", po::value<unsigned int>(&tlm_global_quantum), "set global tlm quantum (in NS)")
 		("use-dbbcache", po::bool_switch(&use_dbbcache), "use the Dynamic Basic Block Cache (DBBCache) to speed up execution")
-		("use-lscache", po::bool_switch(&use_lscache), "use the Load/Store Cache (LSCache) to speed up dmi access (automatically enables data-dmi, if not set)")
+		("use-lscache", po::bool_switch(&use_lscache), "use the Load/Store Cache (LSCache) to speed up dmi access")
 		("use-instr-dmi", po::bool_switch(&use_instr_dmi), "use dmi to fetch instructions")
 		("use-data-dmi", po::bool_switch(&use_data_dmi), "use dmi to execute load/store operations")
 		("use-dmi", po::bool_switch(), "use instr and data dmi")
@@ -56,10 +56,6 @@ void Options::parse(int argc, char **argv) {
 
 		po::notify(vm);
 
-		if (vm["use-lscache"].as<bool>() && !vm["use-dmi"].as<bool>() && !vm["use-data-dmi"].as<bool>()) {
-			std::cerr << "[Options] Info: switch 'use-lscache' also activates 'use-data-dmi' if unset." << std::endl;
-			use_data_dmi = true;
-		}
 		if (vm["use-dmi"].as<bool>()) {
 			use_data_dmi = true;
 			use_instr_dmi = true;

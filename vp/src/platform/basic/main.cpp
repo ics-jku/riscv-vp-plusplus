@@ -208,13 +208,6 @@ int sc_main(int argc, char **argv) {
 	// enable interactive debug via console
 	channel_console.debug_targets_add(&core);
 
-#ifdef TARGET_RV64_CHERIV9
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
-#else
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
-#endif
-	InstrMemoryProxy instr_mem(dmi, core);
-
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
 
@@ -226,11 +219,19 @@ int sc_main(int argc, char **argv) {
 
 	instr_memory_if *instr_mem_if = &iss_mem_if;
 	data_memory_if *data_mem_if = &iss_mem_if;
-	if (opt.use_instr_dmi)
+
+	/* setup dmi */
+#ifdef TARGET_RV64_CHERIV9
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
+#else
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
+#endif
+	InstrMemoryProxy instr_mem(dmi, core);
+	if (opt.use_instr_dmi) {
 		instr_mem_if = &instr_mem;
-	if (opt.use_data_dmi) {
-		iss_mem_if.dmi_add(dmi);
 	}
+	iss_mem_if.dmi_add(dmi);
+	iss_mem_if.dmi_enable(opt.use_data_dmi);
 
 	uint64_t entry_point = loader.get_entrypoint();
 	if (opt.entry_point.available)

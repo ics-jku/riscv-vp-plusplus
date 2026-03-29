@@ -146,19 +146,20 @@ int sc_main(int argc, char** argv) {
 	VirtualBusMember virtual_bus_member("virtual_bus_member", virtual_bus_connector, opt.virtual_bus_start_addr);
 	virtual_bus_member.setInterruptRoutine([&plic]() { plic.gateway_trigger_interrupt(2); });
 
-	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
-	InstrMemoryProxy instr_mem(dmi, core);
-
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
 
 	instr_memory_if* instr_mem_if = &iss_mem_if;
 	data_memory_if* data_mem_if = &iss_mem_if;
-	if (opt.use_instr_dmi)
+
+	/* setup dmi */
+	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
+	InstrMemoryProxy instr_mem(dmi, core);
+	if (opt.use_instr_dmi) {
 		instr_mem_if = &instr_mem;
-	if (opt.use_data_dmi) {
-		iss_mem_if.dmi_add(dmi);
 	}
+	iss_mem_if.dmi_add(dmi);
+	iss_mem_if.dmi_enable(opt.use_data_dmi);
 
 	uint64_t entry_point = loader.get_entrypoint();
 	if (opt.entry_point.available)

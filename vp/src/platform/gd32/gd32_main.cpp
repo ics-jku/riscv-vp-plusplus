@@ -139,19 +139,21 @@ int sc_main(int argc, char **argv) {
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	MemoryDMI sram_dmi = MemoryDMI::create_start_size_mapping(sram.data, opt.sram_start_addr, sram.get_size());
-	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.get_size());
-	InstrMemoryProxy instr_mem(flash_dmi, core);
-
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
 
 	instr_memory_if *instr_mem_if = &iss_mem_if;
 	data_memory_if *data_mem_if = &iss_mem_if;
-	if (opt.use_instr_dmi)
+
+	/* setup dmi */
+	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.get_size());
+	MemoryDMI sram_dmi = MemoryDMI::create_start_size_mapping(sram.data, opt.sram_start_addr, sram.get_size());
+	InstrMemoryProxy instr_mem(flash_dmi, core);
+	if (opt.use_instr_dmi) {
 		instr_mem_if = &instr_mem;
-	if (opt.use_data_dmi)
-		iss_mem_if.dmi_add(sram_dmi);
+	}
+	iss_mem_if.dmi_add(sram_dmi);
+	iss_mem_if.dmi_enable(opt.use_data_dmi);
 
 	{
 		unsigned int it = 0;

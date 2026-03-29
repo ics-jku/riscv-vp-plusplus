@@ -220,19 +220,21 @@ int sc_main(int argc, char **argv) {
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
 
-	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.get_size());
-	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.get_size());
-	InstrMemoryProxy instr_mem(flash_dmi, core);
-
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;
 
 	instr_memory_if *instr_mem_if = &iss_mem_if;
 	data_memory_if *data_mem_if = &iss_mem_if;
-	if (opt.use_instr_dmi)
+
+	/* setup dmi */
+	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.get_size());
+	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.get_size());
+	InstrMemoryProxy instr_mem(flash_dmi, core);
+	if (opt.use_instr_dmi) {
 		instr_mem_if = &instr_mem;
-	if (opt.use_data_dmi)
-		iss_mem_if.dmi_add(dram_dmi);
+	}
+	iss_mem_if.dmi_add(dram_dmi);
+	iss_mem_if.dmi_enable(opt.use_data_dmi);
 
 	bus.ports[0] = new PortMapping(opt.flash_start_addr, opt.flash_end_addr, flash);
 	bus.ports[1] = new PortMapping(opt.dram_start_addr, opt.dram_end_addr, dram);

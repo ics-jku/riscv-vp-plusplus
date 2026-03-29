@@ -200,7 +200,6 @@ void Channel_Console::handle_cmd() {
 			          << "    ^a-s   print stats of debug targets\n"
 			          << "    ^a-t   toggle trace mode of debug targets\n"
 			          << "    ^a-D   toggle data DMI of debug targets\n"
-			          << "           (requires enable at start-up: --use-data-dmi or --use-dmi)\n"
 			          << "    ^a-d   toggle dbbcache of debug targets\n"
 			          << "    ^a-l   toggle lscache of debug targets (requires support for data-DMI)\n"
 			          << "    ^a-q   quit - stop simulation with sc_stop\n"
