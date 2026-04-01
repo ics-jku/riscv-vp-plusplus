@@ -1,35 +1,21 @@
-image: alpine:edge
+image: debian:13
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-
-cache:
-  key: $CI_COMMIT_REF_SLUG
-  paths:
-    - vp/build
+  GIT_STRATEGY: clone
 
 default:
   before_script:
-    - apk update && apk add --no-cache build-base git boost-dev cmake git gdb-multiarch g++-riscv-none-elf gcc-riscv-none-elf newlib-riscv-none-elf valgrind socat
-    - export RISCV_PREFIX=riscv-none-elf-
+    - apt update && apt -y install git cmake autoconf automake autotools-dev clang-format-19 curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev qtbase5-dev qt5-qmake libvncserver-dev nlohmann-json3-dev wget tar gdb-multiarch socat
 
-build-vp:
+build-and-test-vp:
   stage: build
   script:
-    - sh -c 'env MAKEFLAGS=-j$(nproc) make'
-  artifacts:
-    paths:
-      - vp/build/bin
-    expire_in: 24h
-  only:
-    - master
-    - merge_requests
-
-test-vp:
-  stage: test
-  script:
+    - sh -c 'export PATH=$PATH:/opt/riscv-gnu-toolchain-multi-2025.09.28/bin && env MAKEFLAGS=-j$(nproc) make'
+    - wget -O /opt/riscv.tar.xz https://cloud.ics.jku.at/public.php/dav/files/niy65itSmKZCii6/?accept=zip
+    - tar -xf /opt/riscv.tar.xz -C /opt/
     - cd vp/build
-    - ctest -V
-  only:
-    - master
-    - merge_requests
+    - ctest -VV --output-on-failure --no-tests=error
+
+
+

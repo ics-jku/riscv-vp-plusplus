@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export SYSTEMC_DISABLE_COPYRIGHT_MESSAGE=1
-
+echo $PATH
 handle_exit() {
 	[ $# -eq 1 ] || exit 1
 

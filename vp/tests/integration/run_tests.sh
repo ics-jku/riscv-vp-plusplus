@@ -15,7 +15,7 @@ for test in *; do
 	printf "Running test case '%s': " "${name}"
 
 	if [ "${name%%-*}" = "mc" ]; then
-		vp="${TESTVP}-mc"
+		vp="${TESTVP}-mc-vp"
 	else
 		vp="${TESTVP}-vp"
 	fi

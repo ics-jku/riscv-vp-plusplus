@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-
+echo $PATH
 build() {
 	[ $# -eq 1 ] || return 1
 

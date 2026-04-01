@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+echo "Debug Output" > debug_output.txt
 GDB_DEBUG_PROG="${GDB_DEBUG_PROG:-gdb-multiarch}"
 GDB_DEBUG_PORT="${GDB_DEBUG_PORT:-2342}"
 
@@ -16,7 +17,7 @@ gdb_fail() {
 }
 
 if ! command -v "${GDB_DEBUG_PROG}" >/dev/null 2>&1; then
-	echo "GDB debug program '${GDB_DEBUG_PROG}' is not installed." 2>&1
+	echo "GDB debug program '${GDB_DEBUG_PROG}' is not installed." 2>&1 >> debug_output.txt
 	exit 1
 fi
 
@@ -40,12 +41,13 @@ EOF
 
 for test in *; do
 	[ -e "${test}/output" ] || continue
+	[ -e "${test}/test-ignore" -o -f "${test}" ] && continue
 
 	name=${test##*/}
-	printf "Running test case '%s': " "${name}"
+	printf "Running test case '%s': " "${name}" >> debug_output.txt
 
 	if [ "${name%%-*}" = "mc" ]; then
-		vp="${TESTVP}-mc"
+		vp="${TESTVP}-mc-vp"
 	else
 		vp="${TESTVP}-vp"
 	fi
@@ -64,11 +66,12 @@ for test in *; do
 	fi
 
 	if ! cmp -s "${outfile}" "${test}/output"; then
-		printf "FAIL: Output didn't match.\n\n"
+		printf "FAIL: Output didn't match.\n\n" >> debug_output.txt
+		pkill $vp || true
 		diff -u "${outfile}" "${test}/output" || gdb_fail
 	fi
 
-	printf "OK.\n"
+	printf "OK.\n" >> debug_output.txt
 
 	kill %1 2>/dev/null || true
 	wait
