@@ -1,14 +1,12 @@
-#include <ptest.h>
 #include <libgdb/parser2.h>
+#include <ptest.h>
 
 #include "suite.h"
 #include "util.h"
 
 #define SUITE "Suite for second parser stage"
 
-static void
-test_set_thread_packet(void)
-{
+static void test_set_thread_packet(void) {
 	gdb_command_t *cmd;
 	gdb_cmd_h_t *hcmd;
 
@@ -24,9 +22,7 @@ test_set_thread_packet(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_read_register_packet(void)
-{
+static void test_read_register_packet(void) {
 	gdb_command_t *cmd;
 
 	cmd = parse_cmd("p20");
@@ -38,9 +34,7 @@ test_read_register_packet(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_read_memory_packet(void)
-{
+static void test_read_memory_packet(void) {
 	gdb_command_t *cmd;
 	gdb_memory_t *mem;
 
@@ -55,9 +49,7 @@ test_read_memory_packet(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_write_memory_packet(void)
-{
+static void test_write_memory_packet(void) {
 	gdb_command_t *cmd;
 	gdb_memory_write_t *mem;
 	gdb_memory_t *loc;
@@ -76,9 +68,7 @@ test_write_memory_packet(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_liveness_check_packet(void)
-{
+static void test_liveness_check_packet(void) {
 	gdb_command_t *cmd;
 	gdb_thread_t *thr;
 
@@ -93,9 +83,7 @@ test_liveness_check_packet(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_insert_soft_breakpoint_packet(void)
-{
+static void test_insert_soft_breakpoint_packet(void) {
 	gdb_command_t *cmd;
 	gdb_breakpoint_t *brk;
 
@@ -111,9 +99,7 @@ test_insert_soft_breakpoint_packet(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_vcont_single_action(void)
-{
+static void test_vcont_single_action(void) {
 	gdb_command_t *cmd;
 	gdb_vcont_t *vcont;
 
@@ -131,9 +117,7 @@ test_vcont_single_action(void)
 	gdb_free_cmd(cmd);
 }
 
-static void
-test_vcont_multiple_actions(void)
-{
+static void test_vcont_multiple_actions(void) {
 	gdb_command_t *cmd;
 	gdb_vcont_t *vcont;
 
@@ -158,9 +142,7 @@ test_vcont_multiple_actions(void)
 	gdb_free_cmd(cmd);
 }
 
-void
-suite_parser2(void)
-{
+void suite_parser2(void) {
 	pt_add_test(test_set_thread_packet, "Test parser for 'H' packet", SUITE);
 	pt_add_test(test_read_register_packet, "Test parser for 'P' packet", SUITE);
 	pt_add_test(test_read_memory_packet, "Test parser for 'm' packet", SUITE);

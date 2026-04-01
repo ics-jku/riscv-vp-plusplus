@@ -1,14 +1,12 @@
-#include <ptest.h>
 #include <libgdb/parser1.h>
+#include <ptest.h>
 
 #include "suite.h"
 #include "util.h"
 
 #define SUITE "Suite for first parser stage"
 
-static void
-test_packet_ack(void)
-{
+static void test_packet_ack(void) {
 	gdb_packet_t *pkt;
 
 	pkt = parse_pkt("testdata/ack.dat");
@@ -21,9 +19,7 @@ test_packet_ack(void)
 	gdb_free_packet(pkt);
 }
 
-static void
-test_packet_nack(void)
-{
+static void test_packet_nack(void) {
 	gdb_packet_t *pkt;
 
 	pkt = parse_pkt("testdata/nack.dat");
@@ -36,9 +32,7 @@ test_packet_nack(void)
 	gdb_free_packet(pkt);
 }
 
-static void
-test_packet_simple(void)
-{
+static void test_packet_simple(void) {
 	gdb_packet_t *pkt;
 
 	pkt = parse_pkt("testdata/simple.dat");
@@ -51,9 +45,7 @@ test_packet_simple(void)
 	gdb_free_packet(pkt);
 }
 
-static void
-test_packet_notify(void)
-{
+static void test_packet_notify(void) {
 	gdb_packet_t *pkt;
 
 	pkt = parse_pkt("testdata/notify.dat");
@@ -66,9 +58,7 @@ test_packet_notify(void)
 	gdb_free_packet(pkt);
 }
 
-void
-suite_parser1(void)
-{
+void suite_parser1(void) {
 	pt_add_test(test_packet_ack, "Test parser for acknowledgment", SUITE);
 	pt_add_test(test_packet_nack, "Test parser for negative acknowledgment", SUITE);
 	pt_add_test(test_packet_simple, "Test parser for simple GDB packet", SUITE);

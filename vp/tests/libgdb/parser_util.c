@@ -1,6 +1,6 @@
-#include <stdlib.h>
-#include <ptest.h>
 #include <libgdb/parser1.h>
+#include <ptest.h>
+#include <stdlib.h>
 
 #include "suite.h"
 #include "util.h"
@@ -13,9 +13,7 @@ extern char *gdb_decode_runlen(char *);
 
 #define SUITE "Suite for parser utilities"
 
-static void
-test_checksum_calculation(void)
-{
+static void test_checksum_calculation(void) {
 	/* Checksums have been extracted from a gdb
 	 * communication run with `set debug remote 1` */
 
@@ -26,49 +24,41 @@ test_checksum_calculation(void)
 	PT_ASSERT(calc_csum("qOffsets") == 0x4b);
 }
 
-static void
-test_validity_check_valid(void)
-{
+static void test_validity_check_valid(void) {
 	gdb_packet_t pkt = {
-		.kind = GDB_KIND_PACKET,
-		.data = "qsThreadInfo",
-		.csum = { 'c', '8' },
+	    .kind = GDB_KIND_PACKET,
+	    .data = "qsThreadInfo",
+	    .csum = {'c', '8'},
 	};
 
 	PT_ASSERT(gdb_is_valid(&pkt));
 }
 
-static void
-test_validity_check_invalid(void)
-{
+static void test_validity_check_invalid(void) {
 	gdb_packet_t pkt = {
-		.kind = GDB_KIND_PACKET,
-		.data = "qsThreadInfo",
-		.csum = { '4', '2' },
+	    .kind = GDB_KIND_PACKET,
+	    .data = "qsThreadInfo",
+	    .csum = {'4', '2'},
 	};
 
 	PT_ASSERT(!gdb_is_valid(&pkt));
 }
 
-static void
-test_validity_check_ack(void)
-{
+static void test_validity_check_ack(void) {
 	gdb_packet_t pkt = {
-		.kind = GDB_KIND_ACK,
-		.data = NULL,
-		.csum = { 0, 0 },
+	    .kind = GDB_KIND_ACK,
+	    .data = NULL,
+	    .csum = {0, 0},
 	};
 
 	PT_ASSERT(gdb_is_valid(&pkt));
 }
 
-static void
-test_unescape(void)
-{
+static void test_unescape(void) {
 	/* From the GDB documentation:
 	 *   For example, the byte 0x7d would be transmitted as the two bytes 0x7d 0x5d.
 	 */
-	char data[] = { 0x7d, 0x5d, 0x0 };
+	char data[] = {0x7d, 0x5d, 0x0};
 	char *unesc;
 
 	unesc = gdb_unescape(data);
@@ -76,17 +66,15 @@ test_unescape(void)
 	free(unesc);
 }
 
-static void
-test_runlen_decoding(void)
-{
+static void test_runlen_decoding(void) {
 	struct {
 		const char *in;
 		const char *out;
 	} tests[] = {
-		{ "0* ", "0000" },         /* valid run-length encoding */
-		{ "230* 42", "23000042" }, /* valid run-length encoding */
-		{ "*", NULL },             /* no repeat character specified */
-		{ "0*\t", NULL },          /* negative repeat count */
+	    {"0* ", "0000"},         /* valid run-length encoding */
+	    {"230* 42", "23000042"}, /* valid run-length encoding */
+	    {"*", NULL},             /* no repeat character specified */
+	    {"0*\t", NULL},          /* negative repeat count */
 	};
 
 	for (size_t i = 0; i < ARRAY_LEN(tests); i++) {
@@ -103,9 +91,7 @@ test_runlen_decoding(void)
 	}
 }
 
-void
-suite_parser_util(void)
-{
+void suite_parser_util(void) {
 	pt_add_test(test_checksum_calculation, "Test checksum calculation", SUITE);
 	pt_add_test(test_validity_check_valid, "Test validity check with valid packet", SUITE);
 	pt_add_test(test_validity_check_invalid, "Test validity check with invalid packet", SUITE);

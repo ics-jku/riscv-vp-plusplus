@@ -1,20 +1,17 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <err.h>
-#include <string.h>
+#include "util.h"
 
+#include <assert.h>
+#include <err.h>
 #include <libgdb/parser1.h>
 #include <libgdb/parser2.h>
-
-#include "util.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* From internal.h from libgdb */
 extern int calc_csum(const char *);
 
-gdb_packet_t *
-parse_pkt(char *path)
-{
+gdb_packet_t *parse_pkt(char *path) {
 	FILE *stream;
 	gdb_packet_t *pkt;
 
@@ -27,9 +24,7 @@ parse_pkt(char *path)
 	return pkt;
 }
 
-static void
-make_packet(gdb_packet_t *pkt, char *data)
-{
+static void make_packet(gdb_packet_t *pkt, char *data) {
 	int ret;
 	char strcsum[GDB_CSUM_LEN + 1]; /* +1 for snprintf nullbyte */
 
@@ -41,9 +36,7 @@ make_packet(gdb_packet_t *pkt, char *data)
 	memcpy(&pkt->csum, strcsum, GDB_CSUM_LEN);
 }
 
-gdb_command_t *
-parse_cmd(char *data)
-{
+gdb_command_t *parse_cmd(char *data) {
 	gdb_packet_t pkt;
 
 	make_packet(&pkt, data);
