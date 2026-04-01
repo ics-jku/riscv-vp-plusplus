@@ -71,3 +71,9 @@ codestyle:
 		\)								\
 		-print								\
 		| xargs clang-format-19 -i -style=file
+
+docker-debian:
+	docker buildx build --progress=plain --target debian -t riscv-vp-plusplus:debian .
+
+run-docker-debian:
+	docker run -it riscv-vp-plusplus:debian /bin/bash
