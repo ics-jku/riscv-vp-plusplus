@@ -101,7 +101,12 @@ void Channel_SLIP::send_packet(void) {
 
 	ssize_t ret = write(tunfd, sndbuf, sndsiz);
 	if (ret == -1) {
-		throw std::system_error(errno, std::generic_category());
+		/*
+		 * This happens sometimes -> do not kill VP if this happens
+		 * TODO: rework the whole slip/tun communication: fix it and improve efficiency
+		 */
+		// throw std::system_error(errno, std::generic_category());
+		perror("CHANNEL_SLIP: Error writing to tun:");
 	} else if ((size_t)ret != sndsiz) {
 		throw std::runtime_error("short write");
 	}
