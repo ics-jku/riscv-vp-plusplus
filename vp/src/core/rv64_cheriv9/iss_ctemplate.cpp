@@ -307,7 +307,7 @@ void *ISS_CT::genOpMap() {
 	return OP_GLOBAL_FAST_ABORT_AND_FDD_LABEL_START;
 }
 
-#define OP_SLOW_FDD()                                                                                           \
+#define GOTO_OP_SLOW_FDD()                                                                                      \
 	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");                                     \
 	stats.inc_cnt();                                                                                            \
 	stats.inc_slow_fdd();                                                                                       \
@@ -335,20 +335,22 @@ void *ISS_CT::genOpMap() {
 	}                                                                                                           \
 	goto *opLabelPtr;
 
-#define OP_MED_FDD()     \
-	stats.inc_cnt();     \
-	stats.inc_med_fdd(); \
+#define GOTO_OP_MED_FDD() \
+	stats.inc_cnt();      \
+	stats.inc_med_fdd();  \
 	goto *dbbcache.fetch_decode(pc, instr);
 
-#define OP_FAST_FDD()     \
-	stats.inc_cnt();      \
-	stats.inc_fast_fdd(); \
+#define GOTO_OP_FAST_FDD() \
+	stats.inc_cnt();       \
+	stats.inc_fast_fdd();  \
 	goto *dbbcache.fetch_decode_fast(instr);
+
+#define GOTO_OP_GLOBAL_FDD() goto OP_LABEL(op_global_fdd);
 
 /* fast operation finalization and fdd (TODO: move ninstr check to control flow ops?) */
 #define OP_FAST_FINALIZE_AND_FDD() \
 	ninstr++;                      \
-	OP_FAST_FDD();
+	GOTO_OP_FAST_FDD();
 
 #define OP_GLOBAL_FDD() OP_LABEL(op_global_fdd) :
 
@@ -363,7 +365,7 @@ void *ISS_CT::genOpMap() {
 	dbbcache.abort_fetch_decode_fast();                                            \
 	stats.dec_cnt();                                                               \
 	stats.inc_fast_fdd_abort();                                                    \
-	goto OP_LABEL(op_global_fdd);                                                  \
+	GOTO_OP_GLOBAL_FDD();                                                          \
 	OP_LABEL(op_global_fast_finalize_and_fdd) : __attribute__((unused));           \
 	{OP_FAST_FINALIZE_AND_FDD()}
 
@@ -552,7 +554,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						debug_single_step_done = true;
 					}
 
-					OP_SLOW_FDD();
+					GOTO_OP_SLOW_FDD();
 					// UNREACHABLE
 					assert(false);
 				}
@@ -572,7 +574,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					}
 				}
 
-				OP_MED_FDD();
+				GOTO_OP_MED_FDD();
 				// UNREACHABLE
 				assert(false);
 			}
@@ -773,7 +775,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 						ninstr++;
-						goto OP_LABEL(op_global_fdd);
+						GOTO_OP_GLOBAL_FDD();
 					}
 				}
 				OP_END();
@@ -787,7 +789,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 					}
 					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 						ninstr++;
-						goto OP_LABEL(op_global_fdd);
+						GOTO_OP_GLOBAL_FDD();
 					}
 				}
 				OP_END();
@@ -813,7 +815,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					}
 				}
@@ -840,7 +842,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 
 					if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 						ninstr++;
-						goto OP_LABEL(op_global_fdd);
+						GOTO_OP_GLOBAL_FDD();
 					}
 				}
 				OP_END();
@@ -952,7 +954,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					} else {
 						dbbcache.branch_not_taken(pc);
@@ -965,7 +967,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					} else {
 						dbbcache.branch_not_taken(pc);
@@ -978,7 +980,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					} else {
 						dbbcache.branch_not_taken(pc);
@@ -991,7 +993,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					} else {
 						dbbcache.branch_not_taken(pc);
@@ -1004,7 +1006,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					} else {
 						dbbcache.branch_not_taken(pc);
@@ -1018,7 +1020,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 						dbbcache.branch_taken(instr.B_imm());
 						if (unlikely(ninstr > fast_quantum_ins_granularity)) {
 							ninstr++;
-							goto OP_LABEL(op_global_fdd);
+							GOTO_OP_GLOBAL_FDD();
 						}
 					} else {
 						dbbcache.branch_not_taken(pc);
