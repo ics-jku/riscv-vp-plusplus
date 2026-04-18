@@ -29,6 +29,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	RV_ISA_Config *isa_config = nullptr;
 	uxlen_t pc = 0;
 	uint64_t cycle_counter_raw_last = 0;
+	uint64_t ninstr_last = 0;
 	int64_t lr_sc_counter = 0;
 	bool iss_slow_path = false;
 	bool trace = false;
@@ -98,7 +99,7 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	 * commit incremental cycle counter to global counter and quantum_keeper
 	 * NOTE: must be called before any tlm transaction (done in mem.h)
 	 */
-	inline void commit_cycles() {
+	__always_inline void commit_cycles() {
 		stats.inc_commit_cycles();
 
 		/* calculate increment */
@@ -114,13 +115,32 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		quantum_keeper.inc(cycle_counter_raw_inc_sysc);
 	}
 
-	inline void commit_instructions(uint64_t &ninstr) {
+	__always_inline void commit_instructions(uint64_t ninstr) {
 		stats.inc_commit_instructions();
 
+		/* calculate increment */
+		uint64_t ninstr_inc = ninstr - ninstr_last;
+		ninstr_last = ninstr;
+
 		if (!csrs.mcountinhibit.reg.fields.IR) {
-			csrs.instret.reg.val += ninstr;
+			csrs.instret.reg.val += ninstr_inc;
 		}
+	}
+
+	/* update instr and cycle counters by local fast counters, update quantum_keeper and reset fast quantum */
+	__always_inline void commit_all_and_reset_fast_quantum(uint64_t &ninstr) {
+		/* commit instructions -> update ninstr to csrs */
+		commit_instructions(ninstr);
+		/* commit cycles -> update csrs and quantum_keeper */
+		commit_cycles();
+
+		/* reset the instruction counter used for fast quantum
+		 * after commit_instruction, we known that ninst == ninst_last
+		 * holds -> we can safely reset both (x - x = 0 - 0 = 0).
+		 */
+		// assert(ninstr == ninstr_last);
 		ninstr = 0;
+		ninstr_last = ninstr;
 	}
 
 	uint64_t _compute_and_get_current_cycles();

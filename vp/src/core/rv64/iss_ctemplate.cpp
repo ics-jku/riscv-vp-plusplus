@@ -390,6 +390,7 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 	const uint64_t fast_quantum_ins_granularity =
 	    quantum_keeper.get_global_quantum().value() / prop_clock_cycle_period.value() / 10;
 	uint64_t ninstr = 0;
+	ninstr_last = ninstr;
 
 	// TODO: remove?
 	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
@@ -406,9 +407,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				if (unlikely(iss_slow_path)) {
 					iss_slow_path = false;
 
-					/* update counters by local fast counters */
-					commit_instructions(ninstr);
-					commit_cycles();
+					/* update instr and cycle counters by local fast counters, update quantum_keeper and reset fast
+					 * quantum */
+					commit_all_and_reset_fast_quantum(ninstr);
 
 					/* call interrupt handling */
 					handle_interrupt();
@@ -469,10 +470,9 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				}
 
 				if (unlikely(ninstr > fast_quantum_ins_granularity)) {
-					///* perform slow path next time -> update instr/cyclc counters and check if quantum needs sync */
-					// iss_slow_path = true;
-					commit_instructions(ninstr);
-					commit_cycles();
+					/* update instr and cycle counters by local fast counters, update quantum_keeper and reset fast
+					 * quantum */
+					commit_all_and_reset_fast_quantum(ninstr);
 					stats.inc_qk_need_sync();
 					if (quantum_keeper.need_sync()) {
 						// TODO: must also be done for transactions (keeper in common/mem.h) ?!
@@ -7061,9 +7061,8 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 	/* update pc member variable */
 	pc = dbbcache.get_pc_maybe_after_callback();
 
-	/* update counters by local fast counters */
-	commit_instructions(ninstr);
-	commit_cycles();
+	/* update instr and cycle counters by local fast counters, update quantum_keeper and reset fast quantum */
+	commit_all_and_reset_fast_quantum(ninstr);
 
 	/* sync quantum: make sure that no action is missed */
 	stats.inc_qk_sync();
@@ -7348,6 +7347,7 @@ void ISS_CT::init(instr_memory_if *instr_mem, bool use_dbbcache, data_memory_if 
 	dbbcache.init(use_dbbcache, isa_config, hartId, instr_mem, opMap, fast_abort_and_fdd_labelPtr, entrypoint);
 	lscache.init(use_lscache, hartId, data_mem);
 	cycle_counter_raw_last = 0;
+	ninstr_last = 0;
 }
 
 void ISS_CT::sys_exit() {
