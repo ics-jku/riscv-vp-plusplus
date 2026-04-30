@@ -231,6 +231,9 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 	}
 
 	void flush_tlb() override {
+		if (mmu == nullptr) {
+			return;
+		}
 		mmu->flush_tlb();
 	}
 
