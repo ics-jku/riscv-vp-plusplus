@@ -261,19 +261,10 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		stats.inc_amo();
 		uxlen_t addr = regs[instr.rs1()];
 		trap_check_addr_alignment<4, false>(addr);
-		int32_t data;
-		try {
-			data = mem->atomic_load_word(addr);
-		} catch (SimulationTrap &e) {
-			if (e.reason == EXC_LOAD_ACCESS_FAULT)
-				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
-			throw e;
-		}
-		int32_t val = operation(data, (int32_t)regs[instr.rs2()]);
-		mem->atomic_store_word(addr, val);
+		int32_t value_last = mem->atomic_execute_amo_word(addr, (int32_t)regs[instr.rs2()], operation);
 		// ignore write to zero/x0
 		if (instr.rd() != RegFile::zero) {
-			regs[instr.rd()] = data;
+			regs[instr.rd()] = value_last;
 		}
 	}
 

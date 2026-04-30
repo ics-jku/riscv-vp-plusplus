@@ -296,40 +296,25 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		uxlen_t addr;
 		uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 		trap_check_addr_alignment<4, false>(addr);
-		int32_t data;
-		try {
-			data = mem->atomic_load_word_via_cap(addr, auth_val, auth_idx);
-		} catch (SimulationTrap &e) {
-			if (e.reason == EXC_LOAD_ACCESS_FAULT)
-				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
-			throw e;
-		}
-		int32_t val = operation(data, (int32_t)regs[instr.rs2()]);
-		mem->atomic_store_word_via_cap(addr, val, auth_val, auth_idx);
+		int32_t value_last =
+		    mem->atomic_execute_amo_word_via_cap(addr, (int32_t)regs[instr.rs2()], operation, auth_val, auth_idx);
 		// ignore write to zero/x0
 		if (instr.rd() != RegFile::zero) {
-			regs[instr.rd()] = data;
+			regs[instr.rd()] = value_last;
 		}
 	}
 
 	inline void execute_amo_d(Instruction &instr, std::function<int64_t(int64_t, int64_t)> operation) {
+		stats.inc_amo();
 		Capability auth_val;
 		uxlen_t addr;
 		uint64_t auth_idx = get_cheri_mode_cap_addr(instr.rs1(), 0, &auth_val, &addr);
 		trap_check_addr_alignment<8, false>(addr);
-		uint64_t data;
-		try {
-			data = mem->atomic_load_double_via_cap(addr, auth_val, auth_idx);
-		} catch (SimulationTrap &e) {
-			if (e.reason == EXC_LOAD_ACCESS_FAULT)
-				e.reason = EXC_STORE_AMO_ACCESS_FAULT;
-			throw e;
-		}
-		uint64_t val = operation(data, regs[instr.rs2()]);
-		mem->atomic_store_double_via_cap(addr, val, auth_val, auth_idx);
+		uint64_t value_last =
+		    mem->atomic_execute_amo_double_via_cap(addr, regs[instr.rs2()], operation, auth_val, auth_idx);
 		// ignore write to zero/x0
 		if (instr.rd() != RegFile::zero) {
-			regs[instr.rd()] = data;
+			regs[instr.rd()] = value_last;
 		}
 	}
 

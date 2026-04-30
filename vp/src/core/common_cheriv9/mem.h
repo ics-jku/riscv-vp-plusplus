@@ -277,23 +277,60 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 	}
 
 	template <typename T>
-	T _atomic_load_data(uint64_t addr) {
-		bus_lock->lock(iss.get_hart_id());
-		return _load_data<T>(addr);
-	}
-	template <typename T>
-	void _atomic_store_data(uint64_t addr, T value) {
-		/*
-		 * This is sometimes triggerd when running RV64 debian and apt.
-		 * TODO: check cause and fix
-		 */
-		if (unlikely(!bus_lock->is_locked(iss.get_hart_id()))) {
-			std::cerr << "CombinedMemoryInterface: WARNING: bus not locked in _atomic_store_data (please report to VP "
-			             "developers)"
-			          << std::endl;
+	inline T _atomic_execute_amo(uint64_t addr, T value_rs2, std::function<T(T, T)> operation) {
+		uint64_t paddr;
+		T value_last, value_new;
+		unsigned int n_redos = 0;
+
+		/* bus lock redo loop (see check below) */
+		while (1) {
+			bus_lock->lock(iss.get_hart_id());
+			try {
+				/*
+				 * Translate addresses for load AND store, and deal with exceptions early.
+				 * This is to ensure we have load and store access for the final store below.
+				 */
+				paddr = v2p(addr, LOAD);
+				paddr = v2p(addr, STORE);
+				value_last = _raw_load_data<T>(paddr);
+			} catch (SimulationTrap &e) {
+				atomic_unlock();
+				if (e.reason == EXC_LOAD_ACCESS_FAULT) {
+					/* we have encountered a load access fault, but for AMO this is a store/amo access fault */
+					e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+				}
+				throw e;
+			}
+
+			/*
+			 * The mmu (v2p above) might trigger pte stores that unlock the bus.
+			 * If this is the case, we re-aquire the lock by repeating the above sequence.
+			 */
+			if (unlikely(!bus_lock->is_locked(iss.get_hart_id()))) {
+				/* This is a paranoia check after a fix -> We keep it for the moment */
+				if (n_redos > 0) {
+					std::cerr
+					    << "CombinedMemoryInterface: WARNING: bus not locked on store in _atomic_execute_amo on n_redo "
+					    << n_redos << " -> Please report this to RISC-V VP++ developers!" << std::endl;
+				}
+				/* The bus is no longer locked -> redo the above sequences */
+				n_redos++;
+				continue;
+			} else {
+				/* The bus is still locked -> complete the operation */
+				break;
+			}
 		}
-		_store_data(addr, value);
+
+		/* perform the operation */
+		value_new = operation(value_last, value_rs2);
+
+		/* commit: store and unlock */
+		_raw_store_data(paddr, value_new);
+
+		return value_last;
 	}
+
 	template <typename T>
 	T _atomic_load_reserved_data(uint64_t addr) {
 		bus_lock->lock(iss.get_hart_id());
@@ -360,11 +397,9 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 		assert(0);  // TODO
 	}
 
-	T_sxlen_t atomic_load_word(uint64_t addr) override {
-		return _atomic_load_data<int32_t>(addr);
-	}
-	void atomic_store_word(uint64_t addr, uint32_t value) override {
-		_atomic_store_data(addr, value);
+	T_sxlen_t atomic_execute_amo_word(uint64_t addr, uint32_t value_rs2,
+	                                  std::function<uint32_t(uint32_t, uint32_t)> operation) override {
+		return _atomic_execute_amo(addr, value_rs2, operation);
 	}
 	T_sxlen_t atomic_load_reserved_word(uint64_t addr) override {
 		return _atomic_load_reserved_data<int32_t>(addr);
@@ -374,11 +409,9 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 	}
 
 	/* unused on RV32 */
-	int64_t atomic_load_double(uint64_t addr) override {
-		return _atomic_load_data<int64_t>(addr);
-	}
-	void atomic_store_double(uint64_t addr, uint64_t value) override {
-		_atomic_store_data(addr, value);
+	int64_t atomic_execute_amo_double(uint64_t addr, uint64_t value_rs2,
+	                                  std::function<uint64_t(uint64_t, uint64_t)> operation) override {
+		return _atomic_execute_amo(addr, value_rs2, operation);
 	}
 	int64_t atomic_load_reserved_double(uint64_t addr) override {
 		return _atomic_load_reserved_data<int64_t>(addr);

@@ -62,15 +62,15 @@ struct data_memory_if_T {
 		assert(0);
 	}
 
-	virtual T_sxlen_t atomic_load_word(uint64_t addr) = 0;
-	virtual void atomic_store_word(uint64_t addr, uint32_t value) = 0;
+	virtual T_sxlen_t atomic_execute_amo_word(uint64_t addr, uint32_t value_rs2,
+	                                          std::function<uint32_t(uint32_t, uint32_t)> operation) = 0;
 	virtual T_sxlen_t atomic_load_reserved_word(uint64_t addr) = 0;
 	virtual bool atomic_store_conditional_word(uint64_t addr, uint32_t value) = 0;
 	virtual void atomic_unlock() = 0;
 
 	/* unused on RV32 */
-	virtual int64_t atomic_load_double(uint64_t addr) = 0;
-	virtual void atomic_store_double(uint64_t addr, uint64_t value) = 0;
+	virtual int64_t atomic_execute_amo_double(uint64_t addr, uint64_t value_rs2,
+	                                          std::function<uint64_t(uint64_t, uint64_t)> operation) = 0;
 	virtual int64_t atomic_load_reserved_double(uint64_t addr) = 0;
 	virtual bool atomic_store_conditional_double(uint64_t addr, uint64_t value) = 0;
 
@@ -125,16 +125,16 @@ struct data_memory_if_T {
 	virtual Capability atomic_load_cap(uint64_t addr) {
 		assert(0);
 	}
-	virtual T_sxlen_t atomic_load_word_via_cap(uint64_t addr, Capability auth_val, uint64_t auth_idx) {
+
+	virtual T_sxlen_t atomic_execute_amo_word_via_cap(uint64_t addr, uint32_t value_rs2,
+	                                                  std::function<uint32_t(uint32_t, uint32_t)> operation,
+	                                                  Capability auth_val, uint64_t auth_idx) {
 		assert(0);
 	}
-	virtual void atomic_store_word_via_cap(uint64_t addr, uint32_t value, Capability auth_val, uint64_t auth_idx) {
-		assert(0);
-	}
-	virtual T_sxlen_t atomic_load_double_via_cap(uint64_t addr, Capability auth_val, uint64_t auth_idx) {
-		assert(0);
-	}
-	virtual void atomic_store_double_via_cap(uint64_t addr, uint64_t value, Capability auth_val, uint64_t auth_idx) {
+
+	virtual int64_t atomic_execute_amo_double_via_cap(uint64_t addr, uint64_t value_rs2,
+	                                                  std::function<uint64_t(uint64_t, uint64_t)> operation,
+	                                                  Capability auth_val, uint64_t auth_idx) {
 		assert(0);
 	}
 };

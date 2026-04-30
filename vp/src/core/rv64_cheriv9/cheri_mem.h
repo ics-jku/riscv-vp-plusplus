@@ -388,9 +388,75 @@ class CombinedTaggedMemoryInterface : public sc_core::sc_module,
 	}
 
 	template <typename T>
-	T _atomic_load_data(uint64_t addr) {
-		bus_lock->lock(iss.get_hart_id());
-		return _load_data<T>(addr);
+	inline T _atomic_execute_amo(uint64_t addr, T value_rs2, std::function<T(T, T)> operation) {
+		uint64_t paddr;
+		T value_last, value_new;
+		unsigned int n_redos = 0;
+
+		/* bus lock redo loop (see check below) */
+		while (1) {
+			bus_lock->lock(iss.get_hart_id());
+			try {
+				/*
+				 * Translate addresses for load AND store, and deal with exceptions early.
+				 * This is to ensure we have load and store access for the final store below.
+				 */
+				paddr = v2p(addr, LOAD);
+				paddr = v2p(addr, STORE);
+				value_last = _raw_load_data<T>(paddr);
+			} catch (SimulationTrap &e) {
+				atomic_unlock();
+				if (e.reason == EXC_LOAD_ACCESS_FAULT) {
+					/* we have encountered a load access fault, but for AMO this is a store/amo access fault */
+					e.reason = EXC_STORE_AMO_ACCESS_FAULT;
+				}
+				throw e;
+			}
+
+			/*
+			 * The mmu (v2p above) might trigger pte stores that unlock the bus.
+			 * If this is the case, we re-aquire the lock by repeating the above sequence.
+			 */
+			if (unlikely(!bus_lock->is_locked(iss.get_hart_id()))) {
+				/* This is a paranoia check after a fix -> We keep it for the moment */
+				if (n_redos > 0) {
+					std::cerr << "CombinedTaggedMemoryInterface: WARNING: bus not locked on store in "
+					             "_atomic_execute_amo on n_redo "
+					          << n_redos << " -> Please report this to RISC-V VP++ developers!" << std::endl;
+				}
+				/* The bus is no longer locked -> redo the above sequences */
+				n_redos++;
+				continue;
+			} else {
+				/* The bus is still locked -> complete the operation */
+				break;
+			}
+		}
+
+		/* perform the operation */
+		value_new = operation(value_last, value_rs2);
+
+		/* commit: store and unlock */
+		_raw_store_data(paddr, value_new);
+
+		return value_last;
+	}
+
+	template <typename T>
+	inline T _atomic_execute_amo_via_cap(uint64_t addr, T value_rs2, std::function<T(T, T)> operation,
+	                                     Capability auth_val, uint64_t auth_idx) {
+		if (!auth_val.cap.fields.tag)
+			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
+		if (auth_val.isSealed())
+			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
+		if (!auth_val.cap.fields.permit_load)
+			handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &iss.rvfi_dii_output);
+		if (!auth_val.cap.fields.permit_store)
+			handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &iss.rvfi_dii_output);
+		if (!auth_val.inCapBounds(addr, sizeof(T)))
+			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
+
+		return _atomic_execute_amo(addr, value_rs2, operation);
 	}
 
 	bool _atomic_load_tagged_data(uint64_t addr, __uint128_t *p_data) {
@@ -405,20 +471,6 @@ class CombinedTaggedMemoryInterface : public sc_core::sc_module,
 			tag = false;
 		}
 		return tag;
-	}
-
-	template <typename T>
-	void _atomic_store_data(uint64_t addr, T value) {
-		/*
-		 * This is sometimes triggerd when running RV64 debian and apt and when running CheriBSD
-		 * TODO: check cause and fix
-		 */
-		if (unlikely(!bus_lock->is_locked(iss.get_hart_id()))) {
-			std::cerr << "CombinedTaggedMemoryInterface: WARNING: bus not locked in _atomic_store_data (please report "
-			             "to VP developers)"
-			          << std::endl;
-		}
-		_store_data(addr, value);
 	}
 
 	void _atomic_store_tagged_data(uint64_t addr, __uint128_t data, bool tag) {
@@ -541,38 +593,21 @@ class CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		_store_data(addr, value);
 	}
 
-	int64_t atomic_load_word(uint64_t addr) override {
-		return _atomic_load_data<int32_t>(addr);
+	int64_t atomic_execute_amo_word(uint64_t addr, uint32_t value_rs2,
+	                                std::function<uint32_t(uint32_t, uint32_t)> operation) override {
+		return _atomic_execute_amo(addr, value_rs2, operation);
 	}
 
-	int64_t atomic_load_word_via_cap(uint64_t addr, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.cap.fields.tag)
-			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
-		if (auth_val.isSealed())
-			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.cap.fields.permit_load)
-			handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.inCapBounds(addr, 4))
-			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
-
-		return atomic_load_word(addr);
+	int64_t atomic_execute_amo_word_via_cap(uint64_t addr, uint32_t value_rs2,
+	                                        std::function<uint32_t(uint32_t, uint32_t)> operation, Capability auth_val,
+	                                        uint64_t auth_idx) override {
+		return _atomic_execute_amo_via_cap(addr, value_rs2, operation, auth_val, auth_idx);
 	}
 
-	void atomic_store_word(uint64_t addr, uint32_t value) override {
-		_atomic_store_data(addr, value);
-	}
-
-	void atomic_store_word_via_cap(uint64_t addr, uint32_t value, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.cap.fields.tag)
-			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
-		if (auth_val.isSealed())
-			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.cap.fields.permit_store)
-			handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.inCapBounds(addr, 4))
-			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
-
-		atomic_store_word(addr, value);
+	int64_t atomic_execute_amo_double_via_cap(uint64_t addr, uint64_t value_rs2,
+	                                          std::function<uint64_t(uint64_t, uint64_t)> operation,
+	                                          Capability auth_val, uint64_t auth_idx) override {
+		return _atomic_execute_amo_via_cap(addr, value_rs2, operation, auth_val, auth_idx);
 	}
 
 	int64_t atomic_load_reserved_word(uint64_t addr) override {
@@ -583,38 +618,9 @@ class CombinedTaggedMemoryInterface : public sc_core::sc_module,
 		return _atomic_store_conditional_data(addr, value);
 	}
 
-	int64_t atomic_load_double(uint64_t addr) override {
-		return _atomic_load_data<int64_t>(addr);
-	}
-
-	int64_t atomic_load_double_via_cap(uint64_t addr, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.cap.fields.tag)
-			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
-		if (auth_val.isSealed())
-			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.cap.fields.permit_load)
-			handle_cheri_cap_exception(CapEx_PermitLoadViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.inCapBounds(addr, 8))
-			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
-
-		return atomic_load_double(addr);
-	}
-
-	void atomic_store_double(uint64_t addr, uint64_t value) override {
-		_atomic_store_data(addr, value);
-	}
-
-	void atomic_store_double_via_cap(uint64_t addr, uint64_t value, Capability auth_val, uint64_t auth_idx) override {
-		if (!auth_val.cap.fields.tag)
-			handle_cheri_cap_exception(CapEx_TagViolation, auth_idx, &iss.rvfi_dii_output);
-		if (auth_val.isSealed())
-			handle_cheri_cap_exception(CapEx_SealViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.cap.fields.permit_store)
-			handle_cheri_cap_exception(CapEx_PermitStoreViolation, auth_idx, &iss.rvfi_dii_output);
-		if (!auth_val.inCapBounds(addr, 8))
-			handle_cheri_cap_exception(CapEx_LengthViolation, auth_idx, &iss.rvfi_dii_output);
-
-		atomic_store_double(addr, value);
+	int64_t atomic_execute_amo_double(uint64_t addr, uint64_t value_rs2,
+	                                  std::function<uint64_t(uint64_t, uint64_t)> operation) override {
+		return _atomic_execute_amo(addr, value_rs2, operation);
 	}
 
 	int64_t atomic_load_reserved_double(uint64_t addr) override {
