@@ -9373,20 +9373,25 @@ void ISS_CT::execute_c_jalr(int32_t immediate) {
 	CapAddr_t newPCCBase = cs1_val.getBase();
 	if (!cs1_val.cap.fields.tag) {
 		handle_cheri_reg_exception(CapEx_TagViolation, instr.rs1(), &rvfi_dii_output);
-	} else if (cs1_val.isSealed() & ((cs1_val.cap.fields.otype != cOtypeSentryUnsigned) | (off != 0))) {
-		handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
-	} else if (!cs1_val.cap.fields.permit_execute) {
-		handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
-	} else if (have_pcc_relocation() &&
-	           (((newPCCBase & 0b01) == 0b01) || (((newPCCBase & 0b10) == 0b10) && !csrs.misa.has_C_extension()))) {
-		handle_cheri_reg_exception(CapEx_UnalignedBase, instr.rs1(), &rvfi_dii_output);
-	} else if ((newPC & 1) && !csrs.misa.has_C_extension()) {
-		handle_mem_exception(newPC, E_FetchAddrAlign, &rvfi_dii_output);
-	} else if (!cs1_val.inCapBounds(newPC, min_instruction_bytes())) {
-		handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);
-	} else {
-		regs[instr.rd()] = dbbcache.jump_dyn_and_link(newPC, cs1_val, true).pcc;
 	}
+	if (cs1_val.isSealed() & ((cs1_val.cap.fields.otype != cOtypeSentryUnsigned) | (off != 0))) {
+		handle_cheri_reg_exception(CapEx_SealViolation, instr.rs1(), &rvfi_dii_output);
+	}
+	if (!cs1_val.cap.fields.permit_execute) {
+		handle_cheri_reg_exception(CapEx_PermitExecuteViolation, instr.rs1(), &rvfi_dii_output);
+	}
+	if (have_pcc_relocation() &&
+	    (((newPCCBase & 0b01) == 0b01) || (((newPCCBase & 0b10) == 0b10) && !csrs.misa.has_C_extension()))) {
+		handle_cheri_reg_exception(CapEx_UnalignedBase, instr.rs1(), &rvfi_dii_output);
+	}
+	if ((newPC & 1) && !csrs.misa.has_C_extension()) {
+		handle_mem_exception(newPC, E_FetchAddrAlign, &rvfi_dii_output);
+	}
+	if (!cs1_val.inCapBounds(newPC, min_instruction_bytes())) {
+		handle_cheri_reg_exception(CapEx_LengthViolation, instr.rs1(), &rvfi_dii_output);
+	}
+	regs[instr.rd()] = dbbcache.jump_dyn_and_link(newPC, cs1_val, true).pcc;
+
 	// Write to rd=0 must be ignored
 	reset_reg_zero();
 }
