@@ -241,7 +241,7 @@ struct csr_pmpaddr {
 		} fields;
 	} reg;
 
-	unsigned get_address() {
+	uint64_t get_address() {
 		return reg.fields.address << 2;
 	}
 };
