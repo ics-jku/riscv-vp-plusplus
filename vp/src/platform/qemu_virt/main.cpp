@@ -116,7 +116,7 @@ struct LinuxOptions : public Options {
 	addr_t clint_start_addr = 0x02000000;
 	addr_t clint_end_addr = clint_start_addr + 0x10000 - 1;
 
-	OptionValue<unsigned long> entry_point;
+	OptionValue<uint64_t> entry_point;
 	std::string dtb_file;
 	std::string kernel_file;
 	bool dummy_tlm_target_debug = false;
