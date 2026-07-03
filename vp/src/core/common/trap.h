@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 // for rv64_cheriv9 rvfi_dii
 #include "../rv64_cheriv9/rvfi-dii/rvfi_dii_trace.h"  // TODO: Should not include rv64 in common!
 
@@ -50,7 +52,7 @@ inline void raise_trap(ExceptionCode exc, uint64_t mtval) {
 	throw SimulationTrap({exc, mtval});
 }
 
-inline void raise_trap(ExceptionCode exc, unsigned long mtval, rvfi_dii_trace_t* trace) {
+inline void raise_trap(ExceptionCode exc, uint64_t mtval, rvfi_dii_trace_t* trace) {
 	if (trace != nullptr) {
 		// trace->rvfi_dii_pc_wdata = mtval;
 		trace->rvfi_dii_trap = 1;
