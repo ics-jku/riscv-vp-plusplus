@@ -8,6 +8,7 @@
 #define RISCV_UTIL_HISTOGRAM_H
 
 #include <climits>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 
@@ -22,7 +23,7 @@ class Histogram_T {
 	unsigned int hist[SIZE];
 	unsigned int min;
 	unsigned int max;
-	unsigned long long sum;
+	uint64_t sum;
 
 	Histogram_T(const char *name) : name(name) {
 		reset();

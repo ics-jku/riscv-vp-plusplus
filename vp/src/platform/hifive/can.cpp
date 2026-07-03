@@ -399,7 +399,7 @@ uint8_t CAN::readRxBuf(uint8_t no, uint8_t) {
 	return ret;
 }
 
-void CAN::mcp2515_id_to_buf(const unsigned long id, uint8_t* idField, const bool extended) {
+void CAN::mcp2515_id_to_buf(const uint32_t id, uint8_t* idField, const bool extended) {
 	uint16_t canid;
 
 	canid = (uint16_t)(id & 0x0FFFF);
@@ -420,7 +420,7 @@ void CAN::mcp2515_id_to_buf(const unsigned long id, uint8_t* idField, const bool
 	}
 }
 
-void CAN::mcp2515_buf_to_id(unsigned& id, bool& extended, uint8_t* idField) {
+void CAN::mcp2515_buf_to_id(uint32_t& id, bool& extended, uint8_t* idField) {
 	extended = false;
 	id = 0;
 

@@ -41,8 +41,8 @@ void NetTrace::dump_arch() {
 
 void NetTrace::dump_transaction(bool is_read, std::string initiator, int target, uint64_t glob_addr,
                                 unsigned char* data_ptr, unsigned int data_length, sc_core::sc_time delay) {
-	std::string time_stamp = std::to_string(static_cast<unsigned long long>(
-	    sc_core::sc_time_stamp().to_default_time_units() + delay.to_default_time_units()));
+	std::string time_stamp = std::to_string(
+	    static_cast<uint64_t>(sc_core::sc_time_stamp().to_default_time_units() + delay.to_default_time_units()));
 	std::string msg = is_read ? "R;" : "W;";
 	std::stringstream addr;
 	addr << std::hex << glob_addr;

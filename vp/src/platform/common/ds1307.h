@@ -29,12 +29,12 @@ class DS1307 : public I2C_Device_IF {
 	struct tm get_date_time();
 	struct tm get_utc_date_time();
 	std::time_t convert_tm_to_seconds(struct tm date_time);
-	long long diff_date_time(struct tm t1, struct tm t2);
-	bool save_diff(long long& diff, const char* filename);
-	bool load_diff(long long& diff, const char* filename);
+	int64_t diff_date_time(struct tm t1, struct tm t2);
+	bool save_diff(int64_t& diff, const char* filename);
+	bool load_diff(int64_t& diff, const char* filename);
 	bool save_state(uint8_t* state, const char* filename);
 	bool load_state(uint8_t* state, const char* filename);
-	void update_date_time(long long diff, uint8_t mode_12h, uint8_t CH_bit);
+	void update_date_time(int64_t diff, uint8_t mode_12h, uint8_t CH_bit);
 	void reset_rtc();
 
    public:

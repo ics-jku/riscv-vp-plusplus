@@ -33,7 +33,7 @@ DS1307::DS1307() {
 		}
 		save_state(registers, DS1307_STATE_FILE);
 	}
-	long long diff;
+	int64_t diff;
 	uint8_t mode_12h = (registers[DS1307_ADDRESS_HOURS] & DS1307_BIT_12_24_MASK) >> 6;
 	uint8_t CH_bit = (registers[DS1307_ADDRESS_SECONDS] & DS1307_BIT_CH_MASK) >> 7;
 	if (!CH_bit) {  // if CH bit is not set clock is not stopped
@@ -52,7 +52,7 @@ DS1307::DS1307() {
 
 bool DS1307::start() {
 	start_signal = START_RECEIVED;
-	long long diff;
+	int64_t diff;
 	// load current diff time and date from file and update registers
 	if (!(registers[DS1307_ADDRESS_SECONDS] & DS1307_BIT_CH_MASK)) {  // Clock is halted, do not update time
 		load_diff(diff, DIFF_DATE_TIME_FILE);
@@ -81,7 +81,7 @@ bool DS1307::write(uint8_t data) {
 	save_state(registers, DS1307_STATE_FILE);  // save state here or at stop?
 	struct tm set_time = get_date_time();
 	struct tm local_time = get_utc_date_time();
-	long long diff = diff_date_time(set_time, local_time);
+	int64_t diff = diff_date_time(set_time, local_time);
 	save_diff(diff, DIFF_DATE_TIME_FILE);
 	return true;
 }
@@ -104,7 +104,7 @@ bool DS1307::stop() {
 	// update time diff
 	struct tm set_time = get_date_time();
 	struct tm local_time = get_utc_date_time();
-	long long diff = diff_date_time(set_time, local_time);
+	int64_t diff = diff_date_time(set_time, local_time);
 	// save current diff, registers, and ram
 	save_diff(diff, DIFF_DATE_TIME_FILE);
 	save_state(registers, DS1307_STATE_FILE);
@@ -146,7 +146,7 @@ std::time_t DS1307::convert_tm_to_seconds(struct tm date_time) {
 	return time;
 }
 
-long long DS1307::diff_date_time(struct tm t1, struct tm t2) {
+int64_t DS1307::diff_date_time(struct tm t1, struct tm t2) {
 	// Convert both tm structures to time_points
 	std::time_t time1 = convert_tm_to_seconds(t1);
 	std::time_t time2 = convert_tm_to_seconds(t2);
@@ -154,22 +154,22 @@ long long DS1307::diff_date_time(struct tm t1, struct tm t2) {
 	return time1 - time2;
 }
 
-bool DS1307::save_diff(long long& diff, const char* filename) {
+bool DS1307::save_diff(int64_t& diff, const char* filename) {
 	std::ofstream outFile(filename, std::ios::binary);
 	if (!outFile) {
 		return false;
 	}
-	outFile.write(reinterpret_cast<const char*>(&diff), sizeof(long long));
+	outFile.write(reinterpret_cast<const char*>(&diff), sizeof(int64_t));
 	outFile.close();
 	return true;
 }
 
-bool DS1307::load_diff(long long& diff, const char* filename) {
+bool DS1307::load_diff(int64_t& diff, const char* filename) {
 	std::ifstream inFile(filename, std::ios::binary);
 	if (!inFile) {
 		return false;
 	}
-	inFile.read(reinterpret_cast<char*>(&diff), sizeof(long long));
+	inFile.read(reinterpret_cast<char*>(&diff), sizeof(int64_t));
 	inFile.close();
 	return true;
 }
@@ -196,7 +196,7 @@ bool DS1307::load_state(uint8_t* state, const char* filename) {
 }
 
 /* update time and date saved in registers according to set time diff and 12 or 24h mode */
-void DS1307::update_date_time(long long diff, uint8_t mode_12h, uint8_t CH_bit) {
+void DS1307::update_date_time(int64_t diff, uint8_t mode_12h, uint8_t CH_bit) {
 	// struct tm current = get_date_time();
 	std::time_t current = DS1307::convert_tm_to_seconds(get_utc_date_time());
 	std::time_t new_datetime = current + diff;
@@ -251,7 +251,7 @@ struct tm DS1307::get_utc_date_time() {
 }
 
 void DS1307::reset_rtc() {
-	long long diff = 0;
+	int64_t diff = 0;
 	save_diff(diff, DIFF_DATE_TIME_FILE);  // initialize to 0 difference
 	for (int i = 0; i < 64; i++) {
 		registers[i] = 0;
