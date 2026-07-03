@@ -14,6 +14,8 @@
 
 namespace cheriv9::rv64 {
 
+using csr_reg_t = uint64_t;
+
 constexpr unsigned FS_OFF = 0b00;
 constexpr unsigned FS_INITIAL = 0b01;
 constexpr unsigned FS_CLEAN = 0b10;
@@ -25,7 +27,7 @@ inline bool is_valid_privilege_level(PrivilegeLevel mode) {
 
 struct csr_64 {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 	} reg;
 };
 
@@ -35,11 +37,11 @@ struct csr_misa_64 : csr_misa {
 	}
 
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned extensions : 26;
-			uint64_t wiri : 36;
-			unsigned mxl : 2;
+			csr_reg_t extensions : 26;
+			csr_reg_t wiri : 36;
+			csr_reg_t mxl : 2;
 		} fields;
 	} reg;
 
@@ -73,11 +75,11 @@ struct csr_misa_64 : csr_misa {
 
 struct csr_mvendorid {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned offset : 7;
-			unsigned bank : 25;
-			unsigned _unused : 32;
+			csr_reg_t offset : 7;
+			csr_reg_t bank : 25;
+			csr_reg_t _unused : 32;
 		} fields;
 	} reg;
 };
@@ -90,54 +92,54 @@ struct csr_mstatus {
 	}
 
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned uie : 1;
-			unsigned sie : 1;
-			unsigned wpri1 : 1;
-			unsigned mie : 1;
-			unsigned upie : 1;
-			unsigned spie : 1;
-			unsigned ube : 1;
-			unsigned mpie : 1;
-			unsigned spp : 1;
-			unsigned vs : 2;
-			unsigned mpp : 2;
-			unsigned fs : 2;
-			unsigned xs : 2;
-			unsigned mprv : 1;
-			unsigned sum : 1;
-			unsigned mxr : 1;
-			unsigned tvm : 1;
-			unsigned tw : 1;
-			unsigned tsr : 1;
-			unsigned wpri4 : 9;
-			unsigned uxl : 2;
-			unsigned sxl : 2;
-			unsigned sbe : 1;
-			unsigned mbe : 1;
-			unsigned wpri5 : 25;
-			unsigned sd : 1;
+			csr_reg_t uie : 1;
+			csr_reg_t sie : 1;
+			csr_reg_t wpri1 : 1;
+			csr_reg_t mie : 1;
+			csr_reg_t upie : 1;
+			csr_reg_t spie : 1;
+			csr_reg_t ube : 1;
+			csr_reg_t mpie : 1;
+			csr_reg_t spp : 1;
+			csr_reg_t vs : 2;
+			csr_reg_t mpp : 2;
+			csr_reg_t fs : 2;
+			csr_reg_t xs : 2;
+			csr_reg_t mprv : 1;
+			csr_reg_t sum : 1;
+			csr_reg_t mxr : 1;
+			csr_reg_t tvm : 1;
+			csr_reg_t tw : 1;
+			csr_reg_t tsr : 1;
+			csr_reg_t wpri4 : 9;
+			csr_reg_t uxl : 2;
+			csr_reg_t sxl : 2;
+			csr_reg_t sbe : 1;
+			csr_reg_t mbe : 1;
+			csr_reg_t wpri5 : 25;
+			csr_reg_t sd : 1;
 		} fields;
 	} reg;
 };
 
 struct csr_mtvec {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned mode : 2;   // WARL
-			uint64_t base : 62;  // WARL
+			csr_reg_t mode : 2;   // WARL
+			csr_reg_t base : 62;  // WARL
 		} fields;
 	} reg;
 
-	uint64_t get_base_address() {
+	csr_reg_t get_base_address() {
 		return reg.fields.base << 2;
 	}
 
 	enum Mode { Direct = 0, Vectored = 1 };
 
-	void checked_write(uint64_t val) {
+	void checked_write(csr_reg_t val) {
 		reg.val = val;
 		if (reg.fields.mode >= 1)
 			reg.fields.mode = 0;
@@ -146,119 +148,119 @@ struct csr_mtvec {
 
 struct csr_mie {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned usie : 1;
-			unsigned ssie : 1;
-			unsigned wpri1 : 1;
-			unsigned msie : 1;
+			csr_reg_t usie : 1;
+			csr_reg_t ssie : 1;
+			csr_reg_t wpri1 : 1;
+			csr_reg_t msie : 1;
 
-			unsigned utie : 1;
-			unsigned stie : 1;
-			unsigned wpri2 : 1;
-			unsigned mtie : 1;
+			csr_reg_t utie : 1;
+			csr_reg_t stie : 1;
+			csr_reg_t wpri2 : 1;
+			csr_reg_t mtie : 1;
 
-			unsigned ueie : 1;
-			unsigned seie : 1;
-			unsigned wpri3 : 1;
-			unsigned meie : 1;
+			csr_reg_t ueie : 1;
+			csr_reg_t seie : 1;
+			csr_reg_t wpri3 : 1;
+			csr_reg_t meie : 1;
 
-			uint64_t wpri4 : 52;
+			csr_reg_t wpri4 : 52;
 		} fields;
 	} reg;
 };
 
 struct csr_mip {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned usip : 1;
-			unsigned ssip : 1;
-			unsigned wiri1 : 1;
-			unsigned msip : 1;
+			csr_reg_t usip : 1;
+			csr_reg_t ssip : 1;
+			csr_reg_t wiri1 : 1;
+			csr_reg_t msip : 1;
 
-			unsigned utip : 1;
-			unsigned stip : 1;
-			unsigned wiri2 : 1;
-			unsigned mtip : 1;
+			csr_reg_t utip : 1;
+			csr_reg_t stip : 1;
+			csr_reg_t wiri2 : 1;
+			csr_reg_t mtip : 1;
 
-			unsigned ueip : 1;
-			unsigned seip : 1;
-			unsigned wiri3 : 1;
-			unsigned meip : 1;
+			csr_reg_t ueip : 1;
+			csr_reg_t seip : 1;
+			csr_reg_t wiri3 : 1;
+			csr_reg_t meip : 1;
 
-			uint64_t wiri4 : 52;
+			csr_reg_t wiri4 : 52;
 		} fields;
 	} reg;
 };
 
 struct csr_mepc {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 	} reg;
 };
 
 struct csr_mcause {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			uint64_t exception_code : 63;  // WLRL
-			unsigned interrupt : 1;
+			csr_reg_t exception_code : 63;  // WLRL
+			csr_reg_t interrupt : 1;
 		} fields;
 	} reg;
 };
 
 struct csr_mcounteren {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned CY : 1;
-			unsigned TM : 1;
-			unsigned IR : 1;
-			uint64_t reserved : 61;
+			csr_reg_t CY : 1;
+			csr_reg_t TM : 1;
+			csr_reg_t IR : 1;
+			csr_reg_t reserved : 61;
 		} fields;
 	} reg;
 };
 
 struct csr_mcountinhibit {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned CY : 1;
-			unsigned zero : 1;
-			unsigned IR : 1;
-			uint64_t reserved : 61;
+			csr_reg_t CY : 1;
+			csr_reg_t zero : 1;
+			csr_reg_t IR : 1;
+			csr_reg_t reserved : 61;
 		} fields;
 	} reg;
 };
 
 struct csr_pmpcfg {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 	} reg;
 };
 
 struct csr_pmpaddr {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			uint64_t address : 54;
-			unsigned zero : 10;
+			csr_reg_t address : 54;
+			csr_reg_t zero : 10;
 		} fields;
 	} reg;
 
-	uint64_t get_address() {
+	csr_reg_t get_address() {
 		return reg.fields.address << 2;
 	}
 };
 
 struct csr_satp {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			uint64_t ppn : 44;   // WARL
-			unsigned asid : 16;  // WARL
-			unsigned mode : 4;   // WARL
+			csr_reg_t ppn : 44;   // WARL
+			csr_reg_t asid : 16;  // WARL
+			csr_reg_t mode : 4;   // WARL
 		} fields;
 	} reg;
 };
@@ -266,95 +268,95 @@ struct csr_satp {
 /* Actually 32 bit large, but use 64 value for consistency and simply set the read/write mask accordingly. */
 struct csr_fcsr {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned fflags : 5;
-			unsigned frm : 3;
-			unsigned reserved : 24;
-			unsigned _ : 32;
+			csr_reg_t fflags : 5;
+			csr_reg_t frm : 3;
+			csr_reg_t reserved : 24;
+			csr_reg_t _ : 32;
 		} fields;
 		struct fflags {
-			unsigned NX : 1;  // invalid operation
-			unsigned UF : 1;  // divide by zero
-			unsigned OF : 1;  // overflow
-			unsigned DZ : 1;  // underflow
-			unsigned NV : 1;  // inexact
+			csr_reg_t NX : 1;  // invalid operation
+			csr_reg_t UF : 1;  // divide by zero
+			csr_reg_t OF : 1;  // overflow
+			csr_reg_t DZ : 1;  // underflow
+			csr_reg_t NV : 1;  // inexact
 		} fflags;
 	} reg;
 };
 
 struct csr_vtype {
 	union reg {
-		uint64_t val = 0x8000000000000000;  // vill=1 at reset
+		csr_reg_t val = 0x8000000000000000;  // vill=1 at reset
 		struct fields {
-			unsigned vlmul : 3;
-			unsigned vsew : 3;
-			unsigned vta : 1;
-			unsigned vma : 1;
-			uint64_t reserved : 55;
-			unsigned vill : 1;
+			csr_reg_t vlmul : 3;
+			csr_reg_t vsew : 3;
+			csr_reg_t vta : 1;
+			csr_reg_t vma : 1;
+			csr_reg_t reserved : 55;
+			csr_reg_t vill : 1;
 		} fields;
 	} reg;
 };
 
 struct csr_vl {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 	} reg;
 };
 
 struct csr_vstart {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 	} reg;
 };
 
 struct csr_vxrm {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned vxrm : 2;
-			uint64_t zero : 62;
+			csr_reg_t vxrm : 2;
+			csr_reg_t zero : 62;
 		} fields;
 	} reg;
 };
 
 struct csr_vxsat {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned vxsat : 1;
-			uint64_t zero : 63;
+			csr_reg_t vxsat : 1;
+			csr_reg_t zero : 63;
 		} fields;
 	} reg;
 };
 
 struct csr_vcsr {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct fields {
-			unsigned vxsat : 1;
-			unsigned vxrm : 2;
-			uint64_t reserved : 61;
+			csr_reg_t vxsat : 1;
+			csr_reg_t vxrm : 2;
+			csr_reg_t reserved : 61;
 		} fields;
 	} reg;
 };
 
 struct csr_vlenb {
 	union reg {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 	} reg;
 };
 
 struct csr_ccsr {
 	union {
-		uint64_t val = 0;
+		csr_reg_t val = 0;
 		struct {
-			uint8_t e : 1;  // Enable
-			uint32_t reserved : 29;
-			uint8_t nr : 1;  // No DDC/PCC relocation
-			uint8_t tc : 1;  // Tag clearing error sematnics
-			uint32_t upper : 32;
+			csr_reg_t e : 1;  // Enable
+			csr_reg_t reserved : 29;
+			csr_reg_t nr : 1;  // No DDC/PCC relocation
+			csr_reg_t tc : 1;  // Tag clearing error sematnics
+			csr_reg_t upper : 32;
 		} fields;
 	} reg;
 };
@@ -421,44 +423,44 @@ inline bool is_bitset(T &csr, unsigned bitpos) {
 	return csr.reg.val & (1 << bitpos);
 }
 
-constexpr uint64_t MIE_MASK = 0b101110111011;
-constexpr uint64_t SIE_MASK = 0b001100110011;
-constexpr uint64_t UIE_MASK = 0b000100010001;
+constexpr csr_reg_t MIE_MASK = 0b101110111011;
+constexpr csr_reg_t SIE_MASK = 0b001100110011;
+constexpr csr_reg_t UIE_MASK = 0b000100010001;
 
-constexpr uint64_t MIP_WRITE_MASK = 0b001100110011;
-constexpr uint64_t MIP_READ_MASK = MIE_MASK;
-constexpr uint64_t SIP_MASK = 0b11;
-constexpr uint64_t UIP_MASK = 0b1;
+constexpr csr_reg_t MIP_WRITE_MASK = 0b001100110011;
+constexpr csr_reg_t MIP_READ_MASK = MIE_MASK;
+constexpr csr_reg_t SIP_MASK = 0b11;
+constexpr csr_reg_t UIP_MASK = 0b1;
 
-constexpr uint64_t MEDELEG_MASK = 0b11100000000001011101111111111;  // Adds cheri dependent bits
-// constexpr uint64_t MEDELEG_MASK = 0b1011101111111111; // TODO: Mask cheri dependent?
-constexpr uint64_t MIDELEG_MASK = MIE_MASK;
+constexpr csr_reg_t MEDELEG_MASK = 0b11100000000001011101111111111;  // Adds cheri dependent bits
+// constexpr csr_reg_t MEDELEG_MASK = 0b1011101111111111; // TODO: Mask cheri dependent?
+constexpr csr_reg_t MIDELEG_MASK = MIE_MASK;
 
-constexpr uint64_t MTVEC_MASK = ~2;
+constexpr csr_reg_t MTVEC_MASK = ~2;
 
-constexpr uint64_t MCOUNTEREN_MASK = 0b111;
-constexpr uint64_t MCOUNTINHIBIT_MASK = 0b101;
+constexpr csr_reg_t MCOUNTEREN_MASK = 0b111;
+constexpr csr_reg_t MCOUNTINHIBIT_MASK = 0b101;
 
-constexpr uint64_t SEDELEG_MASK = 0b1011000111111111;
-constexpr uint64_t SIDELEG_MASK = MIDELEG_MASK;
+constexpr csr_reg_t SEDELEG_MASK = 0b1011000111111111;
+constexpr csr_reg_t SIDELEG_MASK = MIDELEG_MASK;
 
-constexpr uint64_t MSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000011111111111111110111011;
-constexpr uint64_t MSTATUS_READ_MASK = 0b1000000000000000000000000011111100000000011111111111111111111011;
-constexpr uint64_t SSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000000011011110011100110011;
-constexpr uint64_t SSTATUS_READ_MASK = 0b1000000000000000000000000000001100000000000011011110011101110011;
-constexpr uint64_t USTATUS_WRITE_MASK = 0b0000000000000000000000000000000000000000000000000000000000010001;
-constexpr uint64_t USTATUS_READ_MASK = 0b0000000000000000000000000000000000000000000000000000000001010001;
+constexpr csr_reg_t MSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000011111111111111110111011;
+constexpr csr_reg_t MSTATUS_READ_MASK = 0b1000000000000000000000000011111100000000011111111111111111111011;
+constexpr csr_reg_t SSTATUS_WRITE_MASK = 0b1000000000000000000000000000000000000000000011011110011100110011;
+constexpr csr_reg_t SSTATUS_READ_MASK = 0b1000000000000000000000000000001100000000000011011110011101110011;
+constexpr csr_reg_t USTATUS_WRITE_MASK = 0b0000000000000000000000000000000000000000000000000000000000010001;
+constexpr csr_reg_t USTATUS_READ_MASK = 0b0000000000000000000000000000000000000000000000000000000001010001;
 
-constexpr uint64_t PMPADDR_MASK = 0b0000000000111111111111111111111111111111111111111111111111111111;
+constexpr csr_reg_t PMPADDR_MASK = 0b0000000000111111111111111111111111111111111111111111111111111111;
 
-constexpr uint64_t SATP_MASK = 0b1111000000000000000011111111111111111111111111111111111111111111;
-constexpr uint64_t SATP_MODE = 0b1111000000000000000000000000000000000000000000000000000000000000;
+constexpr csr_reg_t SATP_MASK = 0b1111000000000000000011111111111111111111111111111111111111111111;
+constexpr csr_reg_t SATP_MODE = 0b1111000000000000000000000000000000000000000000000000000000000000;
 
-constexpr uint64_t FCSR_MASK = 0b11111111;
-constexpr uint64_t VTYPE_MASK = 0b1000000000000000000000000000000000000000000000000000000011111111;
-constexpr uint64_t VXRM_MASK = 0b11;
-constexpr uint64_t VXSAT_MASK = 0b1;
-constexpr uint64_t VCSR_MASK = 0b111;
+constexpr csr_reg_t FCSR_MASK = 0b11111111;
+constexpr csr_reg_t VTYPE_MASK = 0b1000000000000000000000000000000000000000000000000000000011111111;
+constexpr csr_reg_t VXRM_MASK = 0b11;
+constexpr csr_reg_t VXSAT_MASK = 0b1;
+constexpr csr_reg_t VCSR_MASK = 0b111;
 // 64 bit timer csrs
 constexpr unsigned CYCLE_ADDR = 0xC00;
 constexpr unsigned TIME_ADDR = 0xC01;
@@ -707,7 +709,7 @@ constexpr unsigned SCCSR_ADDR = 0x9C0;  // Supervisor Capability Control and Sta
 constexpr unsigned MCCSR_ADDR = 0xBC0;  // Machine Capability Control and Status Register
 }  // namespace csr
 
-inline csr_ccsr legalizeCCSR(csr_ccsr ccsr, uint64_t v) {
+inline csr_ccsr legalizeCCSR(csr_ccsr ccsr, csr_reg_t v) {
 	// 		  // write only the defined bits, leaving the other bits untouched
 	//   // Technically, WPRI does not need a legalizer, since software is
 	//   // assumed to legalize; so we could remove this function.
@@ -804,7 +806,7 @@ struct csr_table {
 	csr_64 &mscratch;
 	csr_mepc &mepc;
 
-	std::unordered_map<unsigned, uint64_t *> register_mapping;
+	std::unordered_map<unsigned, csr_reg_t *> register_mapping;
 
 	csr_table()
 	    : utvec(utcc),
@@ -890,13 +892,13 @@ struct csr_table {
 		return register_mapping.find(addr) != register_mapping.end();
 	}
 
-	void default_write64(unsigned addr, uint64_t value) {
+	void default_write64(unsigned addr, csr_reg_t value) {
 		auto it = register_mapping.find(addr);
 		ensure((it != register_mapping.end()) && "validate address before calling this function");
 		*it->second = value;
 	}
 
-	uint64_t default_read64(unsigned addr) {
+	csr_reg_t default_read64(unsigned addr) {
 		auto it = register_mapping.find(addr);
 		ensure((it != register_mapping.end()) && "validate address before calling this function");
 		return *it->second;
