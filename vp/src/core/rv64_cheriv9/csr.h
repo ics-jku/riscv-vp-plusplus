@@ -845,9 +845,13 @@ struct csr_table {
 		register_mapping[MTVAL_ADDR] = &mtval.reg.val;
 		register_mapping[MIP_ADDR] = &mip.reg.val;
 
-		for (unsigned i = 0; i < 16; ++i) register_mapping[PMPADDR0_ADDR + i] = &pmpaddr[i].reg.val;
+		for (unsigned i = 0; i < pmpaddr.size(); ++i) {
+			register_mapping[PMPADDR0_ADDR + i] = &pmpaddr[i].reg.val;
+		}
 
-		for (unsigned i = 0; i < 4; ++i) register_mapping[PMPCFG0_ADDR + i] = &pmpcfg[i].reg.val;
+		for (unsigned i = 0; i < pmpcfg.size(); ++i) {
+			register_mapping[PMPCFG0_ADDR + i] = &pmpcfg[i].reg.val;
+		}
 
 		register_mapping[SEDELEG_ADDR] = &sedeleg.reg.val;
 		register_mapping[SIDELEG_ADDR] = &sideleg.reg.val;
