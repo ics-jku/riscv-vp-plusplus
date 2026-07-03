@@ -6848,17 +6848,15 @@ uxlen_t ISS_CT::get_csr_value(uxlen_t addr) {
 	using namespace csr;
 
 	switch (addr) {
-		case TIME_ADDR:
-		case MTIME_ADDR: {
-			uint64_t mtime = clint->update_and_get_mtime();
-			csrs.time.reg.val = mtime;
+		case TIME_ADDR: {
+			uint64_t time = clint->update_and_get_mtime();
+			csrs.time.reg.val = time;
 			return csrs.time.reg.words.low;
 		}
 
-		case TIMEH_ADDR:
-		case MTIMEH_ADDR: {
-			uint64_t mtime = clint->update_and_get_mtime();
-			csrs.time.reg.val = mtime;
+		case TIMEH_ADDR: {
+			uint64_t time = clint->update_and_get_mtime();
+			csrs.time.reg.val = time;
 			return csrs.time.reg.words.high;
 		}
 

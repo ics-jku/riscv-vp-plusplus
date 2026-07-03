@@ -413,8 +413,6 @@ constexpr unsigned INSTRETH_ADDR = 0xC82;
 // shadows for the above CSRs
 constexpr unsigned MCYCLE_ADDR = 0xB00;
 constexpr unsigned MCYCLEH_ADDR = 0xB80;
-constexpr unsigned MTIME_ADDR = 0xB01;
-constexpr unsigned MTIMEH_ADDR = 0xB81;
 constexpr unsigned MINSTRET_ADDR = 0xB02;
 constexpr unsigned MINSTRETH_ADDR = 0xB82;
 
@@ -734,8 +732,6 @@ struct csr_table {
 		register_mapping[INSTRETH_ADDR] = (csr_reg_t *)(&instret.reg) + 1;
 		register_mapping[MCYCLE_ADDR] = (csr_reg_t *)(&cycle.reg);
 		register_mapping[MCYCLEH_ADDR] = (csr_reg_t *)(&cycle.reg) + 1;
-		register_mapping[MTIME_ADDR] = (csr_reg_t *)(&time.reg);
-		register_mapping[MTIMEH_ADDR] = (csr_reg_t *)(&time.reg) + 1;
 		register_mapping[MINSTRET_ADDR] = (csr_reg_t *)(&instret.reg);
 		register_mapping[MINSTRETH_ADDR] = (csr_reg_t *)(&instret.reg) + 1;
 

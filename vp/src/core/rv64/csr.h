@@ -392,7 +392,6 @@ constexpr unsigned INSTRET_ADDR = 0xC02;
 
 // shadows for the above CSRs
 constexpr unsigned MCYCLE_ADDR = 0xB00;
-constexpr unsigned MTIME_ADDR = 0xB01;
 constexpr unsigned MINSTRET_ADDR = 0xB02;
 
 // 32 bit machine CSRs
@@ -695,7 +694,6 @@ struct csr_table {
 		register_mapping[TIME_ADDR] = &time.reg.val;
 		register_mapping[INSTRET_ADDR] = &instret.reg.val;
 		register_mapping[MCYCLE_ADDR] = &cycle.reg.val;
-		register_mapping[MTIME_ADDR] = &time.reg.val;
 		register_mapping[MINSTRET_ADDR] = &instret.reg.val;
 
 		register_mapping[MVENDORID_ADDR] = &mvendorid.reg.val;
