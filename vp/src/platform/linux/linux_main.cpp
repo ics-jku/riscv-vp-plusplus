@@ -287,7 +287,7 @@ int sc_main(int argc, char **argv) {
 		std::cerr << "Error: The Linux VP does not support RV32E/RV64E!" << std::endl;
 		return -1;
 	}
-	RV_ISA_Config isa_config(false, opt.en_ext_Zfh);
+	RV_ISA_Config isa_config(false, opt.en_ext_Zfh, opt.en_ext_Zbc);
 #ifdef TARGET_RV64_CHERIV9
 	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
 	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9

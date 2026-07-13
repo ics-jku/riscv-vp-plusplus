@@ -39,6 +39,7 @@ namespace rv32 {
 
 static constexpr Architecture ARCH = RV32;
 static constexpr unsigned XLEN = 32;
+static constexpr unsigned LOG_XLEN_MASK = 0x1F;  // First log(XLEN) bits are set
 using sxlen_t = int32_t;
 using uxlen_t = uint32_t;
 using xlen_t = sxlen_t;

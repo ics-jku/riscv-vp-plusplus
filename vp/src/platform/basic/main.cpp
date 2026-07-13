@@ -171,7 +171,7 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
+	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh, opt.en_ext_Zbc);
 #ifdef TARGET_RV64_CHERIV9
 	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
 	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9

@@ -38,6 +38,7 @@ namespace rv64 {
 
 static constexpr Architecture ARCH = RV64;
 static constexpr unsigned XLEN = 64;
+static constexpr unsigned LOG_XLEN_MASK = 0x3F;  // First log(XLEN) bits are set
 using sxlen_t = int64_t;
 using uxlen_t = uint64_t;
 using xlen_t = sxlen_t;

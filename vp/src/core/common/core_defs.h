@@ -35,6 +35,7 @@ constexpr unsigned SATP_MODE_SV64 = 11;
 struct csr_misa {
 	enum {
 		A = 1,
+		B = 1 << 1,
 		C = 1 << 2,
 		D = 1 << 3,
 		E = 1 << 4,
@@ -67,19 +68,23 @@ class RV_ISA_Config {
    public:
 	static const uint32_t misa_extensions_mask = ((1 << 26) - 1);
 	static const uint64_t Zfh = (1l << 32);
+	static const uint64_t Zbc = (1l << 33);
 
 	uint64_t cfg = 0;
 
-	RV_ISA_Config(bool use_E_base_isa = false, bool en_Zfh = false) {
-		// init default: IMACFDV + NUS
-		cfg = csr_misa::I | csr_misa::M | csr_misa::A | csr_misa::F | csr_misa::D | csr_misa::C | csr_misa::N |
-		      csr_misa::U | csr_misa::S | csr_misa::V;
+	RV_ISA_Config(bool use_E_base_isa = false, bool en_Zfh = false, bool en_Zbc = false) {
+		// init default: IMACFDBV + NUS
+		cfg = csr_misa::I | csr_misa::M | csr_misa::A | csr_misa::F | csr_misa::D | csr_misa::C | csr_misa::B |
+		      csr_misa::N | csr_misa::U | csr_misa::S | csr_misa::V;
 
 		if (use_E_base_isa) {
 			select_E_base_isa();
 		}
 		if (en_Zfh) {
 			select_Zfh();
+		}
+		if (en_Zbc) {
+			select_Zbc();
 		}
 	}
 
@@ -90,6 +95,10 @@ class RV_ISA_Config {
 
 	void select_Zfh() {
 		cfg |= Zfh;
+	}
+
+	void select_Zbc() {
+		cfg |= Zbc;
 	}
 
 	uint32_t get_misa_extensions() {

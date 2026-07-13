@@ -145,6 +145,9 @@ ISS_CT::ISS_CT(RV_ISA_Config *isa_config, uxlen_t hart_id)
 				case Operation::OpId::DIVU:
 				case Operation::OpId::REM:
 				case Operation::OpId::REMU:
+				case Operation::OpId::CLMUL:
+				case Operation::OpId::CLMULH:
+				case Operation::OpId::CLMULR:
 					instr_clock_cycles = 8;
 					break;
 
@@ -555,6 +558,49 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				OP_CASE_NOP(DIVUW_NOP)
 				OP_CASE_NOP(REMW_NOP)
 				OP_CASE_NOP(REMUW_NOP)
+				OP_CASE_NOP(ADD_UW_NOP)
+				OP_CASE_NOP(SH1ADD_NOP)
+				OP_CASE_NOP(SH1ADD_UW_NOP)
+				OP_CASE_NOP(SH2ADD_NOP)
+				OP_CASE_NOP(SH2ADD_UW_NOP)
+				OP_CASE_NOP(SH3ADD_NOP)
+				OP_CASE_NOP(SH3ADD_UW_NOP)
+				OP_CASE_NOP(SLLI_UW_NOP)
+				OP_CASE_NOP(ANDN_NOP)
+				OP_CASE_NOP(ORN_NOP)
+				OP_CASE_NOP(XNOR_NOP)
+				OP_CASE_NOP(CLZ_NOP)
+				OP_CASE_NOP(CLZW_NOP)
+				OP_CASE_NOP(CTZ_NOP)
+				OP_CASE_NOP(CTZW_NOP)
+				OP_CASE_NOP(CPOP_NOP)
+				OP_CASE_NOP(CPOPW_NOP)
+				OP_CASE_NOP(MAX_NOP)
+				OP_CASE_NOP(MAXU_NOP)
+				OP_CASE_NOP(MIN_NOP)
+				OP_CASE_NOP(MINU_NOP)
+				OP_CASE_NOP(SEXT_B_NOP)
+				OP_CASE_NOP(SEXT_H_NOP)
+				OP_CASE_NOP(ZEXT_H_NOP)
+				OP_CASE_NOP(ROL_NOP)
+				OP_CASE_NOP(ROLW_NOP)
+				OP_CASE_NOP(ROR_NOP)
+				OP_CASE_NOP(RORI_NOP)
+				OP_CASE_NOP(RORIW_NOP)
+				OP_CASE_NOP(RORW_NOP)
+				OP_CASE_NOP(ORC_B_NOP)
+				OP_CASE_NOP(REV8_NOP)
+				OP_CASE_NOP(CLMUL_NOP)
+				OP_CASE_NOP(CLMULH_NOP)
+				OP_CASE_NOP(CLMULR_NOP)
+				OP_CASE_NOP(BCLR_NOP)
+				OP_CASE_NOP(BCLRI_NOP)
+				OP_CASE_NOP(BEXT_NOP)
+				OP_CASE_NOP(BEXTI_NOP)
+				OP_CASE_NOP(BINV_NOP)
+				OP_CASE_NOP(BINVI_NOP)
+				OP_CASE_NOP(BSET_NOP)
+				OP_CASE_NOP(BSETI_NOP)
 				OP_END(); /* needed for fallthrough (see definition of OP_CASE_NOP above) */
 
 				OP_CASE(ADDI) {
@@ -2272,6 +2318,355 @@ void ISS_CT::exec_steps(const bool debug_single_step) {
 				}
 				OP_END();
 
+				//-- RV-B Extension Begin
+				// Zba:
+				OP_CASE(ADD_UW) {
+					uint32_t rs1 = regs[RS1];
+					uint64_t rs2 = regs[RS2];
+					regs[RD] = rs2 + rs1;
+				}
+				OP_END();
+
+				OP_CASE(SH1ADD) {
+					regs[RD] = regs[RS2] + (regs[RS1] << 1);
+				}
+				OP_END();
+				OP_CASE(SH1ADD_UW) {
+					regs[RD] = regs[RS2] + (((uint64_t)(uint32_t)regs[RS1]) << 1);
+				}
+				OP_END();
+				OP_CASE(SH2ADD) {
+					regs[RD] = regs[RS2] + (regs[RS1] << 2);
+				}
+				OP_END();
+				OP_CASE(SH2ADD_UW) {
+					regs[RD] = regs[RS2] + (((uint64_t)(uint32_t)regs[RS1]) << 2);
+				}
+				OP_END();
+				OP_CASE(SH3ADD) {
+					regs[RD] = regs[RS2] + (regs[RS1] << 3);
+				}
+				OP_END();
+				OP_CASE(SH3ADD_UW) {
+					regs[RD] = regs[RS2] + (((uint64_t)(uint32_t)regs[RS1]) << 3);
+				}
+				OP_END();
+				OP_CASE(SLLI_UW) {
+					regs[RD] = ((uint64_t)(uint32_t)regs[RS1]) << instr.shamt();
+				}
+				OP_END();
+
+				// Zbb:
+				OP_CASE(ANDN) {
+					regs[RD] = regs[RS1] & ~regs[RS2];
+				}
+				OP_END();
+				OP_CASE(ORN) {
+					regs[RD] = regs[RS1] | ~regs[RS2];
+				}
+				OP_END();
+				OP_CASE(XNOR) {
+					regs[RD] = ~(regs[RS1] ^ regs[RS2]);
+				}
+				OP_END();
+				OP_CASE(CLZ) {
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t mask = 0x1UL << (XLEN - 1);
+					uint8_t count = 0;
+					while (mask) {
+						if (!(mask & rs1)) {
+							count++;
+							mask >>= 1;
+						} else {
+							break;
+						}
+					}
+					regs[RD] = count;
+				}
+				OP_END();
+				OP_CASE(CLZW) {
+					uint32_t rs1 = (uint32_t)regs[RS1];
+					uint32_t mask = 0x1 << 31;
+					uint8_t count = 0;
+					while (mask) {
+						if (!(mask & rs1)) {
+							count++;
+							mask >>= 1;
+						} else {
+							break;
+						}
+					}
+					regs[RD] = count;
+				}
+				OP_END();
+				OP_CASE(CTZ) {
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t mask = 0x1;
+					uint8_t count = 0;
+					while (mask) {
+						if (!(mask & rs1)) {
+							count++;
+							mask <<= 1;
+						} else {
+							break;
+						}
+					}
+					regs[RD] = count;
+				}
+				OP_END();
+				OP_CASE(CTZW) {
+					uint32_t rs1 = (uint32_t)regs[RS1];
+					uint32_t mask = 0x1;
+					uint8_t count = 0;
+					while (mask) {
+						if (!(mask & rs1)) {
+							count++;
+							mask <<= 1;
+						} else {
+							break;
+						}
+					}
+					regs[RD] = count;
+				}
+				OP_END();
+
+				OP_CASE(CPOP) {
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t mask = 0x1;
+					uint8_t count = 0;
+					while (mask) {
+						if (mask & rs1) {
+							count++;
+						}
+						mask <<= 1;
+					}
+					regs[RD] = count;
+				}
+				OP_END();
+				OP_CASE(CPOPW) {
+					uint32_t rs1 = (uint32_t)regs[RS1];
+					uint32_t mask = 0x1;
+					uint8_t count = 0;
+					while (mask) {
+						if (mask & rs1) {
+							count++;
+						}
+						mask <<= 1;
+					}
+					regs[RD] = count;
+				}
+				OP_END();
+				OP_CASE(MAX) {
+					xlen_t rs1 = regs[RS1];
+					xlen_t rs2 = regs[RS2];
+					regs[RD] = rs1 > rs2 ? rs1 : rs2;
+				}
+				OP_END();
+				OP_CASE(MAXU) {
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t rs2 = regs[RS2];
+					regs[RD] = rs1 > rs2 ? rs1 : rs2;
+				}
+				OP_END();
+				OP_CASE(MIN) {
+					xlen_t rs1 = regs[RS1];
+					xlen_t rs2 = regs[RS2];
+					regs[RD] = rs1 < rs2 ? rs1 : rs2;
+				}
+				OP_END();
+				OP_CASE(MINU) {
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t rs2 = regs[RS2];
+					regs[RD] = rs1 < rs2 ? rs1 : rs2;
+				}
+				OP_END();
+				OP_CASE(SEXT_B) {
+					regs[RD] = (xlen_t)(int8_t)regs[RS1];
+				}
+				OP_END();
+				OP_CASE(SEXT_H) {
+					regs[RD] = (xlen_t)(int16_t)regs[RS1];
+				}
+				OP_END();
+				OP_CASE(ZEXT_H) {
+					regs[RD] = (uxlen_t)(uint16_t)regs[RS1];
+				}
+				OP_END();
+				OP_CASE(ROL) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t num_rotations = regs[RS2] & LOG_XLEN_MASK;
+					regs[RD] = rs1 << num_rotations;
+					regs[RD] = regs[RD] | (rs1 >> (XLEN - num_rotations));
+				}
+				OP_END();
+
+				OP_CASE(ROLW) {
+					uint32_t rs1 = (uint32_t)regs[RS1];
+					uint8_t num_rotations = regs[RS2] & 0x1F;
+					regs[RD] = rs1 << num_rotations;
+					regs[RD] |= rs1 >> (32 - num_rotations);
+					regs[RD] = (int64_t)(int32_t)regs[RD];
+				}
+				OP_END();
+
+				OP_CASE(ROR) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t num_rotations = regs[RS2] & LOG_XLEN_MASK;
+					regs[RD] = rs1 >> num_rotations;
+					regs[RD] |= rs1 << (XLEN - num_rotations);
+				}
+				OP_END();
+				OP_CASE(RORI) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t num_rotations = instr.shamt() & LOG_XLEN_MASK;
+					regs[RD] = rs1 >> num_rotations;
+					regs[RD] |= rs1 << (XLEN - num_rotations);
+				}
+				OP_END();
+				OP_CASE(RORIW) {
+					uint32_t rs1 = (uint32_t)regs[RS1];
+					uint8_t num_rotations = instr.shamt() & 0x1F;
+					regs[RD] = rs1 >> num_rotations;
+					regs[RD] |= rs1 << (32 - num_rotations);
+					regs[RD] = (int64_t)(int32_t)regs[RD];
+				}
+				OP_END();
+				OP_CASE(RORW) {
+					uint32_t rs1 = (uint32_t)regs[RS1];
+					uint8_t num_rotations = regs[RS2] & 0x1F;
+					regs[RD] = rs1 >> num_rotations;
+					regs[RD] |= rs1 << (32 - num_rotations);
+					regs[RD] = (int64_t)(int32_t)regs[RD];
+				}
+				OP_END();
+				OP_CASE(ORC_B) {
+					uxlen_t byte_mask = 0xFF;
+					uxlen_t rd = 0;
+					uxlen_t rs1 = regs[RS1];
+					while (byte_mask) {
+						if (byte_mask & rs1)
+							rd |= byte_mask;
+						byte_mask <<= 8;
+					}
+					regs[RD] = rd;
+				}
+				OP_END();
+				OP_CASE(REV8) {
+					uint8_t byte_mask = 0xFF;
+					uxlen_t rd = 0;
+					uxlen_t rs1 = regs[RS1];
+					for (uint8_t _ = 0; _ < XLEN / 8; ++_) {
+						rd <<= 8;
+						rd |= (byte_mask & rs1);
+						rs1 >>= 8;
+					}
+					regs[RD] = rd;
+				}
+				OP_END();
+
+				// Zbs:
+				OP_CASE(BCLR) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = regs[RS2] & LOG_XLEN_MASK;
+					uxlen_t mask_rs1 = 0x1UL << index;
+					regs[RD] = rs1 & ~mask_rs1;
+				}
+				OP_END();
+				OP_CASE(BCLRI) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = instr.shamt();
+					uxlen_t mask_rs1 = 0x1UL << index;
+					regs[RD] = rs1 & ~mask_rs1;
+				}
+				OP_END();
+				OP_CASE(BEXT) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = regs[RS2] & LOG_XLEN_MASK;
+					regs[RD] = (rs1 >> index) & 0x1;
+				}
+				OP_END();
+				OP_CASE(BEXTI) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = instr.shamt();
+					regs[RD] = (rs1 >> index) & 0x1;
+				}
+				OP_END();
+				OP_CASE(BINV) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = regs[RS2] & LOG_XLEN_MASK;
+					uxlen_t mask_rs1 = 0x1UL << index;
+					regs[RD] = (~mask_rs1 & rs1) | (mask_rs1 & (mask_rs1 ^ rs1));
+				}
+				OP_END();
+				OP_CASE(BINVI) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = instr.shamt();
+					uxlen_t mask_rs1 = 0x1UL << index;
+					regs[RD] = (~mask_rs1 & rs1) | (mask_rs1 & (mask_rs1 ^ rs1));
+				}
+				OP_END();
+				OP_CASE(BSET) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = regs[RS2] & LOG_XLEN_MASK;
+					uxlen_t mask_rs1 = 0x1UL << index;
+					regs[RD] = rs1 | mask_rs1;
+				}
+				OP_END();
+				OP_CASE(BSETI) {
+					uxlen_t rs1 = regs[RS1];
+					uint8_t index = instr.shamt();
+					uxlen_t mask_rs1 = 0x1UL << index;
+					regs[RD] = rs1 | mask_rs1;
+				}
+				OP_END();
+				//-- RV-B Extension End
+				// Zbc:
+				OP_CASE(CLMUL) {
+					uint128_t rd = 0;
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t rs2 = regs[RS2];
+					uxlen_t mask_rs2 = 0x1UL << (XLEN - 1);
+					while (mask_rs2) {
+						rd <<= 1;
+						if (mask_rs2 & rs2) {
+							rd ^= rs1;
+						}
+						mask_rs2 >>= 1;
+					}
+					regs[RD] = (uxlen_t)rd;
+				}
+				OP_END();
+				OP_CASE(CLMULH) {
+					uint128_t rd = 0;
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t rs2 = regs[RS2];
+					uxlen_t mask_rs2 = 0x1UL << (XLEN - 1);
+					while (mask_rs2) {
+						rd <<= 1;
+						if (mask_rs2 & rs2) {
+							rd ^= rs1;
+						}
+						mask_rs2 >>= 1;
+					}
+					regs[RD] = (uxlen_t)(rd >> XLEN);
+				}
+				OP_END();
+				OP_CASE(CLMULR) {
+					uint128_t rd = 0;
+					uxlen_t rs1 = regs[RS1];
+					uxlen_t rs2 = regs[RS2];
+					uxlen_t mask_rs2 = 0x1UL << (XLEN - 1);
+
+					while (mask_rs2) {
+						rd <<= 1;
+						if (mask_rs2 & rs2) {
+							rd ^= rs1;
+						}
+						mask_rs2 >>= 1;
+					}
+					regs[RD] = (uxlen_t)(rd >> (XLEN - 1));
+				}
+				OP_END();
 				/*
 				 * RV-V Extension
 				 * Note: handling of x0/zero is done in v_ext implementation (writes to zero/x0 are ignored)

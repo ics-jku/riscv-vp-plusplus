@@ -19,6 +19,9 @@ A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Ch
        * Capable of running bare-metal Cheri (purecap) software
  * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
    (Can be enabled with the "--en-ext-Zfh" command line option on all platforms)
+ * Support for Bit-Manipulation Extensions:
+   * "B"-Extension (including Zba, Zbb and Zbs) 
+   * Carry-Less Multiplication (Zbc) (Can be enabled with the "--en-ext-Zbc" command line option on all platforms)
  * Fast Interpreter-Based ISS
    * [Manfred Schlägl and Daniel Große. Fast interpreter-based instruction set simulation for virtual prototypes, In DATE, 2025.](https://ics.jku.at/files/2025DATE_Fast_Interpreter-based_ISS.pdf)
    * DBBCache: Dynamic Basic Block Cache to speed up ISS instruction processing

@@ -14,6 +14,7 @@ class Options : public boost::program_options::options_description {
 
 	bool use_E_base_isa = false;
 	bool en_ext_Zfh = false;
+	bool en_ext_Zbc = false;
 	bool intercept_syscalls = false;
 	bool error_on_zero_traphandler = false;
 	bool use_debug_runner = false;

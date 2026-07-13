@@ -100,7 +100,7 @@ int sc_main(int argc, char **argv) {
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
-	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh);
+	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh, opt.en_ext_Zbc);
 	ISS core0(&isa_config, 0);
 	ISS core1(&isa_config, 1);
 	MMU mmu0(core0);
