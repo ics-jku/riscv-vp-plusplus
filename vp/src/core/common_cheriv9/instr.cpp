@@ -423,6 +423,136 @@ constexpr uint32_t FCVT_D_LU_MASK = 0b11111111111100000000000001111111;
 constexpr uint32_t FCVT_D_LU_ENCODING = 0b11010010001100000000000001010011;
 constexpr uint32_t FMV_D_X_MASK = 0b11111111111100000111000001111111;
 constexpr uint32_t FMV_D_X_ENCODING = 0b11110010000000000000000001010011;
+// RV-B Extension Start
+// zba:
+constexpr uint32_t ADD_UW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t ADD_UW_ENCODING = 0b00001000000000000000000000111011;
+constexpr uint32_t SH1ADD_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t SH1ADD_ENCODING = 0b00100000000000000010000000110011;
+constexpr uint32_t SH1ADD_UW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t SH1ADD_UW_ENCODING = 0b00100000000000000010000000111011;
+constexpr uint32_t SH2ADD_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t SH2ADD_ENCODING = 0b00100000000000000100000000110011;
+constexpr uint32_t SH2ADD_UW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t SH2ADD_UW_ENCODING = 0b00100000000000000100000000111011;
+constexpr uint32_t SH3ADD_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t SH3ADD_ENCODING = 0b00100000000000000110000000110011;
+constexpr uint32_t SH3ADD_UW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t SH3ADD_UW_ENCODING = 0b00100000000000000110000000111011;
+constexpr uint32_t SLLI_UW_MASK = 0b11111100000000000111000001111111;
+constexpr uint32_t SLLI_UW_ENCODING = 0b00001000000000000001000000011011;
+// zbb:
+constexpr uint32_t ANDN_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t ANDN_ENCODING = 0b01000000000000000111000000110011;
+constexpr uint32_t ORN_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t ORN_ENCODING = 0b01000000000000000110000000110011;
+constexpr uint32_t XNOR_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t XNOR_ENCODING = 0b01000000000000000100000000110011;
+constexpr uint32_t CLZ_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t CLZ_ENCODING = 0b01100000000000000001000000010011;
+constexpr uint32_t CLZW_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t CLZW_ENCODING = 0b01100000000000000001000000011011;
+constexpr uint32_t CTZ_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t CTZ_ENCODING = 0b01100000000100000001000000010011;
+constexpr uint32_t CTZW_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t CTZW_ENCODING = 0b01100000000100000001000000011011;
+constexpr uint32_t CPOP_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t CPOP_ENCODING = 0b01100000001000000001000000010011;
+constexpr uint32_t CPOPW_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t CPOPW_ENCODING = 0b01100000001000000001000000011011;
+constexpr uint32_t MAX_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t MAX_ENCODING = 0b00001010000000000110000000110011;
+constexpr uint32_t MAXU_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t MAXU_ENCODING = 0b00001010000000000111000000110011;
+constexpr uint32_t MIN_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t MIN_ENCODING = 0b00001010000000000100000000110011;
+constexpr uint32_t MINU_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t MINU_ENCODING = 0b00001010000000000101000000110011;
+constexpr uint32_t SEXT_B_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t SEXT_B_ENCODING = 0b01100000010000000001000000010011;
+constexpr uint32_t SEXT_H_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t SEXT_H_ENCODING = 0b01100000010100000001000000010011;
+
+//-- RV64 special case (different opcode than RV32)
+constexpr uint32_t ZEXT_H_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t ZEXT_H_ENCODING = 0b00001000000000000100000000111011;
+
+//-- RV 32-bit case:
+constexpr uint32_t ZEXT_H_32_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t ZEXT_H_32_ENCODING = 0b00001000000000000100000000110011;
+//--
+
+constexpr uint32_t ROL_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t ROL_ENCODING = 0b01100000000000000001000000110011;
+constexpr uint32_t ROLW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t ROLW_ENCODING = 0b01100000000000000001000000111011;
+constexpr uint32_t ROR_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t ROR_ENCODING = 0b01100000000000000101000000110011;
+
+//-- RV64 special case (one less mask bit compared to RV32)
+constexpr uint32_t RORI_MASK = 0b11111100000000000111000001111111;
+constexpr uint32_t RORI_ENCODING = 0b01100000000000000101000000010011;
+//-- RV32 case
+constexpr uint32_t RORI_32_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t RORI_32_ENCODING = 0b01100000000000000101000000010011;
+//--
+
+constexpr uint32_t RORIW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t RORIW_ENCODING = 0b01100000000000000101000000011011;
+constexpr uint32_t RORW_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t RORW_ENCODING = 0b01100000000000000101000000111011;
+constexpr uint32_t ORC_B_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t ORC_B_ENCODING = 0b00101000011100000101000000010011;
+
+//-- RV64 special case (different f12 than RV32)
+constexpr uint32_t REV8_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t REV8_ENCODING = 0b01101011100000000101000000010011;
+//-- RV32 case
+constexpr uint32_t REV8_32_MASK = 0b11111111111100000111000001111111;
+constexpr uint32_t REV8_32_ENCODING = 0b01101001100000000101000000010011;
+//--
+
+// Zbc
+constexpr uint32_t CLMUL_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t CLMUL_ENCODING = 0b00001010000000000001000000110011;
+constexpr uint32_t CLMULH_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t CLMULH_ENCODING = 0b00001010000000000011000000110011;
+constexpr uint32_t CLMULR_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t CLMULR_ENCODING = 0b00001010000000000010000000110011;
+
+// Zbs
+constexpr uint32_t BCLR_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BCLR_ENCODING = 0b01001000000000000001000000110011;
+
+constexpr uint32_t BEXT_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BEXT_ENCODING = 0b01001000000000000101000000110011;
+
+constexpr uint32_t BINV_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BINV_ENCODING = 0b01101000000000000001000000110011;
+
+constexpr uint32_t BSET_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BSET_ENCODING = 0b00101000000000000001000000110011;
+
+//-- RV64 special case (one less mask bit compared to RV32)
+constexpr uint32_t BSETI_MASK = 0b11111100000000000111000001111111;
+constexpr uint32_t BSETI_ENCODING = 0b00101000000000000001000000010011;
+constexpr uint32_t BINVI_MASK = 0b11111100000000000111000001111111;
+constexpr uint32_t BINVI_ENCODING = 0b01101000000000000001000000010011;
+constexpr uint32_t BEXTI_MASK = 0b11111100000000000111000001111111;
+constexpr uint32_t BEXTI_ENCODING = 0b01001000000000000101000000010011;
+constexpr uint32_t BCLRI_MASK = 0b11111100000000000111000001111111;
+constexpr uint32_t BCLRI_ENCODING = 0b01001000000000000001000000010011;
+//-- RV32 case
+constexpr uint32_t BSETI_32_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BSETI_32_ENCODING = 0b00101000000000000001000000010011;
+constexpr uint32_t BINVI_32_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BINVI_32_ENCODING = 0b01101000000000000001000000010011;
+constexpr uint32_t BEXTI_32_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BEXTI_32_ENCODING = 0b01001000000000000101000000010011;
+constexpr uint32_t BCLRI_32_MASK = 0b11111110000000000111000001111111;
+constexpr uint32_t BCLRI_32_ENCODING = 0b01001000000000000001000000010011;
+//--
+
 // RV-V Extension Start -- Placeholder 0
 constexpr uint32_t VSETVLI_ENCODING = 0b111000001010111;
 constexpr uint32_t VSETVLI_MASK = 0b10000000000000000111000001111111;
@@ -2238,6 +2368,103 @@ std::array<const char *, Operation::OpId::NUMBER_OF_OPERATIONS> Operation::opIdS
     "FCVT_D_LU",
     "FMV_D_X",
 
+    //-- RV-B Extension Begin
+    // Zba:
+    "ADD_UW",
+    "NOP (ADD_UW rd=zero)",
+    "SH1ADD",
+    "NOP (SH1ADD rd=zero)",
+    "SH1ADD_UW",
+    "NOP (SH1ADD_UW rd=zero)",
+    "SH2ADD",
+    "NOP (SH2ADD rd=zero)",
+    "SH2ADD_UW",
+    "NOP (SH2ADD_UW rd=zero)",
+    "SH3ADD",
+    "NOP (SH3ADD rd=zero)",
+    "SH3ADD_UW",
+    "NOP (SH3ADD_UW rd=zero)",
+    "SLLI_UW",
+    "NOP (SLLI_UW rd=zero)",
+
+    // Zbb:
+    "ANDN",
+    "NOP (ANDN rd=zero)",
+    "ORN",
+    "NOP (ORN rd=zero)",
+    "XNOR",
+    "NOP (XNOR rd=zero)",
+    "CLZ",
+    "NOP (CLZ rd=zero)",
+    "CLZW",
+    "NOP (CLZW rd=zero)",
+    "CTZ",
+    "NOP (CTZ rd=zero)",
+    "CTZW",
+    "NOP (CTZW rd=zero)",
+    "CPOP",
+    "NOP (CPOP rd=zero)",
+    "CPOPW",
+    "NOP (CPOPW rd=zero)",
+    "MAX",
+    "NOP (MAX rd=zero)",
+    "MAXU",
+    "NOP (MAXU rd=zero)",
+    "MIN",
+    "NOP (MIN rd=zero)",
+    "MINU",
+    "NOP (MINU rd=zero)",
+    "SEXT_B",
+    "NOP (SEXT_B rd=zero)",
+    "SEXT_H",
+    "NOP (SEXT_H rd=zero)",
+    "ZEXT_H",
+    "NOP (ZEXT_H rd=zero)",
+    "ROI",
+    "NOP (ROI rd=zero)",
+    "ROLW",
+    "NOP (ROLW rd=zero)",
+    "ROR",
+    "NOP (ROR rd=zero)",
+    "RORI",
+    "NOP (RORI rd=zero)",
+    "RORIW",
+    "NOP (RORIW rd=zero)",
+    "RORW",
+    "NOP (RORW rd=zero)",
+    "ORC_B",
+    "NOP (ORC_B rd=zero)",
+    "REV8",
+    "NOP (REV8 rd=zero)",
+
+    // Zbs:
+    "BCLR",
+    "NOP (BCLR rd=zero)",
+    "BCLRI",
+    "NOP (BCLRI rd=zero)",
+    "BEXT",
+    "NOP (BEXT rd=zero)",
+    "BEXTI",
+    "NOP (BEXTI rd=zero)",
+    "BINV",
+    "NOP (BINV rd=zero)",
+    "BINVI",
+    "NOP (BINVI rd=zero)",
+    "BSET",
+    "NOP (BSET rd=zero)",
+    "BSETI",
+    "NOP (BSETI rd=zero)",
+
+    //-- RV-B Extension End
+
+    // Zbc:
+    "CLMUL",
+    "NOP (CLMUL rd=zero)",
+    "CLMULH",
+    "NOP (CLMULH rd=zero)",
+    "CLMULR",
+    "NOP (CLMULR rd=zero)",
+
     // RV-V Extension Start -- Placeholder 2
     "VSETVLI",
     "VSETIVLI",
@@ -3134,6 +3361,56 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case FCVT_H_L:
 		case FCVT_H_LU:
 		case VSETVL:
+		case ADD_UW:
+		case ADD_UW_NOP:
+		case SH1ADD:
+		case SH1ADD_NOP:
+		case SH1ADD_UW:
+		case SH1ADD_UW_NOP:
+		case SH2ADD:
+		case SH2ADD_NOP:
+		case SH2ADD_UW:
+		case SH2ADD_UW_NOP:
+		case SH3ADD:
+		case SH3ADD_NOP:
+		case SH3ADD_UW:
+		case SH3ADD_UW_NOP:
+		case ANDN:
+		case ANDN_NOP:
+		case ORN:
+		case ORN_NOP:
+		case XNOR:
+		case XNOR_NOP:
+		case MAX:
+		case MAX_NOP:
+		case MAXU:
+		case MAXU_NOP:
+		case MIN:
+		case MIN_NOP:
+		case MINU:
+		case MINU_NOP:
+		case ROL:
+		case ROL_NOP:
+		case ROLW:
+		case ROLW_NOP:
+		case ROR:
+		case ROR_NOP:
+		case RORW:
+		case RORW_NOP:
+		case CLMUL:
+		case CLMUL_NOP:
+		case CLMULH:
+		case CLMULH_NOP:
+		case CLMULR:
+		case CLMULR_NOP:
+		case BCLR:
+		case BCLR_NOP:
+		case BEXT:
+		case BEXT_NOP:
+		case BINV:
+		case BINV_NOP:
+		case BSET:
+		case BSET_NOP:
 		case C_GET_PERM:
 		case C_GET_TYPE:
 		case C_GET_BASE:
@@ -3205,7 +3482,6 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case LR_B:
 		case LR_H:
 			return Type::R;
-
 		case JALR:
 		case JR:
 		case LB:
@@ -3257,12 +3533,47 @@ Operation::Type Operation::getType(Operation::OpId opId) {
 		case CSRRCI:
 		case FLW:
 		case FLD:
+		case FLH:
+		case SLLI_UW:
+		case SLLI_UW_NOP:
+		case CLZ:
+		case CLZ_NOP:
+		case CLZW:
+		case CLZW_NOP:
+		case CTZ:
+		case CTZ_NOP:
+		case CTZW:
+		case CTZW_NOP:
+		case CPOP:
+		case CPOP_NOP:
+		case CPOPW:
+		case CPOPW_NOP:
+		case SEXT_B:
+		case SEXT_B_NOP:
+		case SEXT_H:
+		case SEXT_H_NOP:
+		case ZEXT_H:
+		case ZEXT_H_NOP:
+		case RORI:
+		case RORI_NOP:
+		case RORIW:
+		case RORIW_NOP:
+		case ORC_B:
+		case ORC_B_NOP:
+		case REV8:
+		case REV8_NOP:
+		case BSETI:
+		case BSETI_NOP:
+		case BCLRI:
+		case BCLRI_NOP:
+		case BEXTI:
+		case BEXTI_NOP:
+		case BINVI:
+		case BINVI_NOP:
 		case LC:
 		case C_INC_OFFSET_IMM:
 		case C_SET_BOUNDS_IMM:
-		case FLH:
 			return Type::I;
-
 		case SB:
 		case SH:
 		case SW:
@@ -4838,25 +5149,97 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 					MATCH_AND_RETURN_INSTR_OR_NOP(ANDI);
 				case F3_SLLI:
 					if (arch == RV32) {
-						MATCH_AND_RETURN_INSTR2_OR_NOP(SLLI_32, SLLI);
+						switch (instr.funct7()) {
+							case F7_SLLI:
+								MATCH_AND_RETURN_INSTR2_OR_NOP(SLLI_32, SLLI);
+							case F7_BSETI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(BSETI_32, BSETI);
+							case F7_BCLRI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(BCLRI_32, BCLRI);
+							case F7_BINVI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(BINVI_32, BINVI);
+						}
 					} else {
-						MATCH_AND_RETURN_INSTR_OR_NOP(SLLI);
+						switch (instr.funct6()) {
+							case F6_SLLI:
+								MATCH_AND_RETURN_INSTR_OR_NOP(SLLI);
+							case F6_BCLRI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR_OR_NOP(BCLRI);
+							case F6_BINVI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR_OR_NOP(BINVI);
+							case F6_BSETI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR_OR_NOP(BSETI);
+						}
 					}
+
+					switch (instr.funct12()) {
+						case F12_CLZ:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CLZ);
+						case F12_CTZ:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CTZ);
+						case F12_CPOP:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CPOP);
+						case F12_SEXT_B:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SEXT_B);
+						case F12_SEXT_H:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SEXT_H);
+					}
+					break;
+
 				case F3_SRLI: {
-					switch (instr.funct6()) {
-						case F6_SRLI:
-							if (arch == RV32) {
+					if (arch == RV32) {
+						switch (instr.funct7()) {
+							case F7_SRLI:
 								MATCH_AND_RETURN_INSTR2_OR_NOP(SRLI_32, SRLI);
-							} else {
-								MATCH_AND_RETURN_INSTR_OR_NOP(SRLI);
-							}
-						case F6_SRAI:
-							if (arch == RV32) {
+							case F7_SRAI:
 								MATCH_AND_RETURN_INSTR2_OR_NOP(SRAI_32, SRAI);
-							} else {
+							case F7_RORI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(RORI_32, RORI);
+							case F7_BEXTI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR_OR_NOP(BEXTI);
+						}
+
+						switch (instr.funct12()) {
+							case F12_REV8_32:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR2_OR_NOP(REV8_32, REV8);
+						}
+					} else {
+						switch (instr.funct6()) {
+							case F6_SRLI:
+								MATCH_AND_RETURN_INSTR_OR_NOP(SRLI);
+							case F6_SRAI:
 								MATCH_AND_RETURN_INSTR_OR_NOP(SRAI);
-							}
+							case F6_RORI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR_OR_NOP(RORI);
+							case F6_BEXTI:
+								REQUIRE_ISA(csr_misa::B);
+								MATCH_AND_RETURN_INSTR_OR_NOP(BEXTI);
+						}
 					}
+					switch (instr.funct12()) {
+						case F12_ORC_B:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ORC_B);
+						case F12_REV8:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(REV8);
+					}
+					break;
 				}
 			}
 			break;
@@ -4867,19 +5250,41 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 				case F3_ADDIW:
 					MATCH_AND_RETURN_INSTR_OR_NOP(ADDIW);
 				case F3_SLLIW:
-					MATCH_AND_RETURN_INSTR_OR_NOP(SLLIW);
+					switch (instr.funct6()) {
+						case F6_SLLI_UW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SLLI_UW);
+					}
+					switch (instr.funct7()) {
+						case F7_SLLIW:
+							MATCH_AND_RETURN_INSTR_OR_NOP(SLLIW);
+					}
+					switch (instr.funct12()) {
+						case F12_CLZW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CLZW);
+						case F12_CTZW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CTZW);
+						case F12_CPOPW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CPOPW);
+					}
+					break;
 				case F3_SRLIW: {
 					switch (instr.funct7()) {
 						case F7_SRLIW:
 							MATCH_AND_RETURN_INSTR_OR_NOP(SRLIW);
 						case F7_SRAIW:
 							MATCH_AND_RETURN_INSTR_OR_NOP(SRAIW);
+						case F7_RORIW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(RORIW);
 					}
 				}
 			}
 			break;
 		}
-
 		case OP_ADD: {
 			switch (instr.funct7()) {
 				case F7_ADD:
@@ -4909,6 +5314,15 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 							MATCH_AND_RETURN_INSTR_OR_NOP(SUB);
 						case F3_SRA:
 							MATCH_AND_RETURN_INSTR_OR_NOP(SRA);
+						case F3_ANDN:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ANDN);
+						case F3_ORN:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ORN);
+						case F3_XNOR:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(XNOR);
 					}
 					break;
 
@@ -4940,6 +5354,93 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 							MATCH_AND_RETURN_INSTR_OR_NOP(REMU);
 					}
 					break;
+				case F7_SH1ADD: {
+					switch (instr.funct3()) {
+						case F3_SH1ADD:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SH1ADD);
+							break;
+						case F3_SH2ADD:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SH2ADD);
+							break;
+						case F3_SH3ADD:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SH3ADD);
+							break;
+					}
+					break;
+				}
+				case F7_MAX: {
+					switch (instr.funct3()) {
+						case F3_MAX:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MAX);
+						case F3_MAXU:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MAXU);
+						case F3_MIN:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MIN);
+						case F3_MINU:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(MINU);
+						case F3_CLMUL:
+							REQUIRE_ISA(RV_ISA_Config::Zbc);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CLMUL);
+						case F3_CLMULH:
+							REQUIRE_ISA(RV_ISA_Config::Zbc);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CLMULH);
+						case F3_CLMULR:
+							REQUIRE_ISA(RV_ISA_Config::Zbc);
+							MATCH_AND_RETURN_INSTR_OR_NOP(CLMULR);
+					}
+					break;
+				}
+				case F7_ROL: {
+					switch (instr.funct3()) {
+						case F3_ROL:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ROL);
+						case F3_ROR:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ROR);
+					}
+					break;
+				}
+				case F7_BCLR: {
+					switch (instr.funct3()) {
+						case F3_BCLR:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(BCLR);
+						case F3_BEXT:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(BEXT);
+					}
+					break;
+				}
+				case F7_BINV: {
+					switch (instr.funct3()) {
+						case F3_BINV:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(BINV);
+					}
+					break;
+				}
+				case F7_BSET: {
+					switch (instr.funct3()) {
+						case F3_BSET:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(BSET);
+					}
+					break;
+				}
+			}
+
+			switch (instr.funct12()) {
+				case F12_ZEXT_H:
+					REQUIRE_ISA(csr_misa::B);
+					MATCH_AND_RETURN_INSTR2_OR_NOP(ZEXT_H_32, ZEXT_H);
 			}
 			break;
 		}
@@ -4985,6 +5486,44 @@ Operation::OpId Instruction::decode_normal(Architecture arch, const RV_ISA_Confi
 							MATCH_AND_RETURN_INSTR_OR_NOP(REMUW);
 					}
 					break;
+				case F7_ADD_UW: {
+					switch (instr.funct3()) {
+						case F3_ADD_UW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ADD_UW);
+					}
+					break;
+				}
+				case F7_SH1ADD_UW: {
+					switch (instr.funct3()) {
+						case F3_SH1ADD_UW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SH1ADD_UW);
+						case F3_SH2ADD_UW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SH2ADD_UW);
+						case F3_SH3ADD_UW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(SH3ADD_UW);
+					}
+					break;
+				}
+				case F7_ROLW: {
+					switch (instr.funct3()) {
+						case F3_ROLW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(ROLW);
+						case F3_RORW:
+							REQUIRE_ISA(csr_misa::B);
+							MATCH_AND_RETURN_INSTR_OR_NOP(RORW);
+					}
+					break;
+				}
+			}
+			switch (instr.funct12()) {
+				case F12_ZEXT_H:
+					REQUIRE_ISA(csr_misa::B);
+					MATCH_AND_RETURN_INSTR_OR_NOP(ZEXT_H);
 			}
 			break;
 		}

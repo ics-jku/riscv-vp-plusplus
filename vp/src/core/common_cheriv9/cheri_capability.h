@@ -139,6 +139,14 @@ struct Capability {
 		return *this;
 	}
 
+	Capability& operator|=(uint64_t val) {
+		return *this = static_cast<int64_t>(static_cast<uint64_t>(cap.fields.address) | val);
+	}
+
+	Capability& operator&=(uint64_t val) {
+		return *this = static_cast<int64_t>(static_cast<uint64_t>(cap.fields.address) & val);
+	}
+
 	// Overload == operator to compare two Capabilities
 	inline bool operator==(const Capability& other) const {
 		return cap.fields.address == other.cap.fields.address && cap.fields.otype == other.cap.fields.otype &&
