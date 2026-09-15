@@ -48,6 +48,8 @@ void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	auto formatter = new RegisterFormater(arch);
 	auto fn = [formatter](debug_target_if *hart) {
 		for (uint64_t v : hart->get_registers()) formatter->formatRegister(v);
+		/* the pc follows the general purpose registers as GDB_PC_REG */
+		formatter->formatRegister(hart->get_progam_counter());
 	};
 
 	exec_thread(fn);
