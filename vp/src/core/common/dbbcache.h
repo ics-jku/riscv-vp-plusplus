@@ -539,6 +539,9 @@ class DBBCache_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if> {
 			entries[0].pc = pc;
 			/* counter of first entry is always 0, because the next entry holds the value after execution */
 			entries[0].cycle_counter_raw = 0;
+			/* nothing executed yet: the value after the (empty) block is 0 too, and
+			 * switch_block()/get_cycle_counter_raw() read it before any decode fills it */
+			entries[1].cycle_counter_raw = 0;
 			entries[0].set_terminal(dbbcache);
 			start_addr = pc;
 			len = 0;
