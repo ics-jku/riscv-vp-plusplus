@@ -316,6 +316,13 @@ void GDBServer::run(void) {
 			}
 
 			send_packet(conn, NULL, GDB_KIND_ACK);
+
+			/* the index is part of the packet name, so it cannot be looked up */
+			if (!strncmp(cmd->name, "qRegisterInfo", sizeof("qRegisterInfo") - 1)) {
+				registerInfo(conn, cmd);
+				goto next2;
+			}
+
 			try {
 				handler = handlers.at(cmd->name);
 			} catch (const std::out_of_range &) {

@@ -14,12 +14,14 @@ enum {
 
 std::map<std::string, GDBServer::packet_handler> handlers{
     {"?", &GDBServer::haltReason},
+    {"c", &GDBServer::contHarts},
     {"g", &GDBServer::getRegisters},
     {"H", &GDBServer::setThread},
     {"k", &GDBServer::killServer},
     {"m", &GDBServer::readMemory},
     {"M", &GDBServer::writeMemory},
     {"p", &GDBServer::readRegister},
+    {"s", &GDBServer::stepHarts},
     {"qAttached", &GDBServer::qAttached},
     {"qSupported", &GDBServer::qSupported},
     {"qfThreadInfo", &GDBServer::threadInfo},
@@ -221,8 +223,6 @@ void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
 
 void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	gdb_vcont_t *vcont;
-	int stopped_thread = -1;
-	const char *stop_reason = NULL;
 	std::vector<debug_target_if *> all_harts;
 
 	/* This handler attempts to implement the all-stop mode.
@@ -258,8 +258,48 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	}
 
 	run_all_harts(all_harts);
+	stop_reply(conn, all_harts);
+}
 
-	for (debug_target_if *hart : all_harts) {
+void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
+	// We need to support both c and C otherwise GDB doesn't use vCont
+	// This is documented in the remote_vcont_probe function in the GDB source.
+	send_packet(conn, "vCont;c;C");
+}
+
+void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
+	gdb_breakpoint_t *bpoint;
+
+	bpoint = &cmd->v.bval;
+	if (bpoint->type != GDB_ZKIND_SOFT) {
+		send_packet(conn, ""); /* not supported */
+		return;
+	}
+
+	for (debug_target_if *hart : harts) hart->remove_breakpoint(bpoint->address);
+	send_packet(conn, "OK");
+}
+
+void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
+	gdb_breakpoint_t *bpoint;
+
+	bpoint = &cmd->v.bval;
+	if (bpoint->type != GDB_ZKIND_SOFT) {
+		send_packet(conn, ""); /* not supported */
+		return;
+	}
+
+	for (debug_target_if *hart : harts) hart->insert_breakpoint(bpoint->address);
+	send_packet(conn, "OK");
+}
+
+void GDBServer::stop_reply(int conn, const std::vector<debug_target_if *> &harts_run) {
+	int stopped_thread = -1;
+	const char *stop_reason = NULL;
+
+	for (debug_target_if *hart : harts_run) {
 		switch (hart->get_status()) {
 			case CoreExecStatus::HitBreakpoint:
 				stop_reason = "05";
@@ -300,36 +340,52 @@ void GDBServer::vCont(int conn, gdb_command_t *cmd) {
 	send_packet(conn, msg.c_str());
 }
 
-void GDBServer::vContSupported(int conn, gdb_command_t *cmd) {
+/* the 'c' and 's' packets are the pre-vCont equivalents of "continue" and
+ * "step" on every hart; clients still fall back to them */
+
+void GDBServer::contHarts(int conn, gdb_command_t *cmd) {
 	(void)cmd;
 
-	// We need to support both c and C otherwise GDB doesn't use vCont
-	// This is documented in the remote_vcont_probe function in the GDB source.
-	send_packet(conn, "vCont;c;C");
+	for (debug_target_if *hart : harts) set_single_run(hart, false);
+
+	run_all_harts(harts);
+	stop_reply(conn, harts);
 }
 
-void GDBServer::removeBreakpoint(int conn, gdb_command_t *cmd) {
-	gdb_breakpoint_t *bpoint;
+void GDBServer::stepHarts(int conn, gdb_command_t *cmd) {
+	(void)cmd;
 
-	bpoint = &cmd->v.bval;
-	if (bpoint->type != GDB_ZKIND_SOFT) {
-		send_packet(conn, ""); /* not supported */
+	for (debug_target_if *hart : harts) set_single_run(hart, true);
+
+	run_all_harts(harts);
+	stop_reply(conn, harts);
+}
+
+/* indexed by register number, up to GDB_PC_REG */
+static const char *const gpr_names[] = {
+    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0", "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
+    "a6",   "a7", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6",
+};
+
+void GDBServer::registerInfo(int conn, gdb_command_t *cmd) {
+	unsigned long reg = strtoul(cmd->name + sizeof("qRegisterInfo") - 1, NULL, 16);
+	unsigned bitsize = (arch == RV32) ? 32 : 64;
+	std::string resp;
+
+	if (reg > GDB_PC_REG) {
+		/* no such register: ends the client's enumeration */
+		send_packet(conn, "E45");
 		return;
 	}
 
-	for (debug_target_if *hart : harts) hart->remove_breakpoint(bpoint->address);
-	send_packet(conn, "OK");
-}
+	resp = "name:" + std::string(reg == GDB_PC_REG ? "pc" : gpr_names[reg]);
+	resp += ";bitsize:" + std::to_string(bitsize);
+	resp += ";offset:" + std::to_string(reg * (bitsize / 8));
+	resp += ";encoding:uint;format:hex;set:General Purpose Registers;";
+	if (reg == GDB_PC_REG)
+		resp += "generic:pc;";
+	else
+		resp += "gcc:" + std::to_string(reg) + ";dwarf:" + std::to_string(reg) + ";";
 
-void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
-	gdb_breakpoint_t *bpoint;
-
-	bpoint = &cmd->v.bval;
-	if (bpoint->type != GDB_ZKIND_SOFT) {
-		send_packet(conn, ""); /* not supported */
-		return;
-	}
-
-	for (debug_target_if *hart : harts) hart->insert_breakpoint(bpoint->address);
-	send_packet(conn, "OK");
+	send_packet(conn, resp.c_str());
 }
