@@ -71,6 +71,8 @@ void SIFIVE_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 		if (addr == CONTEXT_BASE) {
 			r->pre_read_callback = std::bind(&SIFIVE_PLIC::read_hartctx, this, std::placeholders::_1, h, l);
 			r->post_write_callback = std::bind(&SIFIVE_PLIC::write_hartctx, this, std::placeholders::_1, h, l);
+		} else { /* irq enables: unmasking a pending interrupt must fire it */
+			r->post_write_callback = [this](RegisterRange::WriteInfo) { e_run.notify(irq_trigger_delay); };
 		}
 
 		register_ranges.push_back(r);
@@ -162,6 +164,9 @@ void SIFIVE_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, P
 
 		*thr = std::min(*thr, uint32_t(MAX_THR));
 	}
+
+	/* a lowered threshold may unmask a pending interrupt */
+	e_run.notify(irq_trigger_delay);
 }
 
 void SIFIVE_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
@@ -170,6 +175,9 @@ void SIFIVE_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
 
 	auto &elem = interrupt_priorities[idx];
 	elem = std::min(elem, uint32_t(MAX_PRIO));
+
+	/* a raised priority may unmask a pending interrupt */
+	e_run.notify(irq_trigger_delay);
 }
 
 void SIFIVE_PLIC::run(void) {
