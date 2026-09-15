@@ -58,10 +58,12 @@ tests-clean:
 
 	rm -rf vp/tests/gdb/connect-and-quit/connect-and-quit
 	rm -rf vp/tests/gdb/hit-breakpoint/hit-breakpoint
+	rm -rf vp/tests/gdb/legacy-packets/legacy-packets
 	rm -rf vp/tests/gdb/mc-info-threads/mc-info-threads
 	rm -rf vp/tests/gdb/mc-wfi-thread/mc-wfi-thread
 	rm -rf vp/tests/gdb/read-memory/read-memory
 	rm -rf vp/tests/gdb/read-registers/read-registers
+	rm -rf vp/tests/gdb/register-info/register-info
 	rm -rf vp/tests/gdb/remove-breakpoint/remove-breakpoint
 	rm -rf vp/tests/gdb/write-memory/write-memory
 	rm -rf vp/tests/gdb/single-step/single-step

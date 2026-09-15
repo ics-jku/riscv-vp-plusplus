@@ -1,0 +1,6 @@
+sending: qRegisterInfo0
+received: "name:zero;bitsize:N;offset:N;encoding:uint;format:hex;set:General Purpose Registers;gcc:0;dwarf:0;"
+sending: qRegisterInfo20
+received: "name:pc;bitsize:N;offset:N;encoding:uint;format:hex;set:General Purpose Registers;generic:pc;"
+sending: qRegisterInfo21
+received: "E45"
