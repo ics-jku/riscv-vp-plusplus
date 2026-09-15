@@ -16,7 +16,7 @@ struct SimpleTerminal : public sc_core::sc_module {
 		sc_assert(trans.get_command() == tlm::TLM_WRITE_COMMAND);
 		sc_assert(trans.get_data_length() == 1);
 
-		std::cout << (char)*trans.get_data_ptr();
+		std::cout << (char)*trans.get_data_ptr() << std::flush;
 		delay += (sc_core::sc_time(1, sc_core::sc_time_unit::SC_US));
 	}
 };
