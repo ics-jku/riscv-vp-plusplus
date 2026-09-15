@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <string>
+
 #include "util/propertytree.h"
 
 inline uint32_t GET_IDX(uint32_t &irq) {
@@ -71,6 +73,8 @@ void SIFIVE_PLIC::create_hart_regs(uint64_t addr, uint64_t inc, hartmap &map) {
 		if (addr == CONTEXT_BASE) {
 			r->pre_read_callback = std::bind(&SIFIVE_PLIC::read_hartctx, this, std::placeholders::_1, h, l);
 			r->post_write_callback = std::bind(&SIFIVE_PLIC::write_hartctx, this, std::placeholders::_1, h, l);
+		} else { /* irq enables: unmasking a pending interrupt must fire it */
+			r->post_write_callback = [this](RegisterRange::WriteInfo) { e_run.notify(irq_trigger_delay); };
 		}
 
 		register_ranges.push_back(r);
@@ -106,6 +110,38 @@ void SIFIVE_PLIC::gateway_trigger_interrupt(uint32_t irq) {
 
 	pending_interrupts[GET_IDX(irq)] |= GET_OFF(irq);
 	e_run.notify(irq_trigger_delay);
+};
+
+void SIFIVE_PLIC::gateway_set_level(uint32_t irq, bool level) {
+	if (irq == 0 || irq > NUMIRQ)
+		throw std::invalid_argument("IRQ value is invalid");
+
+	bool was = level_state[GET_IDX(irq)] & GET_OFF(irq);
+	if (level)
+		level_state[GET_IDX(irq)] |= GET_OFF(irq);
+	else
+		level_state[GET_IDX(irq)] &= ~GET_OFF(irq);
+
+	if (level && !was)
+		gateway_trigger_interrupt(irq);
+};
+
+sc_core::sc_signal<bool> &SIFIVE_PLIC::gateway_level_input(uint32_t irq) {
+	if (irq == 0 || irq > NUMIRQ)
+		throw std::invalid_argument("IRQ value is invalid");
+
+	auto &sig = level_inputs[irq];
+	if (!sig) {
+		sig = std::make_unique<sc_core::sc_signal<bool>>(("gateway_level_input_" + std::to_string(irq)).c_str());
+		sc_core::sc_spawn_options opts;
+		opts.spawn_method();
+		opts.dont_initialize();
+		opts.set_sensitivity(&sig->value_changed_event());
+		sc_core::sc_signal<bool> *s = sig.get();
+		sc_core::sc_spawn([this, irq, s] { gateway_set_level(irq, s->read()); },
+		                  ("gateway_level_watch_" + std::to_string(irq)).c_str(), &opts);
+	}
+	return *sig;
 };
 
 bool SIFIVE_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, PrivilegeLevel level) {
@@ -145,6 +181,11 @@ void SIFIVE_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, P
 
 	if (is_claim_access(t.addr)) {
 		target_harts[hart]->clear_external_interrupt(level);
+
+		/* interrupt completion: a source whose level is still asserted
+		 * forwards a new request */
+		pending_interrupts[0] |= level_state[0];
+		pending_interrupts[1] |= level_state[1];
 	} else { /* access to priority threshold */
 		uint32_t *thr;
 
@@ -162,6 +203,10 @@ void SIFIVE_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, P
 
 		*thr = std::min(*thr, uint32_t(MAX_THR));
 	}
+
+	/* completion may have re-pended a level source, and a lowered
+	 * threshold may unmask a pending interrupt */
+	e_run.notify(irq_trigger_delay);
 }
 
 void SIFIVE_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
@@ -170,6 +215,9 @@ void SIFIVE_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
 
 	auto &elem = interrupt_priorities[idx];
 	elem = std::min(elem, uint32_t(MAX_PRIO));
+
+	/* a raised priority may unmask a pending interrupt */
+	e_run.notify(irq_trigger_delay);
 }
 
 void SIFIVE_PLIC::run(void) {

@@ -4,6 +4,7 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include <map>
+#include <memory>
 #include <systemc>
 
 #include "core/common/irq_if.h"
@@ -43,6 +44,19 @@ struct SIFIVE_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	SIFIVE_PLIC(sc_core::sc_module_name, bool fu540_mode, unsigned harts, unsigned numirq);
 	void gateway_trigger_interrupt(uint32_t);
 
+	/* Level-sensitive gateway (RISC-V Privileged Architecture v1.10 §7.4):
+	 * a rising level forwards a request, and on interrupt completion a
+	 * source whose level is still asserted forwards a new one. A peripheral
+	 * that holds a level line calls this on both edges instead of pulsing
+	 * gateway_trigger_interrupt(). */
+	void gateway_set_level(uint32_t irq, bool level);
+
+	/* The wire into a source's gateway: bind an interrupt line to the
+	 * returned signal (one writer per source) and the PLIC watches it with
+	 * an event-triggered process. Created on first use, at elaboration
+	 * time. */
+	sc_core::sc_signal<bool> &gateway_level_input(uint32_t irq);
+
 	SC_HAS_PROCESS(SIFIVE_PLIC);
 
    private:
@@ -75,6 +89,12 @@ struct SIFIVE_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	/* See Section 10.4 */
 	RegisterRange regs_pending_interrupts{0x1000, sizeof(uint32_t) * 2};
 	ArrayView<uint32_t> pending_interrupts{regs_pending_interrupts};
+
+	/* sources whose level is currently asserted (gateway_set_level) */
+	uint32_t level_state[2] = {0, 0};
+
+	/* per-source wires handed out by gateway_level_input() */
+	std::map<uint32_t, std::unique_ptr<sc_core::sc_signal<bool>>> level_inputs;
 
 	void create_registers(void);
 	void create_hart_regs(uint64_t, uint64_t, hartmap &);
