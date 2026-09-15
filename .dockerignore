@@ -34,10 +34,12 @@ vp/tests/libgdb/Makefile
 
 vp/tests/gdb/connect-and-quit/connect-and-quit
 vp/tests/gdb/hit-breakpoint/hit-breakpoint
+vp/tests/gdb/legacy-packets/legacy-packets
 vp/tests/gdb/mc-info-threads/mc-info-threads
 vp/tests/gdb/mc-wfi-thread/mc-wfi-thread
 vp/tests/gdb/read-memory/read-memory
 vp/tests/gdb/read-registers/read-registers
+vp/tests/gdb/register-info/register-info
 vp/tests/gdb/remove-breakpoint/remove-breakpoint
 vp/tests/gdb/write-memory/write-memory
 vp/tests/gdb/single-step/single-step
