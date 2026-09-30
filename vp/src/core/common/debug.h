@@ -52,6 +52,10 @@ struct debug_target_if {
 	virtual bool rvfi_dii_enabled(void) {
 		return false;
 	}
+	virtual void enable_capability_exception_enforcement(bool ena) {};
+	virtual bool capability_exception_enforcement_enabled(void) {
+		return false;
+	};
 
 	virtual void print_stats(void) {};
 };

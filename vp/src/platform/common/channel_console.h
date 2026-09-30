@@ -43,6 +43,8 @@ class Channel_Console final : public sc_core::sc_module, public Channel_FD_IF {
 	void debug_targets_toggle_dbbcache(void);
 	bool debug_targets_lscache_is_enabled(void);
 	void debug_targets_toggle_lscache(void);
+	bool debug_targets_capability_exception_enforcement_is_enabled(void);
+	void debug_targets_toggle_capability_exception_enforcement(void);
 	void debug_targets_print_stats(void);
 
 	/**

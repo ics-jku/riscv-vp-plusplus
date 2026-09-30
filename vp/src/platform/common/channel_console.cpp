@@ -19,6 +19,9 @@
 #define KEY_EXIT 'x'             /* x (character to exit (exit) in command mode) */
 #define KEY_CEXIT CTRL(KEY_EXIT) /* Ctrl-x (character to exit in command mode) */
 
+// CHERI specifics
+#define KEY_ENFORCE_CAP_EXCEPTIONS 'f' /* f (toggle handling of CHERI exceptions) */
+
 Channel_Console::Channel_Console(sc_core::sc_module_name, std::set<debug_target_if *> debug_targets)
     : debug_targets(debug_targets) {
 	cmd_requested = KEY_NONE;
@@ -103,15 +106,41 @@ void Channel_Console::debug_targets_toggle_lscache(void) {
 	std::cout << "CONSOLE: lscache:  " << (debug_targets_lscache_is_enabled() ? "enabled" : "disabled") << std::endl;
 }
 
+bool Channel_Console::debug_targets_capability_exception_enforcement_is_enabled(void) {
+	if (debug_targets.size() == 0) {
+		/* no debug targets -> false */
+		return false;
+	}
+
+	/* determine the state by looking at the first debug target */
+	return (*debug_targets.begin())->capability_exception_enforcement_enabled();
+}
+
+void Channel_Console::debug_targets_toggle_capability_exception_enforcement(void) {
+	bool state = debug_targets_capability_exception_enforcement_is_enabled();
+
+	/* switch all debug targets */
+	for (debug_target_if *debug_target : debug_targets) {
+		debug_target->enable_capability_exception_enforcement(!state);
+	}
+	std::cout << "CONSOLE: CHERI exception enforcement:  "
+	          << (debug_targets_capability_exception_enforcement_is_enabled() ? "enabled" : "disabled") << std::endl;
+}
+
 void Channel_Console::debug_targets_print_stats(void) {
 	std::cout << "CONSOLE: print stats" << std::endl;
 	std::cout << "++++++++++++++++++++" << std::endl;
 	for (debug_target_if *debug_target : debug_targets) {
 		debug_target->print_stats();
 	}
-	std::cout << "CONSOLE: datadmi:  " << (debug_targets_datadmi_is_enabled() ? "enabled" : "disabled") << std::endl;
-	std::cout << "CONSOLE: dbbcache: " << (debug_targets_dbbcache_is_enabled() ? "enabled" : "disabled") << std::endl;
-	std::cout << "CONSOLE: lscache:  " << (debug_targets_lscache_is_enabled() ? "enabled" : "disabled") << std::endl;
+	std::cout << "CONSOLE: datadmi:                      "
+	          << (debug_targets_datadmi_is_enabled() ? "enabled" : "disabled") << std::endl;
+	std::cout << "CONSOLE: dbbcache:                     "
+	          << (debug_targets_dbbcache_is_enabled() ? "enabled" : "disabled") << std::endl;
+	std::cout << "CONSOLE: lscache:                      "
+	          << (debug_targets_lscache_is_enabled() ? "enabled" : "disabled") << std::endl;
+	std::cout << "CONSOLE: CHERI exception enforcement:  "
+	          << (debug_targets_capability_exception_enforcement_is_enabled() ? "enabled" : "disabled") << std::endl;
 	std::cout << "++++++++++++++++++++" << std::endl;
 }
 
@@ -202,6 +231,7 @@ void Channel_Console::handle_cmd() {
 			          << "    ^a-D   toggle data DMI of debug targets\n"
 			          << "    ^a-d   toggle dbbcache of debug targets\n"
 			          << "    ^a-l   toggle lscache of debug targets (requires support for data-DMI)\n"
+			          << "    ^a-f   toggle CHERI exception enforcement of debug targets\n"
 			          << "    ^a-q   quit - stop simulation with sc_stop\n"
 			          << "    ^a-x   exit - hard stop of simulation with exit" << std::endl;
 			break;
@@ -222,6 +252,9 @@ void Channel_Console::handle_cmd() {
 			break;
 		case KEY_QUIT:
 			sc_core::sc_stop();
+			break;
+		case KEY_ENFORCE_CAP_EXCEPTIONS:
+			debug_targets_toggle_capability_exception_enforcement();
 			break;
 		default:
 			return; /* unknown command → ignore */

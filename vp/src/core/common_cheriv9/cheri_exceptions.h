@@ -2,6 +2,9 @@
 #include "cheri_constants.h"
 #include "cheri_types.h"
 #include "core/common/trap.h"
+#include "util/cheri_debug_tool.h"
+
+using cheriv9::rv64::CheriDebugTool;
 
 constexpr uint8_t cExcCapIdxShift =
     5;  // CHERI defines xtval register format as: [31:11] = WPRI, [10:5] = Cap Idx, [4:0] = cause
@@ -48,17 +51,17 @@ inline std::string cap_ex_to_string(CapEx capEx) {
 }
 
 inline void handle_cheri_exception(ExceptionCode exc, uint64_t mtval, rvfi_dii_trace_t* trace) {
-#ifdef HANDLE_CHERI_EXCEPTIONS
-	printf("CHERI Exception: %d\n", exc);
-	raise_trap(exc, mtval, trace);
-#endif
+	if (CheriDebugTool::instance().IsCapExceptionHandlingEnabled()) {
+		printf("CHERI Exception: %d\n", exc);
+		raise_trap(exc, mtval, trace);
+	}
 }
 
 inline void handle_cheri_cap_exception(CapEx capEx, uint64_t regnum, rvfi_dii_trace_t* trace) {
-#ifdef HANDLE_CHERI_EXCEPTIONS  // Defined via CMake for CHERI targets
-	printf("CHERI Exception: %s\n", cap_ex_to_string(capEx).c_str());
-	raise_trap(static_cast<ExceptionCode>(EXC_CHERI_FAULT), (regnum << cExcCapIdxShift) + capEx, trace);
-#endif
+	if (CheriDebugTool::instance().IsCapExceptionHandlingEnabled()) {
+		printf("CHERI Exception: %s\n", cap_ex_to_string(capEx).c_str());
+		raise_trap(static_cast<ExceptionCode>(EXC_CHERI_FAULT), (regnum << cExcCapIdxShift) + capEx, trace);
+	}
 }
 
 inline void handle_cheri_reg_exception(CapEx capEx, uint64_t regidx, rvfi_dii_trace_t* trace) {

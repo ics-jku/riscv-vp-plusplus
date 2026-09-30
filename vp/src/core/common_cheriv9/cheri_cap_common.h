@@ -1,5 +1,4 @@
 #pragma once
-#define HANDLE_CHERI_EXCEPTIONS
 #include <cstdint>
 
 #include "cheri_capability.h"

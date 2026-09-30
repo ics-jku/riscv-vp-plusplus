@@ -34,6 +34,7 @@
 #include "core/common_cheriv9/iss_stats.h"
 #include "core/common_cheriv9/regfile.h"
 #include "csr.h"
+#include "util/cheri_debug_tool.h"
 #include "util/common.h"
 #include "util/initiator_if.h"
 

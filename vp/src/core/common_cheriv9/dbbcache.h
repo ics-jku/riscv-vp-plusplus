@@ -109,7 +109,6 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 		try {
 			// Fetch is split in 2 * 16 bits, because if last instruction is compressed, CHERI checks would fail if 32
 			// bits were fetched First handle CHERI checks on pc
-#ifdef HANDLE_CHERI_EXCEPTIONS
 			cheriFetchCheckPc(pc, pc, this->rvfi_dii_output, this->has_compressed);
 			uint16_t instr_low = this->instr_mem->load_instr_half(pc->cap.fields.address);
 			instr = Instruction(instr_low);
@@ -120,9 +119,6 @@ class DBBCacheDummy_T : public DBBCacheBase_T<arch, T_uxlen_t, T_instr_memory_if
 			cheriFetchCheckPc(pc, pc + 2, this->rvfi_dii_output, this->has_compressed);
 			uint16_t instr_high = this->instr_mem->load_instr_half(pc->cap.fields.address + 2);
 			uint32_t mem_word = (instr_high << 16) | instr_low;
-#else
-			uint32_t mem_word = this->instr_mem->load_instr(pc->cap.fields.address);
-#endif
 			instr = Instruction(mem_word);
 			return mem_word;
 		} catch (SimulationTrap &e) {

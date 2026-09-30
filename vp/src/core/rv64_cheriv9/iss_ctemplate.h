@@ -193,6 +193,13 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 		return rvfi_dii;
 	}
 
+	virtual void enable_capability_exception_enforcement(bool ena) override {
+		CheriDebugTool::instance().EnableCapExceptionHandling(ena);
+	}
+	virtual bool capability_exception_enforcement_enabled(void) override {
+		return CheriDebugTool::instance().IsCapExceptionHandlingEnabled();
+	}
+
 	void enable_datadmi(bool ena) override {
 		mem->dmi_enable(ena);
 		if (!mem->dmi_enabled()) {
