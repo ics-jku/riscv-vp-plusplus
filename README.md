@@ -1,3 +1,5 @@
+[![RISC-V VP++ logo](doc/logo/preview/riscv_vp_plusplus_logo.png)](#logos)
+
 # RISC-V VP++
 
 *RISC-V VP++* is a extended and improved successor of the RISC-V based Virtual Prototype (VP) [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp).
@@ -227,3 +229,13 @@ If you use *RISC-V VP++* or find it useful, you can cite the paper presenting *R
   Presents GUI-VP Kit, an open-source platform combining a SystemC-based RISC-V virtual prototype with Linux configurations and Virtual Network Computing (VNC) graphics/input for interactive application development.
 
   [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SG:2023) | [DOI](https://doi.org/10.1145/3583781.3590253) | [material](https://github.com/ics-jku/GUI-VP_Kit) | [.pdf](https://ics.jku.at/files/2023GLSVLSI_GUI-VP_Kit.pdf)]
+
+## Logos
+
+The project logos are available in the following variants and formats:
+
+| RISC-V VP++ Logo | RISC-V VP++ Logo + Name |
+| :---: | :---: |
+| ![RISC-V VP++ symbol](doc/logo/preview/riscv_vp_plusplus_logo.png) | ![RISC-V VP++ wordmark](doc/logo/preview/riscv_vp_plusplus_logo_name.png) |
+| [png](doc/logo/riscv_vp_plusplus_logo.png) · [svg](doc/logo/riscv_vp_plusplus_logo.svg) | [png](doc/logo/riscv_vp_plusplus_logo_name.png) · [svg](doc/logo/riscv_vp_plusplus_logo_name.svg) |
+| Compact variant | Full variant including the project name |
