@@ -3,7 +3,7 @@
 *RISC-V VP++* is a extended and improved successor of the RISC-V based Virtual Prototype (VP) [RISC-V VP](https://github.com/agra-uni-bremen/riscv-vp).
 It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Johannes Kepler University, Linz.
 
-A BibTex entry to cite the paper presenting *RISC-V VP++*, [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf), can be found in the last section.
+More information on *RISC-V VP++* can be found in the publications linked in the [last section](#publications).
 
 ### Key features of *RISC-V VP++*
  * Support for *Capability Hardware Enhanced RISC Instructions* (CHERI) RISC-V ISA, Version 9
@@ -153,7 +153,9 @@ exit the VP.
 **A:** Enter control mode using Ctrl-a and press Ctrl-a again to send a
 literal Ctrl-a control character to the guest.
 
-### *RISC-V VP++: Next generation open-source virtual prototype*
+## Publications
+
+If you use *RISC-V VP++* or find it useful, you can cite the paper presenting *RISC-V VP++* as follows:
 
 [Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation, 2024.](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf)
 
@@ -167,3 +169,61 @@ literal Ctrl-a control character to the guest.
   year =          {2024},
 }
 ```
+
+### All RISC-V VP++ related publications
+
+* **MBMV 2026**
+
+  Manfred Schlägl and Daniel Große. FastISS-Enhanced RISC-V VP++: Latest Results in High-Performance Interpreter-Based Simulation. In ITG/GI/GMM-Workshop "Methoden und Beschreibungssprachen zur Modellierung und Verifikation von Schaltungen und Systemen" (MBMV), 2026.
+
+  Reports the latest performance results of RISC-V VP++ with FastISS, an optimized interpreter-based instruction set simulator, achieving up to 442.77 million instructions per second (MIPS) and average speedups of 9.97× over the original RISC-V VP++ and 1.83× over Spike.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SG:2026) | [.pdf](https://ics.jku.at/files/2026MBMV_FastISS_Enhanced_RISCV_VP%2B%2B.pdf)]
+
+* **ASP-DAC 2026**
+
+  Manfred Schlägl, Andreas Hinterdorfer, and Daniel Große. A RISC-V CHERI VP: Enabling system-level evaluation of the capability-based CHERI architecture. In Asia and South Pacific Design Automation Conference (ASP-DAC), pages 1230–1236, 2026.
+
+  Presents an open-source SystemC-based RISC-V virtual prototype with support for Capability Hardware Enhanced RISC Instructions (CHERI), virtual memory, CheriBSD execution, and TestRIG-based verification.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SHG:2026) | [DOI](https://doi.org/10.1109/ASP-DAC66049.2026.11420554) | [material](https://github.com/ics-jku/riscv-vp-plusplus) | [.pdf](https://ics.jku.at/files/2026ASPDAC_RISC-V_CHERI-VP.pdf)]
+
+* **RISC-V Summit Europe 2025**
+
+  Manfred Schlägl and Daniel Große. FastISS RISC-V VP++: A simulation performance evaluation of RVV workloads. In RISC-V Summit Europe, 2025.
+
+  Evaluates the fast interpreter-based instruction set simulator (FastISS) optimizations on RISC-V Vector Extension (RVV)-vectorized workloads and compares the simulation performance of original and optimized RISC-V VP++ using a vectorized Linux game workload.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SG:2025c) | [.pdf](https://ics.jku.at/files/2025RISCVSummit_FastISS_RVV.pdf)]
+
+* **DATE 2025**
+
+  Manfred Schlägl and Daniel Große. Fast interpreter-based instruction set simulation for virtual prototypes. In Design, Automation and Test in Europe Conference (DATE), pages 1–7, 2025.
+
+  Presents the fast interpreter-based instruction set simulator (FastISS) used by RISC-V VP++, including the Dynamic Basic Block Cache (DBBCache) and Load/Store Cache (LSCache) optimizations, achieving average speedups of 8.98× over the original VP and 1.65× over Spike.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SG:2025) | [DOI](https://doi.org/10.23919/DATE64628.2025.10992929) | [material](https://github.com/ics-jku/riscv-vp-plusplus) | [.pdf](https://ics.jku.at/files/2025DATE_Fast_Interpreter-based_ISS.pdf)]
+
+* **OSDA 2024**
+
+  Manfred Schlägl, Christoph Hazott, and Daniel Große. RISC-V VP++: Next generation open-source virtual prototype. In Workshop on Open-Source Design Automation (OSDA), 2024.
+
+  Presents RISC-V VP++ as an open-source, extensible SystemC-based virtual prototype with Linux, RISC-V Vector Extension (RVV), GUI-VP, and other RISC-V platform features.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SHG:2024) | [material](https://github.com/ics-jku/riscv-vp-plusplus) | [.pdf](https://ics.jku.at/files/2024OSDA_RISCV-VP-plusplus.pdf)]
+
+* **DATE 2024**
+
+  Manfred Schlägl, Moritz Stockinger, and Daniel Große. A RISC-V "V" VP: Unlocking vector processing for evaluation at the system level. In Design, Automation and Test in Europe Conference (DATE), pages 1–6, 2024.
+
+  Introduces the RISC-V Vector Extension (RVV) support in RISC-V VP++ for system-level evaluation of vector workloads.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SSG:2024) | [DOI](https://doi.org/10.23919/DATE58400.2024.10546838) | [material](https://github.com/ics-jku/riscv-vp-plusplus) | [.pdf](https://ics.jku.at/files/2024DATE_RISCV-VP-plusplus_RVV.pdf)]
+
+* **GLSVLSI 2023**
+
+  Manfred Schlägl and Daniel Große. GUI-VP Kit: A RISC-V VP meets Linux graphics – enabling interactive graphical application development. In ACM Great Lakes Symposium on VLSI (GLSVLSI), pages 599–605, 2023.
+
+  Presents GUI-VP Kit, an open-source platform combining a SystemC-based RISC-V virtual prototype with Linux configurations and Virtual Network Computing (VNC) graphics/input for interactive application development.
+
+  [[bib](https://ics.jku.at/bibliography/manfred_schlaegl/#SG:2023) | [DOI](https://doi.org/10.1145/3583781.3590253) | [material](https://github.com/ics-jku/GUI-VP_Kit) | [.pdf](https://ics.jku.at/files/2023GLSVLSI_GUI-VP_Kit.pdf)]
