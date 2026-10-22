@@ -1,0 +1,3 @@
+
+Breakpoint 1, _start () at ../gdb/legacy-packets/legacy-packets.S:5
+5		jal exit # breakpoint is set here

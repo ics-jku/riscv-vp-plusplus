@@ -62,7 +62,7 @@ void DebugMemoryInterface::write_memory(uint64_t start, unsigned nbytes, const s
 	assert(data.length() % 2 == 0);
 	assert(buf.size() == nbytes);
 
-	for (j = 0, i = 0; i + 1 < nbytes; j++, i += 2) {
+	for (j = 0, i = 0; i + 1 < data.length(); j++, i += 2) {
 		long num;
 		char hex[3];
 

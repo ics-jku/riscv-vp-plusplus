@@ -1,3 +1,5 @@
 set *((int *)$sp) = 23
 p *((int *)$sp)
+set *((int *)$sp) = 0xdeadbeef
+p/x *((int *)$sp)
 quit

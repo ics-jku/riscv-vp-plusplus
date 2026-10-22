@@ -1,0 +1,6 @@
+set logging off
+set remote verbose-resume-packet off
+break legacy-packets.S:5
+set logging on
+continue
+quit
