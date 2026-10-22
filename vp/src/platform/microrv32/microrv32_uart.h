@@ -48,7 +48,7 @@ struct MicroRV32UART : public sc_core::sc_module {
 			if (addr == 0) {
 				buf = *ptr;
 			} else if (addr == 4) {
-				std::cout << buf;
+				std::cout << buf << std::flush;
 			}
 		} else if (cmd == tlm::TLM_READ_COMMAND) {
 			if (addr == 0) {
