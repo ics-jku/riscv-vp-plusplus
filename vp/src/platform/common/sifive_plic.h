@@ -84,7 +84,6 @@ struct SIFIVE_PLIC : public sc_core::sc_module, public interrupt_gateway {
 	void write_irq_prios(RegisterRange::WriteInfo);
 	void run(void);
 	unsigned int next_pending_irq(unsigned int, PrivilegeLevel, bool);
-	bool has_pending_irq(unsigned int, PrivilegeLevel *);
 	uint32_t get_threshold(unsigned int, PrivilegeLevel);
 	void clear_pending(unsigned int);
 	bool is_pending(unsigned int);

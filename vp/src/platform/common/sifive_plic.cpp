@@ -184,11 +184,18 @@ void SIFIVE_PLIC::run(void) {
 	for (;;) {
 		sc_core::wait(e_run);
 
+		/* every hart context has its own EIP: evaluate them
+		 * independently */
 		for (size_t i = 0; i < target_harts.size(); i++) {
-			PrivilegeLevel lvl;
-			if (has_pending_irq(i, &lvl)) {
-				target_harts[i]->trigger_external_interrupt(lvl);
-			}
+			if (next_pending_irq(i, MachineMode, false) > 0)
+				target_harts[i]->trigger_external_interrupt(MachineMode);
+
+			/* fu540 hart 0 only supports m-mode interrupts */
+			if (FU540_MODE && i == 0)
+				continue;
+
+			if (next_pending_irq(i, SupervisorMode, false) > 0)
+				target_harts[i]->trigger_external_interrupt(SupervisorMode);
 		}
 	}
 }
@@ -218,28 +225,6 @@ unsigned int SIFIVE_PLIC::next_pending_irq(unsigned int hart, PrivilegeLevel lvl
 	}
 
 	return selirq;
-}
-
-bool SIFIVE_PLIC::has_pending_irq(unsigned int hart, PrivilegeLevel *level) {
-	if (FU540_MODE) {
-		/* fu540 hart 0 only supports m-mode interrupts */
-		if (hart != 0 && next_pending_irq(hart, SupervisorMode, false) > 0) {
-			*level = SupervisorMode;
-			return true;
-		}
-	} else {
-		if (next_pending_irq(hart, SupervisorMode, false) > 0) {
-			*level = SupervisorMode;
-			return true;
-		}
-	}
-
-	if (next_pending_irq(hart, MachineMode, false) > 0) {
-		*level = MachineMode;
-		return true;
-	}
-
-	return false;
 }
 
 uint32_t SIFIVE_PLIC::get_threshold(unsigned int hart, PrivilegeLevel level) {
