@@ -42,6 +42,9 @@ SC_MODULE(GDBServer) {
 	void removeBreakpoint(int, gdb_command_t *);
 	void setBreakpoint(int, gdb_command_t *);
 	void isAlive(int, gdb_command_t *);
+	void registerInfo(int, gdb_command_t *);
+	void contHarts(int, gdb_command_t *);
+	void stepHarts(int, gdb_command_t *);
 
 	SC_HAS_PROCESS(GDBServer);
 
@@ -89,6 +92,7 @@ SC_MODULE(GDBServer) {
 	uint64_t translate_addr(debug_target_if *, uint64_t, MemoryAccessType type);
 	void exec_thread(thread_func, char = 'g');
 	void run_all_harts(std::vector<debug_target_if *>);
+	void stop_reply(int, const std::vector<debug_target_if *> &);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
 	void retransmit(int);

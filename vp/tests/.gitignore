@@ -9,10 +9,12 @@ libgdb/*.cmake
 
 gdb/connect-and-quit/connect-and-quit
 gdb/hit-breakpoint/hit-breakpoint
+gdb/legacy-packets/legacy-packets
 gdb/mc-info-threads/mc-info-threads
 gdb/mc-wfi-thread/mc-wfi-thread
 gdb/read-memory/read-memory
 gdb/read-registers/read-registers
+gdb/register-info/register-info
 gdb/remove-breakpoint/remove-breakpoint
 gdb/write-memory/write-memory
 gdb/single-step/single-step
