@@ -43,14 +43,11 @@ class BasicOptions : public Options {
 
 	addr_t mem_size = mem_end_addr - mem_start_addr;
 
-	bool use_E_base_isa = false;
-
 	OptionValue<uint64_t> entry_point;
 
 	BasicOptions(void) {
 		// clang-format off
 		add_options()
-			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)");
 		// clang-format on
 	}

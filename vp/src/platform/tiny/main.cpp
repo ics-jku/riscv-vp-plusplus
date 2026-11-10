@@ -72,7 +72,6 @@ struct TinyOptions : public Options {
 	addr_t sys_end_addr = 0x020103ff;
 
 	bool quiet = false;
-	bool use_E_base_isa = false;
 	bool cheri_purecap = false;
 
 	TinyOptions(void) {
@@ -81,7 +80,6 @@ struct TinyOptions : public Options {
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
 			("memory-start", po::value<uint64_t>(&mem_start_addr), "set memory start address")
 			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
-			("use-E-base-isa", po::bool_switch(&use_E_base_isa), "use the E instead of the I integer base ISA")
 #ifdef TARGET_RV64_CHERIV9
 			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
 #endif

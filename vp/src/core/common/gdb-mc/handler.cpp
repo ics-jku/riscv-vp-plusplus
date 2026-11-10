@@ -45,6 +45,9 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	(void)cmd;
 
+	// TODO: Not working for the E base ISA. GDB derives the register layout from the ELF file and expects only
+	// x0-x15 + pc for E targets, but all 32 integer registers + pc are sent here. GDB rejects this with
+	// "Remote 'g' packet reply is too long".
 	auto formatter = new RegisterFormater(arch);
 	auto fn = [formatter](debug_target_if *hart) {
 		for (uint64_t v : hart->get_registers()) formatter->formatRegister(v);
