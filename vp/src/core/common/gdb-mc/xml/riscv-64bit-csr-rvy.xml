@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!DOCTYPE feature SYSTEM "gdb-target.dtd">
+<!-- RVY variant of riscv-64bit-csr.xml, additionally includes senvcfg, menvcfg and mconfigptr.
+     GDB register number = 100 + CSR address (GDB_REG_CSR_OFFSET in gdb-mc/gdb_regs.h) -->
+<feature name="org.gnu.gdb.riscv.csr">
+  <reg name="fflags" bitsize="64" type="int" regnum="101"/>
+  <reg name="frm" bitsize="64" type="int" regnum="102"/>
+  <reg name="fcsr" bitsize="64" type="int" regnum="103"/>
+  <reg name="sstatus" bitsize="64" type="int" regnum="356"/>
+  <reg name="sie" bitsize="64" type="int" regnum="360"/>
+  <reg name="stvec" bitsize="64" type="int" regnum="361"/>
+  <reg name="scounteren" bitsize="64" type="int" regnum="362"/>
+  <reg name="senvcfg" bitsize="64" type="int" regnum="366"/>
+  <reg name="sscratch" bitsize="64" type="int" regnum="420"/>
+  <reg name="sepc" bitsize="64" type="int" regnum="421"/>
+  <reg name="scause" bitsize="64" type="int" regnum="422"/>
+  <reg name="stval" bitsize="64" type="int" regnum="423"/>
+  <reg name="sip" bitsize="64" type="int" regnum="424"/>
+  <reg name="satp" bitsize="64" type="int" regnum="484"/>
+  <reg name="mstatus" bitsize="64" type="int" regnum="868"/>
+  <reg name="misa" bitsize="64" type="int" regnum="869"/>
+  <reg name="medeleg" bitsize="64" type="int" regnum="870"/>
+  <reg name="mideleg" bitsize="64" type="int" regnum="871"/>
+  <reg name="mie" bitsize="64" type="int" regnum="872"/>
+  <reg name="mtvec" bitsize="64" type="int" regnum="873"/>
+  <reg name="mcounteren" bitsize="64" type="int" regnum="874"/>
+  <reg name="menvcfg" bitsize="64" type="int" regnum="878"/>
+  <reg name="mscratch" bitsize="64" type="int" regnum="932"/>
+  <reg name="mepc" bitsize="64" type="int" regnum="933"/>
+  <reg name="mcause" bitsize="64" type="int" regnum="934"/>
+  <reg name="mtval" bitsize="64" type="int" regnum="935"/>
+  <reg name="mip" bitsize="64" type="int" regnum="936"/>
+  <reg name="mcycle" bitsize="64" type="int" regnum="2916"/>
+  <reg name="minstret" bitsize="64" type="int" regnum="2918"/>
+  <reg name="cycle" bitsize="64" type="int" regnum="3172"/>
+  <reg name="time" bitsize="64" type="int" regnum="3173"/>
+  <reg name="instret" bitsize="64" type="int" regnum="3174"/>
+  <reg name="mvendorid" bitsize="64" type="int" regnum="3957"/>
+  <reg name="marchid" bitsize="64" type="int" regnum="3958"/>
+  <reg name="mimpid" bitsize="64" type="int" regnum="3959"/>
+  <reg name="mhartid" bitsize="64" type="int" regnum="3960"/>
+  <reg name="mconfigptr" bitsize="64" type="int" regnum="3961"/>
+</feature>

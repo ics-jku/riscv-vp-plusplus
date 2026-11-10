@@ -14,11 +14,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <stdexcept>
 #include <systemc>
 
 #include "platform/common/async_event.h"
 
 extern std::map<std::string, GDBServer::packet_handler> handlers;
+
+static gdb_xml::TargetConfig get_target_config(debug_target_if *hart) {
+	gdb_xml::TargetConfig cfg;
+	switch (hart->get_architecture()) {
+		case RV32:
+			cfg.xlen = 32;
+			break;
+		case RV64:
+			cfg.xlen = 64;
+			break;
+		default:
+			throw std::invalid_argument("GDB: unsupported architecture");
+	}
+	cfg.embedded = hart->has_E_base_isa();
+	cfg.cheri = hart->get_cheri_debug_if() != nullptr;
+	return cfg;
+}
 
 GDBServer::GDBServer(sc_core::sc_module_name name, std::vector<debug_target_if *> targets, DebugMemoryInterface *mm,
                      uint16_t port, bool cont_sim_on_wait, std::vector<mmu_memory_if *> mmus)
@@ -45,8 +63,14 @@ GDBServer::GDBServer(sc_core::sc_module_name name, std::vector<debug_target_if *
 	}
 
 	memory = mm;
-	arch = harts.at(0)->get_architecture();  // assuming all harts use the same
+	target = get_target_config(harts.at(0));
+	for (debug_target_if *hart : harts) {
+		if (get_target_config(hart) != target)
+			throw std::invalid_argument("GDB: all harts must have the same architecture and extensions");
+	}
+	gdb_xml::target_file(target);  // throws if no target description is available
 	prevpkt = NULL;
+	prevpkt_len = 0;
 	create_sock(port);
 
 	SC_THREAD(run);
@@ -145,7 +169,13 @@ void GDBServer::exec_thread(thread_func fn, char op) {
 	}
 
 	threads = get_harts(thread);
-	for (debug_target_if *thread : threads) fn(thread);
+	for (debug_target_if *thread : threads) {
+		try {
+			fn(thread);
+		} catch (const SimulationTrap &) {
+			throw std::runtime_error("trap during debug access");
+		}
+	}
 }
 
 void GDBServer::run_all_harts(std::vector<debug_target_if *> harts_to_run) {
@@ -216,12 +246,62 @@ void GDBServer::send_packet(int conn, const char *data, gdb_kind_t kind) {
 	free(prevpkt);
 	if (!(prevpkt = strdup(serialized))) {
 		prevpkt = NULL;
+		prevpkt_len = 0;
 		free(serialized);
 		throw std::system_error(errno, std::generic_category());
 	}
+	prevpkt_len = strlen(serialized);
 
 ret:
 	free(serialized);
+}
+
+void GDBServer::send_binary_packet(int conn, const std::vector<uint8_t> &data) {
+	static const char hex[] = "0123456789abcdef";
+	std::string payload;
+	std::string serialized;
+	unsigned csum = 0;
+
+	for (uint8_t byte : data) {
+		switch (byte) {
+			case '#':
+			case '$':
+			case '*':
+			case '}':
+				payload.push_back('}');
+				payload.push_back(byte ^ 0x20);
+				break;
+			default:
+				payload.push_back(byte);
+				break;
+		}
+	}
+
+	for (unsigned char byte : payload) csum += byte;
+	csum %= 256;
+
+	serialized.reserve(payload.size() + 4);
+	serialized.push_back('$');
+	serialized += payload;
+	serialized.push_back('#');
+	serialized.push_back(hex[(csum >> 4) & 0xf]);
+	serialized.push_back(hex[csum & 0xf]);
+
+	try {
+		writeall(conn, &serialized[0], serialized.size());
+	} catch (const std::system_error &e) {
+		warnx("writeall failed: %s", e.what());
+		return;
+	}
+
+	free(prevpkt);
+	prevpkt = (char *)malloc(serialized.size());
+	if (!prevpkt) {
+		prevpkt_len = 0;
+		throw std::system_error(errno, std::generic_category());
+	}
+	memcpy(prevpkt, serialized.data(), serialized.size());
+	prevpkt_len = serialized.size();
 }
 
 void GDBServer::retransmit(int conn) {
@@ -229,7 +309,7 @@ void GDBServer::retransmit(int conn) {
 		return;
 
 	try {
-		writeall(conn, prevpkt, strlen(prevpkt));
+		writeall(conn, prevpkt, prevpkt_len);
 	} catch (const std::system_error &e) {
 		warnx("writeall failed: %s", e.what());
 	}
@@ -282,6 +362,7 @@ void GDBServer::serve(void) {
 
 		free(prevpkt);
 		prevpkt = NULL;
+		prevpkt_len = 0;
 	}
 }
 

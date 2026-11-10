@@ -12,6 +12,19 @@
 #include "util/propertytree.h"
 #include "util/tlm_ext_initiator.h"
 
+/*
+ * Register size and offsets
+ * RV64Y uses 64-bit registers (e.g. to hold full 64-bit addresses),
+ * all other targets keep the 32-bit register layout for compatibility.
+ */
+#if defined(TARGET_RV64Y)
+#define DMA_REG_TYPE uint64_t
+#define DMA_REG_SIZE 8
+#else
+#define DMA_REG_TYPE uint32_t
+#define DMA_REG_SIZE 4
+#endif
+
 struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 	/* config properties */
 	sc_core::sc_time prop_clock_cycle_period = sc_core::sc_time(10, sc_core::SC_NS);
@@ -27,13 +40,13 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 
 	std::array<uint8_t, 64> buffer;
 
-	uint32_t src = 0;
-	uint32_t dst = 0;
-	uint32_t len = 0;
-	uint32_t op = 0;
-	uint32_t stat = 0;
+	DMA_REG_TYPE src = 0;
+	DMA_REG_TYPE dst = 0;
+	DMA_REG_TYPE len = 0;
+	DMA_REG_TYPE op = 0;
+	DMA_REG_TYPE stat = 0;
 
-	std::unordered_map<uint64_t, uint32_t *> addr_to_reg;
+	std::unordered_map<uint64_t, DMA_REG_TYPE *> addr_to_reg;
 
 	enum {
 		OP_NOP = 0,
@@ -46,10 +59,10 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 
 	enum {
 		SRC_ADDR = 0,
-		DST_ADDR = 4,
-		LEN_ADDR = 8,
-		OP_ADDR = 12,
-		STAT_ADDR = 16,
+		DST_ADDR = DMA_REG_SIZE,
+		LEN_ADDR = DMA_REG_SIZE * 2,
+		OP_ADDR = DMA_REG_SIZE * 3,
+		STAT_ADDR = DMA_REG_SIZE * 4,
 	};
 
 	sc_core::sc_event run_event;
@@ -136,16 +149,16 @@ struct SimpleDMA : public sc_core::sc_module, public initiator_if {
 		auto len = trans.get_data_length();
 		auto ptr = trans.get_data_ptr();
 
-		assert(len == 4);  // NOTE: only allow to read/write whole register
+		assert(len == DMA_REG_SIZE);  // NOTE: only allow to read/write whole register
 
 		auto it = addr_to_reg.find(addr);
 		assert(it != addr_to_reg.end());  // access to non-mapped address
 
 		// actual read/write
 		if (cmd == tlm::TLM_READ_COMMAND) {
-			*((uint32_t *)ptr) = *it->second;
+			*((DMA_REG_TYPE *)ptr) = *it->second;
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-			*it->second = *((uint32_t *)ptr);
+			*it->second = *((DMA_REG_TYPE *)ptr);
 		} else {
 			assert(false && "unsupported tlm command for dma access");
 		}

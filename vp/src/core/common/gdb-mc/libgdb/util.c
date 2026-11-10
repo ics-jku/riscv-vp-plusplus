@@ -139,6 +139,12 @@ void gdb_free_cmd(gdb_command_t *cmd) {
 			parent = next;
 		}
 	}
+	if (cmd->type == GDB_ARG_MEMTAGSW) {
+		free(cmd->v.memtagsw.data);
+	}
+	if (cmd->type == GDB_ARG_XFER_FEATURES_READ) {
+		free(cmd->v.xfer_features_read.annex);
+	}
 
 	free(cmd->name);
 	free(cmd);

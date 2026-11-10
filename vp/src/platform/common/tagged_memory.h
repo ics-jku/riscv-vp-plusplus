@@ -23,7 +23,7 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 	uint32_t size;
 	bool read_only;
 	std::vector<bool> tag_bits;
-	const uint8_t CLEN = 16;  // TODO Only true for RV64 // TODO Get this from ISS // CLEN = 2*MXLEN
+	const uint8_t YLEN = 16;  // TODO Only true for RV64 // TODO Get this from ISS // YLEN = 2*MXLEN
 	uint64_t mem_start_addr;
 	uint64_t mem_end_addr;
 
@@ -35,8 +35,8 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 
 		access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 
-		// Initialize tag_bits after printing the value of CLEN
-		tag_bits = std::vector<bool>(size / CLEN);
+		// Initialize tag_bits after printing the value of YLEN
+		tag_bits = std::vector<bool>(size / YLEN);
 		tsock.register_b_transport(this, &TaggedMemory::transport);
 		tsock.register_get_direct_mem_ptr(this, &TaggedMemory::get_direct_mem_ptr);
 		tsock.register_transport_dbg(this, &TaggedMemory::transport_dbg);
@@ -61,16 +61,16 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 	}
 
 	void write_data(unsigned addr, const uint8_t *src, unsigned num_bytes, bool tag) {
-		if (tag && num_bytes != CLEN) {
-			assert(0 && "Tagged data must be CLEN bytes");
+		if (tag && num_bytes != YLEN) {
+			assert(0 && "Tagged data must be YLEN bytes");
 		}
-		if (tag && addr % CLEN != 0) {
-			assert(0 && "Tagged data must be aligned to CLEN");
+		if (tag && addr % YLEN != 0) {
+			assert(0 && "Tagged data must be aligned to YLEN");
 		}
 		assert(addr + num_bytes <= size);
 
 		memcpy(data + addr, src, num_bytes);
-		tag_bits[(addr / CLEN)] = tag;
+		tag_bits[(addr / YLEN)] = tag;
 	}
 
 	void write_data(unsigned addr, const uint8_t *src, unsigned num_bytes) {
@@ -78,18 +78,18 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 
 		memcpy(data + addr, src, num_bytes);
 		for (unsigned i = 0; i < num_bytes / 16; i++) {
-			tag_bits[(addr + i * 16) / CLEN] = false;
+			tag_bits[(addr + i * 16) / YLEN] = false;
 		}
 		if (num_bytes < 16) {
 			// Not a full capability --> clear tag
-			tag_bits[(addr / CLEN)] = false;
+			tag_bits[(addr / YLEN)] = false;
 		}
 	}
 
 	bool read_data(unsigned addr, uint8_t *dst, unsigned num_bytes) {
 		assert(addr + num_bytes <= size);
 		memcpy(dst, data + addr, num_bytes);
-		return tag_bits[(addr / CLEN)];
+		return tag_bits[(addr / YLEN)];
 	}
 
 	void transport(tlm::tlm_generic_payload &trans, sc_core::sc_time &delay) {
@@ -109,7 +109,10 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 			std::cerr << "TaggedMemory(" << name()
 			          << "): ERROR: Missing Tag extension (tlm_ext_tag) in transaction -> check initiators!"
 			          << std::endl;
-			assert(0);
+			//  For now, we pretend that transports that are not tag aware (e.g from a non-cheri-aware DMA) are treated
+			//  to be tag-stripping Refer To UCAM-CL-TR987 Chapter 3.11.4
+			ext = new tlm_ext_tag(false);
+			trans.set_extension(ext);
 		}
 
 		assert(addr < size);
@@ -139,6 +142,6 @@ struct TaggedMemory : public sc_core::sc_module, public load_if {
 
 	void reset() {
 		memset(data, 0, size);
-		tag_bits = std::vector<bool>(size / CLEN);
+		tag_bits = std::vector<bool>(size / YLEN);
 	}
 };

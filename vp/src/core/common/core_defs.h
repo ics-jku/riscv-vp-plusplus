@@ -47,8 +47,8 @@ struct csr_misa {
 		U = 1 << 20,
 		V = 1 << 21,
 
-		// CHERIv9
-		X = 1 << 23
+		X = 1 << 23,
+		Y = 1 << 24,  // RVY (CHERI) extension
 	};
 };
 

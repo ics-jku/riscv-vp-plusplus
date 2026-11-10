@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV32 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64Y)
 #define TARGET_RV32
 #endif
 
@@ -35,12 +35,13 @@
 #include "core/rv64/mem.h"
 #include "core/rv64/mmu.h"
 #include "core/rv64/syscall.h"
-#elif defined(TARGET_RV64_CHERIV9)
-#include "core/rv64_cheriv9/elf_loader.h"
-#include "core/rv64_cheriv9/iss.h"
-#include "core/rv64_cheriv9/mem.h"
-#include "core/rv64_cheriv9/mmu.h"
-#include "core/rv64_cheriv9/syscall.h"
+#elif defined(TARGET_RV64Y)
+#include "core/rv64y/elf_loader.h"
+#include "core/rv64y/iss.h"
+#include "core/rv64y/mem.h"
+#include "core/rv64y/mmu.h"
+#include "core/rv64y/rvfi-dii/RvfiDiiCoreRunner.h"
+#include "core/rv64y/syscall.h"
 #endif
 
 #include "platform/common/memory.h"
@@ -52,8 +53,8 @@
 using namespace rv32;
 #elif defined(TARGET_RV64)
 using namespace rv64;
-#elif defined(TARGET_RV64_CHERIV9)
-using namespace cheriv9::rv64;
+#elif defined(TARGET_RV64Y)
+using namespace rv64y;
 #endif
 
 namespace po = boost::program_options;
@@ -73,6 +74,8 @@ struct TinyOptions : public Options {
 
 	bool quiet = false;
 	bool cheri_purecap = false;
+	bool rvfi_dii = false;
+	uint16_t rvfi_dii_port = 0;
 
 	TinyOptions(void) {
 		// clang-format off
@@ -80,8 +83,11 @@ struct TinyOptions : public Options {
 			("quiet", po::bool_switch(&quiet), "do not output register values on exit")
 			("memory-start", po::value<uint64_t>(&mem_start_addr), "set memory start address")
 			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
+			("rvfi-dii", po::bool_switch(&rvfi_dii), "use the RVFI-DII interface")
+			("rvfi-dii-port", po::value<uint16_t>(&rvfi_dii_port), "set the RVFI-DII port")
+
 #endif
 			;
 		// clang-format on
@@ -114,16 +120,16 @@ int sc_main(int argc, char **argv) {
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
 	RV_ISA_Config isa_config(opt.use_E_base_isa, opt.en_ext_Zfh, opt.en_ext_Zbc);
-#ifdef TARGET_RV64_CHERIV9
-	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
-	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
-	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#ifdef TARGET_RV64Y
+	isa_config.set_misa_extension(csr_misa::Y);    // enable Y extension (CHERI RVY extension)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheri
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheri
 #endif
 
 	ISS core(&isa_config, 0);
 	MMU mmu(core);
 
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	CombinedTaggedMemoryInterface core_mem_if("MemoryInterface0", core, &mmu, opt.mem_start_addr, opt.mem_end_addr);
 	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
 #else
@@ -139,6 +145,9 @@ int sc_main(int argc, char **argv) {
 	SimpleBus<2, 3> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 	SyscallHandler sys("SyscallHandler");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
+#ifdef TARGET_RV64Y
+	dbg_if.set_tag_memory(&core_mem_if);
+#endif
 
 	std::vector<clint_interrupt_target *> clint_targets{&core};
 	RealCLINT clint("CLINT", clint_targets);
@@ -151,7 +160,7 @@ int sc_main(int argc, char **argv) {
 	data_memory_if *data_mem_if = &core_mem_if;
 
 	/* setup dmi */
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
 #else
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
@@ -162,17 +171,31 @@ int sc_main(int argc, char **argv) {
 	}
 	core_mem_if.dmi_add(dmi);
 	core_mem_if.dmi_enable(opt.use_data_dmi);
+	uint64_t entry_point = 0;
+	if (!opt.rvfi_dii) {
+		entry_point = loader.get_entrypoint();
+		try {
+			loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
+		} catch (ELFLoader::load_executable_exception &e) {
+			std::cerr << e.what() << std::endl;
+			std::cerr << "Memory map: " << std::endl;
+			opt.printValues(std::cerr);
+			return -1;
+		}
+	}
 
-	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
-#ifdef TARGET_RV64_CHERIV9
-	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	          opt.mem_end_addr, opt.cheri_purecap);
+#ifdef TARGET_RV64Y
+	core.enable_rvfi_dii(opt.rvfi_dii);
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, entry_point, opt.mem_end_addr,
+	          opt.cheri_purecap);
 #else
-	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, loader.get_entrypoint(),
-	          opt.mem_end_addr);
+	core.init(instr_mem_if, opt.use_dbbcache, data_mem_if, opt.use_lscache, &clint, entry_point, opt.mem_end_addr);
 #endif
-
-	sys.init(mem.data, opt.mem_start_addr, loader.get_heap_addr(mem.get_size(), opt.mem_start_addr));
+	uint64_t heap_addr = 0;
+	if (!opt.rvfi_dii) {
+		heap_addr = loader.get_heap_addr(mem.get_size(), opt.mem_start_addr);
+	}
+	sys.init(mem.data, opt.mem_start_addr, heap_addr);
 	sys.register_core(&core);
 
 	if (opt.intercept_syscalls)
@@ -197,13 +220,24 @@ int sc_main(int argc, char **argv) {
 
 	std::vector<debug_target_if *> threads;
 	threads.push_back(&core);
+#ifdef TARGET_RV64Y
 
+	if (opt.rvfi_dii) {
+		new RvfiDiiCoreRunner(core, opt.rvfi_dii_port, mem);
+	} else if (opt.use_debug_runner) {
+		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port, opt.debug_cont_sim_on_wait);
+		new GDBServerRunner("GDBRunner", server, &core);
+	} else {
+		new DirectCoreRunner(core);
+	}
+#else
 	if (opt.use_debug_runner) {
 		auto server = new GDBServer("GDBServer", threads, &dbg_if, opt.debug_port, opt.debug_cont_sim_on_wait);
 		new GDBServerRunner("GDBRunner", server, &core);
 	} else {
 		new DirectCoreRunner(core);
 	}
+#endif
 
 	/* may not return (exit) */
 	opt.handle_property_export_and_exit();

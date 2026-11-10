@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV64 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64Y)
 #define TARGET_RV64
 #endif
 
@@ -45,12 +45,12 @@
 #include "core/rv64/mem.h"
 #include "core/rv64/mmu.h"
 #include "core/rv64/syscall.h"
-#elif defined(TARGET_RV64_CHERIV9)
-#include "core/rv64_cheriv9/elf_loader.h"
-#include "core/rv64_cheriv9/iss.h"
-#include "core/rv64_cheriv9/mem.h"
-#include "core/rv64_cheriv9/mmu.h"
-#include "core/rv64_cheriv9/syscall.h"
+#elif defined(TARGET_RV64Y)
+#include "core/rv64y/elf_loader.h"
+#include "core/rv64y/iss.h"
+#include "core/rv64y/mem.h"
+#include "core/rv64y/mmu.h"
+#include "core/rv64y/syscall.h"
 #endif
 
 #include "platform/common/channel_console.h"
@@ -99,8 +99,8 @@ using namespace rv64;
 /* address to load raw (not elf) images provided via --kernel-file */
 #define KERNEL_LOAD_ADDR 0x80200000
 
-#elif defined(TARGET_RV64_CHERIV9)
-using namespace cheriv9::rv64;
+#elif defined(TARGET_RV64Y)
+using namespace rv64y;
 #define MEM_SIZE_MB 2048  // MB ram
 #define MRAM_SIZE_MB 512  // MB mem mapped file (rootfs)
 /* address to load raw (not elf) images provided via --kernel-file */
@@ -186,7 +186,7 @@ struct LinuxOptions : public Options {
 			("mram-data-image-size", po::value<uint64_t>(&mram_data_size), "MRAM data image size")
 			("sd-card-image", po::value<std::string>(&sd_card_image)->default_value(""), "SD-Card image file (size must be multiple of 512 bytes)")
 			("vnc-port", po::value<unsigned int>(&vnc_port), "select port number to connect with VNC")
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
 #endif
 			;
@@ -208,7 +208,7 @@ class Core {
    public:
 	ISS iss;
 	MMU mmu;
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	CombinedTaggedMemoryInterface memif;
 #else
 	CombinedMemoryInterface memif;
@@ -218,7 +218,7 @@ class Core {
 	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi, uint64_t mem_start_addr, uint64_t mem_end_addr)
 	    : iss(isa_config, id),
 	      mmu(iss),
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu, mem_start_addr, mem_end_addr),
 #else
 	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu),
@@ -232,7 +232,7 @@ class Core {
 		memif.dmi_add(imemif.dmi);
 		memif.dmi_enable(use_data_dmi);
 
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base,
 		         cheri_purecap);
 #else
@@ -288,10 +288,10 @@ int sc_main(int argc, char **argv) {
 		return -1;
 	}
 	RV_ISA_Config isa_config(false, opt.en_ext_Zfh, opt.en_ext_Zbc);
-#ifdef TARGET_RV64_CHERIV9
-	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
-	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
-	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#ifdef TARGET_RV64Y
+	isa_config.set_misa_extension(csr_misa::Y);    // enable Y extension (CHERI RVY extension)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheri
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheri
 #endif
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
@@ -300,7 +300,7 @@ int sc_main(int argc, char **argv) {
 
 	VNCServer vncServer("RISC-V VP++ VNCServer", opt.vnc_port);
 
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
 #else
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
@@ -345,7 +345,7 @@ int sc_main(int argc, char **argv) {
 	DS1307 *rtc_ds1307 = new DS1307();
 	i2c.register_device(0x68, rtc_ds1307);
 
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
 #else
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
@@ -472,6 +472,9 @@ int sc_main(int argc, char **argv) {
 	// load kernel
 	handle_kernel_file(opt, mem);
 
+#ifdef TARGET_RV64Y
+	dbg_if.set_tag_memory(&cores[0]->memif);
+#endif
 	std::vector<mmu_memory_if *> mmus;
 	std::vector<debug_target_if *> dharts;
 	if (opt.use_debug_runner) {

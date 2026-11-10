@@ -4,6 +4,7 @@ project(riscv-vp
 )
 
 option(USE_SYSTEM_SYSTEMC "use systemc version provided by the system" OFF)
+option(RVY099 "Enable RVY 0.9.9 compatibility checks" ON)
 
 # Suppress SystemC deprecation warnings - esp. for SC_HAS_PROCESS
 #

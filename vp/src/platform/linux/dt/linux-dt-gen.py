@@ -47,7 +47,7 @@ argp = argparse.ArgumentParser()
 argp.add_argument("-t", "--target",
                   help = "vp variant",
                   choices = ["linux32-sc-vp", "linux32-mc-vp", "linux64-sc-vp", "linux64-mc-vp",
-                             "linux64-cheriv9-sc-vp",
+                             "linux64y-sc-vp",
                              # NOTE: "linux32-vp", "linux-sc-vp", "linux-vp" are aliases (see below) - will be removed in the future
                              "linux32-vp", "linux-sc-vp", "linux-vp"],
                   required = True)
@@ -109,7 +109,7 @@ elif cfg.TARGET_VP == "linux64-sc-vp":
 elif cfg.TARGET_VP == "linux64-mc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.NUM_CORES = 4
-elif args.target == "linux64-cheriv9-sc-vp":
+elif args.target == "linux64y-sc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.RISCV_ISA_EXTENSIONS.remove("v")
     # TODO: maybe not necessary?

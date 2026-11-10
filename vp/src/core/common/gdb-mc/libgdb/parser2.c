@@ -226,6 +226,10 @@ static mpc_parser_t *gdb_arg(mpc_parser_t *par) {
 	return mpc_and(2, mpcf_fst_free, par, mpc_char(','), free);
 }
 
+static mpc_parser_t *gdb_annex(void) {
+	return mpc_expect(mpc_many1(mpcf_strfold, mpc_noneof(":")), "annex");
+}
+
 gdbf_fold(z, GDB_ARG_BREAK, GDBF_ARG_BREAK)
 
     static mpc_parser_t *gdb_packet_z(void) {
@@ -245,6 +249,38 @@ gdbf_fold(T, GDB_ARG_THREAD, GDBF_ARG_THREAD)
 	return mpc_and(2, gdbf_packet_T, mpc_char('T'), gdb_thread_id(), free);
 }
 
+gdbf_fold(qMemTags, GDB_ARG_MEMTAGS, GDBF_ARG_MEMTAGS)
+
+    static mpc_parser_t *gdb_packet_qMemTags(void) {
+	return mpc_and(5, gdbf_packet_qMemTags, mpc_string("qMemTags"), mpc_char(':'), gdb_memory(), /* addr,length */
+	               mpc_char(':'),
+	               gdb_uhex(),  // TODO int parser required? e.g. gdbf_sint()
+	               free, free, free, free);
+}
+
+gdbf_fold(QMemTags, GDB_ARG_MEMTAGSW, GDBF_ARG_MEMTAGSW)
+
+    static mpc_parser_t *gdb_packet_QMemTags(void) {
+	return mpc_and(7, gdbf_packet_QMemTags, mpc_string("QMemTags"), mpc_char(':'), gdb_memory(), /* addr,length */
+	               mpc_char(':'),
+	               gdb_uhex(),                     // TODO int parser required? e.g. gdbf_sint()
+	               mpc_char(':'), mpc_hexdigits(), /* tag bytes */
+	               free, free, free, free, free, free);
+}
+
+gdbf_fold(qXfer_capa_read, GDB_ARG_XFER_CAPA_READ, GDBF_ARG_XFER_CAPA_READ)
+
+    static mpc_parser_t *gdb_packet_xfer_capa_read(void) {
+	return mpc_and(6, gdbf_packet_qXfer_capa_read, mpc_string("qXfer:capa:read"), mpc_char(':'), gdb_address(),
+	               mpc_char(':'), gdb_arg(gdb_uhex()), gdb_uhex(), free, free, free, free, free);
+}
+
+gdbf_fold(qXfer_features_read, GDB_ARG_XFER_FEATURES_READ, GDBF_ARG_XFER_FEATURES_READ)
+
+    static mpc_parser_t *gdb_packet_xfer_features_read(void) {
+	return mpc_and(6, gdbf_packet_qXfer_features_read, mpc_string("qXfer:features:read"), mpc_char(':'), gdb_annex(),
+	               mpc_char(':'), gdb_arg(gdb_uhex()), gdb_uhex(), free, free, free, free, free);
+}
 static mpc_parser_t *gdb_any(void) {
 	return mpc_apply(mpc_many1(mpcf_strfold, mpc_any()), gdbf_ignarg);
 }
@@ -254,9 +290,10 @@ static mpc_parser_t *gdb_cmd(mpc_parser_t *cmd) {
 }
 
 static mpc_parser_t *gdb_parse_stage2(void) {
-	return mpc_or(8, gdb_cmd(gdb_packet_h()), gdb_cmd(gdb_packet_p()), gdb_cmd(gdb_packet_vcont()),
+	return mpc_or(12, gdb_cmd(gdb_packet_h()), gdb_cmd(gdb_packet_p()), gdb_cmd(gdb_packet_vcont()),
 	              gdb_cmd(gdb_packet_m()), gdb_cmd(gdb_packet_M()), gdb_cmd(gdb_packet_z()), gdb_cmd(gdb_packet_T()),
-	              gdb_any());
+	              gdb_cmd(gdb_packet_qMemTags()), gdb_cmd(gdb_packet_QMemTags()), gdb_cmd(gdb_packet_xfer_capa_read()),
+	              gdb_cmd(gdb_packet_xfer_features_read()), gdb_any());
 }
 
 gdb_command_t *gdb_parse_cmd(gdb_packet_t *pkt) {

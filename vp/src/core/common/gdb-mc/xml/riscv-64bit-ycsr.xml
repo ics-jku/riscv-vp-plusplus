@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- YCSR names follow QEMU, which still uses the names from before CHERI 0.9.8.2 (e.g. mtvecc instead of mtvec).
+     GDB register number = 4196 + YCSR address (GDB_REG_YCSR_OFFSET in gdb-mc/gdb_regs.h) -->
+<!DOCTYPE feature SYSTEM "gdb-target.dtd">
+<feature name="org.gnu.gdb.riscv.ycsr">
+  <reg name="stvec" bitsize="128" type="int" regnum="4457" group="system"/>
+  <reg name="stvecc" bitsize="128" type="code_capability" regnum="4457" group="system"/>
+  <reg name="sscratch" bitsize="128" type="int" regnum="4516" group="system"/>
+  <reg name="sscratchc" bitsize="128" type="data_capability" regnum="4516" group="system"/>
+  <reg name="sepc" bitsize="128" type="int" regnum="4517" group="system"/>
+  <reg name="sepcc" bitsize="128" type="code_capability" regnum="4517" group="system"/>
+  <reg name="mtvec" bitsize="128" type="int" regnum="4969" group="system"/>
+  <reg name="mtvecc" bitsize="128" type="code_capability" regnum="4969" group="system"/>
+  <reg name="mscratch" bitsize="128" type="int" regnum="5028" group="system"/>
+  <reg name="mscratchc" bitsize="128" type="data_capability" regnum="5028" group="system"/>
+  <reg name="mepc" bitsize="128" type="int" regnum="5029" group="system"/>
+  <reg name="mepcc" bitsize="128" type="code_capability" regnum="5029" group="system"/>
+</feature>

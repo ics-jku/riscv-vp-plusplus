@@ -41,10 +41,18 @@ unsigned DebugMemoryInterface::_do_dbg_transaction(tlm::tlm_command cmd, uint64_
 	return nbytes;
 }
 
-std::string DebugMemoryInterface::read_memory(uint64_t start, unsigned nbytes) {
+std::vector<uint8_t> DebugMemoryInterface::read_memory_bytes(uint64_t start, unsigned nbytes) {
 	std::vector<uint8_t> buf(nbytes);  // NOTE: every element is zero-initialized by default
 
-	_do_dbg_transaction(tlm::TLM_READ_COMMAND, start, buf.data(), buf.size());
+	unsigned nread = _do_dbg_transaction(tlm::TLM_READ_COMMAND, start, buf.data(), buf.size());
+	if (nread != nbytes)
+		throw std::runtime_error("short debug read");
+
+	return buf;
+}
+
+std::string DebugMemoryInterface::read_memory(uint64_t start, unsigned nbytes) {
+	std::vector<uint8_t> buf = read_memory_bytes(start, nbytes);
 
 	std::stringstream stream;
 	stream << std::setfill('0') << std::hex;
@@ -62,7 +70,7 @@ void DebugMemoryInterface::write_memory(uint64_t start, unsigned nbytes, const s
 	assert(data.length() % 2 == 0);
 	assert(buf.size() == nbytes);
 
-	for (j = 0, i = 0; i + 1 < nbytes; j++, i += 2) {
+	for (j = 0, i = 0; i + 1 < data.length(); j++, i += 2) {
 		long num;
 		char hex[3];
 

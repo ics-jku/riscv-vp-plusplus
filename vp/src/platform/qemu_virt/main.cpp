@@ -1,5 +1,5 @@
 /* if not defined externally fall back to TARGET_RV64 */
-#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64_CHERIV9)
+#if !defined(TARGET_RV32) && !defined(TARGET_RV64) && !defined(TARGET_RV64Y)
 #define TARGET_RV64
 #endif
 
@@ -11,12 +11,14 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <boost/io/ios_state.hpp>
 #include <boost/program_options.hpp>
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 
 #include "core/common/clint.h"
 #include "core/common/debug.h"
@@ -43,11 +45,12 @@
 #include "core/rv64/iss.h"
 #include "core/rv64/mem.h"
 #include "core/rv64/mmu.h"
-#elif defined(TARGET_RV64_CHERIV9)
-#include "core/rv64_cheriv9/elf_loader.h"
-#include "core/rv64_cheriv9/iss.h"
-#include "core/rv64_cheriv9/mem.h"
-#include "core/rv64_cheriv9/mmu.h"
+#elif defined(TARGET_RV64Y)
+#include "core/rv64y/elf_loader.h"
+#include "core/rv64y/iss.h"
+#include "core/rv64y/mem.h"
+#include "core/rv64y/mmu.h"
+#include "core/rv64y/rvfi-dii/RvfiDiiCoreRunner.h"
 #endif
 
 #include "platform/common/channel_console.h"
@@ -73,8 +76,8 @@ using namespace rv64;
 /* address to load raw (not elf) images provided via --kernel-file */
 #define KERNEL_LOAD_ADDR 0x80200000
 
-#elif defined(TARGET_RV64_CHERIV9)
-using namespace cheriv9::rv64;
+#elif defined(TARGET_RV64Y)
+using namespace rv64y;
 /* address to load raw (not elf) images provided via --kernel-file */
 #define KERNEL_LOAD_ADDR 0x80200000
 
@@ -87,7 +90,7 @@ struct LinuxOptions : public Options {
 	typedef uint64_t addr_t;
 
 	addr_t dtb_rom_start_addr = 0x00001000;
-	addr_t dtb_rom_size = 0x2000;
+	addr_t dtb_rom_size = 0xf000;
 	addr_t dtb_rom_end_addr = dtb_rom_start_addr + dtb_rom_size - 1;
 
 	addr_t fwcfg_start_addr = 0x10100000;
@@ -112,7 +115,7 @@ struct LinuxOptions : public Options {
 	addr_t virtio_mmio_start_addr = 0x10001000;
 	addr_t virtio_mmio_end_addr = virtio_mmio_start_addr + 0x8000 - 1;
 	addr_t plic_start_addr = 0xc000000;
-	addr_t plic_end_addr = virtio_mmio_start_addr + 0x600000 - 1;
+	addr_t plic_end_addr = plic_start_addr + 0x600000 - 1;
 	addr_t clint_start_addr = 0x02000000;
 	addr_t clint_end_addr = clint_start_addr + 0x10000 - 1;
 
@@ -122,17 +125,22 @@ struct LinuxOptions : public Options {
 	bool dummy_tlm_target_debug = false;
 	bool cheri_purecap = false;
 
+	bool rvfi_dii = false;
+	uint16_t rvfi_dii_port = 0;
+
 	LinuxOptions(void) {
 		// clang-format off
 		add_options()
 			("memory-start", po::value<uint64_t>(&mem_start_addr),"set memory start address")
 			("memory-size", po::value<uint64_t>(&mem_size), "set memory size")
 			("entry-point", po::value<std::string>(&entry_point.option),"set entry point address (ISS program counter)")
-			("dtb-file", po::value<std::string>(&dtb_file)->required(), "dtb file for boot loading")
+			("dtb-file", po::value<std::string>(&dtb_file), "dtb file for boot loading (required, except with --rvfi-dii)")
 			("kernel-file", po::value<std::string>(&kernel_file), "optional kernel file to load (supports ELF or RAW files)")
 			("dummy-tlm-target-debug", po::bool_switch(&dummy_tlm_target_debug), "print debug messages on dummy-tlm-target peripheral accesses")
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 			("cheri-purecap", po::bool_switch(&cheri_purecap), "start in cheri purecap mode")
+			("rvfi-dii", po::bool_switch(&rvfi_dii), "use the RVFI-DII interface")
+			("rvfi-dii-port", po::value<uint16_t>(&rvfi_dii_port), "set the RVFI-DII port")
 #endif
 			;
 		// clang-format on
@@ -142,6 +150,10 @@ struct LinuxOptions : public Options {
 		Options::parse(argc, argv);
 		entry_point.finalize(parse_uint64_option);
 		mem_end_addr = mem_start_addr + mem_size - 1;
+		if (!rvfi_dii && dtb_file.empty()) {
+			std::cerr << "[Options] Error: the option '--dtb-file' is required but missing." << std::endl;
+			exit(1);
+		}
 	}
 };
 
@@ -149,7 +161,7 @@ class Core {
    public:
 	ISS iss;
 	MMU mmu;
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	CombinedTaggedMemoryInterface memif;
 #else
 	CombinedMemoryInterface memif;
@@ -159,7 +171,7 @@ class Core {
 	Core(RV_ISA_Config *isa_config, unsigned int id, MemoryDMI dmi, uint64_t mem_start_addr, uint64_t mem_end_addr)
 	    : iss(isa_config, id),
 	      mmu(iss),
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu, mem_start_addr, mem_end_addr),
 #else
 	      memif(("MemoryInterface" + std::to_string(id)).c_str(), iss, &mmu),
@@ -173,7 +185,7 @@ class Core {
 		memif.dmi_add(imemif.dmi);
 		memif.dmi_enable(use_data_dmi);
 
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 		iss.init(get_instr_memory_if(use_instr_dmi), use_dbbcache, &memif, use_lscache, clint, entry, sp_base,
 		         cheri_purecap);
 #else
@@ -229,10 +241,13 @@ int sc_main(int argc, char **argv) {
 		return -1;
 	}
 	RV_ISA_Config isa_config(false, opt.en_ext_Zfh, opt.en_ext_Zbc);
-#ifdef TARGET_RV64_CHERIV9
-	isa_config.set_misa_extension(csr_misa::X);    // enable X extension (custom extension bit, marks CHERI is used)
-	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheriv9
-	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheriv9
+#ifdef TARGET_RV64Y
+	isa_config.set_misa_extension(csr_misa::Y);    // enable Y extension (CHERI RVY extension)
+	isa_config.clear_misa_extension(csr_misa::V);  // not supported with cheri
+	isa_config.clear_misa_extension(csr_misa::N);  // not supported with cheri
+	if (opt.rvfi_dii) {
+		isa_config.clear_misa_extension(csr_misa::B);  // Remove from comparision with TestRIG
+	}
 #endif
 
 	std::srand(std::time(nullptr));  // use current time as seed for random generator
@@ -246,12 +261,12 @@ int sc_main(int argc, char **argv) {
 	}
 	SimpleBus<NUM_CORES + 1, 13> bus("SimpleBus", debug_bus, opt.break_on_transaction);
 
-	SimpleMemory dtb_rom("DTB_ROM", opt.dtb_rom_size);
+	SimpleMemory dtb_rom("DTB_ROM", opt.dtb_rom_size, true);
 	DUMMY_TLM_TARGET fwcfg("fwcfg", opt.fwcfg_start_addr, opt.dummy_tlm_target_debug);
 	DUMMY_TLM_TARGET flash0("flash0", opt.flash0_start_addr, opt.dummy_tlm_target_debug);
 	DUMMY_TLM_TARGET flash1("flash1", opt.flash1_start_addr, opt.dummy_tlm_target_debug);
 	DUMMY_TLM_TARGET platform_bus("platform_bus", opt.platform_bus_start_addr, opt.dummy_tlm_target_debug);
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	TaggedMemory mem("SimpleTaggedMemory", opt.mem_size);
 #else
 	SimpleMemory mem("SimpleMemory", opt.mem_size);
@@ -267,7 +282,7 @@ int sc_main(int argc, char **argv) {
 	LWRT_CLINT<NUM_CORES> clint("CLINT");
 
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");
-#ifdef TARGET_RV64_CHERIV9
+#ifdef TARGET_RV64Y
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size(), &mem.tag_bits);
 #else
 	MemoryDMI dmi = MemoryDMI::create_start_size_mapping(mem.data, opt.mem_start_addr, mem.get_size());
@@ -284,13 +299,22 @@ int sc_main(int argc, char **argv) {
 		// enable interactive debug via console
 		channel_console.debug_targets_add(&cores[i]->iss);
 	}
+#ifdef TARGET_RV64Y
+	dbg_if.set_tag_memory(&cores[0]->memif);
+#endif
 
-	uint64_t entry_point = loader.get_entrypoint();
-	if (opt.entry_point.available)
-		entry_point = opt.entry_point.value;
+	uint64_t entry_point = 0;
+	if (!opt.rvfi_dii) {
+		entry_point = loader.get_entrypoint();
+		if (opt.entry_point.available)
+			entry_point = opt.entry_point.value;
 
-	loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
+		loader.load_executable_image(mem, mem.get_size(), opt.mem_start_addr);
+	}
 	for (size_t i = 0; i < NUM_CORES; i++) {
+#ifdef TARGET_RV64Y
+		cores[i]->iss.enable_rvfi_dii(opt.rvfi_dii);
+#endif
 		cores[i]->init(opt.use_data_dmi, opt.use_instr_dmi, opt.use_dbbcache, opt.use_lscache, &clint, entry_point,
 		               opt.mem_end_addr, opt.cheri_purecap);
 		cores[i]->iss.error_on_zero_traphandler = opt.error_on_zero_traphandler;
@@ -343,21 +367,30 @@ int sc_main(int argc, char **argv) {
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		// switch for printing instructions
 		cores[i]->iss.enable_trace(opt.trace_mode);
-
+		if (opt.rvfi_dii)
+			continue;
 		// emulate RISC-V core boot loader
 		cores[i]->iss.regs[RegFile::a0] = cores[i]->iss.get_hart_id();
 		cores[i]->iss.regs[RegFile::a1] = opt.dtb_rom_start_addr;
 	}
 
-	// load DTB (Device Tree Binary) file
-	dtb_rom.load_binary_file(opt.dtb_file, 0);
+	if (!opt.rvfi_dii) {
+		// load DTB (Device Tree Binary) file
+		dtb_rom.load_binary_file(opt.dtb_file, 0);
 
-	// load kernel
-	handle_kernel_file(opt, mem);
+		// load kernel
+		handle_kernel_file(opt, mem);
+	}
 
 	std::vector<mmu_memory_if *> mmus;
 	std::vector<debug_target_if *> dharts;
-	if (opt.use_debug_runner) {
+#ifdef TARGET_RV64Y
+	if (opt.rvfi_dii) {
+		// single core only (qemu_virt64y-sc-vp)
+		new RvfiDiiCoreRunner(cores[0]->iss, opt.rvfi_dii_port, mem);
+	} else
+#endif
+	    if (opt.use_debug_runner) {
 		for (size_t i = 0; i < NUM_CORES; i++) {
 			dharts.push_back(&cores[i]->iss);
 			mmus.push_back(&cores[i]->memif);
@@ -379,6 +412,11 @@ int sc_main(int argc, char **argv) {
 	for (size_t i = 0; i < NUM_CORES; i++) {
 		cores[i]->iss.show();
 	}
+#ifdef TARGET_RV64Y
+	// One set tag identifies one valid capability slot in RAM (including copies).
+	std::cout << "Valid capabilities in RAM: " << std::dec << std::count(mem.tag_bits.begin(), mem.tag_bits.end(), true)
+	          << std::endl;
+#endif
 
 	return 0;
 }

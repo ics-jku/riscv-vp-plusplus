@@ -47,7 +47,7 @@ argp = argparse.ArgumentParser()
 argp.add_argument("-t", "--target",
                   help = "vp variant",
                   choices = ["qemu_virt32-sc-vp", "qemu_virt32-mc-vp", "qemu_virt64-sc-vp", "qemu_virt64-mc-vp",
-                             "qemu_virt64-cheriv9-sc-vp"],
+                             "qemu_virt64y-sc-vp"],
                   required = True)
 argp.add_argument("-m", "--memory-start",
                   help = "memory start address (default: 0x80000000)",
@@ -94,7 +94,7 @@ elif args.target == "qemu_virt64-sc-vp":
 elif args.target == "qemu_virt64-mc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.NUM_CORES = 4
-elif args.target == "qemu_virt64-cheriv9-sc-vp":
+elif args.target == "qemu_virt64y-sc-vp":
     cfg.RISCV_ISA_BASE = "rv64i"
     cfg.RISCV_ISA_EXTENSIONS.remove("v")
     # TODO: maybe not necessary?

@@ -8,16 +8,16 @@ It is maintained at the [Institute for Complex Systems](https://ics.jku.at/), Jo
 More information on *RISC-V VP++* can be found in the publications linked in the [last section](#publications).
 
 ### Key features of *RISC-V VP++*
- * Support for *Capability Hardware Enhanced RISC Instructions* (CHERI) RISC-V ISA, Version 9
-   * *Manfred Schlägl, Andreas Hinterdorfer, and Daniel Große. A RISC-V CHERI VP: Enabling system-level evaluation of the capability-based CHERI architecture. In ASP-DAC, 2026.*
-   * RV64 CHERIv9 ISS (+MMU, Tagged Memory Interface, ...) based on [Capability Hardware Enhanced RISC Instructions: CHERI Instruction-Set Architecture (Version 9)](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-987.pdf)
+ * Support for *Capability Hardware Enhanced RISC Instructions* (CHERI) RISC-V ISA, RVY 0.9.9
+   * Initially implemented CHERI ISAv9 in: *Manfred Schlägl, Andreas Hinterdorfer, and Daniel Große. A RISC-V CHERI VP: Enabling system-level evaluation of the capability-based CHERI architecture. In ASP-DAC, 2026.*
+   * Updated to RV64Y CHERI RVY 0.9.9 ISS (+MMU, Tagged Memory Interface, ...) based on [RISC-V CHERI V0.9.9](https://github.com/riscv/riscv-cheri/releases/tag/v0.9.9-ar20260810)
      * includes interfaces for testing with [TestRIG](https://github.com/CTSRD-CHERI/TestRIG) (RVFI and DII)
-   * RV64 CHERIv9 Platforms:
-     * *qemu_virt64-cheriv9-sc-vp* and *linux64-cheriv9-sc-vp*
-       * Similar to other (non-cheri) qemu_virt-style and linux(fu540-style) VP platforms, but with support for CHERIv9 RV64
-       * Capable of running CheriBSD (purecap) from [cheribuild](https://github.com/CTSRD-CHERI/cheribuild) (tested with git-hash dbafb3f67e)
-     * *tiny64-cheriv9-vp* and *riscv64-cheriv9-vp*
-       * Similar to other (non-cheri) tiny/basic platforms, but with support for CHERIv9 RV64
+   * RV64Y Platforms:
+     * *qemu_virt64y-sc-vp* and *linux64y-sc-vp*
+       * Similar to other (non-cheri) qemu_virt-style and linux(fu540-style) VP platforms, but with support for RV64Y
+       * Capable of running CheriBSD (purecap) from [cheribuild](https://github.com/CTSRD-CHERI/cheribuild)
+     * *tiny64y-vp* and *riscv64y-vp*
+       * Similar to other (non-cheri) tiny/basic platforms, but with support for CHERI
        * Capable of running bare-metal Cheri (purecap) software
  * Support for RISC-V Half-Precision Floating-Point Extension (Zfh), Version 1.0
    (Can be enabled with the "--en-ext-Zfh" command line option on all platforms)

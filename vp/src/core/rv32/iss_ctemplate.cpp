@@ -7495,12 +7495,58 @@ uint64_t ISS_CT::get_hart_id() {
 	return csrs.mhartid.reg.val;
 }
 
-std::vector<uint64_t> ISS_CT::get_registers(void) {
-	std::vector<uint64_t> regvals;
-
-	for (auto v : regs.regs) regvals.push_back((uint32_t)v);  // NOTE: zero extend
-
-	return regvals;
+bool ISS_CT::read_csr_gdb(unsigned addr, uint64_t &out) {
+	// Some CSRs require special handing, because they are not directly in the register map
+	// We cannot use the get_csr_value method, because it would have side effects (e.g. updating the time CSR)
+	auto read = [=](auto &x, uxlen_t mask) { return x.reg.val & mask; };
+	using namespace csr;
+	switch (addr) {
+		case MSTATUS_ADDR:
+			out = read(csrs.mstatus, MSTATUS_READ_MASK);
+			break;
+		case SSTATUS_ADDR:
+			out = read(csrs.mstatus, SSTATUS_READ_MASK);
+			break;
+		case USTATUS_ADDR:
+			out = read(csrs.mstatus, USTATUS_READ_MASK);
+			break;
+		case MSTATUSH_ADDR:
+			out = read(csrs.mstatush, MSTATUSH_READ_MASK);
+			break;
+		case FCSR_ADDR:
+			out = read(csrs.fcsr, FCSR_MASK);
+			break;
+		case FFLAGS_ADDR:
+			out = csrs.fcsr.reg.fields.fflags;
+			break;
+		case FRM_ADDR:
+			out = csrs.fcsr.reg.fields.frm;
+			break;
+		case MIP_ADDR:
+			out = read(csrs.mip, MIP_READ_MASK);
+			break;
+		case SIP_ADDR:
+			out = read(csrs.mip, SIP_MASK);
+			break;
+		case UIP_ADDR:
+			out = read(csrs.mip, UIP_MASK);
+			break;
+		case MIE_ADDR:
+			out = read(csrs.mie, MIE_MASK);
+			break;
+		case SIE_ADDR:
+			out = read(csrs.mie, SIE_MASK);
+			break;
+		case UIE_ADDR:
+			out = read(csrs.mie, UIE_MASK);
+			break;
+		default:
+			if (csrs.register_mapping.find(addr) == csrs.register_mapping.end())
+				return false;
+			out = csrs.default_read32(addr);
+			break;
+	}
+	return true;
 }
 
 void ISS_CT::fp_finish_instr() {

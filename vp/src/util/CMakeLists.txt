@@ -4,7 +4,7 @@ add_library(util
 	options.cpp
 	vncserver.cpp
 	propertytree.cpp
-	cheri_debug_tool.cpp
+	cheri_debug_tools.cpp
 	${HEADERS})
 
 target_link_libraries(util PRIVATE systemc)

@@ -79,7 +79,33 @@ typedef enum {
 	GDB_ARG_MEMORYW,
 	GDB_ARG_BREAK,
 	GDB_ARG_THREAD,
+	GDB_ARG_MEMTAGS,
+	GDB_ARG_MEMTAGSW,
+	GDB_ARG_XFER_CAPA_READ,
+	GDB_ARG_XFER_FEATURES_READ
 } gdb_argument_t;
+
+typedef struct {
+	gdb_memory_t location; /* addr,length */
+	int type;
+} gdb_memtags_t;
+
+typedef struct {
+	gdb_memtags_t tags;
+	char *data; /* null-terminated hex string */
+} gdb_memtags_write_t;
+
+typedef struct {
+	gdb_addr_t addr;
+	size_t offset;
+	size_t length;
+} gdb_xfer_capa_read_t;
+
+typedef struct {
+	char *annex;  // e.g. "target.xml"
+	size_t offset;
+	size_t length;
+} gdb_xfer_features_read_t;
 
 typedef struct {
 	char *name;
@@ -93,6 +119,10 @@ typedef struct {
 		gdb_memory_write_t memw;
 		gdb_breakpoint_t bval;
 		gdb_thread_t tval;
+		gdb_memtags_t memtags;
+		gdb_memtags_write_t memtagsw;
+		gdb_xfer_capa_read_t xfer_capa_read;
+		gdb_xfer_features_read_t xfer_features_read;
 	} v;
 } gdb_command_t;
 

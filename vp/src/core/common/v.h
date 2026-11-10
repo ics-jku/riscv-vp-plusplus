@@ -3,6 +3,8 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 
+#include "../rv64y/rvfi-dii/rvfi_dii_trace.h"
+
 /*
  * print unmet traps (reasons) to stdout
  * (see v_assert)
@@ -194,6 +196,15 @@ class VExtension {
 		}
 	}
 
+	void v_assert(bool cond, std::string error_message, rvfi_dii_trace_t* rvfi_dii_output) {
+		if (!(cond)) {
+#ifdef DEBUG_PRINT_TRAPS
+			std::cout << error_message << std::endl;
+#endif
+			raise_trap(EXC_ILLEGAL_INSTR, iss.instr.data(), rvfi_dii_output);
+		}
+	}
+
 	bool v_is_aligned(op_reg_t addr, op_reg_t alignment) {
 		return alignment == 0 || (addr & (alignment - 1)) == 0;
 	}
@@ -288,6 +299,10 @@ class VExtension {
 
 	void requireNotOff() {
 		v_assert(iss.csrs.mstatus.reg.fields.vs != VS_OFF, "vs == VS_OFF");
+	}
+
+	void requireNotOff(rvfi_dii_trace_t* rvfi_dii_output) {
+		v_assert(iss.csrs.mstatus.reg.fields.vs != VS_OFF, "vs == VS_OFF", rvfi_dii_output);
 	}
 
 	void finishInstr(bool is_fp) {

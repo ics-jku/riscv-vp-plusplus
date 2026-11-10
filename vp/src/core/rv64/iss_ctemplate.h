@@ -162,7 +162,17 @@ class ISS_CT PROP_CLASS_FINAL : public external_interrupt_target,
 	uint64_t read_register(unsigned idx) override;
 	void write_register(unsigned idx, uint64_t value) override;
 
-	std::vector<uint64_t> get_registers(void) override;
+	/* debug_target_if */
+	bool has_E_base_isa(void) override {
+		return csrs.misa.has_E_base_isa();
+	}
+	bool read_csr_gdb(unsigned addr, uint64_t &out) override;
+	uint64_t read_fp_register(unsigned idx) override {
+		return fp_regs.u64(idx);
+	}
+	unsigned get_privilege(void) override {
+		return prv;
+	}
 
 	uint64_t get_progam_counter(void) override;
 	void enable_debug(void) override;

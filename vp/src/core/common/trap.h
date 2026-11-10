@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-// for rv64_cheriv9 rvfi_dii
-#include "../rv64_cheriv9/rvfi-dii/rvfi_dii_trace.h"  // TODO: Should not include rv64 in common!
+// for rv64y rvfi_dii
+#include "../rv64y/rvfi-dii/rvfi_dii_trace.h"  // TODO: Should not include rv64 in common!
 
 enum ExceptionCode {
 	// interrupt exception codes (mcause)
@@ -37,10 +37,12 @@ enum ExceptionCode {
 	EXC_LOAD_PAGE_FAULT = 13,
 	EXC_STORE_AMO_PAGE_FAULT = 15,
 
-	// CHERIv9 exception codes
-	EXC_CHERI_LOAD_FAULT = 26,
-	EXC_CHERI_STORE_FAULT = 27,
-	EXC_CHERI_FAULT = 28,
+	// RVY exception codes
+	EXC_CHERI_INSTR = 32,
+	EXC_CHERI_LOAD = 33,
+	EXC_CHERI_STORE = 34,
+	EXC_CHERI_LOAD_CAP_FAULT = 35,
+	EXC_CHERI_STORE_AMP_PAGE_FAULT = 36,
 };
 
 struct SimulationTrap {

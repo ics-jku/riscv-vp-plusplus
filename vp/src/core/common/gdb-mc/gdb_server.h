@@ -20,6 +20,7 @@
 #include "core/common/debug.h"
 #include "core/common/debug_memory.h"  // DebugMemoryInterface
 #include "core/common/mmu_mem_if.h"
+#include "gdb_xml.h"
 #include "platform/common/async_event.h"
 
 SC_MODULE(GDBServer) {
@@ -42,6 +43,11 @@ SC_MODULE(GDBServer) {
 	void removeBreakpoint(int, gdb_command_t *);
 	void setBreakpoint(int, gdb_command_t *);
 	void isAlive(int, gdb_command_t *);
+	void readMemoryTags(int, gdb_command_t *);
+	void writeMemoryTags(int, gdb_command_t *);
+	void isAddressTagged(int, gdb_command_t *);
+	void readCapability(int, gdb_command_t *);
+	void readFeatures(int, gdb_command_t *);
 
 	SC_HAS_PROCESS(GDBServer);
 
@@ -63,10 +69,11 @@ SC_MODULE(GDBServer) {
 	AsyncEvent asyncEvent;
 	std::condition_variable cv;
 	AsyncEvent interruptEvent;
-	Architecture arch;
+	gdb_xml::TargetConfig target;  // assuming all harts use the same
 	std::vector<debug_target_if *> harts;
 	std::thread thr;
 	char *prevpkt;
+	size_t prevpkt_len;
 	std::queue<ctx> pktq;
 	std::mutex mtx;
 	int sockfd;
@@ -91,6 +98,7 @@ SC_MODULE(GDBServer) {
 	void run_all_harts(std::vector<debug_target_if *>);
 	void writeall(int, char *, size_t);
 	void send_packet(int, const char *, gdb_kind_t = GDB_KIND_PACKET);
+	void send_binary_packet(int, const std::vector<uint8_t> &);
 	void retransmit(int);
 	void dispatch(int conn);
 	void serve(void);

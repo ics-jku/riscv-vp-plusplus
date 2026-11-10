@@ -1,15 +1,22 @@
-#include <assert.h>
 #include <libgdb/parser2.h>
-#include <limits.h>
 #include <stdlib.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 #include "core/common/debug.h"
+#include "gdb_regs.h"
 #include "gdb_server.h"
-#include "register_format.h"
+#include "gdb_xml.h"
 
 enum {
 	GDB_PKTSIZ = 4096,
-	GDB_PC_REG = 32,
 };
 
 std::map<std::string, GDBServer::packet_handler> handlers{
@@ -29,6 +36,11 @@ std::map<std::string, GDBServer::packet_handler> handlers{
     {"vCont?", &GDBServer::vContSupported},
     {"z", &GDBServer::removeBreakpoint},
     {"Z", &GDBServer::setBreakpoint},
+    {"qMemTags", &GDBServer::readMemoryTags},
+    {"QMemTags", &GDBServer::writeMemoryTags},
+    {"qIsAddressTagged", &GDBServer::isAddressTagged},
+    {"qXfer:capa:read", &GDBServer::readCapability},
+    {"qXfer:features:read", &GDBServer::readFeatures},
 };
 
 void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
@@ -45,17 +57,22 @@ void GDBServer::haltReason(int conn, gdb_command_t *cmd) {
 void GDBServer::getRegisters(int conn, gdb_command_t *cmd) {
 	(void)cmd;
 
-	// TODO: Not working for the E base ISA. GDB derives the register layout from the ELF file and expects only
-	// x0-x15 + pc for E targets, but all 32 integer registers + pc are sent here. GDB rejects this with
-	// "Remote 'g' packet reply is too long".
-	auto formatter = new RegisterFormater(arch);
-	auto fn = [formatter](debug_target_if *hart) {
-		for (uint64_t v : hart->get_registers()) formatter->formatRegister(v);
+	std::vector<uint8_t> bytes;
+	auto fn = [this, &bytes](debug_target_if *hart) {
+		for (int reg : gdb_g_packet_registers(target)) {
+			if (!gdb_read_register(hart, target, reg, bytes))
+				throw std::out_of_range("register in 'g' packet not readable");
+		}
 	};
 
-	exec_thread(fn);
-	send_packet(conn, formatter->str().c_str());
-	delete formatter;
+	try {
+		exec_thread(fn);
+	} catch (const std::out_of_range &) {  // exception raised in fn
+		send_packet(conn, "E01");
+		return;
+	}
+
+	send_packet(conn, gdb_hex_encode(bytes).c_str());
 }
 
 void GDBServer::setThread(int conn, gdb_command_t *cmd) {
@@ -87,8 +104,11 @@ void GDBServer::readMemory(int conn, gdb_command_t *cmd) {
 
 	mem = &cmd->v.mem;
 
-	assert(mem->addr <= UINT64_MAX);
-	assert(mem->length <= UINT_MAX);
+	// reply has two hex digits per byte and must fit into PacketSize
+	if (mem->length > GDB_PKTSIZ / 2 || mem->length > UINT64_MAX - mem->addr) {
+		send_packet(conn, "E01");
+		return;
+	}
 
 	std::string retval;
 	auto fn = [this, &retval, mem](debug_target_if *hart) {
@@ -113,8 +133,10 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 	mem = &cmd->v.memw;
 	loc = &mem->location;
 
-	assert(loc->addr <= UINT64_MAX);
-	assert(loc->length <= UINT_MAX);
+	if (loc->length > GDB_PKTSIZ / 2 || loc->length > UINT64_MAX - loc->addr || strlen(mem->data) != 2 * loc->length) {
+		send_packet(conn, "E01");
+		return;
+	}
 
 	auto fn = [this, loc, mem](debug_target_if *hart) {
 		uint64_t addr = translate_addr(hart, loc->addr, STORE);
@@ -132,33 +154,22 @@ void GDBServer::writeMemory(int conn, gdb_command_t *cmd) {
 }
 
 void GDBServer::readRegister(int conn, gdb_command_t *cmd) {
-	int reg;
-	auto formatter = new RegisterFormater(arch);
+	int reg = cmd->v.ival;
 
-	reg = cmd->v.ival;
-	auto fn = [formatter, reg](debug_target_if *hart) {
-		uint64_t regval;
-		if (reg == GDB_PC_REG) {
-			regval = hart->get_progam_counter();
-		} else {
-			regval = hart->read_register(reg);
-		}
-
-		/* TODO: handle CSRs? */
-
-		formatter->formatRegister(regval);
+	std::vector<uint8_t> bytes;
+	auto fn = [this, &bytes, reg](debug_target_if *hart) {
+		if (!gdb_read_register(hart, target, reg, bytes))
+			throw std::out_of_range("Unimplemented register read");
 	};
 
 	try {
 		exec_thread(fn);
-	} catch (const std::out_of_range &) { /* exception raised in fn */
+	} catch (const std::out_of_range &) {  // exception raised in fn
 		send_packet(conn, "E01");
-		goto ret;
+		return;
 	}
 
-	send_packet(conn, formatter->str().c_str());
-ret:
-	delete formatter;
+	send_packet(conn, gdb_hex_encode(bytes).c_str());
 }
 
 void GDBServer::threadInfo(int conn, gdb_command_t *cmd) {
@@ -202,8 +213,17 @@ void GDBServer::qAttached(int conn, gdb_command_t *cmd) {
 
 void GDBServer::qSupported(int conn, gdb_command_t *cmd) {
 	(void)cmd;
+	char pktsiz[32];
+	snprintf(pktsiz, sizeof(pktsiz), "PacketSize=%x", GDB_PKTSIZ);
+	std::string features = pktsiz;
+	features += ";qXfer:features:read+";
+	if (target.cheri) {
+		features += ";qXfer:capa:read+";
+		features += ";memory-tagging+";
+	}
+	features += ";vContSupported+";
 
-	send_packet(conn, ("vContSupported+;PacketSize=" + std::to_string(GDB_PKTSIZ)).c_str());
+	send_packet(conn, features.c_str());
 }
 
 void GDBServer::isAlive(int conn, gdb_command_t *cmd) {
@@ -333,4 +353,151 @@ void GDBServer::setBreakpoint(int conn, gdb_command_t *cmd) {
 
 	for (debug_target_if *hart : harts) hart->insert_breakpoint(bpoint->address);
 	send_packet(conn, "OK");
+}
+
+void GDBServer::readMemoryTags(int conn, gdb_command_t *cmd) {
+	// malformed packets fall through to the generic parser (GDB_ARG_NONE), cmd->v is not initialized then
+	if (cmd->type != GDB_ARG_MEMTAGS || cmd->v.memtags.type != 0) {
+		send_packet(conn, "E01");
+		return;
+	}
+
+	uint64_t addr = cmd->v.memtags.location.addr;
+	uint64_t len = cmd->v.memtags.location.length;
+	std::string retval = "m";
+
+	if (!target.cheri) {
+		send_packet(conn, "E01");
+		return;
+	}
+
+	// at most len / GDB_CAP_BYTES + 2 granules, two hex digits each, must fit into PacketSize
+	if (len == 0 || len / GDB_CAP_BYTES + 2 > (GDB_PKTSIZ - 1) / 2) {
+		send_packet(conn, "E01");
+		return;
+	}
+
+	auto fn = [this, &retval, addr, len](debug_target_if *hart) {
+		uint64_t paddr = translate_addr(hart, addr, LOAD);
+		std::vector<uint8_t> tags = memory->read_memory_tags(paddr, len);
+		// one tag per granule touched by [paddr, paddr + len)
+		uint64_t ngranules = (paddr + len + GDB_CAP_BYTES - 1) / GDB_CAP_BYTES - paddr / GDB_CAP_BYTES;
+		if (tags.size() != ngranules)
+			throw std::runtime_error("short tag read");
+		for (uint8_t tag : tags) {
+			retval += (tag ? "01" : "00");
+		}
+	};
+
+	try {
+		exec_thread(fn);
+	} catch (const std::runtime_error &) {
+		send_packet(conn, "E14");
+		return;
+	}
+
+	send_packet(conn, retval.c_str());
+}
+
+void GDBServer::writeMemoryTags(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
+	std::cout << "writeMemoryTags not implemented" << std::endl;
+	send_packet(conn, "");
+}
+
+void GDBServer::isAddressTagged(int conn, gdb_command_t *cmd) {
+	(void)cmd;
+
+	std::cout << "isAddressTagged not implemented" << std::endl;
+	send_packet(conn, "");
+}
+
+void GDBServer::readCapability(int conn, gdb_command_t *cmd) {
+	if (!target.cheri) {
+		send_packet(conn, "E01");
+		return;
+	}
+
+	uint64_t addr = cmd->v.xfer_capa_read.addr;
+	uint64_t offset = cmd->v.xfer_capa_read.offset;
+	uint64_t length = cmd->v.xfer_capa_read.length;
+	const uint64_t cap_size = GDB_CAP_BYTES + 1;  // tag byte followed by the capability
+	if (addr % GDB_CAP_BYTES != 0) {
+		send_packet(conn, "E22");
+		return;
+	}
+	if (offset > cap_size) {
+		send_packet(conn, "E22");
+		return;
+	}
+	if (offset == cap_size) {
+		send_packet(conn, "l");
+		return;
+	}
+
+	uint64_t remaining = cap_size - offset;
+	uint64_t reply_len = length < remaining ? length : remaining;
+	uint8_t prefix = (offset + reply_len < cap_size) ? 'm' : 'l';
+
+	std::vector<uint8_t> cap;
+	auto fn = [this, &cap, addr](debug_target_if *hart) {
+		uint64_t paddr = translate_addr(hart, addr, LOAD);
+		std::vector<uint8_t> tag = memory->read_memory_tags(paddr, GDB_CAP_BYTES);
+		std::vector<uint8_t> bytes = memory->read_memory_bytes(paddr, GDB_CAP_BYTES);
+		if (tag.size() != 1 || bytes.size() != GDB_CAP_BYTES)
+			throw std::runtime_error("short capability read");
+		cap.push_back(tag.at(0));
+		cap.insert(cap.end(), bytes.begin(), bytes.end());
+	};
+
+	try {
+		exec_thread(fn);
+	} catch (const std::runtime_error &) {
+		send_packet(conn, "E14");
+		return;
+	}
+
+	size_t start = offset;
+	size_t end = start + reply_len;
+	if (start >= cap.size()) {
+		send_packet(conn, "E22");
+		return;
+	}
+	if (end > cap.size()) {
+		send_packet(conn, "E22");
+		return;
+	}
+
+	std::vector<uint8_t> retval;
+	retval.reserve(reply_len + 1);
+	retval.push_back(prefix);
+	retval.insert(retval.end(), cap.begin() + start, cap.begin() + end);
+	send_binary_packet(conn, retval);
+}
+
+void GDBServer::readFeatures(int conn, gdb_command_t *cmd) {
+	std::string_view xml = gdb_xml::lookup(target, cmd->v.xfer_features_read.annex);
+
+	uint64_t offset = cmd->v.xfer_features_read.offset;
+	uint64_t length = cmd->v.xfer_features_read.length;
+
+	if (xml.empty()) {
+		send_packet(conn, "E01");
+		return;
+	}
+
+	size_t xml_len = xml.size();
+	if (offset > xml_len) {
+		send_packet(conn, "E01");
+		return;
+	}
+
+	size_t remaining = xml_len - offset;
+	size_t reply_len = length < remaining ? length : remaining;
+	uint8_t prefix = (offset + reply_len < xml_len) ? 'm' : 'l';
+	std::vector<uint8_t> retval(reply_len + 1);
+	retval[0] = prefix;
+	std::copy_n(xml.begin() + offset, reply_len, retval.begin() + 1);
+	send_binary_packet(conn, retval);
 }

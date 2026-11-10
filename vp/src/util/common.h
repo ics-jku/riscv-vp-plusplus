@@ -52,3 +52,12 @@ inline void ensure(bool cond, const std::string &reason) {
 #define COLORFRMT "%s"
 #define COLORPRINT(fmt, data) data
 #endif
+
+constexpr uint8_t bitWidth(uint64_t value) {
+	uint8_t width = 0;
+	while (value != 0) {
+		++width;
+		value >>= 1;
+	}
+	return width;
+}

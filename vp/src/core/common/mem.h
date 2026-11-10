@@ -115,7 +115,8 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 		return mmu->translate_virtual_to_physical_addr(vaddr, type);
 	}
 
-	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes) {
+	inline void _do_transaction(tlm::tlm_command cmd, uint64_t addr, uint8_t *data, unsigned num_bytes,
+	                            uint64_t vaddr) {
 		trans.set_command(cmd);
 		trans.set_address(addr);
 		trans.set_data_ptr(data);
@@ -135,19 +136,19 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 
 		if (trans.is_response_error()) {
 			if (iss.trace_enabled())
-				std::cout << "WARNING: core memory transaction failed for address 0x" << std::hex << addr << std::dec
-				          << " -> raise trap" << std::endl;
+				std::cout << "WARNING: core memory transaction failed for physical address 0x" << std::hex << addr
+				          << " (virtual address 0x" << vaddr << ")" << std::dec << " -> raise trap" << std::endl;
 			if (cmd == tlm::TLM_READ_COMMAND)
-				raise_trap(EXC_LOAD_PAGE_FAULT, addr);
+				raise_trap(EXC_LOAD_PAGE_FAULT, vaddr);
 			else if (cmd == tlm::TLM_WRITE_COMMAND)
-				raise_trap(EXC_STORE_AMO_PAGE_FAULT, addr);
+				raise_trap(EXC_STORE_AMO_PAGE_FAULT, vaddr);
 			else
 				throw std::runtime_error("TLM command must be read or write");
 		}
 	}
 
 	template <typename T>
-	inline T _raw_load_data(uint64_t addr) {
+	inline T _raw_load_data(uint64_t addr, uint64_t vaddr) {
 		// NOTE: a DMI load will not context switch (SystemC) and not modify the memory, hence should be able to
 		// postpone the lock after the dmi access
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
@@ -167,7 +168,7 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 			}
 		}
 
-		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T));
+		_do_transaction(tlm::TLM_READ_COMMAND, addr, (uint8_t *)&ans, sizeof(T), vaddr);
 
 		/*
 		 * A transaction may lead to a context switch. The other context may issue transaction handled via dmi.
@@ -180,7 +181,7 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 	}
 
 	template <typename T>
-	inline void _raw_store_data(uint64_t addr, T value) {
+	inline void _raw_store_data(uint64_t addr, T value, uint64_t vaddr) {
 		bus_lock->wait_for_access_rights(iss.get_hart_id());
 
 		for (auto &e : dmi_ranges) {
@@ -197,7 +198,7 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 			}
 		}
 
-		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T));
+		_do_transaction(tlm::TLM_WRITE_COMMAND, addr, (uint8_t *)&value, sizeof(T), vaddr);
 		atomic_unlock();
 
 		/* see comment in _raw_load_data */
@@ -206,22 +207,22 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 
 	template <typename T>
 	inline T _load_data(uint64_t addr) {
-		return _raw_load_data<T>(v2p(addr, LOAD));
+		return _raw_load_data<T>(v2p(addr, LOAD), addr);
 	}
 
 	template <typename T>
 	inline void _store_data(uint64_t addr, T value) {
-		_raw_store_data(v2p(addr, STORE), value);
+		_raw_store_data(v2p(addr, STORE), value, addr);
 	}
 
 	uint64_t mmu_load_pte64(uint64_t addr) override {
-		return _raw_load_data<uint64_t>(addr);
+		return _raw_load_data<uint64_t>(addr, addr);
 	}
 	uint64_t mmu_load_pte32(uint64_t addr) override {
-		return _raw_load_data<uint32_t>(addr);
+		return _raw_load_data<uint32_t>(addr, addr);
 	}
 	void mmu_store_pte32(uint64_t addr, uint32_t value) override {
-		_raw_store_data(addr, value);
+		_raw_store_data(addr, value, addr);
 	}
 
 	void flush_tlb() override {
@@ -255,11 +256,11 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 		 *
 		 */
 		if ((addr & 0xFFF) == 0xFFE) {
-			return (_raw_load_data<uint16_t>(v2p(addr + 2, FETCH)) << 16) |
-			       (_raw_load_data<uint16_t>(v2p(addr + 0, FETCH)) << 0);
+			return (_raw_load_data<uint16_t>(v2p(addr + 2, FETCH), addr + 2) << 16) |
+			       (_raw_load_data<uint16_t>(v2p(addr + 0, FETCH), addr + 0) << 0);
 		}
 
-		return _raw_load_data<uint32_t>(v2p(addr, FETCH));
+		return _raw_load_data<uint32_t>(v2p(addr, FETCH), addr);
 	}
 
 	template <typename T>
@@ -278,7 +279,7 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 				 */
 				paddr = v2p(addr, LOAD);
 				paddr = v2p(addr, STORE);
-				value_last = _raw_load_data<T>(paddr);
+				value_last = _raw_load_data<T>(paddr, addr);
 			} catch (SimulationTrap &e) {
 				atomic_unlock();
 				if (e.reason == EXC_LOAD_ACCESS_FAULT) {
@@ -312,7 +313,7 @@ class CombinedMemoryInterface_T : public sc_core::sc_module,
 		value_new = operation(value_last, value_rs2);
 
 		/* commit: store and unlock */
-		_raw_store_data(paddr, value_new);
+		_raw_store_data(paddr, value_new, addr);
 
 		return value_last;
 	}

@@ -1,6 +1,13 @@
 SECTIONS
 {
+
   . = 0x00000000;
+  /*
+  * For QEMU
+  */
+  /*
+  * . = 0x80000000;
+  */
   .text : { *(.text) }
   .data : { *(.data) }
   .bss  : { *(.bss) }

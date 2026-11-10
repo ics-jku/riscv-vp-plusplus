@@ -1,23 +1,19 @@
 #ifndef RISCV_ISA_MEM_IF_H
 #define RISCV_ISA_MEM_IF_H
 
-/*
- * TODO: improve/cleanup cheriv9 interface
- */
-
 #include <stdint.h>
 
-#include "core/common_cheriv9/cheri_capability.h"
+#include "core/common_y/cheri_capability.h"
 
 struct instr_memory_if {
 	virtual uint32_t load_instr(uint64_t pc) = 0;
 
-	/* for cheriv9 (optional for others) */
+	/* for cheri (optional for others) */
 	virtual uint16_t load_instr_half(uint64_t pc) {
 		assert(0);
 	}
 
-	/* for cheriv9 (optional for others) */
+	/* for cheri (optional for others) */
 	virtual uint64_t translate_pc(uint64_t pc) {
 		assert(0);
 	}
@@ -47,8 +43,8 @@ struct data_memory_if_T {
 	virtual T_uxlen_t load_uhalf(uint64_t addr) = 0;
 	virtual T_uxlen_t load_ubyte(uint64_t addr) = 0;
 
-	/* for cheriv9 (optional for others) */
-	virtual Capability load_cap(uint64_t addr) {
+	/* for cheri (optional for others) */
+	virtual Capability load_cap(uint64_t addr, uint64_t vaddr) {
 		assert(0);
 	}
 
@@ -57,8 +53,8 @@ struct data_memory_if_T {
 	virtual void store_half(uint64_t addr, uint16_t value) = 0;
 	virtual void store_byte(uint64_t addr, uint8_t value) = 0;
 
-	/* for cheriv9 (optional for others) */
-	virtual void store_cap(uint64_t addr, Capability value) {
+	/* for cheri (optional for others) */
+	virtual void store_cap(uint64_t addr, const Capability& value, uint64_t vaddr) {
 		assert(0);
 	}
 
@@ -82,59 +78,56 @@ struct data_memory_if_T {
 	 * CAUTION: The result is only valid directly after an access, i.e. no SystemC context switch between the access and
 	 * a call of this method
 	 */
-	virtual void *get_last_dmi_page_host_addr() = 0;
+	virtual void* get_last_dmi_page_host_addr() = 0;
 
 	virtual void flush_tlb() = 0;
 
 	/*
-	 * cheriv9 helper interfaces
+	 * cheri helper interfaces
 	 * TODO: needs major cleanup
 	 */
 
-	virtual void handle_store_data_via_cap(Capability rs2, uint64_t auth_idx, Capability auth_val, uint64_t addr,
-	                                       uint8_t width) {
+	virtual void handle_store_data_via_cap(const Capability& rs2, uint64_t auth_idx, const Capability& auth_val,
+	                                       uint64_t addr, uint8_t width) {
 		assert(0);
 	}
-	virtual Capability handle_load_cap_via_cap(uint64_t auth_idx, Capability auth_val, uint64_t addr) {
+	virtual Capability handle_load_cap_via_cap(uint64_t auth_idx, const Capability& auth_val, uint64_t addr) {
 		assert(0);
 	}
-	virtual uint64_t handle_load_data_via_cap(uint64_t auth_idx, Capability auth_val, uint64_t addr, bool is_unsigned,
-	                                          uint8_t width) {
-		assert(0);
-	}
-	virtual uint8_t load_tags(uint64_t addr) {
+	virtual uint64_t handle_load_data_via_cap(uint64_t auth_idx, const Capability& auth_val, uint64_t addr,
+	                                          bool is_unsigned, uint8_t width) {
 		assert(0);
 	}
 	virtual void reset(uint64_t start, uint64_t end) {
 		assert(0);
 	}
-	virtual uint64_t atomic_load_reserved_data_via_cap(uint64_t auth_idx, Capability auth_val, uint64_t addr,
+	virtual uint64_t atomic_load_reserved_data_via_cap(uint64_t auth_idx, const Capability& auth_val, uint64_t addr,
 	                                                   uint8_t width) {
 		assert(0);
 	}
-	virtual Capability atomic_load_reserved_cap_via_cap(uint64_t auth_idx, Capability auth_val, uint64_t addr) {
+	virtual Capability atomic_load_reserved_cap_via_cap(uint64_t auth_idx, const Capability& auth_val, uint64_t addr) {
 		assert(0);
 	}
-	virtual bool atomic_store_conditional_data_via_cap(Capability rs2, uint64_t auth_idx, Capability auth_val,
-	                                                   uint64_t addr, uint8_t width) {
+	virtual bool atomic_store_conditional_data_via_cap(const Capability& rs2, uint64_t auth_idx,
+	                                                   const Capability& auth_val, uint64_t addr, uint8_t width) {
 		assert(0);
 	}
-	virtual void atomic_store_cap(uint64_t addr, Capability value) {
+	virtual void atomic_store_cap(uint64_t addr, const Capability& value) {
 		assert(0);
 	}
-	virtual Capability atomic_load_cap(uint64_t addr) {
+	virtual Capability atomic_load_cap(uint64_t addr, uint64_t vaddr) {
 		assert(0);
 	}
 
 	virtual T_sxlen_t atomic_execute_amo_word_via_cap(uint64_t addr, uint32_t value_rs2,
 	                                                  std::function<uint32_t(uint32_t, uint32_t)> operation,
-	                                                  Capability auth_val, uint64_t auth_idx) {
+	                                                  const Capability& auth_val, uint64_t auth_idx) {
 		assert(0);
 	}
 
 	virtual int64_t atomic_execute_amo_double_via_cap(uint64_t addr, uint64_t value_rs2,
 	                                                  std::function<uint64_t(uint64_t, uint64_t)> operation,
-	                                                  Capability auth_val, uint64_t auth_idx) {
+	                                                  const Capability& auth_val, uint64_t auth_idx) {
 		assert(0);
 	}
 };
