@@ -30,6 +30,8 @@ SIFIVE_PLIC::SIFIVE_PLIC(sc_core::sc_module_name, bool fu540_mode, unsigned hart
 	VPPP_PROPERTY_GET("SIFIVE_PLIC." + name(), "irq_trigger_clock_cycles", uint64_t, prop_irq_trigger_clock_cycles);
 
 	target_harts = std::vector<external_interrupt_target *>(harts, NULL);
+	eip_m = std::vector<bool>(harts, false);
+	eip_s = std::vector<bool>(harts, false);
 
 	access_delay = prop_access_clock_cycles * prop_clock_cycle_period;
 	irq_trigger_delay = prop_irq_trigger_clock_cycles * prop_clock_cycle_period;
@@ -133,9 +135,12 @@ bool SIFIVE_PLIC::read_hartctx(RegisterRange::ReadInfo t, unsigned int hart, Pri
 				break;
 		}
 
-		/* successful claim also clears the pending bit */
-		if (irq != 0)
+		/* successful claim also clears the pending bit, which may
+		 * drop this context's EIP */
+		if (irq != 0) {
 			clear_pending(irq);
+			e_run.notify(irq_trigger_delay);
+		}
 	}
 
 	return true;
@@ -146,7 +151,7 @@ void SIFIVE_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, P
 	assert(t.size == sizeof(uint32_t));
 
 	if (is_claim_access(t.addr)) {
-		target_harts[hart]->clear_external_interrupt(level);
+		/* interrupt completion: EIP is updated by run() */
 	} else { /* access to priority threshold */
 		uint32_t *thr;
 
@@ -165,7 +170,8 @@ void SIFIVE_PLIC::write_hartctx(RegisterRange::WriteInfo t, unsigned int hart, P
 		*thr = std::min(*thr, uint32_t(MAX_THR));
 	}
 
-	/* a lowered threshold may unmask a pending interrupt */
+	/* completion and threshold changes may mask or unmask a pending
+	 * interrupt */
 	e_run.notify(irq_trigger_delay);
 }
 
@@ -176,7 +182,7 @@ void SIFIVE_PLIC::write_irq_prios(RegisterRange::WriteInfo t) {
 	auto &elem = interrupt_priorities[idx];
 	elem = std::min(elem, uint32_t(MAX_PRIO));
 
-	/* a raised priority may unmask a pending interrupt */
+	/* a priority change may mask or unmask a pending interrupt */
 	e_run.notify(irq_trigger_delay);
 }
 
@@ -184,20 +190,31 @@ void SIFIVE_PLIC::run(void) {
 	for (;;) {
 		sc_core::wait(e_run);
 
-		/* every hart context has its own EIP: evaluate them
-		 * independently */
+		/* EIP is a function of the PLIC state (RISC-V Privileged
+		 * Architecture v1.10 §7.9): drive it in both directions, for
+		 * every context independently */
 		for (size_t i = 0; i < target_harts.size(); i++) {
-			if (next_pending_irq(i, MachineMode, false) > 0)
-				target_harts[i]->trigger_external_interrupt(MachineMode);
-
-			/* fu540 hart 0 only supports m-mode interrupts */
-			if (FU540_MODE && i == 0)
-				continue;
-
-			if (next_pending_irq(i, SupervisorMode, false) > 0)
-				target_harts[i]->trigger_external_interrupt(SupervisorMode);
+			eip_m[i] = update_eip(i, MachineMode, eip_m[i]);
+			if (!(FU540_MODE && i == 0)) /* fu540 hart 0: m-mode only */
+				eip_s[i] = update_eip(i, SupervisorMode, eip_s[i]);
 		}
 	}
+}
+
+bool SIFIVE_PLIC::update_eip(unsigned int hart, PrivilegeLevel lvl, bool eip) {
+	bool pending = next_pending_irq(hart, lvl, false) > 0;
+
+	if (pending) {
+		/* re-asserted on every evaluation: software may have cleared
+		 * a writable xEIP bit in mip */
+		target_harts[hart]->trigger_external_interrupt(lvl);
+	} else if (eip) {
+		/* only on the falling edge, so a software-set xEIP bit is not
+		 * clobbered by unrelated PLIC activity */
+		target_harts[hart]->clear_external_interrupt(lvl);
+	}
+
+	return pending;
 }
 
 /* Returns next enabled pending interrupt with highest priority */
