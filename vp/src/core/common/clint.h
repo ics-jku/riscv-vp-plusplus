@@ -114,13 +114,14 @@ struct CLINT : public clint_if, public sc_core::sc_module {
 				} else {
 					// std::cout << "[vp::clint] unset timer interrupt for core " << i << std::endl;
 					target_harts[i]->clear_timer_interrupt();
-					if (cmp > 0 && cmp < UINT64_MAX) {
-						auto time = sc_core::sc_time::from_value(mtime * scaler);
+
+					// cmp == 0: timer disabled; a deadline beyond the end of the simulation time
+					// (sc_max_time) can never be reached and is ignored
+					if (cmp > 0 && cmp <= sc_core::sc_max_time().value() / scaler) {
+						// cmp > mtime >= now / scaler: the goal is guaranteed to be in the future
 						auto goal = sc_core::sc_time::from_value(cmp * scaler);
-						// std::cout << "[vp::clint] time=" << time << std::endl;
 						// std::cout << "[vp::clint] goal=" << goal << std::endl;
-						// std::cout << "[vp::clint] goal-time=delay=" << goal-time << std::endl;
-						irq_event.notify(goal - time);
+						irq_event.notify(goal - sc_core::sc_time_stamp());
 					}
 				}
 			}
